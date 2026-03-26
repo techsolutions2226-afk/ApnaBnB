@@ -72,6 +72,18 @@ const updateListing = async (req, res) => {
   }
 };
 
+// Get Listings for a specific user
+const getUserListings = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const listings = await Listing.find({ owner: userId }).populate('property owner', 'title price name email');
+    res.status(200).json(listings);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Delete Listing
 const deleteListing = async (req, res) => {
   const { id } = req.params;
@@ -88,4 +100,4 @@ const deleteListing = async (req, res) => {
   }
 };
 
-module.exports = { createListing, getListings, updateListing, deleteListing };
+module.exports = { createListing, getListings, getUserListings, updateListing, deleteListing };

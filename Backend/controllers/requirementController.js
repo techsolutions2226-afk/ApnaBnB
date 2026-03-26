@@ -69,6 +69,18 @@ const updateRequirement = async (req, res) => {
   }
 };
 
+// Get Requirements for a specific user
+const getUserRequirements = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const requirements = await Requirement.find({ requiredBy: userId }).populate('requiredBy', 'name email role');
+    res.status(200).json(requirements);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Delete Requirement
 const deleteRequirement = async (req, res) => {
   const { id } = req.params;
@@ -85,4 +97,4 @@ const deleteRequirement = async (req, res) => {
   }
 };
 
-module.exports = { createRequirement, getRequirements, updateRequirement, deleteRequirement };
+module.exports = { createRequirement, getRequirements, getUserRequirements, updateRequirement, deleteRequirement };

@@ -7,8 +7,8 @@ const router = express.Router();
 // Listing endpoints
 router.post('/', verifyToken, createListing);
 router.get('/', getListings);
-router.get('/user/:userId', getUserListings); // Get listings for a specific user
 router.put('/:id', verifyToken, updateListing);
 router.delete('/:id', verifyToken, deleteListing);
+router.get('/user/:userId', getUserListings); // Get listings for a specific user - must be after /:id routes
 
 module.exports = router;

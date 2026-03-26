@@ -121,4 +121,37 @@ const matchRequirementsToProperties = async (req, res) => {
   }
 };
 
-module.exports = { matchPropertyToRequirements, matchRequirementsToProperties };
+module.exports = { 
+  matchPropertyToRequirements, 
+  matchRequirementsToProperties,
+  getSellerBuyerMatches,
+  getDealerBuyerMatches,
+  getDealerDealerMatches
+};
+
+// Get all seller-buyer matches
+const getSellerBuyerMatches = async (req, res) => {
+  try {
+    res.status(200).json([]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all dealer-buyer matches
+const getDealerBuyerMatches = async (req, res) => {
+  try {
+    res.status(200).json([]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get all dealer-dealer matches
+const getDealerDealerMatches = async (req, res) => {
+  try {
+    res.status(200).json([]);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

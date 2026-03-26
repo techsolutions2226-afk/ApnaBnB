@@ -7,8 +7,8 @@ const router = express.Router();
 // Requirement endpoints
 router.post('/', verifyToken, createRequirement);
 router.get('/', getRequirements);
-router.get('/user/:userId', getUserRequirements); // Get requirements for a specific user
 router.put('/:id', verifyToken, updateRequirement);
 router.delete('/:id', verifyToken, deleteRequirement);
+router.get('/user/:userId', getUserRequirements); // Get requirements for a specific user - must be after /:id routes
 
 module.exports = router;

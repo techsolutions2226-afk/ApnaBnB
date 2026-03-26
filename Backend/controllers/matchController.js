@@ -121,14 +121,6 @@ const matchRequirementsToProperties = async (req, res) => {
   }
 };
 
-module.exports = { 
-  matchPropertyToRequirements, 
-  matchRequirementsToProperties,
-  getSellerBuyerMatches,
-  getDealerBuyerMatches,
-  getDealerDealerMatches
-};
-
 // Get all seller-buyer matches
 const getSellerBuyerMatches = async (req, res) => {
   try {
@@ -154,4 +146,12 @@ const getDealerDealerMatches = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+module.exports = { 
+  matchPropertyToRequirements, 
+  matchRequirementsToProperties,
+  getSellerBuyerMatches,
+  getDealerBuyerMatches,
+  getDealerDealerMatches
 };

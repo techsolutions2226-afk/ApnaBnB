@@ -77,7 +77,9 @@ const getUserListings = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const listings = await Listing.find({ owner: userId }).populate('property owner', 'title price name email');
+    const listings = await Listing.find({ owner: userId })
+      .populate('property', 'title description photos location price propertyType size bedrooms bathrooms')
+      .populate('owner', 'name email role');
     res.status(200).json(listings);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -94,10 +96,32 @@ const deleteListing = async (req, res) => {
       return res.status(404).json({ message: 'Listing not found or unauthorized.' });
     }
 
-    res.status(200).json({ message: 'Listing deleted successfully.' });
+    // Cascade delete the associated property so it doesn't show up on the home page
+    if (listing.property) {
+      await Property.findByIdAndDelete(listing.property);
+    }
+
+    res.status(200).json({ message: 'Listing and property deleted successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { createListing, getListings, getUserListings, updateListing, deleteListing };
+// Get single listing by ID
+const getListingById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const listing = await Listing.findById(id)
+      .populate('property', 'title description photos location price propertyType size bedrooms bathrooms listedBy')
+      .populate('owner', 'name email role');
+    if (!listing) {
+      return res.status(404).json({ message: 'Listing not found.' });
+    }
+    res.status(200).json(listing);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { createListing, getListings, getUserListings, getListingById, updateListing, deleteListing };

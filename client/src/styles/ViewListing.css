@@ -1,0 +1,194 @@
+/* ViewListing.css - Beautiful View Listing Page Styles */
+
+/* Gallery Section */
+.vl-gallery-section {
+  margin: 24px 0;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f8f9fa;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.vl-gallery-main {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+}
+
+.vl-gallery-main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.vl-gallery-main:hover .vl-gallery-main-image {
+  transform: scale(1.02);
+}
+
+.vl-gallery-count {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.vl-gallery-thumbnails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+}
+
+.vl-gallery-thumb {
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  aspect-ratio: 1;
+}
+
+.vl-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.vl-gallery-thumb:hover img {
+  transform: scale(1.1);
+}
+
+.vl-gallery-more {
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Action Bar */
+.vl-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 12px;
+  margin: 24px 0;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e8e8e8;
+}
+
+.vl-action-bar-left {
+  display: flex;
+  gap: 12px;
+}
+
+.vl-action-bar-right {
+  display: flex;
+}
+
+.vl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.vl-action-btn--primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.vl-action-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.vl-action-btn--success {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.vl-action-btn--success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+}
+
+.vl-action-btn--warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.vl-action-btn--warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+}
+
+.vl-action-btn--danger {
+  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  color: white;
+}
+
+.vl-action-btn--danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 75, 43, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .vl-gallery-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .vl-gallery-main {
+    height: 250px;
+  }
+  
+  .vl-gallery-thumbnails {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto;
+  }
+  
+  .vl-action-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .vl-action-bar-left {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .vl-action-bar-right {
+    width: 100%;
+  }
+  
+  .vl-action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}

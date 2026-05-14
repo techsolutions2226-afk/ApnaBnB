@@ -18,6 +18,12 @@ const PropertySchema = new mongoose.Schema(
     size: { type: Number },
     bedrooms: { type: Number },
     bathrooms: { type: Number },
+    amenities: { type: [String], default: [] },
+    status: {
+      type: String,
+      enum: ['active', 'pending', 'sold', 'featured'],
+      default: 'pending'
+    },
     listedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

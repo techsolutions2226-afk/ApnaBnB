@@ -3,10 +3,22 @@ const bcrypt = require('bcrypt');
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['seller', 'buyer', 'dealer'], required: true },
+  role: { type: String, enum: ['seller', 'buyer', 'dealer', 'admin'], required: true },
   verified: { type: Boolean, default: false },
+  avatar: { type: String, default: '' },
+
+  // Email-verification OTP (hashed). Cleared once the user verifies.
+  otpHash: { type: String, default: null, select: false },
+  otpExpiresAt: { type: Date, default: null, select: false },
+  otpAttempts: { type: Number, default: 0, select: false },
+  otpLastSentAt: { type: Date, default: null, select: false },
+
+  // Forgot-password token (sha256-hashed). Cleared after a successful reset.
+  resetPasswordTokenHash: { type: String, default: null, select: false },
+  resetPasswordExpiresAt: { type: Date, default: null, select: false },
+  resetPasswordLastSentAt: { type: Date, default: null, select: false },
 }, { timestamps: true });
 
 // Hash the password before saving

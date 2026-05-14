@@ -8,6 +8,10 @@ const ConversationSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    archived: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

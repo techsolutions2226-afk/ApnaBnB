@@ -1,0 +1,290 @@
+/* ===================================================
+   Footer.css — Airbnb-style Footer
+   =================================================== */
+
+.footer {
+  width: 100%;
+  background-color: #f7f7f7;
+  border-top: 1px solid #ebebeb;
+  font-family: "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #222222;
+}
+
+/* ── Inspiration Section ── */
+.footer-inspiration {
+  padding: 48px 80px 32px;
+}
+
+.footer-heading {
+  font-size: 22px;
+  font-weight: 600;
+  color: #222222;
+  margin: 0 0 24px;
+}
+
+/* ── Category Tabs ── */
+.footer-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid #dddddd;
+}
+
+.footer-tab {
+  background: none;
+  border: none;
+  padding: 12px 16px 12px 0;
+  font-size: 14px;
+  color: #717171;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.footer-tab:hover {
+  color: #222222;
+}
+
+.footer-tab--active {
+  color: #222222;
+  font-weight: 600;
+  border-bottom: 2px solid #222222;
+}
+
+.footer-tab-line {
+  height: 1px;
+  background: #dddddd;
+  margin-bottom: 28px;
+  display: none; /* handled by border-bottom on tabs */
+}
+
+/* ── Destination Grid ── */
+.dest-grid {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dest-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.dest-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dest-city {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  text-decoration: none;
+  transition: text-decoration 0.15s;
+}
+.dest-city:hover {
+  text-decoration: underline;
+}
+
+.dest-type {
+  font-size: 13px;
+  color: #717171;
+}
+
+/* Show more button */
+.show-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: opacity 0.15s;
+}
+.show-more-btn:hover {
+  opacity: 0.7;
+}
+
+/* ── Divider ── */
+.footer-divider {
+  height: 1px;
+  background: #dddddd;
+  margin: 0 80px;
+}
+
+/* ── Links Section ── */
+.footer-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  padding: 40px 80px;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-col-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 4px;
+  text-transform: none;
+}
+
+.footer-link {
+  font-size: 14px;
+  color: #222222;
+  text-decoration: none;
+  transition: text-decoration 0.15s;
+  width: fit-content;
+}
+.footer-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Bottom Bar ── */
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 80px 28px;
+  font-size: 14px;
+  color: #222222;
+}
+
+.footer-bottom-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer-dot {
+  color: #717171;
+}
+
+.footer-bottom-link {
+  color: #222222;
+  text-decoration: none;
+  transition: text-decoration 0.15s;
+}
+.footer-bottom-link:hover {
+  text-decoration: underline;
+}
+
+/* Privacy toggle pill (decorative) */
+.privacy-toggle {
+  width: 34px;
+  height: 18px;
+  background: #0070f3;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  cursor: pointer;
+}
+.privacy-toggle-inner {
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-radius: 50%;
+  margin-left: auto;
+}
+
+/* Right side: locale + socials */
+.footer-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-locale-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.footer-locale-btn:hover {
+  background: #ebebeb;
+}
+
+.footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.social-link {
+  color: #222222;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+}
+.social-link:hover {
+  opacity: 0.6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .footer-inspiration,
+  .footer-links,
+  .footer-bottom {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+  .footer-divider {
+    margin: 0 40px;
+  }
+  .dest-row {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-inspiration,
+  .footer-links,
+  .footer-bottom {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .footer-divider {
+    margin: 0 24px;
+  }
+  .dest-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .footer-links {
+    grid-template-columns: 1fr;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

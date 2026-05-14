@@ -7,6 +7,10 @@ const RequirementSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    title: {
+      type: String,
+      required: true,
+    },
     location: {
       city: { type: String, required: true },
       area: { type: String },
@@ -21,11 +25,18 @@ const RequirementSchema = new mongoose.Schema(
       required: true,
     },
     size: {
-      min: { type: Number },
-      max: { type: Number },
+      type: String,
+      default: ''
     },
     bedrooms: { type: Number },
     bathrooms: { type: Number },
+    notes: { type: String, default: '' },
+    status: {
+      type: String,
+      enum: ['active', 'fulfilled', 'closed'],
+      default: 'active'
+    },
+    urgency: { type: String, default: '' },
   },
   { timestamps: true }
 );

@@ -1,0 +1,254 @@
+/* ═══════════════════════════════════════════════
+   Wishlists.css — Wishlist collection page
+   Prefix: wl-
+   Property grid styles come from PropertyCards.css
+   ═══════════════════════════════════════════════ */
+
+.wl-page {
+  min-height: 60vh;
+  padding: 40px 24px 80px;
+}
+
+.wl-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.wl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.wl-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 4px;
+  letter-spacing: -0.5px;
+}
+
+.wl-subtitle {
+  font-size: 14px;
+  color: #717171;
+  margin: 0;
+}
+
+.wl-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: #fff;
+  border: 1px solid #222;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.wl-create-btn:hover { background: #f7f7f7; }
+.wl-create-btn:active { transform: scale(0.97); }
+
+/* ── Folder Tabs ── */
+.wl-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+  padding-bottom: 4px;
+}
+
+.wl-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #dddddd;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.wl-tab:hover { border-color: #222; }
+.wl-tab--active {
+  background: #222;
+  border-color: #222;
+  color: #fff;
+}
+.wl-tab--active .wl-tab-count { color: #fff; }
+
+.wl-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #717171;
+}
+.wl-tab--active .wl-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.wl-tab-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s;
+  cursor: pointer;
+}
+.wl-tab-delete:hover {
+  opacity: 1;
+  background: rgba(255, 56, 92, 0.12);
+  color: #ff385c;
+}
+.wl-tab--active .wl-tab-delete:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* ── Modal ── */
+.wl-modal-body { padding: 4px 0; }
+
+.wl-modal-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.wl-modal-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.wl-modal-input:focus { border-color: #222; }
+
+.wl-modal-count {
+  font-size: 12px;
+  color: #717171;
+  margin: 6px 0 20px;
+}
+
+.wl-modal-create-btn {
+  width: 100%;
+  padding: 14px;
+  background: #ff385c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.wl-modal-create-btn:hover { background: #e0314f; }
+.wl-modal-create-btn:disabled {
+  background: #ddd;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.wl-delete-text {
+  font-size: 15px;
+  color: #484848;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.wl-delete-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.wl-delete-cancel {
+  padding: 10px 20px;
+  background: #fff;
+  border: 1px solid #222;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wl-delete-cancel:hover { background: #f7f7f7; }
+
+.wl-delete-confirm {
+  padding: 10px 20px;
+  background: #ff385c;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wl-delete-confirm:hover { background: #e0314f; }
+
+/* ═══════════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .wl-title { font-size: 28px; }
+}
+
+@media (max-width: 640px) {
+  .wl-page { padding: 20px 12px 64px; }
+  .wl-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wl-create-btn {
+    justify-content: center;
+    width: 100%;
+  }
+  .wl-title { font-size: 24px; }
+  .wl-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    margin-bottom: 20px;
+  }
+  .wl-tabs::-webkit-scrollbar { display: none; }
+  .wl-tab { flex-shrink: 0; }
+  .wl-delete-actions { flex-direction: column; }
+  .wl-delete-cancel,
+  .wl-delete-confirm {
+    width: 100%;
+    text-align: center;
+  }
+}

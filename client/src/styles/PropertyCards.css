@@ -1,0 +1,330 @@
+/* ===================================================
+   PropertyCards.css — Airbnb-style Property Cards
+   Supports both legacy horizontal-scroll layout
+   and new CSS grid layout (Phase 2)
+   =================================================== */
+
+/* ── Page wrapper (legacy sections) ── */
+.prop-sections-wrapper {
+  padding: 0 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Section (legacy) ── */
+.prop-section {
+  padding: 32px 0 8px;
+}
+
+.prop-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.prop-section-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  cursor: pointer;
+}
+.prop-section-title:hover .prop-section-arrow {
+  transform: translateX(4px);
+}
+.prop-section-arrow {
+  transition: transform 0.2s ease;
+}
+
+/* Nav arrows (legacy) */
+.prop-section-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.prop-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #222222;
+  transition:
+    box-shadow 0.2s,
+    background 0.15s;
+}
+.prop-nav-btn:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  background: #f7f7f7;
+}
+
+/* ── Scrollable row (legacy) ── */
+.prop-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+}
+.prop-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
+   NEW: Grid Layout (Phase 2)
+   ═══════════════════════════════════════════ */
+
+.home-page {
+  min-height: 60vh;
+}
+
+.prop-grid-wrapper {
+  padding: 24px 40px 48px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.prop-grid {
+  display: grid;
+  /* minmax(0, 1fr) prevents the carousel's min-content width from pushing
+     columns past the viewport on small screens. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* Cards inside the grid also need min-width:0 so flex children with
+   min-width:100% (the carousel track) don't expand the card. */
+.prop-grid .prop-card,
+.prop-grid .prop-card-link {
+  min-width: 0;
+}
+
+/* ── Card Link Wrapper ── */
+.prop-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+/* Legacy: flex sizing for horizontal rows */
+.prop-row .prop-card-link {
+  flex: 0 0 calc((100% - 5 * 16px) / 6);
+  min-width: 180px;
+  scroll-snap-align: start;
+}
+
+/* ── Single Card ── */
+.prop-card {
+  cursor: pointer;
+}
+
+.prop-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ebebeb;
+}
+
+.prop-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+.prop-card-link:hover .prop-img {
+  transform: scale(1.04);
+}
+
+/* Badge */
+.prop-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #222222;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Heart (legacy — now handled by ImageCarousel's wishlist button) */
+.prop-heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+  transition: transform 0.15s;
+}
+.prop-heart:hover {
+  transform: scale(1.15);
+}
+
+/* Info */
+.prop-info {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prop-top-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.prop-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.prop-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  color: #222222;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.prop-location {
+  font-size: 13px;
+  color: #717171;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prop-price {
+  font-size: 13px;
+  color: #717171;
+}
+.prop-price strong {
+  color: #222222;
+  font-weight: 600;
+}
+
+.prop-meta {
+  color: #717171;
+  margin-left: 6px;
+}
+
+.prop-listed-by {
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+/* ── Responsive ── */
+
+/* 5 columns */
+@media (max-width: 1300px) {
+  .prop-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  /* Legacy */
+  .prop-row .prop-card-link {
+    flex: 0 0 calc((100% - 4 * 16px) / 5);
+  }
+}
+
+/* 4 columns */
+@media (max-width: 1100px) {
+  .prop-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* 3 columns */
+@media (max-width: 950px) {
+  .prop-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* 2 columns */
+@media (max-width: 900px) {
+  .prop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .prop-grid-wrapper {
+    padding: 20px 24px 40px;
+  }
+
+  /* Legacy */
+  .prop-row .prop-card-link {
+    flex: 0 0 calc((100% - 3 * 16px) / 4);
+  }
+}
+
+/* 2 columns (mobile) — keep 2 across so the home page feels dense on phones */
+@media (max-width: 640px) {
+  .prop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .prop-grid-wrapper {
+    padding: 12px 12px 32px;
+  }
+
+  .prop-sections-wrapper {
+    padding: 0 12px;
+  }
+
+  /* Tighten card typography & spacing so 2 cards still fit cleanly */
+  .prop-img-wrap { border-radius: 12px; }
+  .prop-info { margin-top: 8px; gap: 2px; }
+  .prop-title { font-size: 13px; }
+  .prop-rating { font-size: 12px; }
+  .prop-location { font-size: 12px; }
+  .prop-price { font-size: 12px; }
+  .prop-listed-by { font-size: 11px; }
+  .prop-badge { font-size: 10px; padding: 3px 8px; top: 8px; left: 8px; }
+
+  /* Legacy */
+  .prop-row .prop-card-link {
+    flex: 0 0 calc((100% - 1 * 16px) / 2.3);
+  }
+}
+
+/* 1 column — only on very narrow phones (e.g. iPhone SE) */
+@media (max-width: 380px) {
+  .prop-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .prop-title { font-size: 14px; }
+  .prop-rating, .prop-location, .prop-price { font-size: 13px; }
+}

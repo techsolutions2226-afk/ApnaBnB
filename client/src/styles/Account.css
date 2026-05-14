@@ -1,0 +1,391 @@
+/* ═══════════════════════════════════════════════
+   Account.css — Account settings, Personal info, Notifications
+   Prefix: ac-
+   ═══════════════════════════════════════════════ */
+
+/* ── Page ── */
+.ac-page {
+  min-height: 60vh;
+  padding: 40px 24px 80px;
+}
+
+.ac-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* ── Breadcrumb ── */
+.ac-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #222;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+
+.ac-breadcrumb:hover {
+  text-decoration: underline;
+}
+
+/* ── Header ── */
+.ac-header {
+  margin-bottom: 40px;
+}
+
+.ac-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.ac-subtitle {
+  font-size: 16px;
+  color: #717171;
+}
+
+.ac-subtitle-text {
+  font-size: 16px;
+  color: #717171;
+  margin-top: 4px;
+  margin-bottom: 32px;
+}
+
+.ac-user-name {
+  font-weight: 600;
+  color: #222;
+}
+
+.ac-profile-link {
+  color: #222;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.ac-profile-link:hover {
+  color: #000;
+}
+
+/* ── Card Grid ── */
+.ac-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.ac-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+}
+
+.ac-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: #ddd;
+}
+
+.ac-card--disabled {
+  border: 1px solid #ebebeb;
+}
+
+.ac-card--disabled:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ac-card-icon {
+  width: 32px;
+  height: 32px;
+  color: #ff385c;
+  margin-bottom: 16px;
+}
+
+.ac-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.ac-card-desc {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ── Bottom Info ── */
+.ac-bottom {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  background: #f7f7f7;
+}
+
+.ac-bottom-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.ac-bottom-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 4px;
+}
+
+.ac-bottom-desc {
+  font-size: 14px;
+  color: #717171;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ═══════════════════════════════════════════════
+   Personal Info — Field rows
+   ═══════════════════════════════════════════════ */
+
+.ac-fields {
+  max-width: 640px;
+}
+
+.ac-field-row {
+  padding: 24px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ac-field-row:first-child {
+  border-top: 1px solid #ebebeb;
+}
+
+.ac-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.ac-field-label {
+  font-size: 14px;
+  color: #717171;
+  margin: 0 0 4px;
+}
+
+.ac-field-value {
+  font-size: 16px;
+  color: #222;
+  margin: 0;
+}
+
+.ac-field-edit-btn {
+  background: none;
+  border: none;
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.ac-field-edit-btn:hover {
+  color: #000;
+}
+
+.ac-field-editor {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ac-field-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ac-field-input:focus {
+  border-color: #222;
+}
+
+.ac-field-save-btn {
+  padding: 10px 24px;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.ac-field-save-btn:hover {
+  background: #000;
+}
+
+/* ═══════════════════════════════════════════════
+   Notifications — Toggle rows
+   ═══════════════════════════════════════════════ */
+
+.ac-notif-sections {
+  max-width: 640px;
+}
+
+.ac-notif-section {
+  margin-bottom: 36px;
+}
+
+.ac-notif-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ac-notif-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  gap: 24px;
+}
+
+.ac-notif-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ac-notif-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #222;
+  margin: 0 0 2px;
+}
+
+.ac-notif-desc {
+  font-size: 13px;
+  color: #717171;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Toggle switch */
+.ac-toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  background: #b0b0b0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  padding: 0;
+}
+
+.ac-toggle--on {
+  background: #222;
+}
+
+.ac-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.ac-toggle--on .ac-toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* ═══════════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .ac-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ac-title {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ac-page {
+    padding: 24px 16px 64px;
+  }
+
+  .ac-card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .ac-title {
+    font-size: 24px;
+  }
+
+  .ac-card {
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .ac-card-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 12px;
+  }
+
+  .ac-bottom {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .ac-field-editor {
+    flex-direction: column;
+  }
+
+  .ac-field-save-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .ac-notif-row {
+    gap: 16px;
+  }
+}

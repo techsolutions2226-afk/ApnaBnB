@@ -1,0 +1,717 @@
+/* ═══════════════════════════════════════════════
+   Plans.css — Subscription / Pricing page
+   Prefix: plan-
+   ═══════════════════════════════════════════════ */
+
+/* ─── Page Wrapper ─── */
+.plan-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 40px 80px;
+}
+
+/* ─── Breadcrumb (uses shared dash-breadcrumb) ─── */
+
+/* ─── Hero / Header ─── */
+.plan-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.plan-hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  color: #222;
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+}
+
+.plan-hero-subtitle {
+  font-size: 18px;
+  color: #717171;
+  margin: 0 0 28px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+/* ─── Billing Toggle ─── */
+.plan-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #f7f7f7;
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.plan-toggle-btn {
+  background: none;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #717171;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plan-toggle-btn--active {
+  background: #222;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.plan-toggle-save {
+  font-size: 12px;
+  font-weight: 700;
+  color: #008a05;
+  background: #e8f5e9;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+
+/* ─── Pricing Cards Grid ─── */
+.plan-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 64px;
+}
+
+/* ─── Individual Plan Card ─── */
+.plan-card {
+  position: relative;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.plan-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.plan-card--popular {
+  border: 2px solid #e31c5f;
+  box-shadow: 0 4px 16px rgba(227, 28, 95, 0.12);
+}
+
+.plan-card--current {
+  border: 2px solid #222;
+}
+
+/* Popular badge */
+.plan-card-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(to right, #e61e4d, #d70466);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.plan-card-current-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 16px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Plan name */
+.plan-card-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.plan-card-desc {
+  font-size: 14px;
+  color: #717171;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+/* Price */
+.plan-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.plan-card-amount {
+  font-size: 40px;
+  font-weight: 800;
+  color: #222;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.plan-card-currency {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+.plan-card-period {
+  font-size: 14px;
+  color: #717171;
+  margin: 0 0 24px;
+}
+
+.plan-card-yearly-note {
+  font-size: 13px;
+  color: #717171;
+  margin: -20px 0 24px;
+}
+
+/* CTA button */
+.plan-card-cta {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  margin-bottom: 24px;
+  border: none;
+}
+
+.plan-card-cta:active {
+  transform: scale(0.98);
+}
+
+.plan-card-cta--primary {
+  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  color: #fff;
+}
+
+.plan-card-cta--primary:hover {
+  opacity: 0.9;
+}
+
+.plan-card-cta--secondary {
+  background: #fff;
+  color: #222;
+  border: 1px solid #222;
+}
+
+.plan-card-cta--secondary:hover {
+  background: #f7f7f7;
+}
+
+.plan-card-cta--current {
+  background: #f7f7f7;
+  color: #717171;
+  cursor: default;
+  border: 1px solid #ebebeb;
+}
+
+.plan-card-cta--current:hover {
+  opacity: 1;
+}
+
+.plan-card-cta--current:active {
+  transform: none;
+}
+
+/* Divider */
+.plan-card-divider {
+  border: none;
+  border-top: 1px solid #ebebeb;
+  margin: 0 0 20px;
+}
+
+/* Feature list */
+.plan-card-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+.plan-card-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #222;
+  padding: 6px 0;
+  line-height: 1.5;
+}
+
+.plan-card-feature--excluded {
+  color: #b0b0b0;
+  text-decoration: line-through;
+}
+
+.plan-card-feature-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.plan-card-feature-icon--check {
+  color: #008a05;
+}
+
+.plan-card-feature-icon--x {
+  color: #ddd;
+}
+
+/* ─── Current Plan Banner (for logged-in dealers) ─── */
+.plan-current {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #f7f7f7;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 40px;
+}
+
+.plan-current-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #222;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.plan-current-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-current-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 2px;
+}
+
+.plan-current-meta {
+  font-size: 14px;
+  color: #717171;
+  margin: 0;
+}
+
+.plan-current-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #008a05;
+  background: #e8f5e9;
+  padding: 6px 14px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* ─── Feature Comparison Table ─── */
+.plan-comparison {
+  margin-bottom: 64px;
+}
+
+.plan-comparison-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.plan-comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plan-comparison-table thead th {
+  padding: 16px 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+  text-align: center;
+  border-bottom: 2px solid #222;
+}
+
+.plan-comparison-table thead th:first-child {
+  text-align: left;
+}
+
+.plan-comparison-table tbody td {
+  padding: 14px 12px;
+  font-size: 14px;
+  color: #222;
+  text-align: center;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.plan-comparison-table tbody td:first-child {
+  text-align: left;
+  font-weight: 500;
+  color: #484848;
+}
+
+.plan-comparison-check {
+  color: #008a05;
+}
+
+.plan-comparison-x {
+  color: #ddd;
+}
+
+.plan-comparison-value {
+  font-weight: 600;
+  color: #222;
+}
+
+/* ─── FAQ Section ─── */
+.plan-faq {
+  max-width: 720px;
+  margin: 0 auto 64px;
+}
+
+.plan-faq-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  text-align: center;
+  margin: 0 0 32px;
+}
+
+.plan-faq-item {
+  border-bottom: 1px solid #ebebeb;
+}
+
+.plan-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 20px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  text-align: left;
+  gap: 16px;
+  transition: color 0.15s;
+}
+
+.plan-faq-question:hover {
+  color: #e31c5f;
+}
+
+.plan-faq-chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  color: #717171;
+}
+
+.plan-faq-chevron--open {
+  transform: rotate(180deg);
+}
+
+.plan-faq-answer {
+  font-size: 15px;
+  color: #484848;
+  line-height: 1.65;
+  padding: 0 0 20px;
+  margin: 0;
+}
+
+/* ─── Bottom CTA ─── */
+.plan-bottom-cta {
+  text-align: center;
+  background: #f7f7f7;
+  border-radius: 16px;
+  padding: 48px 32px;
+}
+
+.plan-bottom-cta-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.plan-bottom-cta-desc {
+  font-size: 16px;
+  color: #717171;
+  margin: 0 0 24px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.plan-bottom-cta-btn {
+  display: inline-block;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.plan-bottom-cta-btn:hover {
+  background: #000;
+}
+
+/* ─── Confirmation Modal ─── */
+.plan-modal-plan-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.plan-modal-plan-price {
+  font-size: 15px;
+  color: #717171;
+  text-align: center;
+  margin: 0 0 24px;
+}
+
+.plan-modal-details {
+  background: #f7f7f7;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.plan-modal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #222;
+  padding: 6px 0;
+}
+
+.plan-modal-label {
+  color: #717171;
+}
+
+.plan-modal-value {
+  font-weight: 600;
+}
+
+.plan-modal-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 10px 0;
+}
+
+.plan-modal-total {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.plan-modal-note {
+  font-size: 13px;
+  color: #717171;
+  text-align: center;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.plan-modal-note strong {
+  color: #222;
+}
+
+.plan-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-modal-confirm {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.plan-modal-confirm:hover {
+  opacity: 0.9;
+}
+
+.plan-modal-cancel {
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ─── Success State ─── */
+.plan-success {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.plan-success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #e8f5e9;
+  color: #2e7d32;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.plan-success-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.plan-success-desc {
+  font-size: 15px;
+  color: #717171;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.plan-success-btn {
+  display: inline-block;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.plan-success-btn:hover {
+  background: #000;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .plan-page {
+    padding: 24px 20px 80px;
+  }
+
+  .plan-hero-title {
+    font-size: 28px;
+  }
+
+  .plan-hero-subtitle {
+    font-size: 16px;
+  }
+
+  .plan-cards {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .plan-card--popular {
+    order: -1;
+  }
+
+  .plan-current {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .plan-comparison-table {
+    font-size: 13px;
+  }
+
+  .plan-comparison-table thead th,
+  .plan-comparison-table tbody td {
+    padding: 10px 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  .plan-page {
+    padding: 16px 16px 80px;
+  }
+
+  .plan-hero-title {
+    font-size: 24px;
+  }
+
+  .plan-card {
+    padding: 24px 20px;
+  }
+
+  .plan-card-amount {
+    font-size: 32px;
+  }
+
+  .plan-toggle-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .plan-comparison-title,
+  .plan-faq-title {
+    font-size: 22px;
+  }
+
+  .plan-bottom-cta {
+    padding: 32px 20px;
+  }
+
+  .plan-bottom-cta-title {
+    font-size: 20px;
+  }
+}

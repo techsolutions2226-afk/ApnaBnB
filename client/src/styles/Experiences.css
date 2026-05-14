@@ -1,0 +1,588 @@
+/* ===================================================
+   Experiences.css — Airbnb Experiences Page
+   Prefix: exp-*
+   =================================================== */
+
+/* ── Page ── */
+.exp-page {
+  font-family: "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* ══════════════════════════════════════
+   HERO BANNER
+   ══════════════════════════════════════ */
+.exp-hero {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  background: url("https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1600&q=80") center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.exp-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0.55));
+}
+
+.exp-hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 680px;
+  padding: 0 24px;
+}
+
+.exp-hero-eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0 0 12px;
+}
+
+.exp-hero-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+
+.exp-hero-subtitle {
+  font-size: 18px;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════
+   CATEGORY FILTER BAR
+   ══════════════════════════════════════ */
+.exp-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.exp-categories {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding: 16px 0;
+}
+
+.exp-categories::-webkit-scrollbar {
+  display: none;
+}
+
+.exp-cat-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, opacity 0.2s;
+  opacity: 0.7;
+}
+
+.exp-cat-btn:hover {
+  opacity: 1;
+  border-bottom-color: #ccc;
+}
+
+.exp-cat-btn--active {
+  opacity: 1;
+  border-bottom-color: #222 !important;
+}
+
+.exp-cat-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.exp-cat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+}
+
+/* Filter toggle button */
+.exp-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+
+.exp-filter-toggle:hover {
+  background: #f7f7f7;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.exp-filter-toggle--active {
+  border-color: #222;
+}
+
+.exp-filter-dot {
+  width: 6px;
+  height: 6px;
+  background: #ff385c;
+  border-radius: 50%;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* ══════════════════════════════════════
+   EXPANDABLE FILTER PANEL
+   ══════════════════════════════════════ */
+.exp-filters-panel {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 40px;
+  border-bottom: 1px solid #ebebeb;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  flex-wrap: wrap;
+  animation: expPanelSlide 0.2s ease;
+}
+
+@keyframes expPanelSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.exp-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exp-filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+}
+
+.exp-filter-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.exp-filter-chip {
+  padding: 8px 16px;
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #222;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.exp-filter-chip:hover {
+  background: #ebebeb;
+}
+
+.exp-filter-chip--active {
+  background: #222;
+  color: #fff;
+  border-color: #222;
+}
+
+.exp-filter-clear {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 8px 0;
+  font-family: inherit;
+}
+
+/* ══════════════════════════════════════
+   RESULTS BAR
+   ══════════════════════════════════════ */
+.exp-results-bar {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 40px 0;
+}
+
+.exp-results-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════
+   EXPERIENCE CARDS GRID
+   ══════════════════════════════════════ */
+.exp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 40px 60px;
+}
+
+/* ── Single Card ── */
+.exp-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  transition: box-shadow 0.25s, transform 0.2s;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.exp-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+/* Card Image */
+.exp-card-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #ebebeb;
+}
+
+.exp-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.exp-card:hover .exp-card-img {
+  transform: scale(1.05);
+}
+
+/* Badges */
+.exp-card-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255,255,255,0.92);
+  color: #222;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.exp-card-badge--online {
+  background: rgba(0,166,153,0.9);
+  color: #fff;
+}
+
+/* Heart */
+.exp-card-heart {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+  transition: transform 0.15s;
+}
+
+.exp-card-heart:hover {
+  transform: scale(1.15);
+}
+
+/* Card Info */
+.exp-card-info {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.exp-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #717171;
+  flex-wrap: wrap;
+}
+
+.exp-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 600;
+  color: #222;
+}
+
+.exp-card-reviews {
+  color: #717171;
+}
+
+.exp-card-dot {
+  color: #b0b0b0;
+}
+
+.exp-card-location {
+  color: #717171;
+}
+
+.exp-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exp-card-desc {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.exp-card-details {
+  display: flex;
+  gap: 16px;
+}
+
+.exp-card-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #717171;
+}
+
+/* Include Tags */
+.exp-card-includes {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.exp-card-include-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: #717171;
+  background: #f7f7f7;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+/* Footer */
+.exp-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.exp-card-host {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exp-card-host-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.exp-card-host-name {
+  font-size: 13px;
+  color: #717171;
+}
+
+.exp-card-price {
+  font-size: 14px;
+  color: #222;
+}
+
+.exp-card-price strong {
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════
+   EMPTY STATE
+   ══════════════════════════════════════ */
+.exp-empty {
+  text-align: center;
+  padding: 60px 24px 80px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.exp-empty-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 8px;
+}
+
+.exp-empty-text {
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.exp-empty-btn {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.exp-empty-btn:hover {
+  background: #000;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .exp-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .exp-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 20px 24px 40px;
+  }
+
+  .exp-hero {
+    height: 320px;
+  }
+
+  .exp-hero-title {
+    font-size: 36px;
+  }
+
+  .exp-filter-bar,
+  .exp-filters-panel,
+  .exp-results-bar {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .exp-grid {
+    grid-template-columns: 1fr;
+    padding: 16px 16px 32px;
+  }
+
+  .exp-hero {
+    height: 280px;
+  }
+
+  .exp-hero-title {
+    font-size: 28px;
+  }
+
+  .exp-hero-subtitle {
+    font-size: 15px;
+  }
+
+  .exp-filter-bar,
+  .exp-filters-panel,
+  .exp-results-bar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .exp-filters-panel {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .exp-cat-btn {
+    padding: 8px 12px;
+  }
+
+  .exp-cat-icon {
+    font-size: 20px;
+  }
+
+  .exp-cat-label {
+    font-size: 11px;
+  }
+}

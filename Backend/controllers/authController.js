@@ -1,38 +1,236 @@
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { sendOtpEmail, sendResetEmail } = require('../utils/mailer');
+
+const OTP_TTL_MS = 5 * 60 * 1000;      // 5 minutes
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
+const OTP_MAX_ATTEMPTS = 5;
+
+const RESET_TTL_MS = 15 * 60 * 1000;            // 15 minutes
+const RESET_RESEND_COOLDOWN_MS = 60 * 1000;     // 60 seconds
+
+// SHA-256 is sufficient for a one-time high-entropy token; bcrypt would be
+// overkill and slows down the validate-on-mount call from the reset page.
+const hashResetToken = (token) =>
+  crypto.createHash('sha256').update(token).digest('hex');
 
 // Generate JWT
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
-  });
+const generateToken = (id, role) =>
+  jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+// 6-digit numeric OTP as a zero-padded string.
+const generateOtp = () => String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+
+const hashOtp = async (otp) => bcrypt.hash(otp, 10);
+const compareOtp = async (otp, hash) => bcrypt.compare(otp, hash);
+
+const issueOtpFor = async (user) => {
+  const otp = generateOtp();
+  user.otpHash = await hashOtp(otp);
+  user.otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
+  user.otpAttempts = 0;
+  user.otpLastSentAt = new Date();
+  await user.save();
+  await sendOtpEmail(user.email, otp, user.name);
+  return otp;
 };
 
-// Register User
+// Register User — creates an unverified account and emails an OTP.
+// Does NOT return a JWT; user must verify first.
 const registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
 
-  // Validate input
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'Please fill all fields.' });
   }
 
   try {
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists.' });
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      // If the existing account is already verified, block. If unverified,
+      // resend the OTP so a stale signup doesn't permanently lock the email.
+      if (existing.verified) {
+        return res.status(400).json({ message: 'User already exists.' });
+      }
+      try {
+        await issueOtpFor(existing);
+      } catch (mailErr) {
+        console.error('Failed to resend OTP on register:', mailErr.message);
+        return res
+          .status(500)
+          .json({ message: 'Could not send verification email. Try again.' });
+      }
+      return res.status(200).json({
+        message: 'Account exists but is unverified. We re-sent your OTP.',
+        email: existing.email,
+        requiresVerification: true,
+      });
     }
 
-    // Create new user
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      password,
+      role,
+      verified: false,
+    });
 
-    // Return user data and token
+    try {
+      await issueOtpFor(user);
+    } catch (mailErr) {
+      // Roll back the user so they can retry registration.
+      console.error('Failed to send OTP email:', mailErr.message);
+      await User.deleteOne({ _id: user._id });
+      return res.status(500).json({
+        message:
+          'Could not send verification email. Please check the email address and try again.',
+      });
+    }
+
     res.status(201).json({
+      message: 'Verification code sent to your email.',
+      email: user.email,
+      requiresVerification: true,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Verify OTP — marks the account verified and returns a JWT.
+const verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ message: 'Email and OTP are required.' });
+  }
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+otpHash +otpExpiresAt +otpAttempts'
+    );
+    if (!user) {
+      return res.status(404).json({ message: 'No account found for this email.' });
+    }
+    if (user.verified) {
+      return res.status(200).json({
+        message: 'Email already verified. Please log in.',
+        alreadyVerified: true,
+      });
+    }
+    if (!user.otpHash || !user.otpExpiresAt) {
+      return res.status(400).json({ message: 'No active code. Request a new one.' });
+    }
+    if (user.otpExpiresAt.getTime() < Date.now()) {
+      return res.status(400).json({ message: 'Code expired. Request a new one.' });
+    }
+    if (user.otpAttempts >= OTP_MAX_ATTEMPTS) {
+      return res
+        .status(429)
+        .json({ message: 'Too many attempts. Request a new code.' });
+    }
+
+    const ok = await compareOtp(String(otp).trim(), user.otpHash);
+    if (!ok) {
+      user.otpAttempts += 1;
+      await user.save();
+      return res.status(400).json({ message: 'Incorrect verification code.' });
+    }
+
+    user.verified = true;
+    user.otpHash = null;
+    user.otpExpiresAt = null;
+    user.otpAttempts = 0;
+    await user.save();
+
+    res.status(200).json({
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      avatar: user.avatar || '',
+      verified: true,
+      token: generateToken(user._id, user.role),
+      message: 'Email verified successfully.',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Resend OTP — rate-limited.
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
+  }
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+otpLastSentAt'
+    );
+    if (!user) {
+      return res.status(404).json({ message: 'No account found for this email.' });
+    }
+    if (user.verified) {
+      return res.status(400).json({ message: 'Email already verified.' });
+    }
+    if (
+      user.otpLastSentAt &&
+      Date.now() - user.otpLastSentAt.getTime() < OTP_RESEND_COOLDOWN_MS
+    ) {
+      const wait = Math.ceil(
+        (OTP_RESEND_COOLDOWN_MS - (Date.now() - user.otpLastSentAt.getTime())) / 1000
+      );
+      return res
+        .status(429)
+        .json({ message: `Please wait ${wait}s before requesting a new code.` });
+    }
+    try {
+      await issueOtpFor(user);
+    } catch (mailErr) {
+      console.error('Failed to resend OTP:', mailErr.message);
+      return res
+        .status(500)
+        .json({ message: 'Could not send verification email. Try again.' });
+    }
+    res.status(200).json({ message: 'New verification code sent.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Login — distinguishes "email not found" from "wrong password" via codes.
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Please provide email and password.' });
+  }
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ code: 'EMAIL_NOT_FOUND', message: 'Email not found.' });
+    }
+    const match = await user.matchPassword(password);
+    if (!match) {
+      return res
+        .status(401)
+        .json({ code: 'WRONG_PASSWORD', message: 'Wrong password.' });
+    }
+    if (!user.verified) {
+      return res.status(403).json({
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email first.',
+        email: user.email,
+      });
+    }
+    res.status(200).json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar || '',
       token: generateToken(user._id, user.role),
     });
   } catch (error) {
@@ -40,32 +238,150 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Login User
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
-  // Validate input
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Please provide email and password.' });
+// POST /api/auth/forgot-password — emails a reset link if the account exists.
+// Returns EMAIL_NOT_FOUND when the address isn't registered so the UI can
+// surface it directly (per product requirement — trades enumeration safety
+// for clearer UX).
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
   }
 
   try {
-    // Check if user exists
-    const user = await User.findOne({ email });
-    if (user && (await user.matchPassword(password))) {
-      res.status(200).json({
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token: generateToken(user._id, user.role),
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password.' });
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+resetPasswordLastSentAt'
+    );
+    if (!user) {
+      return res
+        .status(404)
+        .json({ code: 'EMAIL_NOT_FOUND', message: 'Email not found.' });
     }
+
+    if (
+      user.resetPasswordLastSentAt &&
+      Date.now() - user.resetPasswordLastSentAt.getTime() <
+        RESET_RESEND_COOLDOWN_MS
+    ) {
+      const wait = Math.ceil(
+        (RESET_RESEND_COOLDOWN_MS -
+          (Date.now() - user.resetPasswordLastSentAt.getTime())) /
+          1000
+      );
+      return res.status(429).json({
+        code: 'RESET_COOLDOWN',
+        message: `Please wait ${wait}s before requesting another reset email.`,
+      });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordTokenHash = hashResetToken(rawToken);
+    user.resetPasswordExpiresAt = new Date(Date.now() + RESET_TTL_MS);
+    user.resetPasswordLastSentAt = new Date();
+    await user.save();
+
+    const base = (process.env.FRONTEND_URL || 'http://localhost:5174').replace(
+      /\/+$/,
+      ''
+    );
+    const resetUrl = `${base}/reset-password?token=${rawToken}&email=${encodeURIComponent(
+      user.email
+    )}`;
+
+    try {
+      await sendResetEmail(user.email, resetUrl, user.name);
+    } catch (mailErr) {
+      console.error('Failed to send reset email:', mailErr.message);
+      return res
+        .status(500)
+        .json({ message: 'Could not send reset email. Please try again.' });
+    }
+
+    res
+      .status(200)
+      .json({ message: 'A password reset link has been sent to your email.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { registerUser, loginUser };
+// POST /api/auth/verify-reset-token — called by the reset page on mount.
+// Returns 200 only when the (email, token) pair is valid and unexpired.
+const verifyResetToken = async (req, res) => {
+  const { email, token } = req.body;
+  if (!email || !token) {
+    return res.status(400).json({ message: 'Invalid reset link.' });
+  }
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+resetPasswordTokenHash +resetPasswordExpiresAt'
+    );
+    if (
+      !user ||
+      !user.resetPasswordTokenHash ||
+      !user.resetPasswordExpiresAt ||
+      user.resetPasswordExpiresAt.getTime() < Date.now() ||
+      user.resetPasswordTokenHash !== hashResetToken(token)
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'This reset link is invalid or has expired.' });
+    }
+    res.status(200).json({ valid: true, email: user.email });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/auth/reset-password — sets a new password if the link is valid.
+const resetPassword = async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  if (!email || !token || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: 'Email, token, and new password are required.' });
+  }
+  if (String(newPassword).length < 8) {
+    return res
+      .status(400)
+      .json({ message: 'Password must be at least 8 characters.' });
+  }
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      '+resetPasswordTokenHash +resetPasswordExpiresAt'
+    );
+    if (
+      !user ||
+      !user.resetPasswordTokenHash ||
+      !user.resetPasswordExpiresAt ||
+      user.resetPasswordExpiresAt.getTime() < Date.now() ||
+      user.resetPasswordTokenHash !== hashResetToken(token)
+    ) {
+      return res
+        .status(400)
+        .json({ message: 'This reset link is invalid or has expired.' });
+    }
+
+    user.password = newPassword; // pre-save hook re-hashes
+    user.resetPasswordTokenHash = null;
+    user.resetPasswordExpiresAt = null;
+    // Don't clear last-sent; that's just for cooldown bookkeeping.
+    await user.save();
+
+    res
+      .status(200)
+      .json({ message: 'Password reset successful. You can now log in.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  verifyOtp,
+  resendOtp,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword,
+};

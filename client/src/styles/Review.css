@@ -1,0 +1,381 @@
+/* ═══════════════════════════════════════════════
+   Review.css — Review enhancements
+   Prefix: rev-
+   ═══════════════════════════════════════════════ */
+
+/* ─── Role Badge on Review Cards ─── */
+.rev-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.rev-role-badge--seller {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.rev-role-badge--buyer {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.rev-role-badge--dealer {
+  background: #fce4ec;
+  color: #c62828;
+}
+
+/* ─── Overall Rating Summary ─── */
+.rev-overall {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.rev-overall-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.rev-overall-number {
+  font-size: 52px;
+  font-weight: 800;
+  color: #222;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.rev-overall-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #717171;
+  margin-top: 4px;
+}
+
+.rev-overall-stars {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.rev-overall-stars svg {
+  color: #222;
+  width: 14px;
+  height: 14px;
+}
+
+.rev-overall-separator {
+  width: 1px;
+  height: 64px;
+  background: #ebebeb;
+  flex-shrink: 0;
+}
+
+.rev-overall-breakdown {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rev-overall-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rev-overall-bar-label {
+  font-size: 12px;
+  color: #717171;
+  min-width: 14px;
+  text-align: right;
+}
+
+.rev-overall-bar-track {
+  flex: 1;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rev-overall-bar-fill {
+  height: 100%;
+  background: #222;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.rev-overall-bar-count {
+  font-size: 12px;
+  color: #717171;
+  min-width: 20px;
+}
+
+/* ─── Write Review Section ─── */
+.rev-write-section {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #ebebeb;
+}
+
+.rev-write-heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 16px;
+}
+
+.rev-write-form {
+  max-width: 560px;
+}
+
+.rev-write-field {
+  margin-bottom: 16px;
+}
+
+.rev-write-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+.rev-write-categories {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+
+.rev-write-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rev-write-cat-label {
+  font-size: 14px;
+  color: #222;
+}
+
+.rev-write-cat-stars {
+  display: flex;
+  gap: 2px;
+}
+
+.rev-write-cat-stars .cm-star-input-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.rev-write-textarea {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #b0b0b0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #222;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rev-write-textarea:focus {
+  border-color: #222;
+}
+
+.rev-write-textarea::placeholder {
+  color: #b0b0b0;
+}
+
+.rev-write-char-count {
+  font-size: 12px;
+  color: #717171;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.rev-write-char-count--over {
+  color: #c13515;
+}
+
+.rev-write-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.rev-write-submit {
+  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.rev-write-submit:hover {
+  opacity: 0.9;
+}
+
+.rev-write-submit:active {
+  transform: scale(0.98);
+}
+
+.rev-write-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rev-write-cancel {
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px 4px;
+}
+
+.rev-write-cancel:hover {
+  color: #000;
+}
+
+/* Login prompt */
+.rev-write-login {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #f7f7f7;
+  border-radius: 12px;
+  margin-top: 32px;
+}
+
+.rev-write-login-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #717171;
+}
+
+.rev-write-login-text {
+  flex: 1;
+}
+
+.rev-write-login-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 2px;
+}
+
+.rev-write-login-desc {
+  font-size: 14px;
+  color: #717171;
+  margin: 0;
+}
+
+.rev-write-login-btn {
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.rev-write-login-btn:hover {
+  background: #000;
+}
+
+/* ─── Success State ─── */
+.rev-write-success {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #e8f5e9;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.rev-write-success-icon {
+  display: flex;
+  align-items: center;
+  color: #2e7d32;
+  flex-shrink: 0;
+}
+
+.rev-write-success-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2e7d32;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .rev-overall {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .rev-overall-separator {
+    width: 100%;
+    height: 1px;
+  }
+
+  .rev-overall-breakdown {
+    width: 100%;
+  }
+
+  .rev-write-categories {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .rev-overall-number {
+    font-size: 40px;
+  }
+
+  .rev-write-login {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+    padding: 20px 16px;
+  }
+
+  .rev-write-submit {
+    width: 100%;
+    text-align: center;
+  }
+}

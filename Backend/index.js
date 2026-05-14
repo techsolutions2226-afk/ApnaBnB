@@ -21,8 +21,10 @@ mongoose
 
 // Routes
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/properties", propertyRoutes);
 const listingRoutes = require("./routes/listingRoutes");
 app.use("/api/listings", listingRoutes);
@@ -39,6 +41,12 @@ app.use("/api/reviews", reviewRoutes);
 const adminRoutes = require("./routes/adminRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 app.use("/api/admin", adminRoutes);
+const uploadRoutes = require("./routes/uploadRoutes");
+app.use("/api/upload", uploadRoutes);
+const tripRoutes = require("./routes/tripRoutes");
+app.use("/api/trips", tripRoutes);
+const wishlistRoutes = require("./routes/wishlistRoutes");
+app.use("/api/wishlists", wishlistRoutes);
 
 // Global error handler
 app.use(errorHandler);

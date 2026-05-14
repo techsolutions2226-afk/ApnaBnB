@@ -1,0 +1,28 @@
+* {
+  font-family: "Circular", "Helvetica", "Arial", sans-serif;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Prevent accidental horizontal scroll on small screens caused by
+   overflowing flex children, full-bleed images, etc. */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Make all media intrinsically responsive */
+img, video, canvas, svg {
+  max-width: 100%;
+}
+
+/* Mobile-specific: avoid iOS auto-zoom on inputs <16px */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}

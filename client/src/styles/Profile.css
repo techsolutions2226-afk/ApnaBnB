@@ -1,0 +1,268 @@
+/* ═══════════════════════════════════════════════
+   Profile.css — Public user profile page
+   Prefix: pf-
+   ═══════════════════════════════════════════════ */
+
+.pf-page {
+  min-height: 60vh;
+  padding: 40px 24px 80px;
+}
+
+.pf-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* ── Layout: sidebar + main ── */
+.pf-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+/* ── Sidebar — Identity Card ── */
+.pf-sidebar {
+  position: sticky;
+  top: 100px;
+}
+
+.pf-identity-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 24px;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+
+.pf-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  margin: 16px 0 4px;
+}
+
+.pf-superhost-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+  margin-top: 4px;
+}
+
+/* ── Stats ── */
+.pf-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.pf-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pf-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222;
+}
+
+.pf-stat-label {
+  font-size: 11px;
+  color: #717171;
+  white-space: nowrap;
+}
+
+.pf-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: #ebebeb;
+}
+
+/* ── Verified ── */
+.pf-verified {
+  padding: 20px 24px;
+  border: 1px solid #ebebeb;
+  border-radius: 16px;
+}
+
+.pf-verified-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 12px;
+}
+
+.pf-verified-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-verified-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #222;
+}
+
+/* ── Main content ── */
+.pf-main {
+  padding-top: 8px;
+}
+
+.pf-about-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 20px;
+}
+
+.pf-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pf-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #484848;
+  margin: 0;
+}
+
+.pf-about-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #484848;
+  margin: 0 0 16px;
+}
+
+.pf-edit-link {
+  display: inline-block;
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  margin-bottom: 32px;
+}
+
+.pf-edit-link:hover {
+  color: #000;
+}
+
+.pf-link {
+  color: #ff385c;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* ── Reviews ── */
+.pf-reviews-section {
+  border-top: 1px solid #ebebeb;
+  padding-top: 32px;
+}
+
+.pf-reviews-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 24px;
+}
+
+.pf-reviews-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.pf-no-reviews {
+  font-size: 15px;
+  color: #717171;
+}
+
+/* ═══════════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .pf-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .pf-sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .pf-identity-card {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  .pf-stats {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .pf-page {
+    padding: 24px 16px 64px;
+  }
+
+  .pf-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .pf-name {
+    font-size: 24px;
+  }
+
+  .pf-about-title {
+    font-size: 20px;
+  }
+
+  .pf-stats {
+    padding: 16px;
+  }
+
+  .pf-stat-value {
+    font-size: 18px;
+  }
+
+  .pf-identity-card {
+    padding: 24px 16px;
+  }
+}

@@ -1,0 +1,661 @@
+/* ===================================================
+   Dashboard.css — Shared Dashboard Styles (All Roles)
+   Prefix: dash-*
+   =================================================== */
+
+/* ── Page Layout ── */
+.dash-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.dash-header {
+  margin-bottom: 32px;
+}
+
+.dash-greeting {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 4px;
+}
+
+.dash-subtitle {
+  font-size: 16px;
+  color: #717171;
+  margin: 0;
+}
+
+.dash-role-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.dash-role-badge--seller {
+  background: #00a699;
+}
+
+.dash-role-badge--buyer {
+  background: #4a90d9;
+}
+
+.dash-role-badge--dealer {
+  background: #8b5cf6;
+}
+
+/* ══════════════════════════════════════
+   STAT CARDS
+   ══════════════════════════════════════ */
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.dash-stat {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.dash-stat:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.dash-stat-icon {
+  font-size: 24px;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.dash-stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #222;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.dash-stat-label {
+  font-size: 13px;
+  color: #717171;
+  line-height: 1.3;
+}
+
+/* ══════════════════════════════════════
+   SECTION BLOCKS
+   ══════════════════════════════════════ */
+
+.dash-section {
+  margin-bottom: 40px;
+}
+
+.dash-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.dash-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
+}
+
+.dash-section-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.dash-section-link:hover {
+  color: #000;
+}
+
+/* ══════════════════════════════════════
+   TABLE (listings, deals, requirements)
+   ══════════════════════════════════════ */
+
+.dash-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dash-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #717171;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #ebebeb;
+  background: #fafafa;
+  white-space: nowrap;
+}
+
+.dash-table td {
+  padding: 12px 16px;
+  color: #222;
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: middle;
+}
+
+.dash-table tr:last-child td {
+  border-bottom: none;
+}
+
+.dash-table tr:hover td {
+  background: #fafafa;
+}
+
+.dash-table-title {
+  font-weight: 600;
+  color: #222;
+}
+
+.dash-table-sub {
+  font-size: 12px;
+  color: #717171;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════
+   STATUS BADGES
+   ══════════════════════════════════════ */
+
+.dash-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.dash-badge--active {
+  background: #e6f7f5;
+  color: #00a699;
+}
+
+.dash-badge--sold {
+  background: #f0f0f0;
+  color: #717171;
+}
+
+.dash-badge--featured {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.dash-badge--completed {
+  background: #e6f7f5;
+  color: #00a699;
+}
+
+.dash-badge--in_progress {
+  background: #e8f0fe;
+  color: #1a56db;
+}
+
+.dash-badge--cancelled {
+  background: #fde8e8;
+  color: #c13515;
+}
+
+.dash-badge--pending {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.dash-badge--fulfilled {
+  background: #e6f7f5;
+  color: #00a699;
+}
+
+.dash-badge--upcoming {
+  background: #e8f0fe;
+  color: #1a56db;
+}
+
+/* ══════════════════════════════════════
+   QUICK ACTIONS
+   ══════════════════════════════════════ */
+
+.dash-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.dash-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #222;
+  font-weight: 600;
+  font-size: 14px;
+  transition: box-shadow 0.2s, transform 0.15s, border-color 0.15s;
+}
+
+.dash-action:hover {
+  border-color: #222;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.dash-action-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════
+   NOTIFICATION PREVIEW LIST
+   ══════════════════════════════════════ */
+
+.dash-notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.dash-notif {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.dash-notif:last-child {
+  border-bottom: none;
+}
+
+.dash-notif--unread {
+  background: #fafcff;
+}
+
+.dash-notif-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.dash-notif-icon--match {
+  background: #e8f0fe;
+}
+
+.dash-notif-icon--message {
+  background: #e6f7f5;
+}
+
+.dash-notif-icon--deal {
+  background: #fff3e0;
+}
+
+.dash-notif-icon--listing {
+  background: #fde8e8;
+}
+
+.dash-notif-icon--review {
+  background: #f3e8fd;
+}
+
+.dash-notif-icon--system {
+  background: #f0f0f0;
+}
+
+.dash-notif-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dash-notif-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 2px;
+}
+
+.dash-notif-msg {
+  font-size: 13px;
+  color: #717171;
+  margin: 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dash-notif-time {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════
+   SUBSCRIPTION CARD (Dealer)
+   ══════════════════════════════════════ */
+
+.dash-sub-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: #fff;
+  margin-bottom: 40px;
+}
+
+.dash-sub-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-sub-plan {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dash-sub-detail {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.dash-sub-action {
+  display: inline-block;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.dash-sub-action:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.dash-sub-none {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: #f7f7f7;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  margin-bottom: 40px;
+}
+
+.dash-sub-none-text {
+  font-size: 15px;
+  color: #222;
+  font-weight: 600;
+}
+
+.dash-sub-none-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #222;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.dash-sub-none-link:hover {
+  background: #000;
+}
+
+/* ══════════════════════════════════════
+   EMPTY STATE (for sections with no data)
+   ══════════════════════════════════════ */
+
+.dash-empty {
+  text-align: center;
+  padding: 40px 24px;
+  background: #fafafa;
+  border: 1px dashed #ddd;
+  border-radius: 12px;
+}
+
+.dash-empty-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.dash-empty-text {
+  font-size: 15px;
+  color: #717171;
+  margin: 0 0 16px;
+}
+
+.dash-empty-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #222;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.dash-empty-link:hover {
+  background: #000;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .dash-page {
+    padding: 24px 16px 48px;
+  }
+
+  .dash-greeting {
+    font-size: 24px;
+  }
+
+  .dash-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .dash-stat {
+    padding: 16px;
+  }
+
+  .dash-stat-value {
+    font-size: 24px;
+  }
+
+  .dash-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .dash-sub-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .dash-sub-none {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-greeting {
+    font-size: 22px;
+  }
+}
+
+/* ══════════════════════════════════════
+   BREADCRUMB (shared across all internal pages)
+   Classes: dash-breadcrumb, dash-breadcrumb-link,
+            dash-breadcrumb-sep, dash-breadcrumb-current
+   ══════════════════════════════════════ */
+
+.dash-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.dash-breadcrumb-link {
+  color: #717171;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.dash-breadcrumb-link:hover {
+  color: #222;
+  text-decoration: underline;
+}
+
+.dash-breadcrumb-sep {
+  color: #b0b0b0;
+  font-weight: 400;
+  user-select: none;
+}
+
+.dash-breadcrumb-current {
+  color: #222;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════
+   TABLE ACTION BUTTONS
+   ══════════════════════════════════════ */
+
+.dash-actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dash-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.dash-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.dash-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dash-action-btn--view {
+  background: #e3f2fd;
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.dash-action-btn--view:hover:not(:disabled) {
+  background: #1976d2;
+  color: white;
+}
+
+.dash-action-btn--edit {
+  background: #fff3e0;
+  border-color: #f57c00;
+  color: #f57c00;
+}
+
+.dash-action-btn--edit:hover:not(:disabled) {
+  background: #f57c00;
+  color: white;
+}
+
+.dash-action-btn--delete {
+  background: #ffebee;
+  border-color: #d32f2f;
+  color: #d32f2f;
+}
+
+.dash-action-btn--delete:hover:not(:disabled) {
+  background: #d32f2f;
+  color: white;
+}

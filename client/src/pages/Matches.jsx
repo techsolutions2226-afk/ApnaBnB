@@ -52,7 +52,7 @@ const formatBudget = (budget) => {
 };
 
 const Matches = () => {
-  const { getDashboardPath } = useAuth();
+  const { currentUser, getDashboardPath } = useAuth();
   const { matches, isLoading, error, refetch } = useMyMatches();
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -452,9 +452,41 @@ const Matches = () => {
                       View property
                     </Link>
                   )}
-                  <Link to="/messages" className="mtch-btn mtch-btn--secondary">
-                    Message
-                  </Link>
+                  {(() => {
+                    // Build the "other party" userId so /messages?with=<id>
+                    // opens (or creates) the right 1-1 conversation.
+                    // Prefer requirement poster when viewer is the property
+                    // owner, otherwise the property owner.
+                    const propOwnerId =
+                      property?.listedBy?._id ||
+                      property?.listedBy ||
+                      null;
+                    const reqOwnerId =
+                      requirement?.requiredBy?._id ||
+                      requirement?.requiredBy ||
+                      null;
+                    const target =
+                      propOwnerId && propOwnerId !== currentUser?.id
+                        ? propOwnerId
+                        : reqOwnerId && reqOwnerId !== currentUser?.id
+                          ? reqOwnerId
+                          : null;
+                    return target ? (
+                      <Link
+                        to={`/messages?with=${target}`}
+                        className="mtch-btn mtch-btn--secondary"
+                      >
+                        Message
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/messages"
+                        className="mtch-btn mtch-btn--secondary"
+                      >
+                        Message
+                      </Link>
+                    );
+                  })()}
                 </div>
               </div>
             );

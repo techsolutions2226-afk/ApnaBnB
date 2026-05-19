@@ -4,47 +4,61 @@ const Conversation = require('../models/Conversation');
 // Regex to filter personal information
 const personalInfoRegex = /(\d{10,}|\+[0-9]{1,4}[- .]?\d{6,}|\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6}|(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9._-]+\.[a-zA-Z]{2,6})/g;
 
-// Send a message
+// Send a message via REST (fallback for clients without an active socket).
+// Sockets call into the model directly; this endpoint just mirrors that
+// flow for completeness.
 const sendMessage = async (req, res) => {
-  const { conversationId, content } = req.body;
+  const { conversationId, content, attachments } = req.body;
+  const hasContent = content && String(content).trim().length > 0;
+  const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
 
-  if (!conversationId || !content) {
-    return res.status(400).json({ message: 'Conversation ID and content are required.' });
+  if (!conversationId || (!hasContent && !hasAttachments)) {
+    return res
+      .status(400)
+      .json({ message: 'Conversation ID and content or attachments are required.' });
   }
 
   try {
-    // Filter content for personal information
-    const sanitizedContent = content.replace(personalInfoRegex, '[filtered]');
+    const sanitizedContent = hasContent
+      ? String(content).replace(personalInfoRegex, '[filtered]')
+      : '';
 
-    // Verify conversation exists
     const conversation = await Conversation.findById(conversationId);
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found.' });
     }
-
-    // Ensure sender is a participant
     if (!conversation.participants.includes(req.user.id)) {
-      return res.status(403).json({ message: 'You are not authorized to send messages in this conversation.' });
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to send messages in this conversation.' });
     }
 
     const message = await Message.create({
       conversationId,
       sender: req.user.id,
       content: sanitizedContent,
+      attachments: hasAttachments ? attachments : [],
     });
 
-    res.status(201).json(message);
+    const populated = await Message.findById(message._id).populate(
+      'sender',
+      'name email role avatar',
+    );
+    res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all messages in a conversation
+// Get all messages in a conversation, oldest → newest. Decryption happens
+// via the model getter so each `content` field comes out as plaintext.
 const getMessages = async (req, res) => {
   const { conversationId } = req.params;
 
   try {
-    const messages = await Message.find({ conversationId }).populate('sender', 'name email');
+    const messages = await Message.find({ conversationId })
+      .populate('sender', 'name email role avatar')
+      .sort({ createdAt: 1 });
     res.status(200).json(messages);
   } catch (error) {
     res.status(500).json({ message: error.message });

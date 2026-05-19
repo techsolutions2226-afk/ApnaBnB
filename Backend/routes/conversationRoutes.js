@@ -1,8 +1,19 @@
 const express = require('express');
-const { createConversation, getConversations, getConversationById, updateConversation, deleteConversation, updateMembers } = require('../controllers/conversationController');
+const {
+  createConversation,
+  findOrCreateDirect,
+  getConversations,
+  getConversationById,
+  updateConversation,
+  deleteConversation,
+  updateMembers,
+} = require('../controllers/conversationController');
 const verifyToken = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// IMPORTANT: more-specific routes before parameterised ones.
+router.post('/direct', verifyToken, findOrCreateDirect);
 
 // Conversation endpoints
 router.post('/', verifyToken, createConversation);

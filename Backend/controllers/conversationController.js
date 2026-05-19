@@ -1,4 +1,6 @@
 const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
+const mongoose = require('mongoose');
 
 // Create new conversation
 const createConversation = async (req, res) => {
@@ -16,14 +18,105 @@ const createConversation = async (req, res) => {
   }
 };
 
-// Get all conversations for the logged-in user
+// Get all conversations for the logged-in user, enriched with the last
+// message (decrypted, via the model getter) and the count of unread messages
+// sent by the OTHER party. Sorted by most-recently-active first.
 const getConversations = async (req, res) => {
   try {
     const conversations = await Conversation.find({
       participants: req.user.id,
-    }).populate('participants', 'name email');
+    }).populate('participants', 'name email role avatar');
 
-    res.status(200).json(conversations);
+    // Build per-conversation last-message + unread-count maps in two batched
+    // queries instead of N+1 round-trips.
+    const ids = conversations.map((c) => c._id);
+    const [lastMessages, unreadAgg] = await Promise.all([
+      Message.aggregate([
+        { $match: { conversationId: { $in: ids } } },
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: '$conversationId',
+            // Keep the FULL document so we can re-hydrate as a Mongoose
+            // model below and trigger the decryption getter on content.
+            doc: { $first: '$$ROOT' },
+          },
+        },
+      ]),
+      Message.aggregate([
+        {
+          $match: {
+            conversationId: { $in: ids },
+            read: false,
+            sender: { $ne: new mongoose.Types.ObjectId(req.user.id) },
+          },
+        },
+        { $group: { _id: '$conversationId', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const lastByConv = new Map();
+    for (const row of lastMessages) {
+      // Re-hydrate as a Mongoose doc so the content getter (AES decrypt) fires
+      // when we serialise.
+      const hydrated = Message.hydrate(row.doc);
+      lastByConv.set(row._id.toString(), hydrated.toJSON());
+    }
+    const unreadByConv = new Map(
+      unreadAgg.map((row) => [row._id.toString(), row.count]),
+    );
+
+    const enriched = conversations.map((c) => {
+      const obj = c.toJSON();
+      const key = c._id.toString();
+      obj.lastMessage = lastByConv.get(key) || null;
+      obj.unreadCount = unreadByConv.get(key) || 0;
+      return obj;
+    });
+
+    // Sort by lastMessage.createdAt (newest first), conversations with no
+    // messages go to the bottom.
+    enriched.sort((a, b) => {
+      const ta = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+      const tb = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+
+    res.status(200).json(enriched);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Find a 1-1 conversation between the current user and `otherUserId`, or
+// create one if it doesn't exist. Used when buyer clicks "Message" on a
+// match / dealer profile / property — no need to know about existing convs.
+const findOrCreateDirect = async (req, res) => {
+  const { otherUserId } = req.body;
+  if (!otherUserId) {
+    return res.status(400).json({ message: 'otherUserId is required.' });
+  }
+  if (otherUserId === req.user.id) {
+    return res.status(400).json({ message: "Can't message yourself." });
+  }
+
+  try {
+    // Match a conversation whose participants are EXACTLY these two ids.
+    let conversation = await Conversation.findOne({
+      participants: { $all: [req.user.id, otherUserId], $size: 2 },
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [req.user.id, otherUserId],
+      });
+    }
+
+    const populated = await Conversation.findById(conversation._id).populate(
+      'participants',
+      'name email role avatar',
+    );
+    res.status(200).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -142,11 +235,12 @@ const updateMembers = async (req, res) => {
   }
 };
 
-module.exports = { 
-  createConversation, 
-  getConversations, 
+module.exports = {
+  createConversation,
+  findOrCreateDirect,
+  getConversations,
   getConversationById,
   updateConversation,
   deleteConversation,
-  updateMembers
+  updateMembers,
 };

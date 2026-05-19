@@ -1,8 +1,10 @@
 require("dotenv").config();
 const express = require("express");
+const http = require("http");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const limiter = require("./middleware/rateLimitMiddleware");
+const { initSockets } = require("./sockets");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -55,7 +57,10 @@ app.get("/", (req, res) => {
   res.send("Backend is working and ready for development.");
 });
 
-// Start server
-app.listen(port, () => {
+// Start server — wrap Express in an HTTP server so Socket.IO can attach.
+const server = http.createServer(app);
+initSockets(server);
+server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+  console.log(`Socket.IO attached on the same port`);
 });

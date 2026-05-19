@@ -1,7 +1,8 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useProperty } from "../hooks/useProperties";
 import { useWishlist } from "../context/WishlistContext";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import Modal from "../components/common/Modal";
 import PropertyReviews from "../components/property/detail/PropertyReviews";
@@ -59,6 +60,8 @@ const SECTIONS = [
 /* ─── Property Detail Page ─── */
 const PropertyDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { currentUser, isAuthenticated } = useAuth();
   const { property, isLoading, error } = useProperty(id);
 
   const { isWishlisted, toggleWishlist } = useWishlist();
@@ -317,6 +320,49 @@ const PropertyDetail = () => {
             </div>
           )}
 
+          {/* "Message on platform" CTA — opens or creates a 1-1 conversation
+              with the property owner. Hidden when:
+                - listedBy isn't populated (legacy / orphan listings)
+                - the viewer IS the owner (can't DM yourself) */}
+          {listedBy?._id && listedBy._id !== currentUser?.id && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast.info("Please log in to message the owner.");
+                  navigate(`/login`);
+                  return;
+                }
+                navigate(`/messages?with=${listedBy._id}`);
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                margin: "16px 0 0",
+                padding: "12px 22px",
+                background: "#222",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                cursor: "pointer",
+                fontSize: 15,
+                fontWeight: 600,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                transition: "transform 0.12s, background 0.12s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#000";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "#222";
+              }}
+            >
+              <FiMessageSquare size={18} />
+              Message on platform
+            </button>
+          )}
+
           <hr className="pd-divider" />
 
           {/* Highlights */}
@@ -453,7 +499,13 @@ const PropertyDetail = () => {
         </div>
         <button
           className="pd-mobile-cta-btn"
-          onClick={() => scrollToSection("overview")}
+          onClick={() => {
+            if (listedBy?._id) {
+              navigate(`/messages?with=${listedBy._id}`);
+            } else {
+              navigate("/messages");
+            }
+          }}
         >
           Message on platform
         </button>

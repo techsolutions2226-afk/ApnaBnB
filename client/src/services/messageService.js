@@ -1,7 +1,7 @@
 import apiClient from '../api/apiClient';
 
 const messageService = {
-  // Get all conversations for user
+  // Get all conversations for the user (enriched with lastMessage + unreadCount).
   getConversations: async () => {
     try {
       const response = await apiClient.get('/conversations');
@@ -11,7 +11,6 @@ const messageService = {
     }
   },
 
-  // Get single conversation by ID
   getConversation: async (conversationId) => {
     try {
       const response = await apiClient.get(`/conversations/${conversationId}`);
@@ -21,7 +20,17 @@ const messageService = {
     }
   },
 
-  // Create new conversation
+  // Find an existing 1-1 conversation with `otherUserId`, or create it.
+  // Used by "Message" buttons throughout the app (matches, dealer profile, etc.).
+  findOrCreateDirect: async (otherUserId) => {
+    try {
+      const response = await apiClient.post('/conversations/direct', { otherUserId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to open conversation' };
+    }
+  },
+
   createConversation: async (participantIds) => {
     try {
       const response = await apiClient.post('/conversations', { participants: participantIds });
@@ -31,22 +40,23 @@ const messageService = {
     }
   },
 
-  // Get messages in a conversation
+  // Get all messages in a conversation (oldest → newest).
   getMessages: async (conversationId) => {
     try {
-      const response = await apiClient.get(`/messages/conversation/${conversationId}`);
+      const response = await apiClient.get(`/messages/${conversationId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch messages' };
     }
   },
 
-  // Send a message
-  sendMessage: async (conversationId, content) => {
+  // REST send — used only as a fallback when socket isn't connected.
+  sendMessage: async (conversationId, content, attachments = []) => {
     try {
       const response = await apiClient.post('/messages', {
         conversationId,
         content,
+        attachments,
       });
       return response.data;
     } catch (error) {
@@ -54,17 +64,24 @@ const messageService = {
     }
   },
 
-  // Mark message as read
   markAsRead: async (messageId) => {
     try {
-      const response = await apiClient.put(`/messages/${messageId}`, { read: true });
+      const response = await apiClient.put(`/messages/${messageId}/read`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to mark message as read' };
     }
   },
 
-  // Delete message
+  markMultipleAsRead: async (messageIds) => {
+    try {
+      const response = await apiClient.put('/messages/batch/read', { messageIds });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to mark messages as read' };
+    }
+  },
+
   deleteMessage: async (messageId) => {
     try {
       const response = await apiClient.delete(`/messages/${messageId}`);

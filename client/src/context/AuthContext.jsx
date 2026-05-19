@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import authService from "../services/authService";
 import userService from "../services/userService";
+import { disconnectSocket } from "../api/socket";
 
 /* How long the user can be idle before we log them out automatically. */
 const IDLE_LOGOUT_MS = 2 * 60 * 1000; // 2 minutes
@@ -115,6 +116,7 @@ export function AuthProvider({ children }) {
   /* ── Logout ── */
   const logout = () => {
     authService.logout();
+    disconnectSocket();
     setCurrentUser(null);
     setError(null);
   };

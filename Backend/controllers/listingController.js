@@ -1,5 +1,7 @@
-const Listing = require('../models/Listing');
+﻿const Listing = require('../models/Listing');
 const Property = require('../models/Property');
+const User = require('../models/User');
+const { sendListingCreatedEmail } = require('../utils/mailer');
 
 // Create Listing
 const createListing = async (req, res) => {
@@ -26,6 +28,36 @@ const createListing = async (req, res) => {
       property: propertyId,
       owner: req.user.id,
     });
+
+    // Fire-and-forget confirmation email to the seller/dealer. We deliberately
+    // do NOT await this in a way that fails the request — the listing has
+    // already been persisted, so the email is a courtesy on top.
+    (async () => {
+      try {
+        const user = await User.findById(req.user.id).select('name email');
+        if (!user?.email) return;
+        const base = (process.env.FRONTEND_URL || 'http://localhost:5174').replace(/\/+$/, '');
+        const listingUrl = `${base}/listing/${listing._id}`;
+        await sendListingCreatedEmail(
+          user.email,
+          user.name,
+          {
+            title: property.title,
+            propertyType: property.propertyType,
+            city: property.location?.city,
+            area: property.location?.area,
+            price: property.price,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            size: property.size,
+            sizeUnit: property.sizeUnit,
+          },
+          listingUrl,
+        );
+      } catch (mailErr) {
+        console.error('Listing confirmation email failed:', mailErr.message);
+      }
+    })();
 
     res.status(201).json(listing);
   } catch (error) {
@@ -59,7 +91,7 @@ const updateListing = async (req, res) => {
     const listing = await Listing.findOneAndUpdate(
       { _id: id, owner: req.user.id },
       updates,
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('property owner');
 
     if (!listing) {
@@ -78,7 +110,7 @@ const getUserListings = async (req, res) => {
 
   try {
     const listings = await Listing.find({ owner: userId })
-      .populate('property', 'title description photos location price propertyType size bedrooms bathrooms')
+      .populate('property', 'title description photos location price propertyType size sizeUnit bedrooms bathrooms amenities')
       .populate('owner', 'name email role');
     res.status(200).json(listings);
   } catch (error) {
@@ -113,7 +145,7 @@ const getListingById = async (req, res) => {
 
   try {
     const listing = await Listing.findById(id)
-      .populate('property', 'title description photos location price propertyType size bedrooms bathrooms listedBy')
+      .populate('property', 'title description photos location price propertyType size sizeUnit bedrooms bathrooms amenities listedBy')
       .populate('owner', 'name email role');
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found.' });

@@ -1,51 +1,56 @@
-const Property = require('../models/Property');
+﻿const Property = require('../models/Property');
 const Requirement = require('../models/Requirement');
 const Match = require('../models/Match');
 const User = require('../models/User');
 const { geocodeAddress } = require('../utils/geocode');
-const { calculateMatchScore } = require('../utils/matchScore');
+const {
+  calculateMatchScore,
+  determineMatchType,
+  isMatchCandidate,
+} = require('../utils/matchScore');
 
-// Auto-generate matches for a property
+// Auto-generate matches for a newly-created property.
+// Pre-filters requirements by city + area + propertyType + price ±10%,
+// then derives match type from the two owners' roles.
 const generateMatchesForProperty = async (property, userId) => {
   try {
-    // Find matching requirements
+    const propertyOwner = await User.findById(property.listedBy).select('role');
+    if (!propertyOwner) return [];
+
+    // City + type filter at the DB layer — keeps payload small.
+    // Finer-grained area/price checks happen in JS via isMatchCandidate
+    // (Mongo can't express "area substring" cleanly).
     const requirements = await Requirement.find({
       'location.city': property.location.city,
       propertyType: { $in: [property.propertyType, property.propertyType.toLowerCase()] },
-      status: 'active'
-    });
+      // Only active requirements should produce matches — fulfilled/closed are done.
+      status: 'active',
+    }).populate('requiredBy', 'role');
 
     const matches = [];
     for (const requirement of requirements) {
+      if (!isMatchCandidate(property, requirement)) continue;
+
+      const requirementOwner = requirement.requiredBy;
+      const matchType = determineMatchType(propertyOwner.role, requirementOwner?.role);
+      if (!matchType) continue;
+
+      const existingMatch = await Match.findOne({
+        property: property._id,
+        requirement: requirement._id,
+      });
+      if (existingMatch) continue;
+
       const score = calculateMatchScore(property, requirement);
-      
-      if (score >= 30) { // Only create matches with decent scores
-        // Determine match type
-        let matchType = 'seller-buyer';
-        const requirementOwner = await User.findById(requirement.requiredBy);
-        
-        if (requirementOwner?.role === 'dealer') {
-          matchType = 'dealer-buyer';
-        }
-
-        // Check if match already exists
-        const existingMatch = await Match.findOne({
-          property: property._id,
-          requirement: requirement._id
-        });
-
-        if (!existingMatch) {
-          const match = await Match.create({
-            property: property._id,
-            requirement: requirement._id,
-            initiator: userId,
-            score,
-            type: matchType,
-            status: 'pending'
-          });
-          matches.push(match);
-        }
-      }
+      const match = await Match.create({
+        property: property._id,
+        requirement: requirement._id,
+        initiator: userId,
+        score,
+        type: matchType,
+        status: 'pending',
+      });
+      matches.push(match);
     }
     return matches;
   } catch (error) {
@@ -56,7 +61,7 @@ const generateMatchesForProperty = async (property, userId) => {
 
 // Create a new property
 const createProperty = async (req, res) => {
-  const { title, description, location, price, propertyType, size, bedrooms, bathrooms, photos, amenities } = req.body;
+  const { title, description, location, price, propertyType, size, sizeUnit, bedrooms, bathrooms, photos, amenities } = req.body;
 
   // Validation
   if (!title || !location || !price || !propertyType) {
@@ -87,6 +92,7 @@ const createProperty = async (req, res) => {
       price,
       propertyType,
       size,
+      sizeUnit: sizeUnit || 'Marla',
       bedrooms,
       bathrooms,
       amenities: Array.isArray(amenities) ? amenities : [],
@@ -115,7 +121,7 @@ const getProperties = async (req, res) => {
   if (propertyType) filter.propertyType = propertyType;
 
   try {
-    const properties = await Property.find(filter).populate('listedBy', 'name email role');
+    const properties = await Property.find(filter).populate('listedBy', 'name email role avatar');
     res.status(200).json(properties);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -131,7 +137,7 @@ const updateProperty = async (req, res) => {
     const property = await Property.findOneAndUpdate(
       { _id: id, listedBy: req.user.id }, // Ensure user owns the property
       updates,
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!property) {
       return res.status(404).json({ message: 'Property not found or unauthorized.' });
@@ -167,7 +173,7 @@ const getPropertyById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const property = await Property.findById(id).populate('listedBy', 'name email role');
+    const property = await Property.findById(id).populate('listedBy', 'name email role avatar');
     if (!property) {
       return res.status(404).json({ message: 'Property not found.' });
     }
@@ -207,7 +213,7 @@ const searchProperties = async (req, res) => {
   if (bathrooms) filter.bathrooms = { $gte: Number(bathrooms) };
 
   try {
-    const properties = await Property.find(filter).populate('listedBy', 'name email role');
+    const properties = await Property.find(filter).populate('listedBy', 'name email role avatar');
     res.status(200).json(properties);
   } catch (error) {
     res.status(500).json({ message: error.message });

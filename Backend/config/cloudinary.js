@@ -33,7 +33,7 @@ const storage = new CloudinaryStorage({
   params: storageParams,
 });
 
-// Create multer upload middleware
+// Property images — landscape format.
 const upload = multer({
   storage: storage,
   limits: {
@@ -50,4 +50,34 @@ const upload = multer({
   },
 });
 
-module.exports = { cloudinary, upload };
+// Profile images — separate Cloudinary folder + square crop tuned for avatars.
+// Defaults to "Profile-Images" (override with CLOUDINARY_PROFILE_FOLDER).
+const profileStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: process.env.CLOUDINARY_PROFILE_FOLDER || 'Profile-Images',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+      { quality: 'auto:good', fetch_format: 'auto' },
+    ],
+  },
+});
+
+const profileUpload = multer({
+  storage: profileStorage,
+  limits: {
+    fileSize: 3 * 1024 * 1024, // 3MB is plenty for an avatar
+    files: 1,
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPG, PNG, and WebP images are allowed.'), false);
+    }
+  },
+});
+
+module.exports = { cloudinary, upload, profileUpload };

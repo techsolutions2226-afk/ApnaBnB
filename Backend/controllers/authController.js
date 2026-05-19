@@ -149,6 +149,9 @@ const verifyOtp = async (req, res) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      emergencyContact: user.emergencyContact || '',
       verified: true,
       token: generateToken(user._id, user.role),
       message: 'Email verified successfully.',
@@ -231,6 +234,9 @@ const loginUser = async (req, res) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      emergencyContact: user.emergencyContact || '',
       token: generateToken(user._id, user.role),
     });
   } catch (error) {

@@ -1,4 +1,4 @@
-const Wishlist = require('../models/Wishlist');
+﻿const Wishlist = require('../models/Wishlist');
 
 // Make sure the caller has at least the default "Saved" wishlist. Returns
 // the list of all the user's wishlists.
@@ -16,7 +16,7 @@ const ensureDefaultAndList = async (userId) => {
   return lists;
 };
 
-// GET /api/wishlists — all wishlists for the authenticated user
+// GET /api/wishlists â€” all wishlists for the authenticated user
 const getMyWishlists = async (req, res) => {
   try {
     const lists = await ensureDefaultAndList(req.user.id);
@@ -26,7 +26,7 @@ const getMyWishlists = async (req, res) => {
   }
 };
 
-// POST /api/wishlists — create a new (non-default) wishlist
+// POST /api/wishlists â€” create a new (non-default) wishlist
 const createWishlist = async (req, res) => {
   const { name } = req.body;
   if (!name || !name.trim()) {
@@ -45,7 +45,7 @@ const createWishlist = async (req, res) => {
   }
 };
 
-// PUT /api/wishlists/:id — rename a wishlist (allowed even for default)
+// PUT /api/wishlists/:id â€” rename a wishlist (allowed even for default)
 const updateWishlist = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
@@ -56,7 +56,7 @@ const updateWishlist = async (req, res) => {
     const wishlist = await Wishlist.findOneAndUpdate(
       { _id: id, user: req.user.id },
       { name: name.trim() },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!wishlist) {
       return res.status(404).json({ message: 'Wishlist not found.' });
@@ -67,7 +67,7 @@ const updateWishlist = async (req, res) => {
   }
 };
 
-// DELETE /api/wishlists/:id — delete a wishlist (default cannot be deleted)
+// DELETE /api/wishlists/:id â€” delete a wishlist (default cannot be deleted)
 const deleteWishlist = async (req, res) => {
   const { id } = req.params;
   try {
@@ -87,7 +87,7 @@ const deleteWishlist = async (req, res) => {
   }
 };
 
-// POST /api/wishlists/:id/properties — add a property to a wishlist
+// POST /api/wishlists/:id/properties â€” add a property to a wishlist
 const addProperty = async (req, res) => {
   const { id } = req.params;
   const { propertyId } = req.body;
@@ -98,7 +98,7 @@ const addProperty = async (req, res) => {
     const wishlist = await Wishlist.findOneAndUpdate(
       { _id: id, user: req.user.id },
       { $addToSet: { propertyIds: propertyId } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!wishlist) {
       return res.status(404).json({ message: 'Wishlist not found.' });
@@ -109,14 +109,14 @@ const addProperty = async (req, res) => {
   }
 };
 
-// DELETE /api/wishlists/:id/properties/:propertyId — remove from one list
+// DELETE /api/wishlists/:id/properties/:propertyId â€” remove from one list
 const removeProperty = async (req, res) => {
   const { id, propertyId } = req.params;
   try {
     const wishlist = await Wishlist.findOneAndUpdate(
       { _id: id, user: req.user.id },
       { $pull: { propertyIds: propertyId } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!wishlist) {
       return res.status(404).json({ message: 'Wishlist not found.' });
@@ -127,7 +127,7 @@ const removeProperty = async (req, res) => {
   }
 };
 
-// DELETE /api/wishlists/properties/:propertyId — remove from all the user's lists
+// DELETE /api/wishlists/properties/:propertyId â€” remove from all the user's lists
 const removeFromAll = async (req, res) => {
   const { propertyId } = req.params;
   try {

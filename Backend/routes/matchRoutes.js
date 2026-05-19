@@ -1,15 +1,16 @@
 const express = require('express');
-const { 
-  matchPropertyToRequirements, 
+const {
+  matchPropertyToRequirements,
   matchRequirementsToProperties,
   createMatch,
   getMatches,
   getMatchById,
+  getMyMatches,
   getSellerBuyerMatches,
   getDealerBuyerMatches,
   getDealerDealerMatches,
   updateMatchStatus,
-  deleteMatch
+  deleteMatch,
 } = require('../controllers/matchController');
 const { generateMatchesForProperty } = require('../controllers/propertyController');
 const { generateMatchesForRequirement } = require('../controllers/requirementController');
@@ -25,6 +26,7 @@ router.post('/requirements', verifyToken, matchRequirementsToProperties);
 
 // IMPORTANT: Specific routes must come BEFORE parameterized routes
 // Get matches by type - these must be first
+router.get('/mine', verifyToken, getMyMatches);
 router.get('/seller-buyer', verifyToken, getSellerBuyerMatches);
 router.get('/dealer-buyer', verifyToken, getDealerBuyerMatches);
 router.get('/dealer-dealer', verifyToken, getDealerDealerMatches);

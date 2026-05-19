@@ -60,4 +60,59 @@ const calculateMatchScore = (property, requirement) => {
   return Math.min(score, 100);
 };
 
-module.exports = { calculateMatchScore };
+// Maps (propertyOwnerRole, requirementOwnerRole) → match-type string used
+// in Match.type. Returns null for unknown combinations so the caller can
+// skip those instead of crashing on an enum validation error.
+const MATCH_TYPE_BY_ROLES = {
+  'seller:buyer': 'seller-buyer',
+  'dealer:buyer': 'dealer-buyer',
+  'dealer:dealer': 'dealer-dealer',
+  'seller:dealer': 'seller-dealer',
+};
+
+const determineMatchType = (propertyOwnerRole, requirementOwnerRole) =>
+  MATCH_TYPE_BY_ROLES[`${propertyOwnerRole}:${requirementOwnerRole}`] || null;
+
+// Strict pre-filter: property + requirement only count as a candidate match
+// when city + area + propertyType align AND the price falls within ±10% of
+// the requirement's budget band.
+const isMatchCandidate = (property, requirement) => {
+  if (!property || !requirement) return false;
+
+  // City — case-insensitive exact.
+  const pCity = (property.location?.city || '').toLowerCase();
+  const rCity = (requirement.location?.city || '').toLowerCase();
+  if (!pCity || !rCity || pCity !== rCity) return false;
+
+  // Area — when both sides specify one it must match (case-insensitive
+  // exact OR substring containment in either direction). If a side leaves
+  // area blank we don't penalise the match.
+  const pArea = (property.location?.area || '').toLowerCase();
+  const rArea = (requirement.location?.area || '').toLowerCase();
+  if (pArea && rArea) {
+    const exact = pArea === rArea;
+    const contains = pArea.includes(rArea) || rArea.includes(pArea);
+    if (!exact && !contains) return false;
+  }
+
+  // Property type — case-insensitive exact.
+  const pType = (property.propertyType || '').toLowerCase();
+  const rType = (requirement.propertyType || '').toLowerCase();
+  if (!pType || !rType || pType !== rType) return false;
+
+  // Price — within ±10% of the requirement's budget band. A property
+  // priced just below the min or just above the max still counts.
+  const min = Number(requirement.budget?.min) || 0;
+  const max = Number(requirement.budget?.max) || 0;
+  const price = Number(property.price);
+  if (!price) return false;
+  if (max > 0) {
+    const lo = min > 0 ? min * 0.9 : 0;
+    const hi = max * 1.1;
+    if (price < lo || price > hi) return false;
+  }
+
+  return true;
+};
+
+module.exports = { calculateMatchScore, determineMatchType, isMatchCandidate };

@@ -149,9 +149,10 @@ const PropertyDetail = () => {
   const hostInfo = {
     name: listedBy?.name || "Verified Listing",
     image:
-      listedBy?.role === "dealer"
+      listedBy?.avatar ||
+      (listedBy?.role === "dealer"
         ? "https://i.pravatar.cc/150?u=verified-dealer"
-        : "https://i.pravatar.cc/150?u=verified-owner",
+        : "https://i.pravatar.cc/150?u=verified-owner"),
   };
 
   const saved = isWishlisted(id);
@@ -286,16 +287,35 @@ const PropertyDetail = () => {
             </>
           )}
 
-          {/* Host */}
-          <div className="pd-host">
-            <img src={hostInfo.image} alt={hostInfo.name} className="pd-host-img" />
-            <div>
-              <p className="pd-host-name">Listed by {listedBy?.name}</p>
-              <p className="pd-host-meta">
-                {listedBy?.role === "dealer" ? "Verified Dealer" : "Verified Owner"}
-              </p>
+          {/* Host — clickable, opens the lister's public profile */}
+          {listedBy?._id ? (
+            <Link
+              to={`/users/${listedBy._id}`}
+              className="pd-host"
+              style={{ textDecoration: "none", color: "inherit", cursor: "pointer" }}
+            >
+              <img src={hostInfo.image} alt={hostInfo.name} className="pd-host-img" />
+              <div>
+                <p className="pd-host-name">Listed by {listedBy?.name}</p>
+                <p className="pd-host-meta">
+                  {listedBy?.role === "dealer" ? "Verified Dealer" : "Verified Owner"}
+                  <span style={{ marginLeft: 8, color: "#1976d2", fontSize: 13 }}>
+                    View profile →
+                  </span>
+                </p>
+              </div>
+            </Link>
+          ) : (
+            <div className="pd-host">
+              <img src={hostInfo.image} alt={hostInfo.name} className="pd-host-img" />
+              <div>
+                <p className="pd-host-name">Listed by {hostInfo.name}</p>
+                <p className="pd-host-meta">
+                  {listedBy?.role === "dealer" ? "Verified Dealer" : "Verified Owner"}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           <hr className="pd-divider" />
 

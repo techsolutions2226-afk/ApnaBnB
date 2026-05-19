@@ -3,7 +3,8 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useUserRequirements, useDeleteRequirement } from "../hooks/useRequirements";
-import { useSellerBuyerMatches } from "../hooks/useMatches";
+import { useSellerBuyerMatches, useDealerBuyerMatches } from "../hooks/useMatches";
+import RecentMatches from "../components/dashboard/RecentMatches";
 import { useProperties } from "../hooks/useProperties";
 import { formatPrice, formatCity } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -28,8 +29,15 @@ const BuyerDashboard = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [requirementToDelete, setRequirementToDelete] = useState(null);
   
-  // Fetch matches for this buyer
-  const { matches, isLoading: matchesLoading, error: matchesError, refetch: refetchMatches } = useSellerBuyerMatches();
+  // Fetch matches for this buyer. Their requirements can match either a seller's
+  // or a dealer's property, so we pull both types and combine.
+  const { matches: sellerMatches, isLoading: sbLoading, error: sbError } = useSellerBuyerMatches();
+  const { matches: dealerMatches, isLoading: dbLoading, error: dbError } = useDealerBuyerMatches();
+  const matches = [...(sellerMatches || []), ...(dealerMatches || [])].sort(
+    (a, b) => (b.score || 0) - (a.score || 0)
+  );
+  const matchesLoading = sbLoading || dbLoading;
+  const matchesError = sbError || dbError;
   
   // Fetch all properties for mapping
   const { properties, isLoading: propsLoading } = useProperties({}, true);
@@ -98,7 +106,7 @@ const BuyerDashboard = () => {
       <div className="dash-page">
         <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>
           <p>Error loading dashboard: {reqError || matchesError}</p>
-          <button onClick={() => { refetchReqs(); refetchMatches(); }} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={() => { refetchReqs(); }} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             Retry
           </button>
         </div>
@@ -252,62 +260,9 @@ const BuyerDashboard = () => {
        </div>
 
       {/* ── Matches ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Recent Matches</h2>
-          <Link to="/matches" className="dash-section-link">
-            View all
-          </Link>
-        </div>
-        {enrichedMatches.length > 0 ? (
-          <div className="dash-table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Property</th>
-                  <th>Match Score</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enrichedMatches.slice(0, 5).map((m) => {
-                  const property = m.propertyDetails;
-                  return (
-                    <tr key={m._id}>
-                      <td>
-                        <div className="dash-table-title">
-                          {property?.title || m.propertyId}
-                        </div>
-                        <div className="dash-table-sub">
-                          {formatCity(property?.location, property?.city)}
-                        </div>
-                      </td>
-                      <td>
-                        <strong>{m.matchScore || 0}%</strong>
-                      </td>
-                      <td>{m.type?.replace(/-/g, " \u2192 ") || "Unknown"}</td>
-                      <td>
-                        <StatusBadge status={m.status || 'active'} prefix="dash-badge" />
-                      </td>
-                      <td>{new Date(m.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">🔗</div>
-            <p className="dash-empty-text">
-              No matches yet. Post a requirement and we'll find matching
-              properties for you.
-            </p>
-          </div>
-        )}
-      </div>
+      <RecentMatches
+        emptyMessage="No matches yet. Post a requirement and we'll find properties for you — matches appear when a property is in the same city, same area, and within +/-10% of your budget."
+      />
 
       {/* ── Upcoming Visits ── */}
       <div className="dash-section">

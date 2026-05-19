@@ -26,11 +26,12 @@ const MatchSchema = new mongoose.Schema({
     min: 0,
     max: 100 
   },
-  // Match type
-  type: { 
-    type: String, 
-    enum: ['seller-buyer', 'dealer-buyer', 'dealer-dealer'], 
-    required: true 
+  // Match type — derived from (property owner role + requirement poster role).
+  // Covers all four combinations a property/requirement pair can take.
+  type: {
+    type: String,
+    enum: ['seller-buyer', 'dealer-buyer', 'dealer-dealer', 'seller-dealer'],
+    required: true
   },
   // Status of the match
   status: { 

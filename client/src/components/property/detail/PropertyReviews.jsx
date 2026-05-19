@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AiFillStar } from "react-icons/ai";
@@ -7,6 +7,8 @@ import { FiEdit3, FiLogIn, FiCheckCircle } from "react-icons/fi";
 import ReviewCard from "../../common/ReviewCard";
 import StarRating from "../../common/StarRating";
 import { useAuth } from "../../../context/AuthContext";
+import reviewService from "../../../services/reviewService";
+import { useCreateReview } from "../../../hooks/useReviews";
 import "../../../styles/Review.css";
 
 const CATEGORY_LABELS = {
@@ -32,11 +34,58 @@ export default function PropertyReviews({
 }) {
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const { create: createReview, isLoading: isSubmitting } = useCreateReview();
+
+  /* ── Live reviews fetched from the API for this property. We still accept
+        `propertyReviews` prop for backward-compat, but real data takes precedence
+        whenever propertyId is provided. ─────────────────────────────────────── */
+  const [apiReviews, setApiReviews] = useState(null); // null = not loaded yet
+  const [apiAvg, setApiAvg] = useState(0);
+
+  useEffect(() => {
+    if (!propertyId) return;
+    let cancelled = false;
+    reviewService
+      .getByTarget(propertyId, "property")
+      .then((data) => {
+        if (cancelled) return;
+        setApiReviews(Array.isArray(data?.reviews) ? data.reviews : []);
+        setApiAvg(data?.averageRating || 0);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setApiReviews([]); // treat as empty on error so the UI still works
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyId]);
+
+  // Normalize any API review (which has reviewer/comment/createdAt) into the
+  // shape the rest of this component already expects (userName/text/date).
+  const normalizedReviews = useMemo(() => {
+    const source = apiReviews ?? propertyReviews;
+    return source.map((r) => {
+      if (r && r.reviewer) {
+        return {
+          id: r._id,
+          userId: r.reviewer._id,
+          userName: r.reviewer.name || "Anonymous",
+          userAvatar: r.reviewer.avatar,
+          userRole: r.reviewer.role,
+          date: r.createdAt,
+          rating: r.rating,
+          text: r.comment || "",
+        };
+      }
+      return r;
+    });
+  }, [apiReviews, propertyReviews]);
 
   const REVIEW_INITIAL = 6;
   const visibleReviews = showAllReviews
-    ? propertyReviews
-    : propertyReviews.slice(0, REVIEW_INITIAL);
+    ? normalizedReviews
+    : normalizedReviews.slice(0, REVIEW_INITIAL);
 
   /* ── Write Review State ── */
   const [showWriteForm, setShowWriteForm] = useState(false);
@@ -48,30 +97,43 @@ export default function PropertyReviews({
   /* ── Star distribution for the overall summary ── */
   const starDistribution = useMemo(() => {
     const dist = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    propertyReviews.forEach((r) => {
+    normalizedReviews.forEach((r) => {
       const star = Math.round(r.rating);
       if (dist[star] !== undefined) dist[star]++;
     });
     return dist;
-  }, [propertyReviews]);
+  }, [normalizedReviews]);
 
-  const totalReviewCount = propertyReviews.length;
+  const totalReviewCount = normalizedReviews.length;
+  const liveAverage = apiAvg || overallAverage || rating || 0;
 
   /* ── Check if current user already reviewed ── */
   const hasAlreadyReviewed = isAuthenticated && currentUser
-    ? propertyReviews.some((r) => r.userId === currentUser.id)
+    ? normalizedReviews.some((r) => r.userId === currentUser.id)
     : false;
-
-  /* ── Check if current user is the property owner ── */
-  const isOwnProperty = false; /* Would check listing.ownerId === currentUser.id in real app */
 
   /* ── Handlers ── */
   const handleCategoryScore = (category, value) => {
     setCategoryScores((prev) => ({ ...prev, [category]: value }));
   };
 
-  const handleSubmitReview = (e) => {
+  const refetchReviews = async () => {
+    if (!propertyId) return;
+    try {
+      const data = await reviewService.getByTarget(propertyId, "property");
+      setApiReviews(Array.isArray(data?.reviews) ? data.reviews : []);
+      setApiAvg(data?.averageRating || 0);
+    } catch {
+      // keep existing state on refetch failure
+    }
+  };
+
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
+    if (!propertyId) {
+      toast.error("Cannot submit review: property ID is missing");
+      return;
+    }
     if (reviewRating === 0) {
       toast.error("Please select an overall rating");
       return;
@@ -84,11 +146,23 @@ export default function PropertyReviews({
       toast.error("Review is too long");
       return;
     }
-
-    /* In a real app, this would POST to API. For mock, just show success. */
-    setSubmitted(true);
-    toast.success("Review submitted successfully!");
-    setShowWriteForm(false);
+    try {
+      await createReview({
+        target: propertyId,
+        targetType: "property",
+        rating: reviewRating,
+        comment: reviewText.trim(),
+      });
+      setSubmitted(true);
+      toast.success("Review submitted!");
+      setShowWriteForm(false);
+      setReviewRating(0);
+      setReviewText("");
+      setCategoryScores({});
+      await refetchReviews();
+    } catch (err) {
+      toast.error(err?.message || "Failed to submit review");
+    }
   };
 
   const handleCancelReview = () => {
@@ -117,8 +191,8 @@ export default function PropertyReviews({
         {/* ═══ Header ═══ */}
         <div className="pd-reviews-header">
           <h3 className="pd-section-heading">
-            <AiFillStar size={18} /> {rating} &middot; {reviews} review
-            {reviews !== 1 ? "s" : ""}
+            <AiFillStar size={18} /> {liveAverage.toFixed(1)} &middot; {totalReviewCount} review
+            {totalReviewCount !== 1 ? "s" : ""}
           </h3>
         </div>
 
@@ -127,10 +201,10 @@ export default function PropertyReviews({
           <div className="rev-overall">
             <div className="rev-overall-score">
               <span className="rev-overall-number">
-                {overallAverage || rating}
+                {liveAverage.toFixed(1)}
               </span>
               <div className="rev-overall-stars">
-                {renderStarIcons(overallAverage || rating)}
+                {renderStarIcons(liveAverage)}
               </div>
               <span className="rev-overall-label">
                 {totalReviewCount} review{totalReviewCount !== 1 ? "s" : ""}
@@ -183,7 +257,7 @@ export default function PropertyReviews({
         )}
 
         {/* ═══ Review Cards ═══ */}
-        {propertyReviews.length > 0 ? (
+        {normalizedReviews.length > 0 ? (
           <>
             <div className="pd-reviews-grid">
               {visibleReviews.map((review) => (
@@ -198,14 +272,14 @@ export default function PropertyReviews({
                 />
               ))}
             </div>
-            {propertyReviews.length > REVIEW_INITIAL && (
+            {normalizedReviews.length > REVIEW_INITIAL && (
               <button
                 className="pd-reviews-show-all"
                 onClick={onToggleShowAll}
               >
                 {showAllReviews
                   ? "Show less"
-                  : `Show all ${propertyReviews.length} reviews`}
+                  : `Show all ${normalizedReviews.length} reviews`}
               </button>
             )}
           </>
@@ -288,9 +362,13 @@ export default function PropertyReviews({
                     <button
                       type="submit"
                       className="rev-write-submit"
-                      disabled={reviewRating === 0 || reviewText.trim().length < 10}
+                      disabled={
+                        isSubmitting ||
+                        reviewRating === 0 ||
+                        reviewText.trim().length < 10
+                      }
                     >
-                      Submit review
+                      {isSubmitting ? "Submitting..." : "Submit review"}
                     </button>
                     <button
                       type="button"

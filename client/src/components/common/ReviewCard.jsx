@@ -20,7 +20,8 @@ export default function ReviewCard({
   truncateLength = 150,
 }) {
   const [expanded, setExpanded] = useState(false);
-  const shouldTruncate = text.length > truncateLength;
+  const safeText = typeof text === "string" ? text : "";
+  const shouldTruncate = safeText.length > truncateLength;
 
   /* Format date string to "Month Year" */
   const formatDate = (dateStr) => {
@@ -56,7 +57,7 @@ export default function ReviewCard({
       <p
         className={`cm-review-text${!expanded && shouldTruncate ? " cm-review-text--truncated" : ""}`}
       >
-        {text}
+        {safeText}
       </p>
       {shouldTruncate && (
         <button

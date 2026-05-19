@@ -1,15 +1,27 @@
 import apiClient from '../api/apiClient';
 
 const reviewService = {
-  // Get reviews for a target (property or user)
+  // Get reviews for a target (property or user). Backend returns
+  // { reviews, averageRating, count }.
   getByTarget: async (targetId, targetType = 'property') => {
     try {
-      const response = await apiClient.get('/reviews', {
-        params: { targetId, targetType },
+      const response = await apiClient.get(`/reviews/${targetId}`, {
+        params: { targetType },
       });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch reviews' };
+    }
+  },
+
+  // Reviews on properties owned (listedBy) by this user. Returns
+  // { reviews, count, averageRating } with each review enriched with its property.
+  getForUserProperties: async (userId) => {
+    try {
+      const response = await apiClient.get(`/reviews/owner-of/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch owner reviews' };
     }
   },
 

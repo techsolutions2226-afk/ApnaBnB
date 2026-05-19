@@ -12,8 +12,9 @@ import {
   useUpdateListingStatus,
   useDeleteListing,
 } from "../hooks/useListings";
-import { FiMapPin, FiHome, FiDollarSign, FiCalendar, FiEye, FiEdit2, FiArrowLeft, FiMaximize, FiImage, FiCheckCircle, FiXCircle, FiTrash2 } from "react-icons/fi";
+import { FiMapPin, FiHome, FiDollarSign, FiCalendar, FiEye, FiEdit2, FiArrowLeft, FiMaximize, FiImage, FiCheckCircle, FiXCircle, FiTrash2, FiStar } from "react-icons/fi";
 import StatusBadge from "../components/common/StatusBadge";
+import MapView from "../components/common/MapView";
 import "../styles/Requirement.css";
 import "../styles/ViewListing.css";
 
@@ -254,7 +255,7 @@ const ViewListing = () => {
                 </div>
                 <div className="req-view-detail-item">
                   <label className="req-view-label">Size</label>
-                  <p className="req-view-value">{property?.size ? `${property.size} sq ft` : "Not specified"}</p>
+                  <p className="req-view-value">{property?.size ? `${property.size} ${property?.sizeUnit || "Marla"}` : "Not specified"}</p>
                 </div>
                 <div className="req-view-detail-item">
                   <label className="req-view-label">Bedrooms</label>
@@ -275,12 +276,52 @@ const ViewListing = () => {
               <h3 className="req-view-card-title">Location</h3>
             </div>
             <div className="req-view-card-body">
-              <div className="req-view-location">
+              <div className="req-view-location" style={{ marginBottom: 16 }}>
                 <div className="req-view-location-main">{property?.location?.city || property?.city || "—"}</div>
                 <div className="req-view-location-sub">{property?.location?.area || property?.area || "—"}</div>
               </div>
+              <MapView coordinates={property?.location?.coordinates} height={320} />
             </div>
           </div>
+
+          {/* Amenities */}
+          {property?.amenities && property.amenities.length > 0 && (
+            <div className="req-view-card">
+              <div className="req-view-card-header">
+                <FiStar className="req-view-icon" />
+                <h3 className="req-view-card-title">Amenities</h3>
+              </div>
+              <div className="req-view-card-body">
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {property.amenities.map((amenity) => (
+                    <span
+                      key={amenity}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "6px 12px",
+                        background: "#f7f7f7",
+                        border: "1px solid #e0e0e0",
+                        borderRadius: 20,
+                        fontSize: 13,
+                        color: "#222",
+                      }}
+                    >
+                      <FiCheckCircle size={14} style={{ color: "#2e7d32" }} />
+                      {amenity}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Price */}
           <div className="req-view-card">

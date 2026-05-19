@@ -112,7 +112,7 @@ export default function PersonalInfo() {
 
     setUploadingAvatar(true);
     try {
-      const uploaded = await uploadService.uploadSingle(file);
+      const uploaded = await uploadService.uploadProfileImage(file);
       const url = uploaded.url || uploaded.secure_url || uploaded.image?.url;
       if (!url) throw new Error("Upload succeeded but no URL returned");
       await updateProfile({ avatar: url });

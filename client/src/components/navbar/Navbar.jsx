@@ -14,6 +14,7 @@ import {
 import "../../styles/Navbar.css";
 
 import GuestRow from "./GuestRow";
+import NotificationBell from "./NotificationBell";
 
 /* ─── Filter options (kept in sync with SearchFiltersModal) ─── */
 const AMENITY_OPTIONS = [
@@ -237,6 +238,7 @@ const Navbar = () => {
           ) : (
             <Link to="/login" className="become-host-btn">List a property</Link>
           )}
+          {currentUser && <NotificationBell />}
           <button className="icon-btn nav-desktop-only" aria-label="Language">
             <FiGlobe size={18} />
           </button>

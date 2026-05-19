@@ -110,4 +110,93 @@ const sendResetEmail = async (to, resetUrl, recipientName = '') =>
     html: buildResetHtml(resetUrl, recipientName),
   });
 
-module.exports = { sendMail, sendOtpEmail, sendResetEmail };
+/* ─── Listing-created confirmation ─── */
+const formatPrice = (price) => {
+  if (price === null || price === undefined || isNaN(Number(price))) return '—';
+  return `PKR ${Number(price).toLocaleString()}`;
+};
+
+const buildListingCreatedHtml = (recipientName, details, listingUrl) => {
+  const {
+    title = 'your property',
+    propertyType = '',
+    city = '',
+    area = '',
+    price,
+    bedrooms,
+    bathrooms,
+    size,
+    sizeUnit,
+  } = details || {};
+  const location = [area, city].filter(Boolean).join(', ') || '—';
+  const rooms = [
+    bedrooms ? `${bedrooms} Bed` : null,
+    bathrooms ? `${bathrooms} Bath` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const sizeText = size ? `${size} ${sizeUnit || ''}`.trim() : '';
+
+  return `
+  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
+    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h2 style="color: #00856f; margin: 0 0 8px;">Listing published 🎉</h2>
+      <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
+        ${recipientName ? `Hi ${recipientName},` : 'Hi,'} your property listing is now live on ApnaBnB. Here's a summary of what you posted:
+      </p>
+
+      <div style="background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 20px; margin: 0 0 24px;">
+        <h3 style="color: #222; margin: 0 0 8px; font-size: 18px;">${title}</h3>
+        <p style="color: #717171; margin: 0 0 16px; font-size: 14px;">
+          ${propertyType ? `${propertyType.charAt(0).toUpperCase() + propertyType.slice(1)} · ` : ''}${location}
+        </p>
+        <table style="width: 100%; font-size: 14px; color: #333; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 4px 0; color: #888;">Price</td>
+            <td style="padding: 4px 0; text-align: right; font-weight: 600;">${formatPrice(price)}</td>
+          </tr>
+          ${
+            sizeText
+              ? `<tr><td style="padding: 4px 0; color: #888;">Size</td><td style="padding: 4px 0; text-align: right;">${sizeText}</td></tr>`
+              : ''
+          }
+          ${
+            rooms
+              ? `<tr><td style="padding: 4px 0; color: #888;">Rooms</td><td style="padding: 4px 0; text-align: right;">${rooms}</td></tr>`
+              : ''
+          }
+        </table>
+      </div>
+
+      ${
+        listingUrl
+          ? `<div style="text-align: center; margin: 28px 0;">
+              <a href="${listingUrl}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">View your listing</a>
+            </div>`
+          : ''
+      }
+
+      <p style="color: #555; font-size: 13px; line-height: 1.5; margin: 24px 0 0;">
+        Buyers and dealers can now discover your property in search results and via our matchmaking engine. You'll be notified by email whenever someone matches with it or sends you a message.
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
+      <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
+    </div>
+  </div>
+  `;
+};
+
+const sendListingCreatedEmail = async (to, recipientName, details, listingUrl) =>
+  sendMail({
+    to,
+    subject: `Your listing "${details?.title || 'property'}" is live on ApnaBnB`,
+    text: `Hi${recipientName ? ` ${recipientName}` : ''}, your listing "${details?.title || 'property'}" is now live on ApnaBnB.${listingUrl ? ` View it here: ${listingUrl}` : ''}`,
+    html: buildListingCreatedHtml(recipientName, details, listingUrl),
+  });
+
+module.exports = {
+  sendMail,
+  sendOtpEmail,
+  sendResetEmail,
+  sendListingCreatedEmail,
+};

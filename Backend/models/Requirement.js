@@ -14,6 +14,10 @@ const RequirementSchema = new mongoose.Schema(
     location: {
       city: { type: String, required: true },
       area: { type: String },
+      coordinates: {
+        lat: { type: Number },
+        lng: { type: Number },
+      },
     },
     budget: {
       min: { type: Number },

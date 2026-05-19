@@ -9,6 +9,11 @@ const UserSchema = new mongoose.Schema({
   verified: { type: Boolean, default: false },
   avatar: { type: String, default: '' },
 
+  // Personal info — editable from the Personal Info page.
+  phone: { type: String, default: '' },
+  location: { type: String, default: '' },           // street address / city
+  emergencyContact: { type: String, default: '' },
+
   // Email-verification OTP (hashed). Cleared once the user verifies.
   otpHash: { type: String, default: null, select: false },
   otpExpiresAt: { type: Date, default: null, select: false },

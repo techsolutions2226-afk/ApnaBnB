@@ -1,4 +1,4 @@
-const Message = require('../models/Message');
+﻿const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 
 // Regex to filter personal information
@@ -112,7 +112,7 @@ const markMessageAsRead = async (req, res) => {
     const message = await Message.findByIdAndUpdate(
       id,
       { read: true },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('sender', 'name email');
 
     if (!message) {

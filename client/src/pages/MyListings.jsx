@@ -231,15 +231,21 @@ const MyListings = () => {
 
                   {/* Property Details */}
                   <div className="ml-card-details">
-                    {p?.bedrooms && (
-                      <span className="ml-detail-item">🛏 {p.bedrooms} Beds</span>
-                    )}
-                    {p?.bathrooms && (
-                      <span className="ml-detail-item">🛁 {p.bathrooms} Baths</span>
-                    )}
-                    {p?.size && (
-                      <span className="ml-detail-item">📐 {p.size} sqft</span>
-                    )}
+                    {p?.bedrooms ? (
+                      <span className="ml-detail-item">
+                        🛏 {p.bedrooms} Bed{p.bedrooms === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                    {p?.bathrooms ? (
+                      <span className="ml-detail-item">
+                        🛁 {p.bathrooms} Bath{p.bathrooms === 1 ? "" : "s"}
+                      </span>
+                    ) : null}
+                    {p?.size ? (
+                      <span className="ml-detail-item">
+                        📐 {p.size} {p.sizeUnit || "Marla"}
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* Stats Row */}

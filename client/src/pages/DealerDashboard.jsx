@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useUserListings, useDeleteListing } from "../hooks/useListings";
 import { useDealerBuyerMatches, useDealerDealerMatches } from "../hooks/useMatches";
+import RecentMatches from "../components/dashboard/RecentMatches";
 import { useProperties } from "../hooks/useProperties";
 import { formatPrice, formatLocation, formatCity } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -11,6 +12,7 @@ import StatCard from "../components/common/StatCard";
 import StatusBadge from "../components/common/StatusBadge";
 import NotificationItem from "../components/common/NotificationItem";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
 import "../styles/Dashboard.css";
 
 const DealerDashboard = () => {
@@ -355,59 +357,9 @@ const DealerDashboard = () => {
       </div>
 
       {/* ── Matches ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Recent Matches</h2>
-          <Link to="/matches" className="dash-section-link">
-            View all
-          </Link>
-        </div>
-        {enrichedMatches.length > 0 ? (
-          <div className="dash-table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Property</th>
-                  <th>Match Score</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enrichedMatches.slice(0, 5).map((m) => {
-                  const property = m.propertyDetails;
-                  return (
-                    <tr key={m._id}>
-                      <td>
-                        <div className="dash-table-title">
-                          {property?.title || m.propertyId}
-                        </div>
-                        <div className="dash-table-sub">
-                          {formatCity(property?.location, property?.city)}
-                        </div>
-                      </td>
-                      <td>
-                        <strong>{m.matchScore || 0}%</strong>
-                      </td>
-                      <td>{m.type?.replace(/-/g, " \u2192 ") || "Unknown"}</td>
-                      <td>
-                        <StatusBadge status={m.status || 'active'} prefix="dash-badge" />
-                      </td>
-                      <td>{new Date(m.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">🔗</div>
-            <p className="dash-empty-text">No matches yet.</p>
-          </div>
-        )}
-      </div>
+      <RecentMatches
+        emptyMessage="No matches yet. List a property or post a requirement and we'll surface leads as soon as the city, area, and price line up."
+      />
 
       {/* ── Deals ── */}
       <div className="dash-section">
@@ -466,6 +418,9 @@ const DealerDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* ── Reviews on My Properties ── */}
+      <OwnerReviewsSection userId={userId} />
 
       {/* ── Recent Notifications ── */}
       <div className="dash-section">

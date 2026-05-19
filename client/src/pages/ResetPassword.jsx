@@ -97,8 +97,8 @@ export default function ResetPassword() {
   return (
     <div className="auth-page">
       <header className="auth-header">
-        <Link to="/" className="auth-logo-link">
-          <img src={logo} alt="Real estate marketplace" className="auth-logo" />
+        <Link to="/" className="auth-logo-link" aria-label="apnabnb home">
+          <Logo size={56} />
         </Link>
       </header>
 

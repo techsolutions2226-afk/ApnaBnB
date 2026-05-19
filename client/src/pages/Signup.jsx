@@ -65,28 +65,13 @@ const Signup = () => {
     });
   };
 
-  /* Password Strength Calculator */
-  const calculatePasswordStrength = (password) => {
-    let strength = 0;
-    if (!password) return strength;
-    if (password.length >= 8) strength += 1;
-    if (/[A-Z]/.test(password)) strength += 1;
-    if (/[0-9]/.test(password)) strength += 1;
-    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
-    return strength;
-  };
-
-  const passwordStrength = calculatePasswordStrength(form.password);
-  
-  const getStrengthLabel = (strength) => {
-    switch (strength) {
-      case 0: return "";
-      case 1: return "Weak";
-      case 2: return "Fair";
-      case 3: return "Good";
-      case 4: return "Strong";
-      default: return "";
-    }
+  /* Per-rule password checks. Each is evaluated as you type so the chip
+     below the input can flip from grey to green in real time. */
+  const pwChecks = {
+    lowercase: /[a-z]/.test(form.password),
+    uppercase: /[A-Z]/.test(form.password),
+    number: /[0-9]/.test(form.password),
+    special: /[^A-Za-z0-9]/.test(form.password),
   };
 
   const validate = () => {
@@ -97,12 +82,14 @@ const Signup = () => {
     else if (!/\S+@\S+\.\S+/.test(form.email))
       errs.email = "Enter a valid email";
     if (!form.password) errs.password = "Password is required";
-    else {
-      if (form.password.length < 8) errs.password = "Password must be at least 8 characters";
-      else if (!/[A-Z]/.test(form.password)) errs.password = "Password must contain an uppercase letter";
-      else if (!/[0-9]/.test(form.password)) errs.password = "Password must contain a number";
-      else if (!/[^A-Za-z0-9]/.test(form.password)) errs.password = "Password must contain a special character";
-    }
+    else if (!pwChecks.lowercase)
+      errs.password = "Password must contain a lowercase letter";
+    else if (!pwChecks.uppercase)
+      errs.password = "Password must contain an uppercase letter";
+    else if (!pwChecks.number)
+      errs.password = "Password must contain a number";
+    else if (!pwChecks.special)
+      errs.password = "Password must contain a special character";
     if (!form.birthdate) errs.birthdate = "Date of birth is required";
     if (!form.role) errs.role = "Please select how you want to use the platform";
     if (!agreed) errs.agreed = "You must agree to the terms";
@@ -315,22 +302,42 @@ const Signup = () => {
                   {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
               </div>
-              {/* Password Strength Bar */}
-              {form.password.length > 0 && (
-                <div className="auth-pw-strength-container">
-                  <div className="auth-pw-bars">
-                    {[1, 2, 3, 4].map((level) => (
-                      <div 
-                        key={level} 
-                        className={`auth-pw-bar ${passwordStrength >= level ? `auth-pw-bar--level-${passwordStrength}` : ""}`}
-                      />
-                    ))}
-                  </div>
-                  <span className={`auth-pw-label auth-pw-label--level-${passwordStrength}`}>
-                    {getStrengthLabel(passwordStrength)}
-                  </span>
-                </div>
-              )}
+              {/* Password requirement chips — each turns green when satisfied. */}
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px 14px",
+                  marginTop: 10,
+                  fontSize: 12,
+                  lineHeight: 1.4,
+                }}
+              >
+                {[
+                  { key: "lowercase", label: "Lowercase letter" },
+                  { key: "uppercase", label: "Uppercase letter" },
+                  { key: "number", label: "Numeric digit" },
+                  { key: "special", label: "Special character" },
+                ].map(({ key, label }) => {
+                  const ok = pwChecks[key];
+                  return (
+                    <span
+                      key={key}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        color: ok ? "#00a578" : "#9e9e9e",
+                        fontWeight: ok ? 600 : 400,
+                        transition: "color 0.2s ease",
+                      }}
+                    >
+                      <span aria-hidden="true">{ok ? "✓" : "○"}</span>
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Validation Errors */}

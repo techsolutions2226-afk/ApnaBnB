@@ -1,4 +1,4 @@
-const Property = require('../models/Property');
+﻿const Property = require('../models/Property');
 const Requirement = require('../models/Requirement');
 const Match = require('../models/Match');
 const User = require('../models/User');
@@ -155,12 +155,32 @@ const getMatchById = async (req, res) => {
   }
 };
 
-// Get seller-buyer matches
+// Helper — returns the Property._ids listed by the user and the
+// Requirement._ids posted by the user, so we can scope match queries
+// to "matches that involve me on either side".
+const userInvolvedFilter = async (userId) => {
+  const Property = require('../models/Property');
+  const Requirement = require('../models/Requirement');
+  const [props, reqs] = await Promise.all([
+    Property.find({ listedBy: userId }).select('_id'),
+    Requirement.find({ requiredBy: userId }).select('_id'),
+  ]);
+  return {
+    $or: [
+      { property: { $in: props.map((p) => p._id) } },
+      { requirement: { $in: reqs.map((r) => r._id) } },
+    ],
+  };
+};
+
+// Get seller-buyer matches involving the current user (their listed property
+// OR their posted requirement).
 const getSellerBuyerMatches = async (req, res) => {
   try {
-    const matches = await Match.find({ type: 'seller-buyer' })
-      .populate('property', 'title price location photos')
-      .populate('requirement', 'location budget propertyType')
+    const userFilter = await userInvolvedFilter(req.user.id);
+    const matches = await Match.find({ type: 'seller-buyer', ...userFilter })
+      .populate('property', 'title price location photos listedBy')
+      .populate('requirement', 'title location budget propertyType requiredBy')
       .populate('initiator', 'name email role')
       .sort({ score: -1 });
 
@@ -170,12 +190,13 @@ const getSellerBuyerMatches = async (req, res) => {
   }
 };
 
-// Get dealer-buyer matches
+// Get dealer-buyer matches involving the current user.
 const getDealerBuyerMatches = async (req, res) => {
   try {
-    const matches = await Match.find({ type: 'dealer-buyer' })
-      .populate('property', 'title price location photos')
-      .populate('requirement', 'location budget propertyType')
+    const userFilter = await userInvolvedFilter(req.user.id);
+    const matches = await Match.find({ type: 'dealer-buyer', ...userFilter })
+      .populate('property', 'title price location photos listedBy')
+      .populate('requirement', 'title location budget propertyType requiredBy')
       .populate('initiator', 'name email role')
       .sort({ score: -1 });
 
@@ -185,14 +206,33 @@ const getDealerBuyerMatches = async (req, res) => {
   }
 };
 
-// Get dealer-dealer matches
+// Get dealer-dealer matches involving the current user.
 const getDealerDealerMatches = async (req, res) => {
   try {
-    const matches = await Match.find({ type: 'dealer-dealer' })
-      .populate('property', 'title price location photos')
-      .populate('requirement', 'location budget propertyType')
+    const userFilter = await userInvolvedFilter(req.user.id);
+    const matches = await Match.find({ type: 'dealer-dealer', ...userFilter })
+      .populate('property', 'title price location photos listedBy')
+      .populate('requirement', 'title location budget propertyType requiredBy')
       .populate('initiator', 'name email role')
       .sort({ score: -1 });
+
+    res.status(200).json(matches);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get every match involving the current user, regardless of type.
+// Used by dashboards (seller/buyer/dealer) to surface a "Recent Matches"
+// section. Returns matches sorted by most-recently-created first.
+const getMyMatches = async (req, res) => {
+  try {
+    const userFilter = await userInvolvedFilter(req.user.id);
+    const matches = await Match.find(userFilter)
+      .populate('property', 'title price location photos listedBy propertyType')
+      .populate('requirement', 'title location budget propertyType requiredBy')
+      .populate('initiator', 'name email role')
+      .sort({ createdAt: -1 });
 
     res.status(200).json(matches);
   } catch (error) {
@@ -213,7 +253,7 @@ const updateMatchStatus = async (req, res) => {
     const match = await Match.findByIdAndUpdate(
       id,
       { status },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('property requirement initiator');
 
     if (!match) {
@@ -246,15 +286,16 @@ const deleteMatch = async (req, res) => {
   }
 };
 
-module.exports = { 
-  matchPropertyToRequirements, 
+module.exports = {
+  matchPropertyToRequirements,
   matchRequirementsToProperties,
   createMatch,
   getMatches,
   getMatchById,
+  getMyMatches,
   getSellerBuyerMatches,
   getDealerBuyerMatches,
   getDealerDealerMatches,
   updateMatchStatus,
-  deleteMatch
+  deleteMatch,
 };

@@ -19,6 +19,43 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+// Green location pin — self-contained DivIcon so we don't have to ship a
+// separate PNG asset. Used for the "selected area" marker.
+const GREEN_PIN = L.divIcon({
+  className: "lp-green-pin",
+  html: `
+    <div style="
+      position: relative;
+      width: 28px;
+      height: 36px;
+    ">
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 2px;
+        width: 24px;
+        height: 24px;
+        background: #16a34a;
+        border: 3px solid #fff;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      "></div>
+      <div style="
+        position: absolute;
+        top: 7px;
+        left: 11px;
+        width: 6px;
+        height: 6px;
+        background: #fff;
+        border-radius: 50%;
+      "></div>
+    </div>
+  `,
+  iconSize: [28, 36],
+  iconAnchor: [14, 36],
+});
+
 const DEFAULT_CENTER = { lat: 31.5204, lng: 74.3587 }; // Lahore
 
 /** Re-centres the map when `center` changes (e.g. user picks a new city). */
@@ -98,7 +135,9 @@ const LocationPicker = ({
           center={marker || (defaultCenter?.lat ? defaultCenter : null)}
           zoom={marker ? 14 : defaultZoom}
         />
-        {marker && <Marker position={[marker.lat, marker.lng]} />}
+        {marker && (
+          <Marker position={[marker.lat, marker.lng]} icon={GREEN_PIN} />
+        )}
       </MapContainer>
     </div>
   );

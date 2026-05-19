@@ -27,6 +27,33 @@ export const useMatches = (type = 'all') => {
   return { matches, isLoading, error, refetch: fetchMatches };
 };
 
+// All matches involving the current user, sorted by recency.
+// Used by every role's dashboard for the "Recent Matches" section.
+export const useMyMatches = () => {
+  const [matches, setMatches] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchMatches = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await matchService.getMyMatches();
+      setMatches(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch your matches');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  return { matches, isLoading, error, refetch: fetchMatches };
+};
+
 export const useSellerBuyerMatches = () => {
   const [matches, setMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);

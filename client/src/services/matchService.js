@@ -11,6 +11,16 @@ const matchService = {
     }
   },
 
+  // Get every match involving the current user (any type).
+  getMyMatches: async () => {
+    try {
+      const response = await apiClient.get('/matches/mine');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch your matches' };
+    }
+  },
+
   // Get specific match by ID
   getById: async (id) => {
     try {

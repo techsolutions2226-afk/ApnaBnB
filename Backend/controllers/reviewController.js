@@ -1,4 +1,5 @@
 const Review = require('../models/Review');
+const Property = require('../models/Property');
 
 // Create a review
 const createReview = async (req, res) => {
@@ -49,7 +50,7 @@ const getReviews = async (req, res) => {
   }
 
   try {
-    const reviews = await Review.find({ target, targetType }).populate('reviewer', 'name email');
+    const reviews = await Review.find({ target, targetType }).populate('reviewer', 'name email avatar role');
 
     // Calculate average rating
     const averageRating = reviews.length > 0 ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length) : 0;
@@ -74,7 +75,7 @@ const getReviewsByTargetId = async (req, res) => {
   }
 
   try {
-    const reviews = await Review.find({ target: targetId, targetType }).populate('reviewer', 'name email');
+    const reviews = await Review.find({ target: targetId, targetType }).populate('reviewer', 'name email avatar role');
 
     const averageRating = reviews.length > 0 ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length) : 0;
 
@@ -205,11 +206,49 @@ const deleteReview = async (req, res) => {
   }
 };
 
+// All reviews left on properties owned (listedBy) by a given user.
+// Used by the seller/dealer dashboard to show incoming reviews on their listings.
+const getReviewsForUserProperties = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const properties = await Property.find({ listedBy: userId }).select('_id title photos location');
+    const propIds = properties.map((p) => p._id);
+    if (propIds.length === 0) {
+      return res.status(200).json({ reviews: [], count: 0, averageRating: 0 });
+    }
+
+    const reviews = await Review.find({ target: { $in: propIds }, targetType: 'property' })
+      .populate('reviewer', 'name email avatar role')
+      .sort({ createdAt: -1 });
+
+    // Attach the property summary onto each review so the dashboard can show
+    // which listing a review is for without a second round-trip.
+    const propsById = new Map(properties.map((p) => [String(p._id), p]));
+    const enriched = reviews.map((r) => {
+      const obj = r.toObject();
+      obj.property = propsById.get(String(r.target)) || null;
+      return obj;
+    });
+
+    const averageRating =
+      reviews.length > 0
+        ? parseFloat(
+            (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(2)
+          )
+        : 0;
+
+    res.status(200).json({ reviews: enriched, count: reviews.length, averageRating });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createReview,
   getReviews,
   getReviewsByTargetId,
   getReviewsByAuthor,
+  getReviewsForUserProperties,
   getAverageRating,
   getReviewCount,
   updateReview,

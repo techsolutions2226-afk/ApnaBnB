@@ -10,6 +10,8 @@ import StatCard from "../components/common/StatCard";
 import StatusBadge from "../components/common/StatusBadge";
 import NotificationItem from "../components/common/NotificationItem";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
+import RecentMatches from "../components/dashboard/RecentMatches";
 import "../styles/Dashboard.css";
 
 const SellerDashboard = () => {
@@ -146,13 +148,17 @@ const SellerDashboard = () => {
             <span className="dash-action-icon">📋</span>
             Manage Listings
           </Link>
-          <Link to="/messages" className="dash-action">
-            <span className="dash-action-icon">💬</span>
-            View Messages
+          <Link to="/requirements" className="dash-action">
+            <span className="dash-action-icon">📝</span>
+            Requirements Board
           </Link>
           <Link to="/matches" className="dash-action">
             <span className="dash-action-icon">🔗</span>
             View Matches
+          </Link>
+          <Link to="/messages" className="dash-action">
+            <span className="dash-action-icon">💬</span>
+            View Messages
           </Link>
         </div>
       </div>
@@ -161,8 +167,24 @@ const SellerDashboard = () => {
       <div className="dash-section">
         <div className="dash-section-header">
           <h2 className="dash-section-title">My Listings</h2>
-          <Link to="/my-listings" className="dash-section-link">
-            View all
+          <Link
+            to="/my-listings"
+            className="dash-section-link"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              background: "#222",
+              color: "#fff",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            <span aria-hidden="true">📋</span>
+            Manage Listings
           </Link>
         </div>
         {enrichedListings.length > 0 ? (
@@ -249,6 +271,11 @@ const SellerDashboard = () => {
         )}
       </div>
 
+      {/* ── Recent Matches ── */}
+      <RecentMatches
+        emptyMessage="No matches yet. As soon as a buyer or dealer posts a requirement that fits one of your listings (same city, same area, price within ±10% of their budget), it'll show up here."
+      />
+
       {/* ── Recent Deals ── */}
       <div className="dash-section">
         <div className="dash-section-header">
@@ -298,6 +325,9 @@ const SellerDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* ── Reviews on My Properties ── */}
+      <OwnerReviewsSection userId={userId} />
 
       {/* ── Recent Notifications ── */}
       <div className="dash-section">

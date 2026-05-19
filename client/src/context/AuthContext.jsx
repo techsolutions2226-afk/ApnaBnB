@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { toast } from "react-toastify";
 import authService from "../services/authService";
 import userService from "../services/userService";
+
+/* How long the user can be idle before we log them out automatically. */
+const IDLE_LOGOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 const AuthContext = createContext(null);
 
@@ -115,10 +119,47 @@ export function AuthProvider({ children }) {
     setError(null);
   };
 
-  /* ── Update profile (persists via API for whitelisted fields, falls back
-        to local merge for client-only fields like phone/address) ── */
+  /* ── Idle auto-logout ──
+     While the user is signed in, watch for activity (mouse, keyboard, touch,
+     scroll). If IDLE_LOGOUT_MS passes with no activity, log them out and
+     show a toast so they know what happened. */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let timer;
+    const triggerLogout = () => {
+      authService.logout();
+      setCurrentUser(null);
+      setError(null);
+      toast.info("You were logged out due to inactivity.");
+    };
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(triggerLogout, IDLE_LOGOUT_MS);
+    };
+
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+      "click",
+    ];
+    events.forEach((evt) =>
+      window.addEventListener(evt, resetTimer, { passive: true })
+    );
+    resetTimer(); // start the initial countdown
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((evt) => window.removeEventListener(evt, resetTimer));
+    };
+  }, [isAuthenticated]);
+
+  /* ── Update profile — persists all whitelisted fields via the API. ── */
   const updateProfile = async (updates) => {
-    const apiFields = ['name', 'avatar'];
+    const apiFields = ['name', 'avatar', 'phone', 'location', 'emergencyContact'];
     const apiUpdates = {};
     const localUpdates = { ...updates };
     for (const key of apiFields) {
@@ -129,23 +170,42 @@ export function AuthProvider({ children }) {
     }
 
     if (Object.keys(apiUpdates).length > 0) {
-      try {
-        const updated = await userService.updateMe(apiUpdates);
-        setCurrentUser((prev) =>
-          prev
-            ? {
-                ...prev,
-                ...localUpdates,
-                name: updated.name,
-                avatar: updated.avatar || "",
-              }
-            : null
-        );
-        return;
-      } catch (err) {
-        // Surface the error to the caller; don't silently fall back.
-        throw err;
+      const updated = await userService.updateMe(apiUpdates);
+      setCurrentUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...localUpdates,
+              name: updated.name,
+              avatar: updated.avatar || "",
+              phone: updated.phone || "",
+              location: updated.location || "",
+              emergencyContact: updated.emergencyContact || "",
+            }
+          : null
+      );
+      // Mirror to localStorage so a refresh doesn't drop the values.
+      const stored = localStorage.getItem('current_user');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          localStorage.setItem(
+            'current_user',
+            JSON.stringify({
+              ...parsed,
+              ...localUpdates,
+              name: updated.name,
+              avatar: updated.avatar || "",
+              phone: updated.phone || "",
+              location: updated.location || "",
+              emergencyContact: updated.emergencyContact || "",
+            })
+          );
+        } catch {
+          /* ignore parse errors */
+        }
       }
+      return;
     }
 
     // No API-backed fields → just merge locally.

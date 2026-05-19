@@ -102,13 +102,21 @@ const RequirementsBoard = () => {
   const handleCityFilter = useCallback((city) => setCityFilter(city), []);
   const handleSearch = useCallback((e) => setSearch(e.target.value), []);
 
+  // Role-aware breadcrumb target so sellers don't get bounced to /dashboard/dealer.
+  const dashboardPath =
+    currentUser?.role === "seller"
+      ? "/dashboard/seller"
+      : currentUser?.role === "buyer"
+        ? "/dashboard/buyer"
+        : "/dashboard/dealer";
+
   return (
     <div className="req-page">
       {/* ── Breadcrumb ── */}
       <Breadcrumb
         items={[
           { label: "Home", to: "/" },
-          { label: "Dashboard", to: "/dashboard/dealer" },
+          { label: "Dashboard", to: dashboardPath },
           { label: "Requirements Board" },
         ]}
       />
@@ -117,7 +125,7 @@ const RequirementsBoard = () => {
       <div className="req-header">
         <h1 className="req-title">Requirements Board</h1>
         <p className="req-subtitle">
-          Browse property requirements from buyers and fellow dealers. Find leads and grow your business.
+          Browse property requirements from buyers and dealers — find people looking for properties like yours.
         </p>
       </div>
 

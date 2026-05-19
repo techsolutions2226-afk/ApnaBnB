@@ -24,6 +24,10 @@ const authService = {
           name: response.data.name,
           email: response.data.email,
           role: response.data.role,
+          avatar: response.data.avatar || '',
+          phone: response.data.phone || '',
+          location: response.data.location || '',
+          emergencyContact: response.data.emergencyContact || '',
         };
         localStorage.setItem('current_user', JSON.stringify(user));
       }
@@ -70,6 +74,10 @@ const authService = {
           name: response.data.name,
           email: response.data.email,
           role: response.data.role,
+          avatar: response.data.avatar || '',
+          phone: response.data.phone || '',
+          location: response.data.location || '',
+          emergencyContact: response.data.emergencyContact || '',
         };
         localStorage.setItem('current_user', JSON.stringify(user));
       }

@@ -16,13 +16,16 @@ const PropertySchema = new mongoose.Schema(
     price: { type: Number, required: true },
     propertyType: { type: String, enum: ['house', 'apartment', 'plot'], required: true },
     size: { type: Number },
+    sizeUnit: { type: String, enum: ['Marla', 'Kanal', 'sq ft'], default: 'Marla' },
     bedrooms: { type: Number },
     bathrooms: { type: Number },
     amenities: { type: [String], default: [] },
     status: {
       type: String,
       enum: ['active', 'pending', 'sold', 'featured'],
-      default: 'pending'
+      // New listings are usable immediately so they show up in search and the
+      // match engine. Admin can flip back to 'pending' for moderation.
+      default: 'active'
     },
     listedBy: {
       type: mongoose.Schema.Types.ObjectId,

@@ -21,12 +21,26 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Auth endpoints — a 401 here means "wrong creds / unverified", NOT
+// "session expired". Letting the global handler redirect would wipe the
+// toast the page is about to show and yank the user away from /login.
+const AUTH_PATH_PREFIXES = ['/auth/'];
+
+const isAuthEndpoint = (url = '') =>
+  AUTH_PATH_PREFIXES.some((prefix) => url.includes(prefix));
+
+// Response interceptor — only redirect on 401s that actually indicate an
+// expired session for an already-authenticated user.
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+    const status = error.response?.status;
+    const url = error.config?.url || '';
+    const hadToken = !!localStorage.getItem('auth_token');
+
+    if (status === 401 && hadToken && !isAuthEndpoint(url)) {
+      // A request authenticated with a token came back 401 → token is
+      // expired/invalid. Wipe local session and bounce to login.
       localStorage.removeItem('auth_token');
       localStorage.removeItem('current_user');
       window.location.href = '/login';

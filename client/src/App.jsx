@@ -202,7 +202,7 @@ function App() {
                   <Route
                     path="/requirements"
                     element={
-                      <ProtectedRoute roles={["dealer"]}>
+                      <ProtectedRoute roles={["seller", "dealer"]}>
                         <RequirementsBoard />
                       </ProtectedRoute>
                     }

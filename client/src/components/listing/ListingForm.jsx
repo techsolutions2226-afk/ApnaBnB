@@ -5,8 +5,11 @@
    ─────────────────────────────────────────────── */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { toast } from "react-toastify";
+import { FiCrosshair } from "react-icons/fi";
 import ImageUpload from "../common/ImageUpload";
 import LocationPicker from "../common/LocationPicker";
+import MapView from "../common/MapView";
 import { forwardGeocode } from "../../utils/geocode";
 import {
   loadListingDraft,
@@ -118,6 +121,50 @@ const CITY_CENTERS = {
   Multan: { lat: 30.1575, lng: 71.5249 },
   Peshawar: { lat: 34.0151, lng: 71.5249 },
   Quetta: { lat: 30.1798, lng: 66.975 },
+};
+
+// Hand-tuned approximate centres for popular areas so picking an area zooms
+// the map straight to that neighbourhood. Keyed as `${city}|${area}`.
+const AREA_CENTERS = {
+  "Lahore|Gulberg": { lat: 31.5169, lng: 74.345 },
+  "Lahore|DHA": { lat: 31.4707, lng: 74.4022 },
+  "Lahore|Bahria Town": { lat: 31.367, lng: 74.193 },
+  "Lahore|Cantt": { lat: 31.5497, lng: 74.3833 },
+  "Lahore|Model Town": { lat: 31.4793, lng: 74.3204 },
+  "Lahore|Johar Town": { lat: 31.4697, lng: 74.2728 },
+  "Lahore|Wapda Town": { lat: 31.4197, lng: 74.2789 },
+  "Lahore|Faisal Town": { lat: 31.4848, lng: 74.3061 },
+  "Lahore|Garden Town": { lat: 31.5089, lng: 74.3286 },
+  "Lahore|Iqbal Town": { lat: 31.5061, lng: 74.2956 },
+
+  "Islamabad|F-6": { lat: 33.7297, lng: 73.0857 },
+  "Islamabad|F-7": { lat: 33.7167, lng: 73.0556 },
+  "Islamabad|F-8": { lat: 33.7059, lng: 73.045 },
+  "Islamabad|F-10": { lat: 33.6909, lng: 73.0144 },
+  "Islamabad|F-11": { lat: 33.6804, lng: 72.9939 },
+  "Islamabad|G-9": { lat: 33.6936, lng: 73.0331 },
+  "Islamabad|G-10": { lat: 33.6772, lng: 73.0103 },
+  "Islamabad|G-11": { lat: 33.6675, lng: 72.9883 },
+  "Islamabad|E-7": { lat: 33.7382, lng: 73.0775 },
+  "Islamabad|Bahria Town": { lat: 33.5311, lng: 73.0976 },
+  "Islamabad|DHA": { lat: 33.5328, lng: 73.1492 },
+  "Islamabad|PWD": { lat: 33.6066, lng: 73.1411 },
+
+  "Karachi|DHA": { lat: 24.8, lng: 67.07 },
+  "Karachi|Clifton": { lat: 24.815, lng: 67.024 },
+  "Karachi|Gulshan-e-Iqbal": { lat: 24.9128, lng: 67.0903 },
+  "Karachi|Bahria Town": { lat: 25.0117, lng: 67.3133 },
+  "Karachi|North Nazimabad": { lat: 24.9344, lng: 67.0381 },
+  "Karachi|PECHS": { lat: 24.8722, lng: 67.0508 },
+  "Karachi|Korangi": { lat: 24.8492, lng: 67.1614 },
+  "Karachi|Malir": { lat: 24.9, lng: 67.2 },
+
+  "Rawalpindi|Bahria Town": { lat: 33.5311, lng: 73.0976 },
+  "Rawalpindi|DHA": { lat: 33.5328, lng: 73.1492 },
+  "Rawalpindi|Saddar": { lat: 33.5969, lng: 73.0464 },
+  "Rawalpindi|Westridge": { lat: 33.585, lng: 73.0314 },
+  "Rawalpindi|Chaklala": { lat: 33.5683, lng: 73.0539 },
+  "Rawalpindi|Satellite Town": { lat: 33.6294, lng: 73.0664 },
 };
 
 const ALL_AMENITIES = [
@@ -322,6 +369,12 @@ const ListingForm = ({
   // Coords resolved from (city, area) via Nominatim. Used to centre the map
   // when the user picks an area, before they drop a pin.
   const [resolvedAreaCenter, setResolvedAreaCenter] = useState(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  // How the user sets the map pin: "map" (click), "device" (geolocation), or "manual" (typed lat/lng).
+  const [locationMode, setLocationMode] = useState("map");
+  // Local string state for the manual lat/lng inputs so partial typing doesn't blow up form.coordinates.
+  const [manualLat, setManualLat] = useState("");
+  const [manualLng, setManualLng] = useState("");
 
   // Suppresses the first auto-save fire (which would just persist the initial
   // defaults / restored draft right back to where it came from).
@@ -336,6 +389,30 @@ const ListingForm = ({
     }
     saveListingDraft(draftKey, form);
   }, [form, draftKey, initialData]);
+
+  // Skip the first auto-fill fire so restored drafts / edit-mode initial data
+  // don't get their coordinates clobbered on mount.
+  const skipFirstAutoFillRef = useRef(true);
+
+  // When the user picks a city + area we know, auto-fill the map pin to that
+  // area's centre. The marker is green so it reads as a system suggestion.
+  useEffect(() => {
+    if (skipFirstAutoFillRef.current) {
+      skipFirstAutoFillRef.current = false;
+      return;
+    }
+    if (!form.city || form.city === "Other") return;
+    if (!form.area || form.area === "Other") return;
+    const center = AREA_CENTERS[`${form.city}|${form.area}`];
+    if (!center) return;
+    setForm((prev) => ({ ...prev, coordinates: center }));
+    setErrors((prev) => {
+      if (!prev.coordinates) return prev;
+      const next = { ...prev };
+      delete next.coordinates;
+      return next;
+    });
+  }, [form.city, form.area]);
 
   const discardDraft = useCallback(() => {
     if (draftKey) clearListingDraft(draftKey);
@@ -384,12 +461,18 @@ const ListingForm = ({
   }, [effectiveCity, effectiveArea]);
 
   /* ── Effective default centre + zoom for the LocationPicker ── */
-  // Priority: resolved coords (city+area or just city) > known-city centre > LocationPicker fallback.
+  // Priority: hardcoded area centre (instant) > Nominatim-resolved coords
+  // (slower, network-bound) > known-city centre > LocationPicker fallback.
+  const hardcodedAreaCenter =
+    effectiveCity && effectiveArea
+      ? AREA_CENTERS[`${effectiveCity}|${effectiveArea}`] || null
+      : null;
   const mapDefaultCenter =
+    hardcodedAreaCenter ||
     resolvedAreaCenter ||
     (form.city && form.city !== "Other" ? CITY_CENTERS[form.city] : null);
-  // Zoom in tighter when we have an area match, looser for city-only.
-  const mapDefaultZoom = effectiveArea && resolvedAreaCenter ? 14 : 11;
+  const mapDefaultZoom =
+    effectiveArea && (hardcodedAreaCenter || resolvedAreaCenter) ? 14 : 11;
 
   /* ── Handlers ── */
   const handleChange = useCallback(
@@ -444,6 +527,87 @@ const ListingForm = ({
 
   const handleToggleFeatured = useCallback(() => {
     setForm((prev) => ({ ...prev, featured: !prev.featured }));
+  }, []);
+
+  // Strip any non-digit chars (commas, spaces, letters) and store only digits
+  // so the underlying value stays a clean integer. No upper cap on amount.
+  const handlePriceChange = useCallback(
+    (raw) => {
+      const digits = raw.replace(/[^\d]/g, "");
+      handleChange("price", digits);
+    },
+    [handleChange]
+  );
+
+  const handleApplyManualCoords = useCallback(() => {
+    const lat = Number(manualLat);
+    const lng = Number(manualLng);
+    if (!manualLat.trim() || !manualLng.trim() || Number.isNaN(lat) || Number.isNaN(lng)) {
+      toast.error("Enter valid numbers for both latitude and longitude.");
+      return;
+    }
+    if (lat < -90 || lat > 90) {
+      toast.error("Latitude must be between -90 and 90.");
+      return;
+    }
+    if (lng < -180 || lng > 180) {
+      toast.error("Longitude must be between -180 and 180.");
+      return;
+    }
+    setForm((prev) => ({ ...prev, coordinates: { lat, lng } }));
+    setErrors((prev) => {
+      if (!prev.coordinates) return prev;
+      const next = { ...prev };
+      delete next.coordinates;
+      return next;
+    });
+    toast.success("Pin set from latitude/longitude");
+  }, [manualLat, manualLng]);
+
+  // When switching modes, sync the manual inputs from the current coordinates
+  // so the user can see/edit whatever's already there.
+  const handleModeChange = useCallback(
+    (mode) => {
+      setLocationMode(mode);
+      if (mode === "manual" && form.coordinates) {
+        setManualLat(String(form.coordinates.lat));
+        setManualLng(String(form.coordinates.lng));
+      }
+    },
+    [form.coordinates]
+  );
+
+  const handleFetchCurrentLocation = useCallback(() => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Your browser does not support geolocation.");
+      return;
+    }
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setForm((prev) => ({ ...prev, coordinates: coords }));
+        setErrors((prev) => {
+          if (!prev.coordinates) return prev;
+          const next = { ...prev };
+          delete next.coordinates;
+          return next;
+        });
+        setIsFetchingLocation(false);
+        toast.success("Location set from your device");
+      },
+      (err) => {
+        setIsFetchingLocation(false);
+        const msg =
+          err.code === 1
+            ? "Permission denied. Allow location access in your browser and try again."
+            : err.code === 3
+              ? "Timed out while fetching your location. Try again."
+              : err.message || "Could not fetch your location.";
+        toast.error(msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }, []);
 
   /* ── Submit ── */
@@ -601,13 +765,13 @@ const ListingForm = ({
             </label>
             <input
               id="lst-price"
-              type="number"
+              type="text"
+              inputMode="numeric"
               className={fieldClass("lst-input", "price")}
-              placeholder="e.g. 42000000"
-              value={form.price}
-              onChange={(e) => handleChange("price", e.target.value)}
+              placeholder="e.g. 42,000,000"
+              value={form.price ? Number(form.price).toLocaleString("en-US") : ""}
+              onChange={(e) => handlePriceChange(e.target.value)}
               onBlur={() => handleBlur("price")}
-              min="0"
             />
             {showError("price") && (
               <div className="lst-error">{errors.price}</div>
@@ -756,60 +920,177 @@ const ListingForm = ({
           </div>
         </div>
 
-        {/* Map pin (optional) */}
+        {/* Map pin — three input modes */}
         <div className="lst-field">
-          <label className="lst-label">
-            Pin location on map
-            <span className="lst-label-hint">(optional — click to drop a pin)</span>
+          <label className="lst-label" htmlFor="lst-location-mode">
+            How do you want to set the location?
           </label>
-          <LocationPicker
-            value={form.coordinates}
-            onPick={(coords) => handleChange("coordinates", coords)}
-            onAddressResolved={({ city, area }) => {
-              // Only auto-fill blank fields — never overwrite a user choice.
-              setForm((prev) => {
-                const next = { ...prev };
-                if (!prev.city && city) {
-                  // Match against our known city list case-insensitively so the
-                  // select can render the resolved value.
-                  const matched = CITIES.find(
-                    (c) => c.toLowerCase() === String(city).toLowerCase(),
-                  );
-                  if (matched) next.city = matched;
-                }
-                if (!prev.area && next.city && area) {
-                  const areaOptions = AREAS_BY_CITY[next.city] || [];
-                  const matchedArea = areaOptions.find(
-                    (a) => a.toLowerCase() === String(area).toLowerCase(),
-                  );
-                  // Fall back to "Other" if the geocoded area isn't a known option
-                  // — keeps the select valid and signals it was auto-resolved.
-                  next.area = matchedArea || (areaOptions.includes("Other") ? "Other" : "");
-                }
-                return next;
-              });
-            }}
-            defaultCenter={mapDefaultCenter}
-            defaultZoom={mapDefaultZoom}
-            height={300}
-          />
+          <select
+            id="lst-location-mode"
+            className="lst-select"
+            value={locationMode}
+            onChange={(e) => handleModeChange(e.target.value)}
+            style={{ marginBottom: 12 }}
+          >
+            <option value="map">Pick on map</option>
+            <option value="device">Use my current location</option>
+            <option value="manual">Enter latitude & longitude</option>
+          </select>
+
+          {/* Mode 1: Current device location */}
+          {locationMode === "device" && (
+            <div>
+              <button
+                type="button"
+                onClick={handleFetchCurrentLocation}
+                disabled={isFetchingLocation}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 16px",
+                  border: "1px solid #222",
+                  borderRadius: 8,
+                  background: "#fff",
+                  color: "#222",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: isFetchingLocation ? "wait" : "pointer",
+                }}
+              >
+                <FiCrosshair size={16} />
+                {isFetchingLocation ? "Fetching…" : "Fetch current location"}
+              </button>
+              <p style={{ fontSize: 12, color: "#717171", margin: "8px 0 0" }}>
+                Reads your device GPS. Your browser will ask for permission the first time.
+              </p>
+            </div>
+          )}
+
+          {/* Mode 2: Click on map */}
+          {locationMode === "map" && (
+            <LocationPicker
+              value={form.coordinates}
+              onPick={(coords) => handleChange("coordinates", coords)}
+              onAddressResolved={({ city, area }) => {
+                setForm((prev) => {
+                  const next = { ...prev };
+                  if (!prev.city && city) {
+                    const matched = CITIES.find(
+                      (c) => c.toLowerCase() === String(city).toLowerCase(),
+                    );
+                    if (matched) next.city = matched;
+                  }
+                  if (!prev.area && next.city && area) {
+                    const areaOptions = AREAS_BY_CITY[next.city] || [];
+                    const matchedArea = areaOptions.find(
+                      (a) => a.toLowerCase() === String(area).toLowerCase(),
+                    );
+                    next.area = matchedArea || (areaOptions.includes("Other") ? "Other" : "");
+                  }
+                  return next;
+                });
+              }}
+              defaultCenter={mapDefaultCenter}
+              defaultZoom={mapDefaultZoom}
+              height={300}
+            />
+          )}
+
+          {/* Mode 3: Manual lat / lng */}
+          {locationMode === "manual" && (
+            <div>
+              <div className="lst-row" style={{ marginBottom: 10 }}>
+                <div className="lst-field" style={{ margin: 0 }}>
+                  <label className="lst-label" htmlFor="lst-manual-lat">
+                    Latitude
+                    <span className="lst-label-hint">(-90 to 90)</span>
+                  </label>
+                  <input
+                    id="lst-manual-lat"
+                    type="number"
+                    step="any"
+                    className="lst-input"
+                    placeholder="e.g. 31.5204"
+                    value={manualLat}
+                    onChange={(e) => setManualLat(e.target.value)}
+                  />
+                </div>
+                <div className="lst-field" style={{ margin: 0 }}>
+                  <label className="lst-label" htmlFor="lst-manual-lng">
+                    Longitude
+                    <span className="lst-label-hint">(-180 to 180)</span>
+                  </label>
+                  <input
+                    id="lst-manual-lng"
+                    type="number"
+                    step="any"
+                    className="lst-input"
+                    placeholder="e.g. 74.3587"
+                    value={manualLng}
+                    onChange={(e) => setManualLng(e.target.value)}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleApplyManualCoords}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "10px 16px",
+                  border: "1px solid #222",
+                  borderRadius: 8,
+                  background: "#222",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                Apply coordinates
+              </button>
+              <p style={{ fontSize: 12, color: "#717171", margin: "8px 0 0" }}>
+                Tip: paste a "lat, lng" pair from Google Maps. Right-click any spot in Maps and copy the coordinates.
+              </p>
+            </div>
+          )}
+
+          {/* Map preview — shown in device/manual modes once coordinates are set.
+              Map-mode already shows the LocationPicker map, so a second preview
+              would be redundant there. */}
+          {form.coordinates && locationMode !== "map" && (
+            <div style={{ marginTop: 12 }}>
+              <MapView coordinates={form.coordinates} height={280} zoom={16} />
+            </div>
+          )}
+
+          {/* Picked-coordinates badge — shown for every mode once set */}
           {form.coordinates && (
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginTop: 8,
+                marginTop: 12,
+                padding: "8px 12px",
+                background: "#f0f7ff",
+                borderRadius: 8,
                 fontSize: 13,
-                color: "#555",
+                color: "#1a4d8a",
+                fontWeight: 500,
               }}
             >
               <span>
-                Lat: {form.coordinates.lat.toFixed(5)} · Lng: {form.coordinates.lng.toFixed(5)}
+                ✓ Pinned at {form.coordinates.lat.toFixed(5)}, {form.coordinates.lng.toFixed(5)}
               </span>
               <button
                 type="button"
-                onClick={() => handleChange("coordinates", null)}
+                onClick={() => {
+                  handleChange("coordinates", null);
+                  setManualLat("");
+                  setManualLng("");
+                }}
                 style={{
                   background: "none",
                   border: "none",
@@ -822,6 +1103,9 @@ const ListingForm = ({
                 Clear pin
               </button>
             </div>
+          )}
+          {showError("coordinates") && (
+            <div className="lst-error">{errors.coordinates}</div>
           )}
         </div>
       </div>

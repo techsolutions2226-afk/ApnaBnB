@@ -1,50 +1,52 @@
-const Requirement = require('../models/Requirement');
+﻿const Requirement = require('../models/Requirement');
 const Property = require('../models/Property');
 const Match = require('../models/Match');
 const User = require('../models/User');
-const { calculateMatchScore } = require('../utils/matchScore');
+const {
+  calculateMatchScore,
+  determineMatchType,
+  isMatchCandidate,
+} = require('../utils/matchScore');
 
-// Auto-generate matches for a requirement
+// Auto-generate matches for a newly-created requirement.
+// Same strict criteria as the property side — see propertyController for notes.
 const generateMatchesForRequirement = async (requirement, userId) => {
   try {
-    // Find matching properties
+    const requirementOwner = await User.findById(requirement.requiredBy).select('role');
+    if (!requirementOwner) return [];
+
     const properties = await Property.find({
       'location.city': requirement.location.city,
       propertyType: { $in: [requirement.propertyType, requirement.propertyType.toLowerCase()] },
-      status: 'active'
-    });
+      // Exclude only sold properties — pending/active/featured are all eligible
+      // candidates since 'pending' was historically the default before we changed it.
+      status: { $ne: 'sold' },
+    }).populate('listedBy', 'role');
 
     const matches = [];
     for (const property of properties) {
+      if (!isMatchCandidate(property, requirement)) continue;
+
+      const propertyOwner = property.listedBy;
+      const matchType = determineMatchType(propertyOwner?.role, requirementOwner.role);
+      if (!matchType) continue;
+
+      const existingMatch = await Match.findOne({
+        property: property._id,
+        requirement: requirement._id,
+      });
+      if (existingMatch) continue;
+
       const score = calculateMatchScore(property, requirement);
-      
-      if (score >= 30) { // Only create matches with decent scores
-        // Determine match type based on property owner
-        let matchType = 'seller-buyer';
-        const propertyOwner = await User.findById(property.listedBy);
-        
-        if (propertyOwner?.role === 'dealer') {
-          matchType = 'dealer-buyer';
-        }
-
-        // Check if match already exists
-        const existingMatch = await Match.findOne({
-          property: property._id,
-          requirement: requirement._id
-        });
-
-        if (!existingMatch) {
-          const match = await Match.create({
-            property: property._id,
-            requirement: requirement._id,
-            initiator: userId,
-            score,
-            type: matchType,
-            status: 'pending'
-          });
-          matches.push(match);
-        }
-      }
+      const match = await Match.create({
+        property: property._id,
+        requirement: requirement._id,
+        initiator: userId,
+        score,
+        type: matchType,
+        status: 'pending',
+      });
+      matches.push(match);
     }
     return matches;
   } catch (error) {
@@ -116,7 +118,7 @@ const updateRequirement = async (req, res) => {
     const requirement = await Requirement.findOneAndUpdate(
       { _id: id, requiredBy: req.user.id }, // Ensure user owns the requirement
       updates,
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!requirement) {

@@ -15,7 +15,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState({});
 
   /* Redirect authenticated users to their dashboard */
   useEffect(() => {
@@ -24,21 +23,20 @@ const Login = () => {
     }
   }, [isAuthenticated, getDashboardPath, navigate]);
 
-  const validate = () => {
-    const errs = {};
-    if (!email.trim()) errs.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(email)) errs.email = "Enter a valid email";
-    if (!password) errs.password = "Password is required";
-    return errs;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const errs = validate();
-    setErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      toast.error("Please fix the errors above");
+    // Client-side validation — all errors surfaced via toast, never inline.
+    if (!email.trim()) {
+      toast.error("Email is required");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    if (!password) {
+      toast.error("Password is required");
       return;
     }
 
@@ -56,10 +54,8 @@ const Login = () => {
       const code = err?.code;
       if (code === "EMAIL_NOT_FOUND") {
         toast.error("Email not found");
-        setErrors({ email: "Email not found" });
       } else if (code === "WRONG_PASSWORD") {
         toast.error("Wrong password");
-        setErrors({ password: "Wrong password" });
       } else if (code === "EMAIL_NOT_VERIFIED") {
         toast.info("Please verify your email to continue.");
         const targetEmail = err?.email || email;
@@ -94,9 +90,7 @@ const Login = () => {
 
            {/* Email / Password Form */}
            <form className="auth-form" onSubmit={handleSubmit} noValidate>
-             <div
-               className={`auth-input-group ${errors.email || errors.password ? "auth-input-group--error" : ""}`}
-             >
+             <div className="auth-input-group">
                <div className="auth-input-wrapper auth-input-wrapper--top">
                  <input
                    type="email"
@@ -141,16 +135,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Validation Errors */}
-            {(errors.email || errors.password) && (
-              <div className="auth-errors">
-                {errors.email && <p className="auth-error">{errors.email}</p>}
-                {errors.password && (
-                  <p className="auth-error">{errors.password}</p>
-                )}
-              </div>
-            )}
-
             <button
               type="submit"
               className="auth-btn auth-btn--primary"
@@ -166,23 +150,6 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          {/* Demo Credentials Hint */}
-          <div className="auth-demo-hint">
-            <p className="auth-demo-hint-title">Demo accounts</p>
-            <p className="auth-demo-hint-item">
-              <strong>Seller:</strong> ahmad@example.com
-            </p>
-            <p className="auth-demo-hint-item">
-              <strong>Buyer:</strong> fatima@example.com
-            </p>
-            <p className="auth-demo-hint-item">
-              <strong>Dealer:</strong> bilal@example.com
-            </p>
-            <p className="auth-demo-hint-item">
-              Password for all: <strong>password123</strong>
-            </p>
-          </div>
 
           {/* Forgot Password */}
           <Link to="/forgot-password" className="auth-forgot-link">

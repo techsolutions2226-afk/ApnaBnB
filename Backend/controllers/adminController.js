@@ -1,4 +1,4 @@
-const User = require('../models/User');
+﻿const User = require('../models/User');
 const Property = require('../models/Property');
 const Requirement = require('../models/Requirement');
 const Match = require('../models/Match');
@@ -126,7 +126,7 @@ const verifyUser = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       id,
       { verified: true },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('-password');
 
     if (!user) {
@@ -147,7 +147,7 @@ const suspendUser = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       id,
       { verified: false },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('-password');
 
     if (!user) {
@@ -196,7 +196,7 @@ const approveProperty = async (req, res) => {
     const property = await Property.findByIdAndUpdate(
       id,
       { status: 'active' },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('listedBy', 'name email');
 
     if (!property) {
@@ -217,7 +217,7 @@ const rejectProperty = async (req, res) => {
     const property = await Property.findByIdAndUpdate(
       id,
       { status: 'rejected' },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate('listedBy', 'name email');
 
     if (!property) {

@@ -1,1 +1,0 @@
-make like on landing page where a lot of categories like trending, Guest Favourite, top rated, House, appartment, luxury etc everthing is working properly like if i click on otp rated it show mw the top rated properties

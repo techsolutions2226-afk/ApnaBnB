@@ -125,7 +125,7 @@ const MyListings = () => {
 
   if (listingsLoading || propsLoading) {
     return (
-      <div className="lst-page">
+      <div className="ml-page">
         <div style={{ padding: '40px', textAlign: 'center' }}>
           <div className="auth-spinner" style={{ margin: '0 auto 20px' }} />
           <p>Loading your listings...</p>
@@ -136,7 +136,7 @@ const MyListings = () => {
 
   if (listingsError) {
     return (
-      <div className="lst-page">
+      <div className="ml-page">
         <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>
           <p>Error loading listings: {listingsError}</p>
           <button onClick={refetchListings} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
@@ -148,7 +148,7 @@ const MyListings = () => {
   }
 
   return (
-    <div className="lst-page">
+    <div className="ml-page">
       {/* ── Breadcrumb ── */}
       <Breadcrumb
         items={[

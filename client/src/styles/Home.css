@@ -1,0 +1,431 @@
+/* ====================================================
+   Home.css — Clean, minimalist landing hero
+   ==================================================== */
+
+/* Hide the navbar search bar while the picker is up. */
+body.hide-navbar-search .navbar-bottom,
+body.hide-navbar-search .nav-mobile-pill {
+  display: none !important;
+}
+
+/* ════════════════════════════════════════════════════
+   HERO — purpose picker, clean white aesthetic
+   ════════════════════════════════════════════════════ */
+
+.home-hero {
+  min-height: calc(100vh - 80px);
+  padding: 64px 32px 80px;
+  /* Soft mint → sky-blue wash. Provides contrast without any pink/red, and
+     pairs naturally with the teal headline accent. */
+  background:
+    radial-gradient(900px 500px at 0% 0%, #d1fae5 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #dbeafe 0%, transparent 55%),
+    linear-gradient(180deg, #f0fdfa 0%, #f1f5f9 100%);
+}
+
+/* The blob divs from the JSX get rendered but hidden. We keep the JSX
+   element so we don't have to touch the component again. */
+.home-hero-blob {
+  display: none;
+}
+
+.home-hero-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: center;
+  animation: home-fade-up 0.5s ease both;
+}
+
+@keyframes home-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Brand chip — small, neutral */
+.home-hero-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #f5f5f7;
+  border-radius: 999px;
+  margin-bottom: 28px;
+}
+
+.home-hero-logo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #222;
+}
+
+.home-hero-brand-name {
+  font-weight: 700;
+  font-size: 12.5px;
+  letter-spacing: 0.5px;
+  color: #222;
+  text-transform: uppercase;
+}
+
+/* Headline — large, simple black, no gradient noise */
+.home-hero-title {
+  font-size: clamp(34px, 5.2vw, 56px);
+  font-weight: 800;
+  color: #111;
+  margin: 0 0 18px;
+  line-height: 1.08;
+  letter-spacing: -1.2px;
+}
+
+/* Keep one subtle accent on the emphasised words — a clean dark teal,
+   no rainbow gradient. */
+.home-hero-title-accent {
+  color: #0f766e;
+}
+
+.home-hero-tagline {
+  max-width: 600px;
+  margin: 0 auto 28px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #555;
+}
+
+/* Trust strip — flat, minimal */
+.home-hero-trust {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin: 0 0 44px;
+  padding: 0;
+  list-style: none;
+}
+
+.home-hero-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #444;
+}
+
+.home-hero-trust svg {
+  color: #0f766e;
+}
+
+/* ════════════════════════════════════════════════════
+   CTA CARDS — kept the photo design (they look great),
+   slightly less dramatic shadows for the minimalist feel
+   ════════════════════════════════════════════════════ */
+
+.home-hero-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto 48px;
+}
+
+.home-hero-card {
+  --card-accent: #ff385c;
+  position: relative;
+  height: 340px;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  background: #222;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1),
+              box-shadow 0.3s;
+  animation: home-card-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes home-card-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.home-hero-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 14px 32px rgba(0, 0, 0, 0.14);
+}
+
+.home-hero-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.home-hero-card:hover .home-hero-card-bg {
+  transform: scale(1.05);
+}
+
+/* Clean dark gradient — no coloured tint, just black-to-transparent */
+.home-hero-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 65%, rgba(0, 0, 0, 0.82) 100%);
+}
+
+.home-hero-card-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 22px 24px;
+  color: #fff;
+  z-index: 1;
+}
+
+.home-hero-card-badge {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #222;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.home-hero-card-icon-wrap {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.home-hero-card-title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  letter-spacing: -0.4px;
+}
+
+.home-hero-card-sub {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 380px;
+}
+
+.home-hero-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.home-hero-card-count {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* Plain white pill CTA — no accent colours, just neutral so the photo can shine */
+.home-hero-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #111;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 0.2s;
+}
+
+.home-hero-card:hover .home-hero-card-cta {
+  transform: translateX(2px);
+}
+
+/* ════════════════════════════════════════════════════
+   STATS — flat text, no glassmorphism
+   ════════════════════════════════════════════════════ */
+
+.home-hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  max-width: 640px;
+  margin: 0 auto 32px;
+  padding: 0;
+  border-top: 1px solid #ebebeb;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.home-hero-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 20px 12px;
+  border-right: 1px solid #ebebeb;
+}
+
+.home-hero-stat:last-child {
+  border-right: none;
+}
+
+.home-hero-stat-num {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111;
+  letter-spacing: -0.4px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+/* All stat numbers same colour — minimalist consistency */
+.home-hero-stat:nth-child(2) .home-hero-stat-num,
+.home-hero-stat:nth-child(3) .home-hero-stat-num {
+  color: #111;
+}
+
+.home-hero-stat-lbl {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #717171;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Skip CTA — simple link */
+.home-hero-skip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.home-hero-skip:hover {
+  color: #111;
+}
+
+/* ════════════════════════════════════════════════════
+   PROPERTY GRID — active purpose bar (post-selection)
+   ════════════════════════════════════════════════════ */
+
+.home-purpose-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #ebebeb;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.home-purpose-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #f5f5f5;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.home-purpose-back:hover {
+  background: #ebebeb;
+  border-color: #d9d9d9;
+}
+
+.home-purpose-bar-label {
+  flex: 1;
+  font-size: 14px;
+  color: #444;
+}
+
+.home-purpose-bar-prefix {
+  color: #888;
+  margin-right: 6px;
+}
+
+.home-purpose-bar-label strong {
+  color: #111;
+  font-weight: 700;
+}
+
+.home-purpose-bar-count {
+  font-size: 13px;
+  color: #717171;
+  font-weight: 500;
+}
+
+/* ════════════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════════════ */
+
+@media (max-width: 720px) {
+  .home-hero {
+    padding: 40px 20px 60px;
+  }
+  .home-hero-title {
+    font-size: 36px;
+  }
+  .home-hero-trust {
+    gap: 14px;
+  }
+  .home-hero-cards {
+    grid-template-columns: 1fr;
+  }
+  .home-hero-card {
+    height: 280px;
+  }
+  .home-hero-stats {
+    flex-direction: column;
+    max-width: 280px;
+  }
+  .home-hero-stat {
+    border-right: none;
+    border-bottom: 1px solid #ebebeb;
+    padding: 14px 12px;
+  }
+  .home-hero-stat:last-child {
+    border-bottom: none;
+  }
+}

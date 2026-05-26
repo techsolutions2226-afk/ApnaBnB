@@ -61,7 +61,28 @@ const generateMatchesForProperty = async (property, userId) => {
 
 // Create a new property
 const createProperty = async (req, res) => {
-  const { title, description, location, price, propertyType, size, sizeUnit, bedrooms, bathrooms, photos, amenities } = req.body;
+  const {
+    title,
+    description,
+    location,
+    price,
+    purpose,
+    category,
+    propertyType,
+    size,
+    sizeUnit,
+    bedrooms,
+    bathrooms,
+    photos,
+    amenities,
+    securityDeposit,
+    leaseTerm,
+    furnished,
+    availableFrom,
+    contactName,
+    contactEmail,
+    contactPhone,
+  } = req.body;
 
   // Validation
   if (!title || !location || !price || !propertyType) {
@@ -90,12 +111,21 @@ const createProperty = async (req, res) => {
       photos,
       location: resolvedLocation,
       price,
+      purpose: purpose || 'sale',
+      category: category || 'home',
       propertyType,
       size,
       sizeUnit: sizeUnit || 'Marla',
       bedrooms,
       bathrooms,
       amenities: Array.isArray(amenities) ? amenities : [],
+      securityDeposit: securityDeposit || 0,
+      leaseTerm: leaseTerm || 12,
+      furnished: furnished || 'unfurnished',
+      availableFrom: availableFrom || undefined,
+      contactName: contactName || '',
+      contactEmail: contactEmail || '',
+      contactPhone: contactPhone || '',
       listedBy: req.user.id,
     });
 

@@ -23,9 +23,22 @@ const RequirementSchema = new mongoose.Schema(
       min: { type: Number },
       max: { type: Number },
     },
+    // For-sale vs for-rent — must match the property's purpose to count as a match.
+    purpose: {
+      type: String,
+      enum: ['sale', 'rent'],
+      default: 'sale',
+      required: true,
+    },
+    // Same enum as Property — keeps legacy values working alongside new subtypes.
     propertyType: {
       type: String,
-      enum: ['house', 'apartment', 'plot'],
+      enum: [
+        'house', 'apartment', 'plot',
+        'flat', 'upper-portion', 'lower-portion', 'farm-house', 'room', 'penthouse',
+        'residential-plot', 'commercial-plot', 'agricultural-land', 'industrial-land',
+        'office', 'shop', 'warehouse', 'factory', 'building',
+      ],
       required: true,
     },
     size: {

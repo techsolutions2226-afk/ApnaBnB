@@ -79,6 +79,12 @@ const determineMatchType = (propertyOwnerRole, requirementOwnerRole) =>
 const isMatchCandidate = (property, requirement) => {
   if (!property || !requirement) return false;
 
+  // Purpose (sale vs rent) — must match exactly. A rent listing should never
+  // be offered to a buy requirement and vice versa.
+  const pPurpose = (property.purpose || 'sale').toLowerCase();
+  const rPurpose = (requirement.purpose || 'sale').toLowerCase();
+  if (pPurpose !== rPurpose) return false;
+
   // City — case-insensitive exact.
   const pCity = (property.location?.city || '').toLowerCase();
   const rCity = (requirement.location?.city || '').toLowerCase();

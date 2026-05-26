@@ -33,6 +33,8 @@ const CreateListing = () => {
           title: formData.title,
           description: formData.description,
           price: formData.price,
+          purpose: formData.purpose || "sale",
+          category: formData.category || "home",
           location: {
             city: formData.city,
             area: formData.area,
@@ -41,9 +43,21 @@ const CreateListing = () => {
           bedrooms: formData.bedrooms,
           bathrooms: formData.bathrooms,
           size: formData.size,
-          propertyType: formData.propertyType.toLowerCase(),
+          sizeUnit: formData.sizeUnit,
+          // propertyType already in kebab-case from the form (e.g. "upper-portion").
+          // Avoid blindly toLowerCase()-ing legacy values — they're already lowercase too.
+          propertyType: formData.propertyType,
           amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
-          photos: formData.images || [], // Changed from images to photos for backend
+          photos: formData.images || [],
+          // Rental-specific (passed through regardless; backend ignores when purpose === 'sale').
+          securityDeposit: formData.securityDeposit,
+          leaseTerm: formData.leaseTerm,
+          furnished: formData.furnished,
+          availableFrom: formData.availableFrom,
+          // Per-listing contact info.
+          contactName: formData.contactName,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
         };
 
         const createdProperty = await createProperty(propertyData);
@@ -74,7 +88,7 @@ const CreateListing = () => {
   );
 
   return (
-    <div className="lst-page">
+    <div className="lst-page lst-page--create">
       {/* ── Breadcrumb ── */}
       <nav className="dash-breadcrumb">
         <Link to="/" className="dash-breadcrumb-link">Home</Link>
@@ -90,15 +104,20 @@ const CreateListing = () => {
         <FiArrowLeft /> Back to My Listings
       </Link>
 
-      <div className="lst-header">
-        <h1 className="lst-title">
-          <FiPlusCircle style={{ marginRight: 8, verticalAlign: "-3px" }} />
-          Create New Listing
-        </h1>
-        <p className="lst-subtitle">
-          Share the details of your property with{" "}
-          <strong>thousands of buyers and dealers</strong> across Pakistan.
-        </p>
+      {/* Hero header — gradient banner that visually distinguishes this page */}
+      <div className="lst-hero">
+        <div className="lst-hero-content">
+          <div className="lst-hero-icon-wrap">
+            <FiPlusCircle size={28} />
+          </div>
+          <div>
+            <h1 className="lst-hero-title">Create New Listing</h1>
+            <p className="lst-hero-subtitle">
+              Share the details of your property with{" "}
+              <strong>thousands of buyers and dealers</strong> across Pakistan.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* ── Auto-save info banner ── */}

@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-toastify";
-import { FiCrosshair } from "react-icons/fi";
+import { FiCrosshair, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import ImageUpload from "../common/ImageUpload";
 import LocationPicker from "../common/LocationPicker";
 import MapView from "../common/MapView";
@@ -16,11 +16,66 @@ import {
   saveListingDraft,
   clearListingDraft,
 } from "../../utils/listingDraft";
+import { useAuth } from "../../context/AuthContext";
 import "../../styles/Listing.css";
 
 
 /* ── Static Options ── */
-const PROPERTY_TYPES = ["House", "Apartment", "Plot"];
+// Top-level property category — drives which sub-types the user can pick.
+const CATEGORIES = [
+  { value: "home", label: "Home", icon: "🏠" },
+  { value: "plot", label: "Plot", icon: "📐" },
+  { value: "commercial", label: "Commercial", icon: "🏢" },
+];
+
+// Sub-types per category. Stored on the property as `propertyType` (kebab-case).
+const SUBTYPES_BY_CATEGORY = {
+  home: [
+    { value: "house", label: "House" },
+    { value: "flat", label: "Flat" },
+    { value: "upper-portion", label: "Upper Portion" },
+    { value: "lower-portion", label: "Lower Portion" },
+    { value: "farm-house", label: "Farm House" },
+    { value: "room", label: "Room" },
+    { value: "penthouse", label: "Penthouse" },
+  ],
+  plot: [
+    { value: "residential-plot", label: "Residential Plot" },
+    { value: "commercial-plot", label: "Commercial Plot" },
+    { value: "agricultural-land", label: "Agricultural Land" },
+    { value: "industrial-land", label: "Industrial Land" },
+  ],
+  commercial: [
+    { value: "office", label: "Office" },
+    { value: "shop", label: "Shop" },
+    { value: "warehouse", label: "Warehouse" },
+    { value: "factory", label: "Factory" },
+    { value: "building", label: "Building" },
+  ],
+};
+
+// Lookup the category that owns a given sub-type. Used when editing a listing
+// where the saved propertyType is a leaf value but the form needs both.
+const CATEGORY_OF_SUBTYPE = Object.fromEntries(
+  Object.entries(SUBTYPES_BY_CATEGORY).flatMap(([cat, list]) =>
+    list.map((s) => [s.value, cat]),
+  ),
+);
+// Legacy values map to the closest current category.
+CATEGORY_OF_SUBTYPE.apartment = "home";
+
+const PURPOSES = [
+  { value: "sale", label: "For Sale" },
+  { value: "rent", label: "For Rent" },
+];
+
+const FURNISHED_OPTIONS = [
+  { value: "unfurnished", label: "Unfurnished" },
+  { value: "semi-furnished", label: "Semi-Furnished" },
+  { value: "furnished", label: "Furnished" },
+];
+
+const LEASE_TERMS = [6, 12, 24, 36];
 
 const SIZE_UNITS = ["Marla", "Kanal", "sq ft"];
 
@@ -167,38 +222,112 @@ const AREA_CENTERS = {
   "Rawalpindi|Satellite Town": { lat: 33.6294, lng: 73.0664 },
 };
 
-const ALL_AMENITIES = [
-  "Backup power",
-  "Corner plot",
-  "Elevator",
-  "Garden",
-  "Gym",
-  "Parking",
-  "Security",
-  "Servant quarter",
-  "Store room",
+// Grouped amenity catalogue — mirrors zameen.com's amenities section.
+// Each amenity is a plain string; the group label is UI-only.
+const AMENITY_GROUPS = [
+  {
+    label: "Main Features",
+    items: [
+      "Drawing room",
+      "Dining room",
+      "Kitchen",
+      "Study room",
+      "Prayer room",
+      "Powder room",
+      "TV lounge",
+      "Servant quarter",
+      "Store room",
+      "Lobby in building",
+    ],
+  },
+  {
+    label: "Business & Communication",
+    items: [
+      "Broadband internet",
+      "Satellite cable TV",
+      "Intercom",
+      "Wi-Fi",
+    ],
+  },
+  {
+    label: "Community Features",
+    items: [
+      "Community lawn",
+      "Community swimming pool",
+      "Community gym",
+      "Mosque",
+      "Daycare",
+      "Kids play area",
+    ],
+  },
+  {
+    label: "Healthcare",
+    items: ["Nearby hospital", "Nearby pharmacy", "First aid kit"],
+  },
+  {
+    label: "Nearby Locations",
+    items: [
+      "Nearby schools",
+      "Nearby restaurants",
+      "Nearby shopping mall",
+      "Nearby public transport",
+      "Nearby park",
+    ],
+  },
+  {
+    label: "Other Facilities",
+    items: [
+      "Lift / Elevator",
+      "Backup power",
+      "Generator",
+      "Solar panels",
+      "Parking",
+      "Underground parking",
+      "Security",
+      "CCTV",
+      "Garden",
+      "Maintenance staff",
+      "Corner plot",
+      "Boundary wall",
+    ],
+  },
 ];
+
+// Flat list derived from the groups — used by validation + edit-mode hydration.
+const ALL_AMENITIES = AMENITY_GROUPS.flatMap((g) => g.items);
 
 /* ── Default blank form state ── */
 const EMPTY_FORM = {
   title: "",
+  // New purpose toggle: 'sale' (default) or 'rent'.
+  purpose: "sale",
+  // Top-level category: home / plot / commercial.
+  category: "home",
+  // Leaf subtype (changes when category changes).
   propertyType: "",
   price: "",
   size: "",
   sizeUnit: "Marla",
   city: "",
-  // Free-text city — used only when `city === "Other"`.
   customCity: "",
   area: "",
-  // Free-text area — used when `area === "Other"` (or city === "Other").
   customArea: "",
   bedrooms: "",
   bathrooms: "",
   description: "",
   amenities: [],
-  images: [], // Changed from image/gallery to images array
+  images: [],
   featured: false,
-  coordinates: null, // { lat, lng } picked on the map (optional)
+  coordinates: null,
+  // Rental-specific. Used only when purpose === 'rent'.
+  securityDeposit: "",
+  leaseTerm: 12,
+  furnished: "unfurnished",
+  availableFrom: "",
+  // Per-listing contact info — prefilled from the logged-in user's profile.
+  contactName: "",
+  contactEmail: "",
+  contactPhone: "",
 };
 
 /* ── Validation ── */
@@ -208,9 +337,25 @@ const validate = (data) => {
   if (!data.title.trim()) errors.title = "Title is required";
   else if (data.title.trim().length < 10)
     errors.title = "Title must be at least 10 characters";
+
+  if (!data.purpose) errors.purpose = "Choose Sale or Rent";
+  if (!data.category) errors.category = "Pick a property category";
   if (!data.propertyType) errors.propertyType = "Select a property type";
+  else {
+    // Subtype must belong to the chosen category (prevents bypass via stale state).
+    const validForCategory = (SUBTYPES_BY_CATEGORY[data.category] || []).some(
+      (s) => s.value === data.propertyType,
+    );
+    if (!validForCategory) errors.propertyType = "Pick a type for this category";
+  }
+
   if (!data.price || Number(data.price) <= 0)
-    errors.price = "Enter a valid price";
+    errors.price = data.purpose === "rent"
+      ? "Enter a monthly rent"
+      : "Enter a valid price";
+
+  // Plot-only listings don't really have bedrooms/bathrooms — only enforce
+  // size for plots; size + beds + baths for everything else.
   if (!data.size || Number(data.size) <= 0) errors.size = "Enter a valid size";
   if (!data.sizeUnit) errors.sizeUnit = "Select a size unit";
 
@@ -230,26 +375,24 @@ const validate = (data) => {
       errors.customArea = "Enter your area";
   }
 
-  if (!data.bedrooms || Number(data.bedrooms) < 0)
-    errors.bedrooms = "Enter bedrooms count";
-  if (!data.bathrooms || Number(data.bathrooms) < 0)
-    errors.bathrooms = "Enter bathrooms count";
+  // Beds/baths only meaningful for Home category. Plot + Commercial skip them.
+  if (data.category === "home") {
+    if (data.bedrooms === "" || Number(data.bedrooms) < 0)
+      errors.bedrooms = "Enter bedrooms count";
+    if (data.bathrooms === "" || Number(data.bathrooms) < 0)
+      errors.bathrooms = "Enter bathrooms count";
+  }
 
   if (!data.description.trim()) errors.description = "Description is required";
   else if (data.description.trim().length < 20)
     errors.description = "Description must be at least 20 characters";
 
-  // Amenities — at least one must be picked.
   if (!Array.isArray(data.amenities) || data.amenities.length === 0) {
     errors.amenities = "Select at least one amenity";
   }
-
-  // Images — at least one photo is required.
   if (!Array.isArray(data.images) || data.images.length === 0) {
     errors.images = "Upload at least one property image";
   }
-
-  // Map pin — required so the property lands at the right spot on the map.
   if (
     !data.coordinates ||
     typeof data.coordinates.lat !== "number" ||
@@ -257,6 +400,21 @@ const validate = (data) => {
   ) {
     errors.coordinates = "Drop a pin on the map for this property";
   }
+
+  // Rental-only validation. Security deposit / lease term required when renting.
+  if (data.purpose === "rent") {
+    if (data.securityDeposit === "" || Number(data.securityDeposit) < 0)
+      errors.securityDeposit = "Enter a security deposit (0 if none)";
+    if (!data.leaseTerm || Number(data.leaseTerm) < 1)
+      errors.leaseTerm = "Pick a lease term";
+  }
+
+  // Contact details — mandatory so buyers know who to reach.
+  if (!data.contactName?.trim()) errors.contactName = "Contact name is required";
+  if (!data.contactEmail?.trim()) errors.contactEmail = "Contact email is required";
+  else if (!/\S+@\S+\.\S+/.test(data.contactEmail))
+    errors.contactEmail = "Enter a valid email";
+  if (!data.contactPhone?.trim()) errors.contactPhone = "Contact phone is required";
 
   return errors;
 };
@@ -278,6 +436,8 @@ const ListingForm = ({
   // Ignored when editing — that flow always seeds from the server.
   draftKey = null,
 }) => {
+  const { currentUser } = useAuth();
+
   /* ── Merge initial data with defaults ── */
   const defaults = useMemo(() => {
     if (!initialData) return { ...EMPTY_FORM };
@@ -328,9 +488,16 @@ const ListingForm = ({
       }
     }
 
+    // Derive the category from an existing leaf propertyType when editing.
+    const incomingPropertyType = initialData.propertyType || "";
+    const derivedCategory =
+      CATEGORY_OF_SUBTYPE[incomingPropertyType] || "home";
+
     return {
       title: initialData.title || "",
-      propertyType: initialData.propertyType || "",
+      purpose: initialData.purpose || "sale",
+      category: initialData.category || derivedCategory,
+      propertyType: incomingPropertyType,
       price: initialData.price ? String(initialData.price) : "",
       size: initialData.size ? String(initialData.size) : "",
       sizeUnit: initialData.sizeUnit || "Marla",
@@ -350,6 +517,18 @@ const ListingForm = ({
         initialData.coordinates ||
         initialData.location?.coordinates ||
         null,
+      securityDeposit:
+        initialData.securityDeposit != null
+          ? String(initialData.securityDeposit)
+          : "",
+      leaseTerm: initialData.leaseTerm || 12,
+      furnished: initialData.furnished || "unfurnished",
+      availableFrom: initialData.availableFrom
+        ? new Date(initialData.availableFrom).toISOString().slice(0, 10)
+        : "",
+      contactName: initialData.contactName || "",
+      contactEmail: initialData.contactEmail || "",
+      contactPhone: initialData.contactPhone || "",
     };
   }, [initialData]);
 
@@ -366,6 +545,10 @@ const ListingForm = ({
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [draftRestored, setDraftRestored] = useState(Boolean(restoredDraft));
+  // Index of the currently visible amenity group (Main Features / Business…
+  // etc.). The user pages through groups with ← → arrows. Selections persist
+  // across groups via the unchanged form.amenities array.
+  const [amenityGroupIdx, setAmenityGroupIdx] = useState(0);
   // Coords resolved from (city, area) via Nominatim. Used to centre the map
   // when the user picks an area, before they drop a pin.
   const [resolvedAreaCenter, setResolvedAreaCenter] = useState(null);
@@ -375,6 +558,21 @@ const ListingForm = ({
   // Local string state for the manual lat/lng inputs so partial typing doesn't blow up form.coordinates.
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
+
+  // Prefill contact details from the logged-in user's profile. Runs once on
+  // mount + whenever `currentUser` becomes available. Never overwrites a value
+  // the user has already typed in (or that came from initialData / draft).
+  useEffect(() => {
+    if (!currentUser) return;
+    setForm((prev) => {
+      const patch = {};
+      if (!prev.contactName && currentUser.name) patch.contactName = currentUser.name;
+      if (!prev.contactEmail && currentUser.email) patch.contactEmail = currentUser.email;
+      if (!prev.contactPhone && currentUser.phone) patch.contactPhone = currentUser.phone;
+      if (Object.keys(patch).length === 0) return prev;
+      return { ...prev, ...patch };
+    });
+  }, [currentUser]);
 
   // Suppresses the first auto-save fire (which would just persist the initial
   // defaults / restored draft right back to where it came from).
@@ -479,6 +677,10 @@ const ListingForm = ({
     (field, value) => {
       setForm((prev) => {
         const next = { ...prev, [field]: value };
+        // Switching category invalidates the previously-chosen subtype.
+        if (field === "category" && value !== prev.category) {
+          next.propertyType = "";
+        }
         if (field === "city" && value !== prev.city) {
           // Always reset area + customArea when city changes.
           next.customArea = "";
@@ -634,19 +836,32 @@ const ListingForm = ({
 
       const output = {
         title: form.title.trim(),
+        purpose: form.purpose,
+        category: form.category,
         propertyType: form.propertyType,
         price: Number(form.price),
         size: Number(form.size),
         sizeUnit: form.sizeUnit,
         city: finalCity,
         area: finalArea,
-        bedrooms: Number(form.bedrooms),
-        bathrooms: Number(form.bathrooms),
+        // Plot + commercial don't have beds/baths — submit 0 instead of NaN.
+        bedrooms: form.category === "home" ? Number(form.bedrooms) || 0 : 0,
+        bathrooms: form.category === "home" ? Number(form.bathrooms) || 0 : 0,
         description: form.description.trim(),
         amenities: form.amenities,
-        images: form.images.map(img => img.url), // Extract URLs from image objects
+        images: form.images.map((img) => img.url),
         featured: form.featured,
-        coordinates: form.coordinates, // null if not picked — backend geocodes from city/area
+        coordinates: form.coordinates,
+        // Rental fields — only meaningful when purpose === 'rent', but always
+        // serialise so backend doesn't have to guess.
+        securityDeposit:
+          form.purpose === "rent" ? Number(form.securityDeposit) || 0 : 0,
+        leaseTerm: form.purpose === "rent" ? Number(form.leaseTerm) || 12 : 12,
+        furnished: form.purpose === "rent" ? form.furnished : "unfurnished",
+        availableFrom: form.availableFrom || undefined,
+        contactName: form.contactName.trim(),
+        contactEmail: form.contactEmail.trim(),
+        contactPhone: form.contactPhone.trim(),
       };
 
       onSubmit(output);
@@ -710,11 +925,79 @@ const ListingForm = ({
         </div>
       )}
 
+      {/* ── 1. Select Purpose ── */}
+      <div className="lst-form-section">
+        <h3 className="lst-form-section-title">1. Purpose</h3>
+        <p className="lst-form-section-sub">Are you selling or renting out this property?</p>
+        <div className="lst-purpose-row">
+          {PURPOSES.map((p) => {
+            const active = form.purpose === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => handleChange("purpose", p.value)}
+                className={`lst-purpose-card ${active ? "lst-purpose-card--active" : ""}`}
+              >
+                <span className="lst-purpose-icon">
+                  {p.value === "sale" ? "🏷️" : "🔑"}
+                </span>
+                <span className="lst-purpose-label">{p.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 2. Select Property Type ── */}
+      <div className="lst-form-section">
+        <h3 className="lst-form-section-title">2. Property Type</h3>
+        <p className="lst-form-section-sub">Pick a category, then a sub-type.</p>
+
+        {/* Category cards */}
+        <div className="lst-category-row">
+          {CATEGORIES.map((c) => {
+            const active = form.category === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => handleChange("category", c.value)}
+                className={`lst-category-card ${active ? "lst-category-card--active" : ""}`}
+              >
+                <span className="lst-category-icon">{c.icon}</span>
+                <span className="lst-category-label">{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Subtype chips — filtered by chosen category */}
+        <div className="lst-subtype-row">
+          {(SUBTYPES_BY_CATEGORY[form.category] || []).map((s) => {
+            const active = form.propertyType === s.value;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => handleChange("propertyType", s.value)}
+                onBlur={() => handleBlur("propertyType")}
+                className={`lst-subtype-chip ${active ? "lst-subtype-chip--active" : ""}`}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+        {showError("propertyType") && (
+          <div className="lst-error">{errors.propertyType}</div>
+        )}
+      </div>
+
       {/* ── Basic Details ── */}
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Basic Details</h3>
 
-        {/* Title */}
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-title">
             Property Title
@@ -733,51 +1016,91 @@ const ListingForm = ({
           )}
         </div>
 
-        {/* Property Type + Price */}
-        <div className="lst-row">
-          <div className="lst-field">
-            <label className="lst-label" htmlFor="lst-type">
-              Property Type
-            </label>
-            <select
-              id="lst-type"
-              className={fieldClass("lst-select", "propertyType")}
-              value={form.propertyType}
-              onChange={(e) => handleChange("propertyType", e.target.value)}
-              onBlur={() => handleBlur("propertyType")}
-            >
-              <option value="">Select type</option>
-              {PROPERTY_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            {showError("propertyType") && (
-              <div className="lst-error">{errors.propertyType}</div>
-            )}
-          </div>
-
-          <div className="lst-field">
-            <label className="lst-label" htmlFor="lst-price">
-              Price
-              <span className="lst-label-hint">(PKR)</span>
-            </label>
-            <input
-              id="lst-price"
-              type="text"
-              inputMode="numeric"
-              className={fieldClass("lst-input", "price")}
-              placeholder="e.g. 42,000,000"
-              value={form.price ? Number(form.price).toLocaleString("en-US") : ""}
-              onChange={(e) => handlePriceChange(e.target.value)}
-              onBlur={() => handleBlur("price")}
-            />
-            {showError("price") && (
-              <div className="lst-error">{errors.price}</div>
-            )}
-          </div>
+        {/* Price — label flips to "Monthly Rent" when purpose === rent */}
+        <div className="lst-field">
+          <label className="lst-label" htmlFor="lst-price">
+            {form.purpose === "rent" ? "Monthly Rent" : "Price"}
+            <span className="lst-label-hint">
+              {form.purpose === "rent" ? "(PKR / month)" : "(PKR)"}
+            </span>
+          </label>
+          <input
+            id="lst-price"
+            type="text"
+            inputMode="numeric"
+            className={fieldClass("lst-input", "price")}
+            placeholder={
+              form.purpose === "rent" ? "e.g. 65,000" : "e.g. 42,000,000"
+            }
+            value={form.price ? Number(form.price).toLocaleString("en-US") : ""}
+            onChange={(e) => handlePriceChange(e.target.value)}
+            onBlur={() => handleBlur("price")}
+          />
+          {showError("price") && (
+            <div className="lst-error">{errors.price}</div>
+          )}
         </div>
+
+        {/* Rental-only fields */}
+        {form.purpose === "rent" && (
+          <>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">
+                  Security Deposit
+                  <span className="lst-label-hint">(PKR)</span>
+                </label>
+                <input
+                  type="number"
+                  className={fieldClass("lst-input", "securityDeposit")}
+                  placeholder="e.g. 130,000"
+                  value={form.securityDeposit}
+                  onChange={(e) => handleChange("securityDeposit", e.target.value)}
+                  onBlur={() => handleBlur("securityDeposit")}
+                  min="0"
+                />
+                {showError("securityDeposit") && (
+                  <div className="lst-error">{errors.securityDeposit}</div>
+                )}
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Lease Term</label>
+                <select
+                  className="lst-select"
+                  value={form.leaseTerm}
+                  onChange={(e) => handleChange("leaseTerm", Number(e.target.value))}
+                >
+                  {LEASE_TERMS.map((m) => (
+                    <option key={m} value={m}>{m} months</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Furnishing</label>
+                <select
+                  className="lst-select"
+                  value={form.furnished}
+                  onChange={(e) => handleChange("furnished", e.target.value)}
+                >
+                  {FURNISHED_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Available From</label>
+                <input
+                  type="date"
+                  className="lst-input"
+                  value={form.availableFrom}
+                  onChange={(e) => handleChange("availableFrom", e.target.value)}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Size + Size Unit */}
         <div className="lst-row">
@@ -1114,47 +1437,51 @@ const ListingForm = ({
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Property Details</h3>
 
-        <div className="lst-row">
-          <div className="lst-field">
-            <label className="lst-label" htmlFor="lst-bedrooms">
-              Bedrooms
-            </label>
-            <input
-              id="lst-bedrooms"
-              type="number"
-              className={fieldClass("lst-input", "bedrooms")}
-              placeholder="e.g. 4"
-              value={form.bedrooms}
-              onChange={(e) => handleChange("bedrooms", e.target.value)}
-              onBlur={() => handleBlur("bedrooms")}
-              min="0"
-              max="20"
-            />
-            {showError("bedrooms") && (
-              <div className="lst-error">{errors.bedrooms}</div>
-            )}
-          </div>
+        {/* Beds + Baths — only meaningful for Home category. Plots and commercial
+            properties don't need them, so we hide the row entirely. */}
+        {form.category === "home" && (
+          <div className="lst-row">
+            <div className="lst-field">
+              <label className="lst-label" htmlFor="lst-bedrooms">
+                Bedrooms
+              </label>
+              <input
+                id="lst-bedrooms"
+                type="number"
+                className={fieldClass("lst-input", "bedrooms")}
+                placeholder="e.g. 4"
+                value={form.bedrooms}
+                onChange={(e) => handleChange("bedrooms", e.target.value)}
+                onBlur={() => handleBlur("bedrooms")}
+                min="0"
+                max="20"
+              />
+              {showError("bedrooms") && (
+                <div className="lst-error">{errors.bedrooms}</div>
+              )}
+            </div>
 
-          <div className="lst-field">
-            <label className="lst-label" htmlFor="lst-bathrooms">
-              Bathrooms
-            </label>
-            <input
-              id="lst-bathrooms"
-              type="number"
-              className={fieldClass("lst-input", "bathrooms")}
-              placeholder="e.g. 4"
-              value={form.bathrooms}
-              onChange={(e) => handleChange("bathrooms", e.target.value)}
-              onBlur={() => handleBlur("bathrooms")}
-              min="0"
-              max="20"
-            />
-            {showError("bathrooms") && (
-              <div className="lst-error">{errors.bathrooms}</div>
-            )}
+            <div className="lst-field">
+              <label className="lst-label" htmlFor="lst-bathrooms">
+                Bathrooms
+              </label>
+              <input
+                id="lst-bathrooms"
+                type="number"
+                className={fieldClass("lst-input", "bathrooms")}
+                placeholder="e.g. 4"
+                value={form.bathrooms}
+                onChange={(e) => handleChange("bathrooms", e.target.value)}
+                onBlur={() => handleBlur("bathrooms")}
+                min="0"
+                max="20"
+              />
+              {showError("bathrooms") && (
+                <div className="lst-error">{errors.bathrooms}</div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Description */}
         <div className="lst-field">
@@ -1174,26 +1501,171 @@ const ListingForm = ({
           )}
         </div>
 
-        {/* Amenities */}
+      </div>
+
+      {/* ── Features & Amenities (grouped, zameen-style) ── */}
+      <div className="lst-form-section">
+        <h3 className="lst-form-section-title">Features & Amenities</h3>
+        <p className="lst-form-section-sub">
+          Pick all that apply. Buyers filter listings by these.
+        </p>
+
+        {/* Carousel-style slider: arrows pinned to the left + right edges of
+            the panel (like an image gallery), one amenity group visible at a
+            time in the middle. */}
+        {(() => {
+          const total = AMENITY_GROUPS.length;
+          const group = AMENITY_GROUPS[amenityGroupIdx];
+          const selectedInGroup = group.items.filter((a) =>
+            form.amenities.includes(a),
+          ).length;
+          return (
+            <div className="lst-amenity-slider">
+              {/* Left arrow — absolute, vertically centred on the panel */}
+              <button
+                type="button"
+                className="lst-amenity-arrow lst-amenity-arrow--left"
+                onClick={() =>
+                  setAmenityGroupIdx((i) => (i - 1 + total) % total)
+                }
+                aria-label="Previous group"
+              >
+                <FiChevronLeft size={24} />
+              </button>
+
+              {/* Right arrow — absolute, opposite side */}
+              <button
+                type="button"
+                className="lst-amenity-arrow lst-amenity-arrow--right"
+                onClick={() =>
+                  setAmenityGroupIdx((i) => (i + 1) % total)
+                }
+                aria-label="Next group"
+              >
+                <FiChevronRight size={24} />
+              </button>
+
+              {/* Current group content (title + chips + dot pager) */}
+              <div className="lst-amenity-slide">
+                <div className="lst-amenity-slide-title-row">
+                  <h4 className="lst-amenity-group-title">{group.label}</h4>
+                  <span className="lst-amenity-slider-count">
+                    {amenityGroupIdx + 1} / {total}
+                    {selectedInGroup > 0 && (
+                      <span className="lst-amenity-slider-selected">
+                        · {selectedInGroup} selected
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                <div className="lst-amenity-grid">
+                  {group.items.map((amenity) => {
+                    const selected = form.amenities.includes(amenity);
+                    return (
+                      <label
+                        key={amenity}
+                        className={`lst-amenity-chip${
+                          selected ? " lst-amenity-chip--selected" : ""
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => handleAmenityToggle(amenity)}
+                        />
+                        <span className="lst-amenity-checkmark">
+                          {selected ? "✓" : "+"}
+                        </span>
+                        <span>{amenity}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* Dots — click any dot to jump to that group. */}
+                <div className="lst-amenity-dots">
+                  {AMENITY_GROUPS.map((g, i) => (
+                    <button
+                      key={g.label}
+                      type="button"
+                      aria-label={`Go to ${g.label}`}
+                      onClick={() => setAmenityGroupIdx(i)}
+                      className={`lst-amenity-dot${
+                        i === amenityGroupIdx ? " lst-amenity-dot--active" : ""
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+        {showError("amenities") && (
+          <div className="lst-error">{errors.amenities}</div>
+        )}
+      </div>
+
+      {/* ── Contact Information ── */}
+      <div className="lst-form-section">
+        <h3 className="lst-form-section-title">Contact Information</h3>
+        <p className="lst-form-section-sub">
+          Buyers see these details on your listing. Prefilled from your account
+          — edit if you want a different contact for this listing.
+        </p>
+
         <div className="lst-field">
-          <label className="lst-label">Amenities</label>
-          <div className="lst-amenities">
-            {ALL_AMENITIES.map((amenity) => {
-              const selected = form.amenities.includes(amenity);
-              return (
-                <label
-                  key={amenity}
-                  className={`lst-amenity${selected ? " lst-amenity--selected" : ""}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => handleAmenityToggle(amenity)}
-                  />
-                  {amenity}
-                </label>
-              );
-            })}
+          <label className="lst-label" htmlFor="lst-contact-name">
+            Full Name
+          </label>
+          <input
+            id="lst-contact-name"
+            type="text"
+            className={fieldClass("lst-input", "contactName")}
+            placeholder="e.g. Ahmad Khan"
+            value={form.contactName}
+            onChange={(e) => handleChange("contactName", e.target.value)}
+            onBlur={() => handleBlur("contactName")}
+          />
+          {showError("contactName") && (
+            <div className="lst-error">{errors.contactName}</div>
+          )}
+        </div>
+
+        <div className="lst-row">
+          <div className="lst-field">
+            <label className="lst-label" htmlFor="lst-contact-email">
+              Email
+            </label>
+            <input
+              id="lst-contact-email"
+              type="email"
+              className={fieldClass("lst-input", "contactEmail")}
+              placeholder="ahmad@example.com"
+              value={form.contactEmail}
+              onChange={(e) => handleChange("contactEmail", e.target.value)}
+              onBlur={() => handleBlur("contactEmail")}
+            />
+            {showError("contactEmail") && (
+              <div className="lst-error">{errors.contactEmail}</div>
+            )}
+          </div>
+          <div className="lst-field">
+            <label className="lst-label" htmlFor="lst-contact-phone">
+              Phone
+            </label>
+            <input
+              id="lst-contact-phone"
+              type="tel"
+              className={fieldClass("lst-input", "contactPhone")}
+              placeholder="+92 300 1234567"
+              value={form.contactPhone}
+              onChange={(e) => handleChange("contactPhone", e.target.value)}
+              onBlur={() => handleBlur("contactPhone")}
+            />
+            {showError("contactPhone") && (
+              <div className="lst-error">{errors.contactPhone}</div>
+            )}
           </div>
         </div>
       </div>
@@ -1202,7 +1674,6 @@ const ListingForm = ({
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Images</h3>
 
-        {/* Image Upload Component */}
         <div className="lst-field">
           <ImageUpload
             images={form.images || []}

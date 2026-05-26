@@ -545,6 +545,322 @@
   margin: 0 0 24px;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   Purpose toggle (Sale / Rent) + Category picker + Subtype chips
+   ══════════════════════════════════════════════════════════════ */
+
+.lst-form-section-sub {
+  margin: -8px 0 16px;
+  font-size: 13px;
+  color: #717171;
+}
+
+/* Purpose cards (Sale / Rent) */
+.lst-purpose-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  max-width: 520px;
+}
+
+.lst-purpose-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 20px;
+  background: #fff;
+  border: 2px solid #ebebeb;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #444;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.lst-purpose-card:hover {
+  border-color: #bdbdbd;
+}
+
+.lst-purpose-card--active {
+  border-color: #00a578;
+  background: #ecfdf5;
+  color: #00856f;
+}
+
+.lst-purpose-icon {
+  font-size: 22px;
+}
+
+/* Category cards (Home / Plot / Commercial) */
+.lst-category-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  max-width: 720px;
+}
+
+.lst-category-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  background: #fff;
+  border: 2px solid #ebebeb;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.lst-category-card:hover {
+  border-color: #bdbdbd;
+}
+
+.lst-category-card--active {
+  border-color: #ff385c;
+  background: #fff5f7;
+}
+
+.lst-category-icon {
+  font-size: 28px;
+}
+
+.lst-category-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #222;
+}
+
+/* Subtype chips (House / Flat / Penthouse etc.) */
+.lst-subtype-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.lst-subtype-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border: 1px solid #ebebeb;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #444;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.lst-subtype-chip:hover {
+  background: #eaeaea;
+  border-color: #bdbdbd;
+}
+
+.lst-subtype-chip--active {
+  background: #222;
+  border-color: #222;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Grouped Amenities Slider — image-carousel-style
+   ══════════════════════════════════════════════════════════════ */
+
+/* Outer wrapper provides the positioning context for the absolute arrows. */
+.lst-amenity-slider {
+  position: relative;
+  padding: 0 60px; /* room for arrows on each side */
+}
+
+/* Floating arrow buttons sit at the vertical centre of the slider, like the
+   prev/next chevrons on an image gallery. */
+.lst-amenity-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222;
+  z-index: 2;
+  transition: background 0.12s, box-shadow 0.12s, transform 0.1s;
+}
+
+.lst-amenity-arrow:hover {
+  background: #f5f5f5;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.lst-amenity-arrow:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.lst-amenity-arrow--left {
+  left: 0;
+}
+
+.lst-amenity-arrow--right {
+  right: 0;
+}
+
+/* The slide itself — the visible "card" with the current group's chips. */
+.lst-amenity-slide {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 20px 22px;
+  min-height: 280px;
+}
+
+.lst-amenity-slide-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.lst-amenity-slider-count {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+
+.lst-amenity-slider-selected {
+  color: #00856f;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.lst-amenity-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Dot pager beneath the chips — click any dot to jump to that group. */
+.lst-amenity-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.lst-amenity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.lst-amenity-dot:hover {
+  background: #aaa;
+}
+
+.lst-amenity-dot--active {
+  background: #222;
+  transform: scale(1.25);
+}
+
+@media (max-width: 600px) {
+  .lst-amenity-slider {
+    padding: 0 50px;
+  }
+  .lst-amenity-arrow {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.lst-amenity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.lst-amenity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  font-size: 13.5px;
+  color: #333;
+  user-select: none;
+}
+
+.lst-amenity-chip:hover {
+  border-color: #bdbdbd;
+  background: #f5f5f5;
+}
+
+.lst-amenity-chip input[type="checkbox"] {
+  display: none;
+}
+
+.lst-amenity-checkmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ebebeb;
+  color: #888;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lst-amenity-chip--selected {
+  background: #ecfdf5;
+  border-color: #00a578;
+  color: #00856f;
+  font-weight: 600;
+}
+
+.lst-amenity-chip--selected .lst-amenity-checkmark {
+  background: #00a578;
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .lst-category-row {
+    grid-template-columns: 1fr;
+  }
+  .lst-purpose-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Success/Info Banner ── */
 .lst-banner {
   display: flex;
@@ -619,6 +935,208 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Create Listing — enhanced visual treatment (scoped via --create)
+   Page gets a tinted gradient background. Each form section becomes
+   a floating white card with shadow so the form reads as a stacked
+   deck rather than a long single-column document.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Tinted page background — distinct from other (mostly-white) pages */
+.lst-page--create {
+  background:
+    radial-gradient(1200px 600px at 0% 0%, #ffe4ec 0%, transparent 50%),
+    radial-gradient(1000px 600px at 100% 0%, #e0f2fe 0%, transparent 55%),
+    linear-gradient(180deg, #fafbff 0%, #f4f6fb 100%);
+  min-height: calc(100vh - 80px);
+  max-width: none;
+  padding: 24px 24px 80px;
+}
+
+/* Recentre the form + breadcrumb within the full-width page bg */
+.lst-page--create > * {
+  max-width: 880px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lst-page--create .lst-form {
+  max-width: 880px;
+}
+
+/* Hero header — gradient banner replacing the plain .lst-header */
+.lst-page--create .lst-hero {
+  background: linear-gradient(135deg, #ff385c 0%, #f5576c 50%, #f093fb 100%);
+  border-radius: 18px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(255, 56, 92, 0.25);
+}
+
+.lst-page--create .lst-hero-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.lst-page--create .lst-hero-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  flex-shrink: 0;
+}
+
+.lst-page--create .lst-hero-title {
+  margin: 0 0 4px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.lst-page--create .lst-hero-subtitle {
+  margin: 0;
+  font-size: 14.5px;
+  opacity: 0.92;
+  line-height: 1.5;
+}
+
+.lst-page--create .lst-hero-subtitle strong {
+  color: #fff;
+  font-weight: 700;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.5);
+  padding-bottom: 1px;
+}
+
+/* Polish the breadcrumb against the tinted bg */
+.lst-page--create .dash-breadcrumb {
+  margin-bottom: 12px;
+}
+
+.lst-page--create .lst-back-link {
+  background: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.lst-page--create .lst-back-link:hover {
+  background: #f5f5f5;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Each section becomes a floating white card */
+.lst-page--create .lst-form-section {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.lst-page--create .lst-form-section:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Bigger, accent-coloured section titles with a coloured side-stripe */
+.lst-page--create .lst-form-section-title {
+  position: relative;
+  padding-left: 14px;
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  font-size: 19px;
+  font-weight: 800;
+  color: #222;
+  letter-spacing: -0.2px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.lst-page--create .lst-form-section-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 18px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #ff385c 0%, #f093fb 100%);
+}
+
+.lst-page--create .lst-form-section-sub {
+  color: #555;
+}
+
+/* Banner card gets a subtle tweak so it doesn't fight the hero */
+.lst-page--create .lst-banner {
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Form inputs — slight refinement on the create page */
+.lst-page--create .lst-input,
+.lst-page--create .lst-select,
+.lst-page--create .lst-textarea {
+  background: #fafbff;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.lst-page--create .lst-input:focus,
+.lst-page--create .lst-select:focus,
+.lst-page--create .lst-textarea:focus {
+  background: #fff;
+  border-color: #ff385c;
+  box-shadow: 0 0 0 4px rgba(255, 56, 92, 0.1);
+  outline: none;
+}
+
+/* Submit button — bigger, gradient, pop */
+.lst-page--create .lst-btn--primary {
+  background: linear-gradient(135deg, #ff385c 0%, #f5576c 100%);
+  border: none;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(255, 56, 92, 0.35);
+  transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
+}
+
+.lst-page--create .lst-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 56, 92, 0.45);
+  filter: brightness(1.05);
+}
+
+.lst-page--create .lst-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.lst-page--create .lst-actions {
+  padding-top: 8px;
+}
+
+/* Mobile: shrink the hero so it doesn't dwarf the form */
+@media (max-width: 600px) {
+  .lst-page--create .lst-hero {
+    padding: 20px 22px;
+  }
+  .lst-page--create .lst-hero-title {
+    font-size: 22px;
+  }
+  .lst-page--create .lst-form-section {
+    padding: 18px 20px;
+  }
 }
 
 /* ══════════════════════════════════════

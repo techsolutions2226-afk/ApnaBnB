@@ -10,12 +10,12 @@ const {
   getDealerBuyerMatches,
   getDealerDealerMatches,
   updateMatchStatus,
+  getMatchContact,
   deleteMatch,
 } = require('../controllers/matchController');
 const { generateMatchesForProperty } = require('../controllers/propertyController');
 const { generateMatchesForRequirement } = require('../controllers/requirementController');
-const Property = require('../models/Property');
-const Requirement = require('../models/Requirement');
+const prisma = require('../db/prisma');
 const verifyToken = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -34,7 +34,7 @@ router.get('/dealer-dealer', verifyToken, getDealerDealerMatches);
 // Manual match generation
 router.post('/generate/property/:propertyId', verifyToken, async (req, res) => {
   try {
-    const property = await Property.findById(req.params.propertyId);
+    const property = await prisma.property.findUnique({ where: { id: req.params.propertyId } });
     if (!property) {
       return res.status(404).json({ message: 'Property not found' });
     }
@@ -51,7 +51,7 @@ router.post('/generate/property/:propertyId', verifyToken, async (req, res) => {
 
 router.post('/generate/requirement/:requirementId', verifyToken, async (req, res) => {
   try {
-    const requirement = await Requirement.findById(req.params.requirementId);
+    const requirement = await prisma.requirement.findUnique({ where: { id: req.params.requirementId } });
     if (!requirement) {
       return res.status(404).json({ message: 'Requirement not found' });
     }
@@ -69,6 +69,7 @@ router.post('/generate/requirement/:requirementId', verifyToken, async (req, res
 // Match CRUD routes - these come after
 router.post('/', verifyToken, createMatch);
 router.get('/', verifyToken, getMatches);
+router.get('/:id/contact', verifyToken, getMatchContact); // before /:id
 router.get('/:id', verifyToken, getMatchById);
 router.put('/:id/status', verifyToken, updateMatchStatus);
 router.delete('/:id', verifyToken, deleteMatch);

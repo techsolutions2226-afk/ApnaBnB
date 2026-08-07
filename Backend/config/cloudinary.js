@@ -80,4 +80,38 @@ const profileUpload = multer({
   },
 });
 
-module.exports = { cloudinary, upload, profileUpload };
+// Deal-room documents — PDFs / Office docs shared inside a chat. Stored as
+// Cloudinary `raw` resources (not images) in a separate folder.
+const DOCUMENT_MIMES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+];
+
+const documentStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: process.env.CLOUDINARY_DOC_FOLDER || 'deal_documents',
+    resource_type: 'raw',
+  },
+});
+
+const documentUpload = multer({
+  storage: documentStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 1,
+  },
+  fileFilter: (req, file, cb) => {
+    if (DOCUMENT_MIMES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, Word, Excel, or text documents are allowed.'), false);
+    }
+  },
+});
+
+module.exports = { cloudinary, upload, profileUpload, documentUpload };

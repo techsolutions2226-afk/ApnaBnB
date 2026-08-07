@@ -622,7 +622,7 @@
 }
 
 .lst-category-card--active {
-  border-color: #ff385c;
+  border-color: #1a8f5a;
   background: #fff5f7;
 }
 
@@ -968,7 +968,7 @@
 
 /* Hero header — gradient banner replacing the plain .lst-header */
 .lst-page--create .lst-hero {
-  background: linear-gradient(135deg, #ff385c 0%, #f5576c 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #1a8f5a 0%, #f5576c 50%, #f093fb 100%);
   border-radius: 18px;
   padding: 28px 32px;
   margin-bottom: 24px;
@@ -1070,7 +1070,7 @@
   bottom: 18px;
   width: 4px;
   border-radius: 2px;
-  background: linear-gradient(180deg, #ff385c 0%, #f093fb 100%);
+  background: linear-gradient(180deg, #1a8f5a 0%, #f093fb 100%);
 }
 
 .lst-page--create .lst-form-section-sub {
@@ -1095,14 +1095,14 @@
 .lst-page--create .lst-select:focus,
 .lst-page--create .lst-textarea:focus {
   background: #fff;
-  border-color: #ff385c;
+  border-color: #1a8f5a;
   box-shadow: 0 0 0 4px rgba(255, 56, 92, 0.1);
   outline: none;
 }
 
 /* Submit button — bigger, gradient, pop */
 .lst-page--create .lst-btn--primary {
-  background: linear-gradient(135deg, #ff385c 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #1a8f5a 0%, #f5576c 100%);
   border: none;
   padding: 14px 32px;
   font-size: 16px;

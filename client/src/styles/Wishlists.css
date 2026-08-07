@@ -122,7 +122,7 @@
 .wl-tab-delete:hover {
   opacity: 1;
   background: rgba(255, 56, 92, 0.12);
-  color: #ff385c;
+  color: #1a8f5a;
 }
 .wl-tab--active .wl-tab-delete:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -161,7 +161,7 @@
 .wl-modal-create-btn {
   width: 100%;
   padding: 14px;
-  background: #ff385c;
+  background: #1a8f5a;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -206,7 +206,7 @@
 
 .wl-delete-confirm {
   padding: 10px 20px;
-  background: #ff385c;
+  background: #1a8f5a;
   border: none;
   border-radius: 8px;
   font-size: 14px;

@@ -134,35 +134,6 @@ const SellerDashboard = () => {
         <StatCard icon="🔔" value={stats.notifications} label="Notifications" />
       </div>
 
-      {/* ── Quick Actions ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Quick Actions</h2>
-        </div>
-        <div className="dash-actions">
-          <Link to="/listing/new" className="dash-action">
-            <span className="dash-action-icon">➕</span>
-            Create New Listing
-          </Link>
-          <Link to="/my-listings" className="dash-action">
-            <span className="dash-action-icon">📋</span>
-            Manage Listings
-          </Link>
-          <Link to="/requirements" className="dash-action">
-            <span className="dash-action-icon">📝</span>
-            Requirements Board
-          </Link>
-          <Link to="/matches" className="dash-action">
-            <span className="dash-action-icon">🔗</span>
-            View Matches
-          </Link>
-          <Link to="/messages" className="dash-action">
-            <span className="dash-action-icon">💬</span>
-            View Messages
-          </Link>
-        </div>
-      </div>
-
       {/* ── My Listings Table ── */}
       <div className="dash-section">
         <div className="dash-section-header">

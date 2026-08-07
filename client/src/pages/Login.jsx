@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiEye, FiEyeOff, FiMail } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaFacebook } from "react-icons/fa";
+import { FaApple } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
 import "../styles/Auth.css";
@@ -70,63 +70,78 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-page">
-      {/* ── Minimal Header ── */}
-      <header className="auth-header">
-        <Link to="/" className="auth-logo-link" aria-label="apnabnb home">
-          <Logo size={56} />
+    <div className="login-page">
+      {/* ── Left Panel: brand / imagery ── */}
+      <div className="login-left">
+        <Link to="/" className="login-logo-link" aria-label="apnabnb home">
+          <span className="login-logo-wrap">
+            <Logo size={40} />
+          </span>
         </Link>
-      </header>
 
-      {/* ── Login Card ── */}
-      <div className="auth-card">
-        {/* Card Header */}
-        <div className="auth-card-header">
-          <h1 className="auth-card-title">Log in</h1>
+        <div className="login-left-content">
+          <h1 className="login-left-title">
+            Welcome back to Pakistan&apos;s most intelligent property
+            network.
+          </h1>
+          <p className="login-left-text">
+            Access premium listings, connect with verified agents, and
+            manage your property portfolio with AI-driven insights.
+          </p>
         </div>
+      </div>
 
-         <div className="auth-card-body">
-           <p className="auth-welcome">Welcome to the marketplace</p>
+      {/* ── Right Panel: sign-in form ── */}
+      <div className="login-right">
+        <div className="login-right-inner">
+          <h1 className="login-title">Sign In</h1>
 
-           {/* Email / Password Form */}
-           <form className="auth-form" onSubmit={handleSubmit} noValidate>
-             <div className="auth-input-group">
-               <div className="auth-input-wrapper auth-input-wrapper--top">
-                 <input
-                   type="email"
-                   id="login-email"
-                   className="auth-input"
-                   placeholder=" "
-                   value={email}
-                   onChange={(e) => {
-                     setEmail(e.target.value);
-                  }}
+          <form className="login-form" onSubmit={handleSubmit} noValidate>
+            {/* Email */}
+            <div className="login-field">
+              <label htmlFor="login-email" className="login-field-label">
+                Email Address
+              </label>
+              <div className="login-input-wrapper">
+                <FiMail className="login-input-icon" />
+                <input
+                  type="email"
+                  id="login-email"
+                  className="login-input"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   disabled={isLoading}
                 />
-                <label htmlFor="login-email" className="auth-label">
-                  Email
-                </label>
               </div>
-              <div className="auth-input-wrapper auth-input-wrapper--bottom">
+            </div>
+
+            {/* Password */}
+            <div className="login-field">
+              <div className="login-field-row">
+                <label htmlFor="login-password" className="login-field-label">
+                  Password
+                </label>
+                <Link to="/forgot-password" className="login-forgot-link">
+                  Forgot Password?
+                </Link>
+              </div>
+              <div className="login-input-wrapper">
+                <FiLock className="login-input-icon" />
                 <input
                   type={showPassword ? "text" : "password"}
                   id="login-password"
-                  className="auth-input"
-                  placeholder=" "
+                  className="login-input login-input--password"
+                  placeholder="••••••••"
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                  }}
+                  onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   disabled={isLoading}
                 />
-                <label htmlFor="login-password" className="auth-label">
-                  Password
-                </label>
                 <button
                   type="button"
-                  className="auth-toggle-pw"
+                  className="login-toggle-pw"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -137,72 +152,50 @@ const Login = () => {
 
             <button
               type="submit"
-              className="auth-btn auth-btn--primary"
+              className="login-submit-btn"
               disabled={isLoading}
             >
               {isLoading ? (
-                <span className="auth-btn-loading">
-                  <span className="auth-spinner" />
-                  Logging in...
+                <span className="login-btn-loading">
+                  <span className="login-spinner" />
+                  Signing in...
                 </span>
               ) : (
-                "Continue"
+                <>
+                  Sign In <FiArrowRight size={18} />
+                </>
               )}
             </button>
           </form>
 
-          {/* Forgot Password */}
-          <Link to="/forgot-password" className="auth-forgot-link">
-            Forgot password?
-          </Link>
-
           {/* Divider */}
-          <div className="auth-divider">
-            <span className="auth-divider-line" />
-            <span className="auth-divider-text">or</span>
-            <span className="auth-divider-line" />
+          <div className="login-divider">
+            <span className="login-divider-line" />
+            <span className="login-divider-text">Or continue with</span>
+            <span className="login-divider-line" />
           </div>
 
           {/* Social Login Buttons */}
-          <div className="auth-social-list">
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FcGoogle size={22} className="auth-social-icon" />
-              <span>Continue with Google</span>
+          <div className="login-social-row">
+            <button className="login-social-btn" disabled={isLoading}>
+              <FcGoogle size={20} />
+              <span>Google</span>
             </button>
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FaFacebook
-                size={22}
-                color="#1877F2"
-                className="auth-social-icon"
-              />
-              <span>Continue with Facebook</span>
-            </button>
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FaApple size={22} className="auth-social-icon" />
-              <span>Continue with Apple</span>
-            </button>
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FiMail size={22} className="auth-social-icon" />
-              <span>Continue with email</span>
+            <button className="login-social-btn" disabled={isLoading}>
+              <FaApple size={20} />
+              <span>Apple</span>
             </button>
           </div>
 
           {/* Sign-up link */}
-          <p className="auth-switch">
-            Don't have an account?{" "}
-            <Link to="/signup" className="auth-switch-link">
+          <p className="login-switch">
+            Don&apos;t have an account?{" "}
+            <Link to="/signup" className="login-switch-link">
               Sign up
             </Link>
           </p>
         </div>
       </div>
-
-      {/* ── Footer ── */}
-      <footer className="auth-footer">
-        <p className="auth-footer-text">
-          Real Estate Marketplace &mdash; Your trusted property platform.
-        </p>
-      </footer>
     </div>
   );
 };

@@ -596,3 +596,61 @@
     gap: 18px;
   }
 }
+
+/* ════════════════════════════════════════════════════
+   Property-type category bar (under top bar)
+   ════════════════════════════════════════════════════ */
+.sr-type-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 24px 16px;
+  border-bottom: 1px solid #ebebeb;
+  background: #fff;
+}
+
+.sr-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f7f7f7;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.sr-type-chip:hover {
+  background: #ececec;
+  border-color: #d9d9d9;
+}
+
+.sr-type-chip--active {
+  background: #134e2c;
+  color: #fff;
+  border-color: #134e2c;
+}
+
+.sr-type-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sr-type-chip--active .sr-type-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}

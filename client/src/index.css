@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+:root {
+  /* Brand palette — green = trust, navy = serious/professional. */
+  --brand-green: #1a8f5a;
+  --brand-green-dark: #127a45;
+  --brand-green-start: #1f9a5f;
+  --brand-navy: #16324f;
+  --brand-navy-light: #1f4a6d;
+}

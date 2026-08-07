@@ -5,16 +5,18 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js",
-    "seed": "node seed.js",
-    "seed:reset": "node seed.js --reset",
-    "backfill:amenities": "node scripts/backfillAmenities.js",
-    "backfill:amenities:force": "node scripts/backfillAmenities.js --force"
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "seed": "node demo-seed.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.2.1",
     "bcrypt": "^6.0.0",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
@@ -22,11 +24,13 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.3.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^9.3.2",
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^8.0.7",
     "nodemon": "^3.1.9",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "prisma": "^6.2.1"
   }
 }

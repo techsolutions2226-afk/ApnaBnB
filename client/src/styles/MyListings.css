@@ -161,11 +161,11 @@
   color: #fff;
 }
 
-/* Cards Grid */
+/* Cards Grid — 3 compact cards per row on desktop. */
 .ml-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
 }
 
 /* Individual Card */
@@ -186,7 +186,7 @@
 /* Card Image Section */
 .ml-card-image-section {
   position: relative;
-  height: 220px;
+  height: 150px;
   overflow: hidden;
 }
 
@@ -266,19 +266,19 @@
 
 /* Card Content */
 .ml-card-content {
-  padding: 20px;
+  padding: 16px;
 }
 
 .ml-card-header {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .ml-card-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #1e293b;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  margin: 0 0 6px 0;
+  line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -301,8 +301,8 @@
 /* Property Details */
 .ml-card-details {
   display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
@@ -310,10 +310,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  padding: 5px 10px;
   background: #f8fafc;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   color: #475569;
   font-weight: 500;
 }
@@ -322,8 +322,8 @@
 .ml-card-stats {
   display: flex;
   gap: 16px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -342,10 +342,10 @@
 
 /* Price */
 .ml-card-price {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 800;
   color: #1e293b;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   letter-spacing: -0.5px;
 }
 
@@ -361,7 +361,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
@@ -510,9 +510,9 @@
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
+@media (max-width: 1150px) {
   .ml-cards {
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

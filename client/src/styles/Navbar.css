@@ -3,13 +3,199 @@
    Responsive breakpoints: 900px, 640px
    =================================================== */
 
+/* ════════════════════════════════════════════
+   FIXED HEADER (announcement banner + navbar)
+   ════════════════════════════════════════════ */
+
+:root {
+  /* JS in Layout.jsx updates this at runtime to the actual header height. */
+  --app-header-h: 118px;
+}
+
+/* The whole header sits glued to the top of the viewport. It morphs slightly
+   on scroll via the --scrolled class added by Layout.jsx.
+   `display: flex` (column) makes the banner + navbar render as flex items so
+   no surprise margin-collapse or block-level whitespace can sneak between
+   them. */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  /* Solid white base so even if a child's bg is translucent there's no
+     visible "gap" between banner and navbar. */
+  background: #fff;
+  transition:
+    box-shadow 0.3s ease,
+    background-color 0.3s ease,
+    backdrop-filter 0.3s ease;
+}
+
+/* Force-zero margins on the two header children so they're guaranteed flush. */
+.app-header > .announcement-banner,
+.app-header > .navbar-wrapper {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Spacer pushes page content down so the fixed header doesn't overlap it. */
+.app-header-spacer {
+  height: var(--app-header-h, 118px);
+  flex-shrink: 0;
+}
+
+/* Subtle drop shadow at rest. */
+.app-header {
+  box-shadow: 0 1px 0 rgba(15, 29, 20, 0.06);
+}
+
+/* When the user scrolls past the threshold the header gets a stronger lift —
+   deeper shadow, slightly tighter blur, more confident presence. */
+.app-header--scrolled {
+  box-shadow:
+    0 1px 0 rgba(15, 29, 20, 0.04),
+    0 8px 28px rgba(15, 29, 20, 0.1);
+  backdrop-filter: saturate(200%) blur(14px);
+  -webkit-backdrop-filter: saturate(200%) blur(14px);
+}
+
+/* The navbar itself gets a slightly more opaque background when scrolled so
+   text contrast stays crisp even over busy hero photos. */
+.app-header--scrolled .navbar-wrapper {
+  background-color: rgba(255, 255, 255, 0.98);
+  border-bottom-color: transparent;
+}
+
+/* Announcement banner — thin gradient strip above the navbar. */
+.announcement-banner {
+  background: linear-gradient(90deg, #0f5132 0%, #134e2c 60%, #166534 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.announcement-banner-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 9px 24px;
+}
+
+.announcement-banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #86efac;
+  box-shadow: 0 0 0 4px rgba(134, 239, 172, 0.25);
+  animation: ann-pulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ann-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(134, 239, 172, 0.25); }
+  50%      { box-shadow: 0 0 0 8px rgba(134, 239, 172, 0.05); }
+}
+
+.announcement-banner-text {
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.2px;
+}
+
+.announcement-banner-text strong {
+  color: #fff;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.announcement-banner-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.announcement-banner-close:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 .navbar-wrapper {
   width: 100%;
-  background-color: #ffffff;
-  border-bottom: 1px solid #ebebeb;
+  margin: 0;
+  /* Slightly translucent — the white .app-header parent fills any gap. */
+  background-color: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(15, 29, 20, 0.08);
   font-family: "Circular","Helvetica Neue",Helvetica,Arial,sans-serif;
-  position: relative;
-  z-index: 100;
+}
+
+/* ════════════════════════════════════════════════════
+   Scroll-driven hide/show for the search bar portion
+   Toggled by Navbar.jsx onScroll handler. Landing page already nukes
+   these elements via body.hide-navbar-search so this is a no-op there.
+   ════════════════════════════════════════════════════ */
+
+/* Generous max-height at rest so the natural sizing works; transitions
+   target every property that affects vertical space so collapse is clean. */
+.navbar-bottom,
+.nav-mobile-pill {
+  max-height: 200px;
+  overflow: hidden;
+  transform-origin: top center;
+  will-change: transform, opacity, max-height;
+  transition:
+    transform 0.3s ease-in-out,
+    opacity 0.3s ease-in-out,
+    max-height 0.3s ease-in-out,
+    padding 0.3s ease-in-out,
+    margin 0.3s ease-in-out,
+    border-color 0.3s ease-in-out;
+}
+
+/* Fully collapse the search bar — no height, no padding, no border —
+   so the whole navbar shrinks visibly when scrolling down. */
+.navbar-bottom.nav-search-hidden,
+.nav-mobile-pill.nav-search-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+
+@media (max-width: 640px) {
+  .announcement-banner-inner {
+    padding: 8px 14px;
+    font-size: 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .announcement-banner-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* ── Top Row ── */
@@ -193,11 +379,11 @@
 .search-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   height: 48px; padding: 0 20px;
-  background: #ff385c; border: none; border-radius: 28px;
+  background: #1a8f5a; border: none; border-radius: 28px;
   cursor: pointer; margin-right: 8px;
   transition: background-color .2s, transform .15s; white-space: nowrap;
 }
-.search-btn:hover  { background: #e31c5f; transform: scale(1.03); }
+.search-btn:hover  { background: #127a45; transform: scale(1.03); }
 .search-btn:active { transform: scale(0.97); }
 .search-btn-label  { color: #fff; font-size: 15px; font-weight: 600; }
 
@@ -505,7 +691,7 @@
 
 .nav-mobile-search-btn {
   display: flex; align-items: center; gap: 8px;
-  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #127a45, #d70466);
   color: #fff; border: none; border-radius: 8px;
   padding: 12px 24px;
   font-size: 15px; font-weight: 700;

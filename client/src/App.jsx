@@ -26,10 +26,9 @@ import Profile from "./pages/Profile";
 import Wishlists from "./pages/Wishlists";
 import Trips from "./pages/Trips";
 
-/* ── Dashboards ── */
-import SellerDashboard from "./pages/SellerDashboard";
-import BuyerDashboard from "./pages/BuyerDashboard";
-import DealerDashboard from "./pages/DealerDashboard";
+/* ── Dashboard shell (sidebar + role selector) ── */
+import DashboardShell from "./components/dashboard/DashboardShell";
+import DashboardHome from "./pages/DashboardHome";
 
 /* ── Listing management pages (Step 4) ── */
 import CreateListing from "./pages/CreateListing";
@@ -62,6 +61,50 @@ function App() {
         <BookingProvider>
           <BrowserRouter>
             <Routes>
+                {/* ── Dashboard app shell (standalone — fixed sidebar, NO
+                    navbar/footer). Presentational wrapper only; the outer
+                    ProtectedRoute requires auth and each child keeps its OWN
+                    role gate. The role selector switches the VIEW only. ── */}
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <DashboardShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  {/* Dashboard home — body follows the selected view role;
+                      /dashboard/:role keeps login redirects working. */}
+                  <Route path="/dashboard" element={<DashboardHome />} />
+                  <Route path="/dashboard/:role" element={<DashboardHome />} />
+
+                  {/* Listing management — any authenticated user (auth via the
+                      shell's outer ProtectedRoute). The acting role is recorded
+                      on the property at create time. */}
+                  <Route path="/listing/new" element={<CreateListing />} />
+                  <Route path="/listing/:id/edit" element={<EditListing />} />
+                  <Route path="/listing/:id" element={<ViewListing />} />
+                  <Route path="/my-listings" element={<MyListings />} />
+
+                  {/* Requirements — any authenticated user. The acting role is
+                      recorded on the requirement at create time. */}
+                  <Route path="/requirements/new" element={<PostRequirement />} />
+                  <Route path="/requirements/:id/edit" element={<EditRequirement />} />
+                  <Route path="/requirements/:id" element={<ViewRequirement />} />
+                  <Route path="/requirements" element={<RequirementsBoard />} />
+
+                  {/* Matches, Messages, Wishlists, Trips (all authenticated
+                      — auth enforced by the shell's outer ProtectedRoute) */}
+                  <Route path="/matches" element={<Matches />} />
+                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/wishlists" element={<Wishlists />} />
+                  <Route path="/trips" element={<Trips />} />
+
+                  {/* Account pages — rendered inside the shell (sidebar + content) */}
+                  <Route path="/account" element={<Account />} />
+                  <Route path="/account/personal-info" element={<PersonalInfo />} />
+                  <Route path="/account/notifications" element={<Notifications />} />
+                </Route>
+
                 {/* ── Public routes with layout (navbar + footer) ── */}
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
@@ -69,162 +112,12 @@ function App() {
                   <Route path="/experiences" element={<Experiences />} />
                   <Route path="/services" element={<Services />} />
                   <Route path="/search" element={<SearchResults />} />
+                  {/* Clean URLs for the For Sale / For Rent landing cards.
+                      SearchResults reads `purpose` from the URL pathname. */}
+                  <Route path="/sale" element={<SearchResults />} />
+                  <Route path="/rent" element={<SearchResults />} />
                   <Route path="/plans" element={<Plans />} />
                   <Route path="/users/:id" element={<Profile />} />
-
-                  {/* ── Auth-protected routes with layout ── */}
-                  <Route
-                    path="/account"
-                    element={
-                      <ProtectedRoute>
-                        <Account />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/account/personal-info"
-                    element={
-                      <ProtectedRoute>
-                        <PersonalInfo />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/account/notifications"
-                    element={
-                      <ProtectedRoute>
-                        <Notifications />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/wishlists"
-                    element={
-                      <ProtectedRoute>
-                        <Wishlists />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/trips"
-                    element={
-                      <ProtectedRoute>
-                        <Trips />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* ── Role-based dashboards ── */}
-                  <Route
-                    path="/dashboard/seller"
-                    element={
-                      <ProtectedRoute roles={["seller"]}>
-                        <SellerDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/dashboard/buyer"
-                    element={
-                      <ProtectedRoute roles={["buyer"]}>
-                        <BuyerDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/dashboard/dealer"
-                    element={
-                      <ProtectedRoute roles={["dealer"]}>
-                        <DealerDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* ── Listing management (sellers + dealers) ── */}
-                  <Route
-                    path="/listing/new"
-                    element={
-                      <ProtectedRoute roles={["seller", "dealer"]}>
-                        <CreateListing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/listing/:id/edit"
-                    element={
-                      <ProtectedRoute roles={["seller", "dealer"]}>
-                        <EditListing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/listing/:id"
-                    element={
-                      <ProtectedRoute roles={["seller", "dealer"]}>
-                        <ViewListing />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/my-listings"
-                    element={
-                      <ProtectedRoute roles={["seller", "dealer"]}>
-                        <MyListings />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* ── Requirements (buyers + dealers) ── */}
-                  <Route
-                    path="/requirements/new"
-                    element={
-                      <ProtectedRoute roles={["buyer", "dealer"]}>
-                        <PostRequirement />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/requirements/:id"
-                    element={
-                      <ProtectedRoute roles={["buyer", "dealer"]}>
-                        <ViewRequirement />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/requirements/:id/edit"
-                    element={
-                      <ProtectedRoute roles={["buyer", "dealer"]}>
-                        <EditRequirement />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/requirements"
-                    element={
-                      <ProtectedRoute roles={["seller", "dealer"]}>
-                        <RequirementsBoard />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* ── Matches & Messages (all authenticated) ── */}
-                  <Route
-                    path="/matches"
-                    element={
-                      <ProtectedRoute>
-                        <Matches />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/messages"
-                    element={
-                      <ProtectedRoute>
-                        <Messages />
-                      </ProtectedRoute>
-                    }
-                  />
 
                   {/* ── Admin ── */}
                   <Route

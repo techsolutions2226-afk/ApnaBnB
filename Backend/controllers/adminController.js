@@ -1,30 +1,34 @@
-﻿const User = require('../models/User');
-const Property = require('../models/Property');
-const Requirement = require('../models/Requirement');
-const Match = require('../models/Match');
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
+const prisma = require('../db/prisma');
+const { decryptMessage } = require('../utils/messageCrypto');
 
 // Get platform stats
 const getPlatformStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalProperties = await Property.countDocuments();
-    const totalActiveProperties = await Property.countDocuments({ status: 'active' });
-    const totalRequirements = await Requirement.countDocuments();
-    const totalMatches = await Match.countDocuments();
-    const totalConversations = await Conversation.countDocuments();
-    const totalMessages = await Message.countDocuments();
-
-    // User breakdown by role
-    const usersByRole = await User.aggregate([
-      { $group: { _id: '$role', count: { $sum: 1 } } }
+    const [
+      totalUsers,
+      totalProperties,
+      totalActiveProperties,
+      totalRequirements,
+      totalMatches,
+      totalConversations,
+      totalMessages,
+      roleGroups,
+      statusGroups,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.property.count(),
+      prisma.property.count({ where: { status: 'active' } }),
+      prisma.requirement.count(),
+      prisma.match.count(),
+      prisma.conversation.count(),
+      prisma.message.count(),
+      prisma.user.groupBy({ by: ['role'], _count: { _all: true } }),
+      prisma.property.groupBy({ by: ['status'], _count: { _all: true } }),
     ]);
 
-    // Listings by status
-    const listingsByStatus = await Property.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ]);
+    // Match the previous {_id, count} shape the dashboard consumes.
+    const usersByRole = roleGroups.map((g) => ({ _id: g.role, count: g._count._all }));
+    const listingsByStatus = statusGroups.map((g) => ({ _id: g.status, count: g._count._all }));
 
     res.status(200).json({
       totalUsers,
@@ -35,7 +39,7 @@ const getPlatformStats = async (req, res) => {
       totalConversations,
       totalMessages,
       usersByRole,
-      listingsByStatus
+      listingsByStatus,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -46,24 +50,27 @@ const getPlatformStats = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const { role, verified, page = 1, limit = 20 } = req.query;
-    let filter = {};
-    
-    if (role) filter.role = role;
-    if (verified !== undefined) filter.verified = verified === 'true';
+    const where = {};
 
-    const users = await User.find(filter)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    if (role) where.role = role;
+    if (verified !== undefined) where.verified = verified === 'true';
 
-    const total = await User.countDocuments(filter);
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        omit: { password: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+      }),
+      prisma.user.count({ where }),
+    ]);
 
     res.status(200).json({
       users,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit)
+      pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -75,20 +82,18 @@ const getUserById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const user = await User.findById(id).select('-password');
+    const user = await prisma.user.findUnique({ where: { id }, omit: { password: true } });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    // Get user's activity
-    const listings = await Property.countDocuments({ listedBy: id });
-    const requirements = await Requirement.countDocuments({ requiredBy: id });
-    const matches = await Match.countDocuments({ initiator: id });
+    const [listings, requirements, matches] = await Promise.all([
+      prisma.property.count({ where: { listedById: id } }),
+      prisma.requirement.count({ where: { requiredById: id } }),
+      prisma.match.count({ where: { initiatorId: id } }),
+    ]);
 
-    res.status(200).json({
-      user,
-      activity: { listings, requirements, matches }
-    });
+    res.status(200).json({ user, activity: { listings, requirements, matches } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -104,16 +109,16 @@ const manageUser = async (req, res) => {
   }
 
   try {
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    user.verified = action === 'verify';
-    await user.save();
-
+    const user = await prisma.user.update({
+      where: { id },
+      data: { verified: action === 'verify' },
+      omit: { password: true },
+    });
     res.status(200).json({ message: `User ${action}ed successfully.`, user });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -121,20 +126,17 @@ const manageUser = async (req, res) => {
 // Verify user endpoint (specific)
 const verifyUser = async (req, res) => {
   const { id } = req.params;
-
   try {
-    const user = await User.findByIdAndUpdate(
-      id,
-      { verified: true },
-      { returnDocument: 'after' }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
+    const user = await prisma.user.update({
+      where: { id },
+      data: { verified: true },
+      omit: { password: true },
+    });
     res.status(200).json({ message: 'User verified successfully.', user });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -142,20 +144,17 @@ const verifyUser = async (req, res) => {
 // Suspend user endpoint (specific)
 const suspendUser = async (req, res) => {
   const { id } = req.params;
-
   try {
-    const user = await User.findByIdAndUpdate(
-      id,
-      { verified: false },
-      { returnDocument: 'after' }
-    ).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
+    const user = await prisma.user.update({
+      where: { id },
+      data: { verified: false },
+      omit: { password: true },
+    });
     res.status(200).json({ message: 'User suspended successfully.', user });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -164,24 +163,27 @@ const suspendUser = async (req, res) => {
 const getAllProperties = async (req, res) => {
   try {
     const { status, city, page = 1, limit = 20 } = req.query;
-    let filter = {};
-    
-    if (status) filter.status = status;
-    if (city) filter['location.city'] = city;
+    const where = {};
 
-    const properties = await Property.find(filter)
-      .populate('listedBy', 'name email role')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    if (status) where.status = status;
+    if (city) where.location = { path: ['city'], equals: city };
 
-    const total = await Property.countDocuments(filter);
+    const [properties, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        include: { listedBy: { select: { id: true, name: true, email: true, role: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+      }),
+      prisma.property.count({ where }),
+    ]);
 
     res.status(200).json({
       properties,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit)
+      pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -191,20 +193,17 @@ const getAllProperties = async (req, res) => {
 // Approve property
 const approveProperty = async (req, res) => {
   const { id } = req.params;
-
   try {
-    const property = await Property.findByIdAndUpdate(
-      id,
-      { status: 'active' },
-      { returnDocument: 'after' }
-    ).populate('listedBy', 'name email');
-
-    if (!property) {
-      return res.status(404).json({ message: 'Property not found.' });
-    }
-
+    const property = await prisma.property.update({
+      where: { id },
+      data: { status: 'active' },
+      include: { listedBy: { select: { id: true, name: true, email: true } } },
+    });
     res.status(200).json({ message: 'Property approved successfully.', property });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -212,20 +211,17 @@ const approveProperty = async (req, res) => {
 // Reject property
 const rejectProperty = async (req, res) => {
   const { id } = req.params;
-
   try {
-    const property = await Property.findByIdAndUpdate(
-      id,
-      { status: 'rejected' },
-      { returnDocument: 'after' }
-    ).populate('listedBy', 'name email');
-
-    if (!property) {
-      return res.status(404).json({ message: 'Property not found.' });
-    }
-
+    const property = await prisma.property.update({
+      where: { id },
+      data: { status: 'rejected' },
+      include: { listedBy: { select: { id: true, name: true, email: true } } },
+    });
     res.status(200).json({ message: 'Property rejected successfully.', property });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -240,43 +236,48 @@ const moderateProperty = async (req, res) => {
   }
 
   try {
-    const property = await Property.findById(id);
-    if (!property) {
-      return res.status(404).json({ message: 'Property not found.' });
-    }
-
     if (action === 'delete') {
-      await Property.findByIdAndDelete(id);
+      await prisma.property.delete({ where: { id } });
     } else {
-      property.status = action === 'approve' ? 'active' : 'rejected';
-      await property.save();
+      await prisma.property.update({
+        where: { id },
+        data: { status: action === 'approve' ? 'active' : 'rejected' },
+      });
     }
-
     res.status(200).json({ message: `Property ${action}d successfully.` });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all messages (admin view)
+// Get all messages (admin view) — content decrypted for readability.
 const getAllMessages = async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query;
 
-    const messages = await Message.find()
-      .populate('sender', 'name email role')
-      .populate('conversationId')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const [messages, total] = await Promise.all([
+      prisma.message.findMany({
+        include: {
+          sender: { select: { id: true, name: true, email: true, role: true } },
+          conversation: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+      }),
+      prisma.message.count(),
+    ]);
 
-    const total = await Message.countDocuments();
+    const decrypted = messages.map((m) => ({ ...m, content: decryptMessage(m.content) }));
 
     res.status(200).json({
-      messages,
+      messages: decrypted,
       total,
       page: Number(page),
-      pages: Math.ceil(total / limit)
+      pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -288,30 +289,27 @@ const getActivityLogs = async (req, res) => {
   try {
     const { days = 7 } = req.query;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const w = { createdAt: { gte: since } };
 
-    // Get counts by day
-    const userSignups = await User.countDocuments({ createdAt: { $gte: since } });
-    const newListings = await Property.countDocuments({ createdAt: { $gte: since } });
-    const newRequirements = await Requirement.countDocuments({ createdAt: { $gte: since } });
-    const newMatches = await Match.countDocuments({ createdAt: { $gte: since } });
-    const newMessages = await Message.countDocuments({ createdAt: { $gte: since } });
+    const [userSignups, newListings, newRequirements, newMatches, newMessages] =
+      await Promise.all([
+        prisma.user.count({ where: w }),
+        prisma.property.count({ where: w }),
+        prisma.requirement.count({ where: w }),
+        prisma.match.count({ where: w }),
+        prisma.message.count({ where: w }),
+      ]);
 
     res.status(200).json({
       period: `${days} days`,
-      activity: {
-        userSignups,
-        newListings,
-        newRequirements,
-        newMatches,
-        newMessages
-      }
+      activity: { userSignups, newListings, newRequirements, newMatches, newMessages },
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { 
+module.exports = {
   getPlatformStats,
   getAllUsers,
   getUserById,
@@ -323,5 +321,5 @@ module.exports = {
   rejectProperty,
   moderateProperty,
   getAllMessages,
-  getActivityLogs
+  getActivityLogs,
 };

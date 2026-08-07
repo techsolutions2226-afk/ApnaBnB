@@ -127,42 +127,44 @@ const Signup = () => {
   };
 
   return (
-    <div className="auth-page">
-      {/* ── Minimal Header ── */}
-      <header className="auth-header">
-        <Link to="/" className="auth-logo-link" aria-label="apnabnb home">
-          <Logo size={56} />
+    <div className="signup-page">
+      {/* ── Left Panel: brand / imagery ── */}
+      <div className="signup-left">
+        <Link to="/" className="signup-logo-link" aria-label="apnabnb home">
+          <span className="signup-logo-wrap">
+            <Logo size={40} />
+          </span>
         </Link>
-      </header>
 
-      {/* ── Signup Card ── */}
-      <div className="auth-card">
-        {/* Card Header */}
-        <div className="auth-card-header">
-          <h1 className="auth-card-title">Sign up</h1>
+        <div className="signup-left-content">
+          <h1 className="signup-left-title">Discover Your Next Space</h1>
         </div>
+      </div>
 
-         <div className="auth-card-body">
-           <p className="auth-welcome">Welcome to the marketplace</p>
+      {/* ── Right Panel: signup form ── */}
+      <div className="signup-right">
+        <div className="signup-right-inner">
+          <h1 className="signup-title">Welcome to the marketplace</h1>
+          <p className="signup-subtitle">Join 10,000+ verified members.</p>
 
-           <form className="auth-form" onSubmit={handleSubmit} noValidate>
-             {/* ── Role Selector ── */}
-             <div className="auth-role-section">
-               <p className="auth-role-title">I want to join as</p>
-               <div className="auth-role-grid">
-                 {ROLES.map((r) => (
-                   <button
-                     key={r.value}
-                     type="button"
-                     className={`auth-role-card ${form.role === r.value ? "auth-role-card--active" : ""} ${errors.role ? "auth-role-card--error" : ""}`}
+          <form className="signup-form" onSubmit={handleSubmit} noValidate>
+            {/* ── Role Selector ── */}
+            <div className="signup-role-section">
+              <p className="signup-role-title">I want to join as</p>
+              <div className="signup-role-grid">
+                {ROLES.map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    className={`signup-role-card ${form.role === r.value ? "signup-role-card--active" : ""} ${errors.role ? "signup-role-card--error" : ""}`}
                     onClick={() => selectRole(r.value)}
                     disabled={isLoading}
                   >
-                    <span className="auth-role-icon">{r.icon}</span>
-                    <span className="auth-role-label">{r.label}</span>
-                    <span className="auth-role-desc">{r.description}</span>
+                    <span className="signup-role-icon">{r.icon}</span>
+                    <span className="signup-role-label">{r.label}</span>
+                    <span className="signup-role-desc">{r.description}</span>
                     {form.role === r.value && (
-                      <span className="auth-role-check">
+                      <span className="signup-role-check">
                         <svg
                           viewBox="0 0 24 24"
                           fill="none"
@@ -179,123 +181,126 @@ const Signup = () => {
                 ))}
               </div>
               {errors.role && (
-                <p className="auth-error" style={{ marginTop: 8 }}>
+                <p className="signup-error" style={{ marginTop: 8 }}>
                   {errors.role}
                 </p>
               )}
             </div>
 
             {/* Name Fields */}
-            <div
-              className={`auth-input-group ${errors.firstName || errors.lastName ? "auth-input-group--error" : ""}`}
-            >
-              <div className="auth-input-wrapper auth-input-wrapper--top">
-                <input
-                  type="text"
-                  id="signup-first"
-                  className="auth-input"
-                  placeholder=" "
-                  value={form.firstName}
-                  onChange={update("firstName")}
-                  autoComplete="given-name"
-                  disabled={isLoading}
-                />
-                <label htmlFor="signup-first" className="auth-label">
+            <div className="signup-field-row-pair">
+              <div className="signup-field">
+                <label htmlFor="signup-first" className="signup-field-label">
                   First name
                 </label>
+                <div
+                  className={`signup-input-wrapper ${errors.firstName ? "signup-input-wrapper--error" : ""}`}
+                >
+                  <input
+                    type="text"
+                    id="signup-first"
+                    className="signup-input"
+                    placeholder="First name"
+                    value={form.firstName}
+                    onChange={update("firstName")}
+                    autoComplete="given-name"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
-              <div className="auth-input-wrapper auth-input-wrapper--bottom">
-                <input
-                  type="text"
-                  id="signup-last"
-                  className="auth-input"
-                  placeholder=" "
-                  value={form.lastName}
-                  onChange={update("lastName")}
-                  autoComplete="family-name"
-                  disabled={isLoading}
-                />
-                <label htmlFor="signup-last" className="auth-label">
+              <div className="signup-field">
+                <label htmlFor="signup-last" className="signup-field-label">
                   Last name
                 </label>
+                <div
+                  className={`signup-input-wrapper ${errors.lastName ? "signup-input-wrapper--error" : ""}`}
+                >
+                  <input
+                    type="text"
+                    id="signup-last"
+                    className="signup-input"
+                    placeholder="Last name"
+                    value={form.lastName}
+                    onChange={update("lastName")}
+                    autoComplete="family-name"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
             </div>
-            <p className="auth-hint">
+            <p className="signup-hint">
               Make sure it matches the name on your government ID.
             </p>
 
             {/* Birthdate */}
-            <div
-              className={`auth-input-group ${errors.birthdate ? "auth-input-group--error" : ""}`}
-            >
-              <div className="auth-input-wrapper auth-input-wrapper--single">
+            <div className="signup-field">
+              <label htmlFor="signup-dob" className="signup-field-label">
+                Date of birth (dd/mm/yyyy)
+              </label>
+              <div
+                className={`signup-input-wrapper ${errors.birthdate ? "signup-input-wrapper--error" : ""}`}
+              >
                 <input
                   type="date"
                   id="signup-dob"
-                  className="auth-input auth-input--date"
+                  className="signup-input signup-input--date"
                   value={form.birthdate}
                   onChange={update("birthdate")}
                   autoComplete="bday"
                   disabled={isLoading}
                 />
-                <label
-                  htmlFor="signup-dob"
-                  className="auth-label auth-label--date"
-                >
-                  Date of birth
-                </label>
               </div>
+              <p className="signup-hint">
+                To sign up, you need to be at least 18. Your birthday won't be
+                shared with other people who use this platform.
+              </p>
             </div>
-            <p className="auth-hint">
-              To sign up, you need to be at least 18. Your birthday won't be
-              shared with other people who use this platform.
-            </p>
 
             {/* Email */}
-            <div
-              className={`auth-input-group ${errors.email ? "auth-input-group--error" : ""}`}
-            >
-              <div className="auth-input-wrapper auth-input-wrapper--single">
+            <div className="signup-field">
+              <label htmlFor="signup-email" className="signup-field-label">
+                Email
+              </label>
+              <div
+                className={`signup-input-wrapper ${errors.email ? "signup-input-wrapper--error" : ""}`}
+              >
                 <input
                   type="email"
                   id="signup-email"
-                  className="auth-input"
-                  placeholder=" "
+                  className="signup-input"
+                  placeholder="name@example.com"
                   value={form.email}
                   onChange={update("email")}
                   autoComplete="email"
                   disabled={isLoading}
                 />
-                <label htmlFor="signup-email" className="auth-label">
-                  Email
-                </label>
               </div>
+              <p className="signup-hint">
+                We'll email you property updates and confirmations.
+              </p>
             </div>
-            <p className="auth-hint">
-              We'll email you property updates and confirmations.
-            </p>
 
             {/* Password */}
-            <div
-              className={`auth-input-group ${errors.password ? "auth-input-group--error" : ""}`}
-            >
-              <div className="auth-input-wrapper auth-input-wrapper--single">
+            <div className="signup-field">
+              <label htmlFor="signup-password" className="signup-field-label">
+                Password
+              </label>
+              <div
+                className={`signup-input-wrapper ${errors.password ? "signup-input-wrapper--error" : ""}`}
+              >
                 <input
                   type={showPassword ? "text" : "password"}
                   id="signup-password"
-                  className="auth-input"
-                  placeholder=" "
+                  className="signup-input signup-input--password"
+                  placeholder="••••••••"
                   value={form.password}
                   onChange={update("password")}
                   autoComplete="new-password"
                   disabled={isLoading}
                 />
-                <label htmlFor="signup-password" className="auth-label">
-                  Password
-                </label>
                 <button
                   type="button"
-                  className="auth-toggle-pw"
+                  className="signup-toggle-pw"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -303,16 +308,7 @@ const Signup = () => {
                 </button>
               </div>
               {/* Password requirement chips — each turns green when satisfied. */}
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px 14px",
-                  marginTop: 10,
-                  fontSize: 12,
-                  lineHeight: 1.4,
-                }}
-              >
+              <div className="signup-pw-checks">
                 {[
                   { key: "lowercase", label: "Lowercase letter" },
                   { key: "uppercase", label: "Uppercase letter" },
@@ -323,14 +319,7 @@ const Signup = () => {
                   return (
                     <span
                       key={key}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 4,
-                        color: ok ? "#00a578" : "#9e9e9e",
-                        fontWeight: ok ? 600 : 400,
-                        transition: "color 0.2s ease",
-                      }}
+                      className={`signup-pw-chip ${ok ? "signup-pw-chip--ok" : ""}`}
                     >
                       <span aria-hidden="true">{ok ? "✓" : "○"}</span>
                       {label}
@@ -342,70 +331,70 @@ const Signup = () => {
 
             {/* Validation Errors */}
             {Object.keys(errors).length > 0 && (
-              <div className="auth-errors">
+              <div className="signup-errors">
                 {errors.firstName && (
-                  <p className="auth-error">{errors.firstName}</p>
+                  <p className="signup-error">{errors.firstName}</p>
                 )}
                 {errors.lastName && (
-                  <p className="auth-error">{errors.lastName}</p>
+                  <p className="signup-error">{errors.lastName}</p>
                 )}
                 {errors.birthdate && (
-                  <p className="auth-error">{errors.birthdate}</p>
+                  <p className="signup-error">{errors.birthdate}</p>
                 )}
-                {errors.email && <p className="auth-error">{errors.email}</p>}
+                {errors.email && <p className="signup-error">{errors.email}</p>}
                 {errors.password && (
-                  <p className="auth-error">{errors.password}</p>
+                  <p className="signup-error">{errors.password}</p>
                 )}
                 {errors.agreed && (
-                  <p className="auth-error">{errors.agreed}</p>
+                  <p className="signup-error">{errors.agreed}</p>
                 )}
               </div>
             )}
 
             {/* Terms & Policy */}
-            <p className="auth-terms">
+            <p className="signup-terms">
               By selecting <strong>Agree and continue</strong>, I agree to the
               platform's{" "}
-              <a href="#" className="auth-terms-link">
+              <a href="#" className="signup-terms-link">
                 Terms of Service
               </a>
               ,{" "}
-              <a href="#" className="auth-terms-link">
+              <a href="#" className="signup-terms-link">
                 Payments Terms of Service
               </a>
               , and{" "}
-              <a href="#" className="auth-terms-link">
+              <a href="#" className="signup-terms-link">
                 Nondiscrimination Policy
               </a>{" "}
               and acknowledge the{" "}
-              <a href="#" className="auth-terms-link">
+              <a href="#" className="signup-terms-link">
                 Privacy Policy
               </a>
               .
             </p>
 
             {/* Agree Checkbox */}
-            <label className="auth-checkbox-row">
+            <label className="signup-checkbox-row">
               <input
                 type="checkbox"
-                className="auth-checkbox"
+                className="signup-checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
                 disabled={isLoading}
               />
-              <span className="auth-checkbox-text">
+              <span className="signup-checkbox-text">
                 I agree to the platform's terms and policies
               </span>
             </label>
 
             <button
               type="submit"
-              className="auth-btn auth-btn--primary"
+              className="signup-submit-btn"
               disabled={isLoading}
             >
               {isLoading ? (
-                <span className="auth-btn-loading">
-                  <span className="auth-spinner" />
+                <span className="signup-btn-loading">
+                  <span className="signup-spinner" />
                   Creating account...
                 </span>
               ) : (
@@ -415,52 +404,45 @@ const Signup = () => {
           </form>
 
           {/* Divider */}
-          <div className="auth-divider">
-            <span className="auth-divider-line" />
-            <span className="auth-divider-text">or</span>
-            <span className="auth-divider-line" />
+          <div className="signup-divider">
+            <span className="signup-divider-line" />
+            <span className="signup-divider-text">or</span>
+            <span className="signup-divider-line" />
           </div>
 
           {/* Social Signup Buttons */}
-          <div className="auth-social-list">
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FcGoogle size={22} className="auth-social-icon" />
+          <div className="signup-social-list">
+            <button className="signup-social-btn" disabled={isLoading}>
+              <FcGoogle size={20} className="signup-social-icon" />
               <span>Continue with Google</span>
             </button>
-            <button className="auth-social-btn" disabled={isLoading}>
+            <button className="signup-social-btn" disabled={isLoading}>
               <FaFacebook
-                size={22}
+                size={20}
                 color="#1877F2"
-                className="auth-social-icon"
+                className="signup-social-icon"
               />
               <span>Continue with Facebook</span>
             </button>
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FaApple size={22} className="auth-social-icon" />
+            <button className="signup-social-btn" disabled={isLoading}>
+              <FaApple size={20} className="signup-social-icon" />
               <span>Continue with Apple</span>
             </button>
-            <button className="auth-social-btn" disabled={isLoading}>
-              <FiMail size={22} className="auth-social-icon" />
+            <button className="signup-social-btn" disabled={isLoading}>
+              <FiMail size={20} className="signup-social-icon" />
               <span>Continue with email</span>
             </button>
           </div>
 
           {/* Login link */}
-          <p className="auth-switch">
+          <p className="signup-switch">
             Already have an account?{" "}
-            <Link to="/login" className="auth-switch-link">
+            <Link to="/login" className="signup-switch-link">
               Log in
             </Link>
           </p>
         </div>
       </div>
-
-      {/* ── Footer ── */}
-      <footer className="auth-footer">
-        <p className="auth-footer-text">
-          Real Estate Marketplace &mdash; Your trusted property platform.
-        </p>
-      </footer>
     </div>
   );
 };

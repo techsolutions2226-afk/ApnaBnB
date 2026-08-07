@@ -58,6 +58,10 @@ const CreateListing = () => {
           contactName: formData.contactName,
           contactEmail: formData.contactEmail,
           contactPhone: formData.contactPhone,
+          // The role the user is acting as (from the dashboard role selector).
+          // Backend clamps this to seller|dealer and stores it on the property.
+          actingRole:
+            localStorage.getItem("dash_view_role") || currentUser?.role,
         };
 
         const createdProperty = await createProperty(propertyData);

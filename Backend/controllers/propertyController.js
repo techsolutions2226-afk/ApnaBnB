@@ -1,54 +1,107 @@
-﻿const Property = require('../models/Property');
-const Requirement = require('../models/Requirement');
-const Match = require('../models/Match');
-const User = require('../models/User');
+const prisma = require('../db/prisma');
 const { geocodeAddress } = require('../utils/geocode');
 const {
   calculateMatchScore,
   determineMatchType,
   isMatchCandidate,
+  normalizeSupply,
 } = require('../utils/matchScore');
 
+// ── Helpers ──────────────────────────────────────────────────────────────
+const num = (v) =>
+  v === undefined || v === null || v === '' ? undefined : Number(v);
+
+// Whitelist + coerce the writable Property fields. Prisma rejects unknown keys
+// (so raw req.body would throw on stray `_id`/`listedBy`), and it won't coerce
+// string→number the way Mongoose did — so we normalise here. `partial` keeps
+// only the keys present in the body (for updates).
+const buildPropertyData = (body, { partial = false } = {}) => {
+  const data = {};
+  const set = (key, val) => {
+    if (val !== undefined) data[key] = val;
+  };
+
+  if (!partial || 'title' in body) set('title', body.title);
+  if (!partial || 'description' in body) set('description', body.description);
+  if (!partial || 'photos' in body)
+    set('photos', Array.isArray(body.photos) ? body.photos : undefined);
+  if (!partial || 'location' in body) set('location', body.location);
+  if (!partial || 'price' in body) set('price', num(body.price));
+  if (!partial || 'purpose' in body) set('purpose', body.purpose);
+  if (!partial || 'category' in body) set('category', body.category);
+  if (!partial || 'propertyType' in body) set('propertyType', body.propertyType);
+  if (!partial || 'size' in body) set('size', num(body.size));
+  if (!partial || 'sizeUnit' in body) set('sizeUnit', body.sizeUnit);
+  if (!partial || 'bedrooms' in body) set('bedrooms', num(body.bedrooms));
+  if (!partial || 'bathrooms' in body) set('bathrooms', num(body.bathrooms));
+  if (!partial || 'amenities' in body)
+    set('amenities', Array.isArray(body.amenities) ? body.amenities : undefined);
+  if (!partial || 'securityDeposit' in body)
+    set('securityDeposit', num(body.securityDeposit));
+  if (!partial || 'leaseTerm' in body) set('leaseTerm', num(body.leaseTerm));
+  if (!partial || 'furnished' in body) set('furnished', body.furnished);
+  if ('availableFrom' in body)
+    set('availableFrom', body.availableFrom ? new Date(body.availableFrom) : null);
+  if (!partial || 'contactName' in body) set('contactName', body.contactName);
+  if (!partial || 'contactEmail' in body) set('contactEmail', body.contactEmail);
+  if (!partial || 'contactPhone' in body) set('contactPhone', body.contactPhone);
+  if ('status' in body) set('status', body.status);
+
+  return data;
+};
+
+const listedBySelect = {
+  select: { id: true, name: true, email: true, role: true, avatar: true },
+};
+
 // Auto-generate matches for a newly-created property.
-// Pre-filters requirements by city + area + propertyType + price ±10%,
-// then derives match type from the two owners' roles.
+// Pre-filters requirements by city + propertyType (+ active), then refines with
+// isMatchCandidate (area/price/purpose) and derives match type from roles.
 const generateMatchesForProperty = async (property, userId) => {
   try {
-    const propertyOwner = await User.findById(property.listedBy).select('role');
+    const propertyOwner = await prisma.user.findUnique({
+      where: { id: property.listedById },
+      select: { role: true },
+    });
     if (!propertyOwner) return [];
 
-    // City + type filter at the DB layer — keeps payload small.
-    // Finer-grained area/price checks happen in JS via isMatchCandidate
-    // (Mongo can't express "area substring" cleanly).
-    const requirements = await Requirement.find({
-      'location.city': property.location.city,
-      propertyType: { $in: [property.propertyType, property.propertyType.toLowerCase()] },
-      // Only active requirements should produce matches — fulfilled/closed are done.
-      status: 'active',
-    }).populate('requiredBy', 'role');
+    const pt = property.propertyType;
+    const requirements = await prisma.requirement.findMany({
+      where: {
+        location: { path: ['city'], equals: property.location.city },
+        propertyType: { in: [pt, pt.toLowerCase()] },
+        status: 'active',
+      },
+      include: { requiredBy: { select: { id: true, role: true } } },
+    });
 
     const matches = [];
     for (const requirement of requirements) {
       if (!isMatchCandidate(property, requirement)) continue;
 
-      const requirementOwner = requirement.requiredBy;
-      const matchType = determineMatchType(propertyOwner.role, requirementOwner?.role);
+      // Prefer the role each party was ACTING AS when they created the record;
+      // fall back to their account role for pre-migration rows.
+      const matchType = determineMatchType(
+        property.actingRole || propertyOwner.role,
+        requirement.actingRole || requirement.requiredBy?.role,
+      );
       if (!matchType) continue;
 
-      const existingMatch = await Match.findOne({
-        property: property._id,
-        requirement: requirement._id,
+      const existingMatch = await prisma.match.findFirst({
+        where: { propertyId: property.id, requirementId: requirement.id },
       });
       if (existingMatch) continue;
 
       const score = calculateMatchScore(property, requirement);
-      const match = await Match.create({
-        property: property._id,
-        requirement: requirement._id,
-        initiator: userId,
-        score,
-        type: matchType,
-        status: 'pending',
+      const match = await prisma.match.create({
+        data: {
+          propertyId: property.id,
+          requirementId: requirement.id,
+          initiatorId: userId,
+          score,
+          type: matchType,
+          status: 'pending',
+        },
       });
       matches.push(match);
     }
@@ -61,28 +114,7 @@ const generateMatchesForProperty = async (property, userId) => {
 
 // Create a new property
 const createProperty = async (req, res) => {
-  const {
-    title,
-    description,
-    location,
-    price,
-    purpose,
-    category,
-    propertyType,
-    size,
-    sizeUnit,
-    bedrooms,
-    bathrooms,
-    photos,
-    amenities,
-    securityDeposit,
-    leaseTerm,
-    furnished,
-    availableFrom,
-    contactName,
-    contactEmail,
-    contactPhone,
-  } = req.body;
+  const { title, location, price, propertyType } = req.body;
 
   // Validation
   if (!title || !location || !price || !propertyType) {
@@ -105,29 +137,23 @@ const createProperty = async (req, res) => {
       }
     }
 
-    const property = await Property.create({
-      title,
-      description,
-      photos,
-      location: resolvedLocation,
-      price,
-      purpose: purpose || 'sale',
-      category: category || 'home',
-      propertyType,
-      size,
-      sizeUnit: sizeUnit || 'Marla',
-      bedrooms,
-      bathrooms,
-      amenities: Array.isArray(amenities) ? amenities : [],
-      securityDeposit: securityDeposit || 0,
-      leaseTerm: leaseTerm || 12,
-      furnished: furnished || 'unfurnished',
-      availableFrom: availableFrom || undefined,
-      contactName: contactName || '',
-      contactEmail: contactEmail || '',
-      contactPhone: contactPhone || '',
-      listedBy: req.user.id,
-    });
+    const data = buildPropertyData(req.body);
+    data.location = resolvedLocation;
+    data.purpose = req.body.purpose || 'sale';
+    data.category = req.body.category || 'home';
+    data.sizeUnit = req.body.sizeUnit || 'Marla';
+    data.furnished = req.body.furnished || 'unfurnished';
+    data.securityDeposit = num(req.body.securityDeposit) || 0;
+    data.leaseTerm = num(req.body.leaseTerm) || 12;
+    data.photos = Array.isArray(req.body.photos) ? req.body.photos : [];
+    data.amenities = Array.isArray(req.body.amenities) ? req.body.amenities : [];
+    data.listedById = req.user.id;
+    // Record the hat the user wore when listing (supply side). Uses the role
+    // they selected in the dashboard, clamped to seller|dealer; falls back to
+    // their account role.
+    data.actingRole = normalizeSupply(req.body.actingRole || req.user.role);
+
+    const property = await prisma.property.create({ data });
 
     // Generate automatic matches
     await generateMatchesForProperty(property, req.user.id);
@@ -141,17 +167,20 @@ const createProperty = async (req, res) => {
 // Get all properties (with filters)
 const getProperties = async (req, res) => {
   const { city, price, propertyType } = req.query;
-  let filter = {};
+  const where = {};
 
-  if (city) filter['location.city'] = city;
+  if (city) where.location = { path: ['city'], equals: city };
   if (price) {
     const [min, max] = price.split('-');
-    filter.price = { $gte: Number(min), $lte: Number(max) };
+    where.price = { gte: Number(min), lte: Number(max) };
   }
-  if (propertyType) filter.propertyType = propertyType;
+  if (propertyType) where.propertyType = propertyType;
 
   try {
-    const properties = await Property.find(filter).populate('listedBy', 'name email role avatar');
+    const properties = await prisma.property.findMany({
+      where,
+      include: { listedBy: listedBySelect },
+    });
     res.status(200).json(properties);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -161,36 +190,37 @@ const getProperties = async (req, res) => {
 // Update a property
 const updateProperty = async (req, res) => {
   const { id } = req.params;
-  const updates = req.body;
 
   try {
-    const property = await Property.findOneAndUpdate(
-      { _id: id, listedBy: req.user.id }, // Ensure user owns the property
-      updates,
-      { returnDocument: 'after' }
-    );
-    if (!property) {
+    const data = buildPropertyData(req.body, { partial: true });
+
+    // Ownership-scoped update.
+    const result = await prisma.property.updateMany({
+      where: { id, listedById: req.user.id },
+      data,
+    });
+    if (result.count === 0) {
       return res.status(404).json({ message: 'Property not found or unauthorized.' });
     }
+
+    const property = await prisma.property.findUnique({ where: { id } });
     res.status(200).json(property);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Delete a property
+// Delete a property (listings/matches/trips cascade via FK onDelete)
 const deleteProperty = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const property = await Property.findOneAndDelete({ _id: id, listedBy: req.user.id });
-    if (!property) {
+    const result = await prisma.property.deleteMany({
+      where: { id, listedById: req.user.id },
+    });
+    if (result.count === 0) {
       return res.status(404).json({ message: 'Property not found or unauthorized.' });
     }
-    
-    // Cascade delete the associated listing
-    const Listing = require('../models/Listing');
-    await Listing.findOneAndDelete({ property: id });
 
     res.status(200).json({ message: 'Property and listing deleted successfully.' });
   } catch (error) {
@@ -203,7 +233,10 @@ const getPropertyById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const property = await Property.findById(id).populate('listedBy', 'name email role avatar');
+    const property = await prisma.property.findUnique({
+      where: { id },
+      include: { listedBy: listedBySelect },
+    });
     if (!property) {
       return res.status(404).json({ message: 'Property not found.' });
     }
@@ -216,46 +249,52 @@ const getPropertyById = async (req, res) => {
 // Search properties with text search
 const searchProperties = async (req, res) => {
   const { q, city, area, minPrice, maxPrice, propertyType, bedrooms, bathrooms } = req.query;
-  let filter = {};
+  const where = {};
 
   // Text search across title and description
   if (q) {
-    filter.$or = [
-      { title: { $regex: q, $options: 'i' } },
-      { description: { $regex: q, $options: 'i' } }
+    where.OR = [
+      { title: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
     ];
   }
 
-  // Location filters
-  if (city) filter['location.city'] = city;
-  if (area) filter['location.area'] = area;
+  // Location filters — both are paths into the same JSON column, so combine
+  // them with AND rather than overwriting a single `location` key.
+  const locationFilters = [];
+  if (city) locationFilters.push({ location: { path: ['city'], equals: city } });
+  if (area) locationFilters.push({ location: { path: ['area'], equals: area } });
+  if (locationFilters.length) where.AND = locationFilters;
 
   // Price range
   if (minPrice || maxPrice) {
-    filter.price = {};
-    if (minPrice) filter.price.$gte = Number(minPrice);
-    if (maxPrice) filter.price.$lte = Number(maxPrice);
+    where.price = {};
+    if (minPrice) where.price.gte = Number(minPrice);
+    if (maxPrice) where.price.lte = Number(maxPrice);
   }
 
   // Property details
-  if (propertyType) filter.propertyType = propertyType;
-  if (bedrooms) filter.bedrooms = { $gte: Number(bedrooms) };
-  if (bathrooms) filter.bathrooms = { $gte: Number(bathrooms) };
+  if (propertyType) where.propertyType = propertyType;
+  if (bedrooms) where.bedrooms = { gte: Number(bedrooms) };
+  if (bathrooms) where.bathrooms = { gte: Number(bathrooms) };
 
   try {
-    const properties = await Property.find(filter).populate('listedBy', 'name email role avatar');
+    const properties = await prisma.property.findMany({
+      where,
+      include: { listedBy: listedBySelect },
+    });
     res.status(200).json(properties);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { 
-  createProperty, 
-  getProperties, 
-  getPropertyById, 
-  searchProperties, 
-  updateProperty, 
+module.exports = {
+  createProperty,
+  getProperties,
+  getPropertyById,
+  searchProperties,
+  updateProperty,
   deleteProperty,
-  generateMatchesForProperty 
+  generateMatchesForProperty,
 };

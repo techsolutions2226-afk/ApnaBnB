@@ -78,7 +78,6 @@ const suggestions = [
 const ROLE_MENU_LINKS = {
   seller: [
     { to: "/dashboard/seller", label: "Dashboard" },
-    { to: "/my-listings", label: "My Listings" },
     { to: "/listing/new", label: "Create Listing" },
   ],
   buyer: [
@@ -88,7 +87,6 @@ const ROLE_MENU_LINKS = {
   ],
   dealer: [
     { to: "/dashboard/dealer", label: "Dashboard" },
-    { to: "/my-listings", label: "My Listings" },
     { to: "/requirements", label: "Requirements Board" },
     { to: "/matches", label: "My Matches" },
   ],
@@ -104,6 +102,37 @@ const Navbar = () => {
   const [guestOpen, setGuestOpen] = useState(false);
   const [destValue, setDestValue] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  /* Scroll-driven hide/show for the search-bar portion of the navbar.
+     Hides only the lower search row (.navbar-bottom + the mobile pill);
+     the top row (logo + tabs + account button) stays sticky.
+     - Scrolling DOWN past 100px → hide
+     - Scrolling UP at any point, or being within 50px of top → show
+     Landing page already nukes the search via body.hide-navbar-search, so
+     this animation never runs there. */
+  /* Search-bar visibility is now a pure function of scroll position — no
+     direction tracking, no accumulator, no blinking. Visible ONLY when the
+     user is at the very top of the page (within SHOW_BAND px). Any scroll
+     past that → hidden, regardless of direction. */
+  const [searchHidden, setSearchHidden] = useState(false);
+  useEffect(() => {
+    const SHOW_BAND = 40; // px from the top where the bar is visible
+    let ticking = false;
+    const update = () => {
+      setSearchHidden(window.scrollY > SHOW_BAND);
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    };
+    // Initial sync in case the page loads already scrolled.
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // ── Bedroom count state lifted up ──
   const [bedrooms, setBedrooms] = useState(0);
@@ -279,9 +308,6 @@ const Navbar = () => {
                     <Link to="/messages" className="dropdown-item" onClick={() => setMenuOpen(false)}>
                       Messages
                     </Link>
-                    <Link to="/trips" className="dropdown-item" onClick={() => setMenuOpen(false)}>
-                      Trips
-                    </Link>
                     <Link to="/wishlists" className="dropdown-item" onClick={() => setMenuOpen(false)}>
                       Wishlists
                     </Link>
@@ -292,10 +318,6 @@ const Navbar = () => {
                     <Link to={`/users/${currentUser.id}`} className="dropdown-item" onClick={() => setMenuOpen(false)}>
                       Profile
                     </Link>
-                    <a href="#" className="dropdown-item dropdown-item--icon" onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}>
-                      <FiHelpCircle size={18} className="dropdown-icon" />
-                      <span>Help Center</span>
-                    </a>
                     <div className="dropdown-divider" />
                     <button className="dropdown-item dropdown-item-btn" onClick={handleLogout}>
                       Log out
@@ -309,11 +331,6 @@ const Navbar = () => {
                     <Link to="/signup" className="dropdown-item" onClick={() => setMenuOpen(false)}>
                       Sign up
                     </Link>
-                    <div className="dropdown-divider" />
-                    <a href="#" className="dropdown-item dropdown-item--icon" onClick={(e) => { e.preventDefault(); setMenuOpen(false); }}>
-                      <FiHelpCircle size={18} className="dropdown-icon" />
-                      <span>Help Center</span>
-                    </a>
                     <div className="dropdown-divider" />
                     <a href="#" className="dropdown-item dropdown-item--featured" onClick={(e) => e.preventDefault()}>
                       <div className="dropdown-featured-text">
@@ -335,7 +352,10 @@ const Navbar = () => {
       </div>
 
       {/* ── Mobile Search Pill (visible ≤ 900px) ── */}
-      <div className="nav-mobile-pill" onClick={() => setMobileSearchOpen(true)}>
+      <div
+        className={`nav-mobile-pill ${searchHidden ? "nav-search-hidden" : ""}`}
+        onClick={() => setMobileSearchOpen(true)}
+      >
         <FiSearch size={18} />
         <div className="nav-mobile-pill-text">
            <span className="nav-mobile-pill-title">Where to?</span>
@@ -476,7 +496,7 @@ const Navbar = () => {
       )}
 
       {/* ── Desktop Search Bar (hidden ≤ 900px) ── */}
-      <div className="navbar-bottom">
+      <div className={`navbar-bottom ${searchHidden ? "nav-search-hidden" : ""}`}>
         <div
           className={`search-bar ${destOpen || guestOpen ? "search-bar--active" : ""}`}
         >

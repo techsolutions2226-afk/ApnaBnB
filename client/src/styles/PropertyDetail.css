@@ -490,7 +490,7 @@
 .rv-card-btn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #127a45, #d70466);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -734,7 +734,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(to right, #e61e4d, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #d70466);
   color: #fff;
   display: flex;
   align-items: center;
@@ -803,7 +803,7 @@
 .rv-modal-btn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #127a45, #d70466);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -1316,7 +1316,7 @@
   color: #717171;
 }
 .pd-mobile-cta-btn {
-  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #127a45, #d70466);
   color: #fff;
   border: none;
   border-radius: 8px;

@@ -231,7 +231,7 @@ const PropertyDetail = () => {
             }}
           >
             {saved ? (
-              <AiFillHeart size={16} color="#ff385c" />
+              <AiFillHeart size={16} color="#1a8f5a" />
             ) : (
               <FiHeart size={16} />
             )}
@@ -277,7 +277,7 @@ const PropertyDetail = () => {
             <>
               <div className="pd-rare-find">
                 <div className="pd-rare-find-icon">
-                  <AiFillStar size={28} color="#e31c5f" />
+                  <AiFillStar size={28} color="#127a45" />
                 </div>
                 <div className="pd-rare-find-text">
                   <p className="pd-rare-find-title">This is a rare find</p>
@@ -382,7 +382,7 @@ const PropertyDetail = () => {
           {isGuestFav && (
             <div className="pd-highlights">
               <div className="pd-highlight">
-                <AiFillHeart size={24} color="#ff385c" />
+                <AiFillHeart size={24} color="#1a8f5a" />
                 <div>
                   <p className="pd-highlight-title">Guest favorite</p>
                   <p className="pd-highlight-desc">

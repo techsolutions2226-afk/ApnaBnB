@@ -60,6 +60,32 @@ const uploadMultipleImages = async (req, res) => {
   }
 };
 
+// Upload a single document (PDF/Word/Excel/text) for deal-room sharing.
+const uploadDocument = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No document file provided' });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Document uploaded successfully',
+      document: {
+        url: req.file.path,
+        public_id: req.file.filename,
+        name: req.file.originalname,
+        size: req.file.size,
+      },
+    });
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload document',
+      error: error.message,
+    });
+  }
+};
+
 // Delete image from Cloudinary
 const deleteImage = async (req, res) => {
   try {
@@ -96,5 +122,6 @@ const deleteImage = async (req, res) => {
 module.exports = {
   uploadImage,
   uploadMultipleImages,
+  uploadDocument,
   deleteImage,
 };

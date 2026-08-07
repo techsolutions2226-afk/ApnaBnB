@@ -1,50 +1,75 @@
-﻿const Requirement = require('../models/Requirement');
-const Property = require('../models/Property');
-const Match = require('../models/Match');
-const User = require('../models/User');
+const prisma = require('../db/prisma');
 const {
   calculateMatchScore,
   determineMatchType,
   isMatchCandidate,
+  normalizeDemand,
 } = require('../utils/matchScore');
+
+const num = (v) =>
+  v === undefined || v === null || v === '' ? undefined : Number(v);
+
+// Normalise budget to numeric { min, max } (JSON column). matchScore treats
+// null as 0 / Infinity via its `|| 0` / `|| Infinity` guards.
+const toBudget = (b) => {
+  if (!b || typeof b !== 'object') return undefined;
+  return {
+    min: b.min !== undefined && b.min !== null && b.min !== '' ? Number(b.min) : null,
+    max: b.max !== undefined && b.max !== null && b.max !== '' ? Number(b.max) : null,
+  };
+};
+
+const requiredBySelect = {
+  select: { id: true, name: true, email: true, role: true },
+};
 
 // Auto-generate matches for a newly-created requirement.
 // Same strict criteria as the property side — see propertyController for notes.
 const generateMatchesForRequirement = async (requirement, userId) => {
   try {
-    const requirementOwner = await User.findById(requirement.requiredBy).select('role');
+    const requirementOwner = await prisma.user.findUnique({
+      where: { id: requirement.requiredById },
+      select: { role: true },
+    });
     if (!requirementOwner) return [];
 
-    const properties = await Property.find({
-      'location.city': requirement.location.city,
-      propertyType: { $in: [requirement.propertyType, requirement.propertyType.toLowerCase()] },
-      // Exclude only sold properties — pending/active/featured are all eligible
-      // candidates since 'pending' was historically the default before we changed it.
-      status: { $ne: 'sold' },
-    }).populate('listedBy', 'role');
+    const pt = requirement.propertyType;
+    const properties = await prisma.property.findMany({
+      where: {
+        location: { path: ['city'], equals: requirement.location.city },
+        propertyType: { in: [pt, pt.toLowerCase()] },
+        // Exclude only sold properties — pending/active/featured are eligible.
+        status: { not: 'sold' },
+      },
+      include: { listedBy: { select: { id: true, role: true } } },
+    });
 
     const matches = [];
     for (const property of properties) {
       if (!isMatchCandidate(property, requirement)) continue;
 
-      const propertyOwner = property.listedBy;
-      const matchType = determineMatchType(propertyOwner?.role, requirementOwner.role);
+      // Prefer the acting role stored on each record; fall back to account role.
+      const matchType = determineMatchType(
+        property.actingRole || property.listedBy?.role,
+        requirement.actingRole || requirementOwner.role,
+      );
       if (!matchType) continue;
 
-      const existingMatch = await Match.findOne({
-        property: property._id,
-        requirement: requirement._id,
+      const existingMatch = await prisma.match.findFirst({
+        where: { propertyId: property.id, requirementId: requirement.id },
       });
       if (existingMatch) continue;
 
       const score = calculateMatchScore(property, requirement);
-      const match = await Match.create({
-        property: property._id,
-        requirement: requirement._id,
-        initiator: userId,
-        score,
-        type: matchType,
-        status: 'pending',
+      const match = await prisma.match.create({
+        data: {
+          propertyId: property.id,
+          requirementId: requirement.id,
+          initiatorId: userId,
+          score,
+          type: matchType,
+          status: 'pending',
+        },
       });
       matches.push(match);
     }
@@ -65,18 +90,23 @@ const createRequirement = async (req, res) => {
   }
 
   try {
-    const requirement = await Requirement.create({
-      requiredBy: req.user.id,
-      title: title.trim(),
-      location,
-      budget,
-      propertyType: propertyType.toLowerCase(), // Normalize to lowercase
-      size: size || '',
-      bedrooms: bedrooms || undefined,
-      bathrooms: bathrooms || undefined,
-      notes: notes || '',
-      urgency: urgency || '',
-      status: 'active'
+    const requirement = await prisma.requirement.create({
+      data: {
+        requiredById: req.user.id,
+        title: title.trim(),
+        location,
+        budget: toBudget(budget),
+        propertyType: propertyType.toLowerCase(), // Normalize to lowercase
+        size: size || '',
+        bedrooms: num(bedrooms),
+        bathrooms: num(bathrooms),
+        notes: notes || '',
+        urgency: urgency || '',
+        status: 'active',
+        // Hat the user wore when posting (demand side). Selected role clamped
+        // to buyer|dealer; falls back to their account role.
+        actingRole: normalizeDemand(req.body.actingRole || req.user.role),
+      },
     });
 
     // Generate automatic matches
@@ -91,18 +121,25 @@ const createRequirement = async (req, res) => {
 // Get Requirements (with filters)
 const getRequirements = async (req, res) => {
   const { city, propertyType, budget } = req.query;
-  let filter = {};
+  const where = {};
 
-  if (city) filter['location.city'] = city;
-  if (propertyType) filter.propertyType = propertyType;
-  if (budget) {
-    const [min, max] = budget.split('-');
-    filter['budget.min'] = { $gte: Number(min) };
-    filter['budget.max'] = { $lte: Number(max) };
-  }
+  if (city) where.location = { path: ['city'], equals: city };
+  if (propertyType) where.propertyType = propertyType;
 
   try {
-    const requirements = await Requirement.find(filter).populate('requiredBy', 'name email role');
+    let requirements = await prisma.requirement.findMany({
+      where,
+      include: { requiredBy: requiredBySelect },
+    });
+
+    // Budget filter applied in JS (budget is a JSON column).
+    if (budget) {
+      const [min, max] = budget.split('-').map(Number);
+      requirements = requirements.filter(
+        (r) => (r.budget?.min ?? 0) >= min && (r.budget?.max ?? Infinity) <= max,
+      );
+    }
+
     res.status(200).json(requirements);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -112,19 +149,31 @@ const getRequirements = async (req, res) => {
 // Update Requirement
 const updateRequirement = async (req, res) => {
   const { id } = req.params;
-  const updates = req.body;
 
   try {
-    const requirement = await Requirement.findOneAndUpdate(
-      { _id: id, requiredBy: req.user.id }, // Ensure user owns the requirement
-      updates,
-      { returnDocument: 'after' }
-    );
+    const b = req.body;
+    const data = {};
+    if ('title' in b) data.title = b.title;
+    if ('location' in b) data.location = b.location;
+    if ('budget' in b) data.budget = toBudget(b.budget);
+    if ('purpose' in b) data.purpose = b.purpose;
+    if ('propertyType' in b) data.propertyType = String(b.propertyType).toLowerCase();
+    if ('size' in b) data.size = b.size || '';
+    if ('bedrooms' in b) data.bedrooms = num(b.bedrooms) ?? null;
+    if ('bathrooms' in b) data.bathrooms = num(b.bathrooms) ?? null;
+    if ('notes' in b) data.notes = b.notes || '';
+    if ('urgency' in b) data.urgency = b.urgency || '';
+    if ('status' in b) data.status = b.status;
 
-    if (!requirement) {
+    const result = await prisma.requirement.updateMany({
+      where: { id, requiredById: req.user.id },
+      data,
+    });
+    if (result.count === 0) {
       return res.status(404).json({ message: 'Requirement not found or unauthorized.' });
     }
 
+    const requirement = await prisma.requirement.findUnique({ where: { id } });
     res.status(200).json(requirement);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -136,7 +185,10 @@ const getRequirementById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const requirement = await Requirement.findById(id).populate('requiredBy', 'name email role');
+    const requirement = await prisma.requirement.findUnique({
+      where: { id },
+      include: { requiredBy: requiredBySelect },
+    });
     if (!requirement) {
       return res.status(404).json({ message: 'Requirement not found.' });
     }
@@ -151,20 +203,25 @@ const getUserRequirements = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const requirements = await Requirement.find({ requiredBy: userId }).populate('requiredBy', 'name email role');
+    const requirements = await prisma.requirement.findMany({
+      where: { requiredById: userId },
+      include: { requiredBy: requiredBySelect },
+    });
     res.status(200).json(requirements);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Delete Requirement
+// Delete Requirement (matches cascade via FK onDelete)
 const deleteRequirement = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const requirement = await Requirement.findOneAndDelete({ _id: id, requiredBy: req.user.id });
-    if (!requirement) {
+    const result = await prisma.requirement.deleteMany({
+      where: { id, requiredById: req.user.id },
+    });
+    if (result.count === 0) {
       return res.status(404).json({ message: 'Requirement not found or unauthorized.' });
     }
 
@@ -177,47 +234,54 @@ const deleteRequirement = async (req, res) => {
 // Search requirements with filters
 const searchRequirements = async (req, res) => {
   const { q, city, area, minBudget, maxBudget, propertyType, bedrooms, bathrooms } = req.query;
-  let filter = {};
+  const where = {};
 
-  // Text search across notes or description if available
   if (q) {
-    filter.$or = [
-      { 'location.city': { $regex: q, $options: 'i' } },
-      { 'location.area': { $regex: q, $options: 'i' } }
+    where.OR = [
+      { location: { path: ['city'], string_contains: q } },
+      { location: { path: ['area'], string_contains: q } },
     ];
   }
 
-  // Location filters
-  if (city) filter['location.city'] = city;
-  if (area) filter['location.area'] = area;
+  const locationFilters = [];
+  if (city) locationFilters.push({ location: { path: ['city'], equals: city } });
+  if (area) locationFilters.push({ location: { path: ['area'], equals: area } });
+  if (locationFilters.length) where.AND = locationFilters;
 
-  // Budget range
-  if (minBudget || maxBudget) {
-    filter.$and = filter.$and || [];
-    if (minBudget) filter.$and.push({ 'budget.max': { $gte: Number(minBudget) } });
-    if (maxBudget) filter.$and.push({ 'budget.min': { $lte: Number(maxBudget) } });
-  }
-
-  // Property details
-  if (propertyType) filter.propertyType = propertyType;
-  if (bedrooms) filter.bedrooms = { $gte: Number(bedrooms) };
-  if (bathrooms) filter.bathrooms = { $gte: Number(bathrooms) };
+  if (propertyType) where.propertyType = propertyType;
+  if (bedrooms) where.bedrooms = { gte: Number(bedrooms) };
+  if (bathrooms) where.bathrooms = { gte: Number(bathrooms) };
 
   try {
-    const requirements = await Requirement.find(filter).populate('requiredBy', 'name email role');
+    let requirements = await prisma.requirement.findMany({
+      where,
+      include: { requiredBy: requiredBySelect },
+    });
+
+    // Budget overlap filter applied in JS (budget is JSON).
+    if (minBudget || maxBudget) {
+      const lo = minBudget ? Number(minBudget) : 0;
+      const hi = maxBudget ? Number(maxBudget) : Infinity;
+      requirements = requirements.filter((r) => {
+        const bMax = r.budget?.max ?? Infinity;
+        const bMin = r.budget?.min ?? 0;
+        return bMax >= lo && bMin <= hi;
+      });
+    }
+
     res.status(200).json(requirements);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { 
-  createRequirement, 
+module.exports = {
+  createRequirement,
   getRequirements,
   getRequirementById,
-  getUserRequirements, 
-  searchRequirements, 
-  updateRequirement, 
+  getUserRequirements,
+  searchRequirements,
+  updateRequirement,
   deleteRequirement,
-  generateMatchesForRequirement 
+  generateMatchesForRequirement,
 };

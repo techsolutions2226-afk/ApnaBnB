@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { useProperties } from "../hooks/useProperties";
 import PropertyCard from "../components/property/PropertyCard";
 import SearchFiltersModal from "../components/search/SearchFiltersModal";
@@ -25,14 +25,55 @@ const SORT_OPTIONS = [
   { value: "rating", label: "Top Rated" },
 ];
 
+/* Pretty labels for the property-type pills that appear at the top of the
+   results when a purpose is set. Keys match Property.propertyType enum values
+   (kebab-case). */
+const TYPE_LABEL = {
+  house: "House",
+  apartment: "Apartment",
+  flat: "Flat",
+  "upper-portion": "Upper Portion",
+  "lower-portion": "Lower Portion",
+  "farm-house": "Farm House",
+  room: "Room",
+  penthouse: "Penthouse",
+  plot: "Plot",
+  "residential-plot": "Residential Plot",
+  "commercial-plot": "Commercial Plot",
+  "agricultural-land": "Agricultural Land",
+  "industrial-land": "Industrial Land",
+  office: "Office",
+  shop: "Shop",
+  warehouse: "Warehouse",
+  factory: "Factory",
+  building: "Building",
+};
+
 
 /* ─── Search Results Page ─── */
 const SearchResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const { properties = [], isLoading, error } = useProperties();
 
   /* URL-synced state */
   const dest = searchParams.get("dest") || "";
+  /* Purpose comes from the pathname (/sale, /rent) so the URL stays clean.
+     Falls back to the legacy ?purpose= query param if someone arrives that way. */
+  const purpose = useMemo(() => {
+    if (location.pathname === "/sale") return "sale";
+    if (location.pathname === "/rent") return "rent";
+    return searchParams.get("purpose") || "";
+  }, [location.pathname, searchParams]);
+
+  /* Selected property-type chip from the category bar. Empty = "All". */
+  const [activeType, setActiveType] = useState("");
+
+  /* Reset the type chip whenever the URL purpose changes — moving between
+     /sale and /rent shouldn't carry the old type filter across. */
+  useEffect(() => {
+    setActiveType("");
+  }, [purpose]);
 
   /* Local filter/sort/page state */
   const [sortBy, setSortBy] = useState("recommended");
@@ -85,7 +126,7 @@ const SearchResults = () => {
     /* Reset page on filter/sort/query changes */
     useEffect(() => {
       setCurrentPage(1);
-    }, [dest, sortBy, filters]);
+    }, [dest, purpose, activeType, sortBy, filters]);
 
   /* ── Filter + sort logic ── */
   const filteredProperties = useMemo(() => {
@@ -104,6 +145,19 @@ const SearchResults = () => {
     };
 
     let result = [...properties];
+
+    /* Purpose filter (sale vs rent). Properties without a `purpose` field
+       default to "sale" — matches the Mongoose schema default. */
+    if (purpose === "sale" || purpose === "rent") {
+      result = result.filter((p) => (p.purpose || "sale") === purpose);
+    }
+
+    /* Property-type chip (from the category bar at the top of results). */
+    if (activeType) {
+      result = result.filter(
+        (p) => (p.propertyType || "").toLowerCase() === activeType,
+      );
+    }
 
     /* Destination search — split on commas so e.g. "Rawalpindi, Pakistan"
        matches any property whose haystack contains "rawalpindi". */
@@ -288,14 +342,40 @@ const SearchResults = () => {
     return pages;
   };
 
+  /* Available property-type chips for the category bar. Computed from the
+     *purpose-scoped* property list so users only see types that actually have
+     listings under the current purpose (e.g. no "Plot" chip if there are zero
+     plots for rent). Sorted by descending count. */
+  const typeChips = useMemo(() => {
+    const scope = purpose
+      ? properties.filter((p) => (p.purpose || "sale") === purpose)
+      : properties;
+    const counts = new Map();
+    for (const p of scope) {
+      const t = (p.propertyType || "").toLowerCase();
+      if (!t) continue;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [properties, purpose]);
+
+  const purposeHeading =
+    purpose === "sale"
+      ? "Properties For Sale"
+      : purpose === "rent"
+        ? "Properties For Rent"
+        : dest
+          ? `Properties in ${dest}`
+          : "All properties";
+
   return (
     <div className="sr-wrapper">
       {/* ═══ Top Bar: search summary + sort + filter button ═══ */}
       <div className="sr-top-bar">
         <div className="sr-summary">
-          <h1 className="sr-heading">
-            {dest ? `Properties in ${dest}` : "All properties"}
-          </h1>
+          <h1 className="sr-heading">{purposeHeading}</h1>
           <p className="sr-meta">
             {filteredProperties.length} listing{filteredProperties.length !== 1 ? "s" : ""}
             {filters.bedrooms > 0 && <> &middot; {filters.bedrooms}+ bedrooms</>}
@@ -389,6 +469,34 @@ const SearchResults = () => {
           </div>
         </div>
       </div>
+
+      {/* ═══ Property-type Category Bar — chips for every type that exists
+            under the current purpose. Filters results when a chip is clicked. ═══ */}
+      {typeChips.length > 0 && (
+        <div className="sr-type-bar">
+          <button
+            type="button"
+            onClick={() => setActiveType("")}
+            className={`sr-type-chip${activeType === "" ? " sr-type-chip--active" : ""}`}
+          >
+            All
+            <span className="sr-type-count">
+              {typeChips.reduce((s, c) => s + c.count, 0)}
+            </span>
+          </button>
+          {typeChips.map(({ type, count }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => setActiveType(type)}
+              className={`sr-type-chip${activeType === type ? " sr-type-chip--active" : ""}`}
+            >
+              {TYPE_LABEL[type] || type}
+              <span className="sr-type-count">{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ═══ Active Filter Chips ═══ */}
       {activeChips.length > 0 && (

@@ -147,7 +147,7 @@ const NotificationBell = () => {
               height: 16,
               padding: "0 4px",
               borderRadius: 999,
-              background: "#ff385c",
+              background: "#1a8f5a",
               color: "#fff",
               fontSize: 10,
               fontWeight: 700,
@@ -335,7 +335,7 @@ const NotificationBell = () => {
                             width: 8,
                             height: 8,
                             borderRadius: "50%",
-                            background: "#ff385c",
+                            background: "#1a8f5a",
                             flexShrink: 0,
                             marginTop: 8,
                           }}

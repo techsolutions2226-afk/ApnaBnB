@@ -73,6 +73,15 @@ const MATCH_TYPE_BY_ROLES = {
 const determineMatchType = (propertyOwnerRole, requirementOwnerRole) =>
   MATCH_TYPE_BY_ROLES[`${propertyOwnerRole}:${requirementOwnerRole}`] || null;
 
+// A user can act across roles, so each listing/requirement stores the role the
+// user was ACTING AS. These clamp a chosen/selected role to a valid side so a
+// match type is always derivable:
+//   supply (property) → seller | dealer
+//   demand (requirement) → buyer | dealer
+// A dealer stays a dealer; anything else falls to the natural side.
+const normalizeSupply = (role) => (role === 'dealer' ? 'dealer' : 'seller');
+const normalizeDemand = (role) => (role === 'dealer' ? 'dealer' : 'buyer');
+
 // Strict pre-filter: property + requirement only count as a candidate match
 // when city + area + propertyType align AND the price falls within ±10% of
 // the requirement's budget band.
@@ -121,4 +130,10 @@ const isMatchCandidate = (property, requirement) => {
   return true;
 };
 
-module.exports = { calculateMatchScore, determineMatchType, isMatchCandidate };
+module.exports = {
+  calculateMatchScore,
+  determineMatchType,
+  isMatchCandidate,
+  normalizeSupply,
+  normalizeDemand,
+};

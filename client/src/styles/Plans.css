@@ -99,7 +99,7 @@
 }
 
 .plan-card--popular {
-  border: 2px solid #e31c5f;
+  border: 2px solid #127a45;
   box-shadow: 0 4px 16px rgba(227, 28, 95, 0.12);
 }
 
@@ -113,7 +113,7 @@
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(to right, #e61e4d, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #d70466);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -204,7 +204,7 @@
 }
 
 .plan-card-cta--primary {
-  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #127a45, #d70466);
   color: #fff;
 }
 
@@ -428,7 +428,7 @@
 }
 
 .plan-faq-question:hover {
-  color: #e31c5f;
+  color: #127a45;
 }
 
 .plan-faq-chevron {
@@ -563,7 +563,7 @@
 .plan-modal-confirm {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(to right, #e61e4d, #e31c5f, #d70466);
+  background: linear-gradient(to right, #1f9a5f, #127a45, #d70466);
   color: #fff;
   border: none;
   border-radius: 8px;

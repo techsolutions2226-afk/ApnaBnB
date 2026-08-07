@@ -117,7 +117,7 @@
   font-weight: 700;
   font-size: 16px;
   text-transform: uppercase;
-  background: linear-gradient(135deg, #ff385c, #f9a825);
+  background: linear-gradient(135deg, #1a8f5a, #f9a825);
 }
 
 .msg-conv-meta {
@@ -474,4 +474,167 @@
   .msg-shell:not(.msg-shell--has-active) .msg-chat {
     display: none;
   }
+}
+
+/* ── Deal Room panel (match-linked chat header) ─────────── */
+.deal-panel {
+  border-bottom: 1px solid #e6e6e6;
+  background: linear-gradient(180deg, #f7faf8, #ffffff);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.deal-panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.deal-panel-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--brand-green, #1e7e34);
+}
+.deal-panel-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.deal-panel-score {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-navy, #1a3d5c);
+}
+.deal-panel-summary {
+  font-size: 13px;
+  color: #333;
+}
+.deal-panel-req {
+  color: #666;
+  margin-top: 2px;
+}
+.deal-panel-contact {
+  font-size: 13px;
+}
+.deal-panel-contact-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--brand-green, #1e7e34);
+}
+.deal-panel-contact-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 4px;
+  color: #333;
+}
+.deal-panel-contact-rows span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.deal-panel-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #888;
+  font-style: italic;
+}
+.deal-panel-actions,
+.deal-panel-rate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.deal-panel-btn {
+  background: var(--brand-green, #1e7e34);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.deal-panel-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.deal-panel-rate-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+.deal-panel-stars {
+  display: inline-flex;
+  gap: 2px;
+}
+.deal-panel-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 0;
+}
+.deal-panel-comment {
+  flex: 1;
+  min-width: 160px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+.deal-panel-rated {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brand-green, #1e7e34);
+}
+
+/* ── File (document) attachments in chat ─────────────────── */
+.msg-bubble-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  color: inherit;
+  text-decoration: none;
+  max-width: 240px;
+}
+.msg-bubble--mine .msg-bubble-file {
+  background: rgba(255, 255, 255, 0.2);
+}
+.msg-bubble-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+.msg-attach-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

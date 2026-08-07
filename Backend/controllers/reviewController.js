@@ -1,11 +1,18 @@
-const Review = require('../models/Review');
-const Property = require('../models/Property');
+const prisma = require('../db/prisma');
+
+const reviewerSelect = {
+  select: { id: true, name: true, email: true, avatar: true, role: true },
+};
+
+const avgOf = (reviews) =>
+  reviews.length > 0
+    ? parseFloat((reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(2))
+    : 0;
 
 // Create a review
 const createReview = async (req, res) => {
   const { target, targetType, rating, comment } = req.body;
 
-  // Validate input
   if (!target || !targetType || !rating) {
     return res.status(400).json({ message: 'Target, targetType, and rating are required.' });
   }
@@ -15,23 +22,22 @@ const createReview = async (req, res) => {
   }
 
   try {
-    // Check for duplicate reviews
-    const existingReview = await Review.findOne({
-      reviewer: req.user.id,
-      target,
-      targetType,
+    const existingReview = await prisma.review.findFirst({
+      where: { reviewerId: req.user.id, target, targetType },
     });
 
     if (existingReview) {
       return res.status(400).json({ message: 'You have already reviewed this target.' });
     }
 
-    const review = await Review.create({
-      reviewer: req.user.id,
-      target,
-      targetType,
-      rating,
-      comment,
+    const review = await prisma.review.create({
+      data: {
+        reviewerId: req.user.id,
+        target,
+        targetType,
+        rating: Number(rating),
+        comment,
+      },
     });
 
     res.status(201).json(review);
@@ -44,20 +50,19 @@ const createReview = async (req, res) => {
 const getReviews = async (req, res) => {
   const { target, targetType } = req.query;
 
-  // Validate input
   if (!target || !targetType) {
     return res.status(400).json({ message: 'Target and targetType are required as query parameters.' });
   }
 
   try {
-    const reviews = await Review.find({ target, targetType }).populate('reviewer', 'name email avatar role');
-
-    // Calculate average rating
-    const averageRating = reviews.length > 0 ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length) : 0;
+    const reviews = await prisma.review.findMany({
+      where: { target, targetType },
+      include: { reviewer: reviewerSelect },
+    });
 
     res.status(200).json({
       reviews,
-      averageRating: parseFloat(averageRating.toFixed(2)),
+      averageRating: avgOf(reviews),
       count: reviews.length,
     });
   } catch (error) {
@@ -75,13 +80,14 @@ const getReviewsByTargetId = async (req, res) => {
   }
 
   try {
-    const reviews = await Review.find({ target: targetId, targetType }).populate('reviewer', 'name email avatar role');
-
-    const averageRating = reviews.length > 0 ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length) : 0;
+    const reviews = await prisma.review.findMany({
+      where: { target: targetId, targetType },
+      include: { reviewer: reviewerSelect },
+    });
 
     res.status(200).json({
       reviews,
-      averageRating: parseFloat(averageRating.toFixed(2)),
+      averageRating: avgOf(reviews),
       count: reviews.length,
     });
   } catch (error) {
@@ -99,14 +105,12 @@ const getAverageRating = async (req, res) => {
   }
 
   try {
-    const reviews = await Review.find({ target: targetId, targetType });
-
-    const averageRating = reviews.length > 0 ? (reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length) : 0;
+    const reviews = await prisma.review.findMany({ where: { target: targetId, targetType } });
 
     res.status(200).json({
       targetId,
       targetType,
-      averageRating: parseFloat(averageRating.toFixed(2)),
+      averageRating: avgOf(reviews),
       totalReviews: reviews.length,
     });
   } catch (error) {
@@ -124,31 +128,25 @@ const getReviewCount = async (req, res) => {
   }
 
   try {
-    const count = await Review.countDocuments({ target: targetId, targetType });
-
-    res.status(200).json({
-      targetId,
-      targetType,
-      count,
-    });
+    const count = await prisma.review.count({ where: { target: targetId, targetType } });
+    res.status(200).json({ targetId, targetType, count });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all reviews authored by a given user (reviews they wrote)
+// Get all reviews authored by a given user
 const getReviewsByAuthor = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const reviews = await Review.find({ reviewer: userId })
-      .populate('reviewer', 'name')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      reviews,
-      count: reviews.length,
+    const reviews = await prisma.review.findMany({
+      where: { reviewerId: userId },
+      include: { reviewer: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
     });
+
+    res.status(200).json({ reviews, count: reviews.length });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -168,22 +166,20 @@ const updateReview = async (req, res) => {
   }
 
   try {
-    const review = await Review.findById(id);
-
+    const review = await prisma.review.findUnique({ where: { id } });
     if (!review) {
       return res.status(404).json({ message: 'Review not found.' });
     }
-
-    // Only reviewer can update their review
-    if (review.reviewer.toString() !== req.user.id) {
+    if (review.reviewerId !== req.user.id) {
       return res.status(403).json({ message: 'You can only update your own reviews.' });
     }
 
-    if (rating) review.rating = rating;
-    if (comment) review.comment = comment;
+    const data = {};
+    if (rating) data.rating = Number(rating);
+    if (comment) data.comment = comment;
 
-    await review.save();
-    res.status(200).json(review);
+    const updated = await prisma.review.update({ where: { id }, data });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -194,9 +190,11 @@ const deleteReview = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const review = await Review.findOneAndDelete({ _id: id, reviewer: req.user.id });
+    const result = await prisma.review.deleteMany({
+      where: { id, reviewerId: req.user.id },
+    });
 
-    if (!review) {
+    if (result.count === 0) {
       return res.status(404).json({ message: 'Review not found or unauthorized.' });
     }
 
@@ -207,37 +205,28 @@ const deleteReview = async (req, res) => {
 };
 
 // All reviews left on properties owned (listedBy) by a given user.
-// Used by the seller/dealer dashboard to show incoming reviews on their listings.
 const getReviewsForUserProperties = async (req, res) => {
   const { userId } = req.params;
   try {
-    const properties = await Property.find({ listedBy: userId }).select('_id title photos location');
-    const propIds = properties.map((p) => p._id);
+    const properties = await prisma.property.findMany({
+      where: { listedById: userId },
+      select: { id: true, title: true, photos: true, location: true },
+    });
+    const propIds = properties.map((p) => p.id);
     if (propIds.length === 0) {
       return res.status(200).json({ reviews: [], count: 0, averageRating: 0 });
     }
 
-    const reviews = await Review.find({ target: { $in: propIds }, targetType: 'property' })
-      .populate('reviewer', 'name email avatar role')
-      .sort({ createdAt: -1 });
-
-    // Attach the property summary onto each review so the dashboard can show
-    // which listing a review is for without a second round-trip.
-    const propsById = new Map(properties.map((p) => [String(p._id), p]));
-    const enriched = reviews.map((r) => {
-      const obj = r.toObject();
-      obj.property = propsById.get(String(r.target)) || null;
-      return obj;
+    const reviews = await prisma.review.findMany({
+      where: { target: { in: propIds }, targetType: 'property' },
+      include: { reviewer: reviewerSelect },
+      orderBy: { createdAt: 'desc' },
     });
 
-    const averageRating =
-      reviews.length > 0
-        ? parseFloat(
-            (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(2)
-          )
-        : 0;
+    const propsById = new Map(properties.map((p) => [p.id, p]));
+    const enriched = reviews.map((r) => ({ ...r, property: propsById.get(r.target) || null }));
 
-    res.status(200).json({ reviews: enriched, count: reviews.length, averageRating });
+    res.status(200).json({ reviews: enriched, count: reviews.length, averageRating: avgOf(reviews) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -252,5 +241,5 @@ module.exports = {
   getAverageRating,
   getReviewCount,
   updateReview,
-  deleteReview
+  deleteReview,
 };

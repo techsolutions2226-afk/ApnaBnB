@@ -1,9 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const http = require("http");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const prisma = require("./db/prisma");
 const limiter = require("./middleware/rateLimitMiddleware");
+const { withIds } = require("./utils/serializeIds");
 const { initSockets } = require("./sockets");
 
 const app = express();
@@ -12,14 +13,31 @@ const port = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+// CORS configuration — whitelist frontend URL for production
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5174',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
+
 app.use(limiter); // Apply rate limiting globally
 
-// MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connection established successfully"))
-  .catch((error) => console.error("MongoDB connection failed:", error.message));
+// Add `_id` (= id) to every object in every JSON response — top level and
+// nested — so responses match the shape the frontend expects post-migration.
+app.use((req, res, next) => {
+  const json = res.json.bind(res);
+  res.json = (body) => json(withIds(body));
+  next();
+});
+
+// Postgres (Supabase) connection via Prisma.
+prisma
+  .$connect()
+  .then(() => console.log("Postgres connection established successfully"))
+  .catch((error) => console.error("Postgres connection failed:", error.message));
 
 // Routes
 const authRoutes = require("./routes/authRoutes");

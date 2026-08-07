@@ -1,0 +1,347 @@
+// ApnaBnB — Postgres (Supabase) schema.
+// Migrated 1:1 from the former Mongoose models. Notes:
+//   - PKs are text UUIDs (String @default(uuid())) so any stray non-uuid id
+//     just misses instead of throwing a cast error.
+//   - Nested Mongo sub-objects (location, budget, commission, guests,
+//     attachments) are stored as JSONB to preserve the exact shape the
+//     frontend already consumes.
+//   - Values that are clean identifiers are Postgres enums; hyphen/space
+//     values (propertyType, sizeUnit, furnished, Match.type) stay String so
+//     the exact stored string reaches the UI + match engine unchanged.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+
+enum Role {
+  seller
+  buyer
+  dealer
+  admin
+}
+
+enum Purpose {
+  sale
+  rent
+}
+
+enum Category {
+  home
+  plot
+  commercial
+}
+
+// status enum gains `rejected` — Prisma enforces enums and adminController
+// writes 'rejected' (was silently accepted by Mongoose's loose update path).
+enum PropertyStatus {
+  active
+  pending
+  sold
+  rented
+  featured
+  rejected
+}
+
+enum ListingStatus {
+  active
+  pending
+  sold
+  featured
+}
+
+enum RequirementStatus {
+  active
+  fulfilled
+  closed
+}
+
+enum MatchStatus {
+  pending
+  accepted
+  rejected
+  closed
+}
+
+enum ReviewTargetType {
+  property
+  user
+}
+
+enum TripStatus {
+  upcoming
+  completed
+  cancelled
+}
+
+// ─────────────────────────── Models ───────────────────────────
+
+model User {
+  id       String  @id @default(uuid())
+  name     String
+  email    String  @unique
+  password String
+  role     Role
+  verified Boolean @default(false)
+  avatar   String  @default("")
+
+  phone            String @default("")
+  location         String @default("")
+  emergencyContact String @default("")
+
+  // Email-verification OTP (hashed). Cleared once the user verifies.
+  otpHash       String?
+  otpExpiresAt  DateTime?
+  otpAttempts   Int       @default(0)
+  otpLastSentAt DateTime?
+
+  // Forgot-password token (sha256-hashed). Cleared after a successful reset.
+  resetPasswordTokenHash  String?
+  resetPasswordExpiresAt  DateTime?
+  resetPasswordLastSentAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties    Property[]
+  listings      Listing[]
+  requirements  Requirement[]
+  matches       Match[]        @relation("MatchInitiator")
+  messages      Message[]
+  reviews       Review[]
+  trips         Trip[]
+  wishlists     Wishlist[]
+  conversations Conversation[] @relation("ConversationParticipants")
+}
+
+model Property {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  photos      String[] @default([])
+  location    Json // { city, area, coordinates: { lat, lng } }
+  purpose     Purpose  @default(sale)
+  price       Float
+  category    Category @default(home)
+
+  // Leaf-level type — String (values are hyphenated, e.g. upper-portion).
+  propertyType String
+  size         Float?
+  sizeUnit     String   @default("Marla")
+  bedrooms     Int?
+  bathrooms    Int?
+  amenities    String[] @default([])
+
+  // Rental-specific fields.
+  securityDeposit Float     @default(0)
+  leaseTerm       Int       @default(12)
+  furnished       String    @default("unfurnished")
+  availableFrom   DateTime?
+
+  contactName  String @default("")
+  contactEmail String @default("")
+  contactPhone String @default("")
+
+  status PropertyStatus @default(active)
+
+  // The role the user was ACTING AS when they listed this (supply side:
+  // "seller" | "dealer"). Separate from User.role so one account can list as a
+  // seller AND post requirements as a buyer. Match type derives from this.
+  actingRole String?
+
+  listedBy   User   @relation(fields: [listedById], references: [id], onDelete: Cascade)
+  listedById String
+
+  listings Listing[]
+  matches  Match[]
+  trips    Trip[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listedById])
+  @@index([status])
+}
+
+model Listing {
+  id String @id @default(uuid())
+
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  views     Int           @default(0)
+  inquiries Int           @default(0)
+  status    ListingStatus @default(active)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Requirement {
+  id String @id @default(uuid())
+
+  requiredBy   User   @relation(fields: [requiredById], references: [id], onDelete: Cascade)
+  requiredById String
+
+  title    String
+  location Json // { city, area, coordinates }
+  budget   Json? // { min, max }
+  purpose  Purpose @default(sale)
+
+  propertyType String
+  size         String            @default("")
+  bedrooms     Int?
+  bathrooms    Int?
+  notes        String            @default("")
+  status       RequirementStatus @default(active)
+  urgency      String            @default("")
+
+  // The role the user was ACTING AS when they posted this (demand side:
+  // "buyer" | "dealer"). Match type derives from this, not User.role.
+  actingRole String?
+
+  matches Match[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([requiredById])
+}
+
+model Match {
+  id String @id @default(uuid())
+
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  requirementId String
+
+  initiator   User   @relation("MatchInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  initiatorId String
+
+  score  Int         @default(0)
+  type   String // seller-buyer | dealer-buyer | dealer-dealer | seller-dealer
+  status MatchStatus @default(pending)
+  notes  String      @default("")
+
+  // The private "Deal Room" — created/linked when the match is accepted.
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  conversationId String?
+
+  // { amount, currency, status } for dealer-dealer commission tracking.
+  commission Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId, requirementId])
+  @@index([initiatorId])
+  @@index([type, status])
+}
+
+model Conversation {
+  id           String    @id @default(uuid())
+  participants User[]    @relation("ConversationParticipants")
+  archived     Boolean   @default(false)
+  messages     Message[]
+  matches      Match[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Message {
+  id String @id @default(uuid())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId String
+
+  // Stores the AES-256-GCM blob ("v1:iv:tag:cipher"). Encrypt/decrypt happens
+  // explicitly in the message controller + socket layer.
+  content     String
+  attachments Json    @default("[]") // [{ url, type, name, size }]
+  read        Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([conversationId])
+}
+
+model Review {
+  id String @id @default(uuid())
+
+  reviewer   User   @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewerId String
+
+  // Polymorphic target — a Property id or a User id (see targetType). No FK.
+  target     String
+  targetType ReviewTargetType
+
+  rating  Int
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([target, targetType])
+}
+
+model Trip {
+  id String @id @default(uuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+
+  checkIn    String // YYYY-MM-DD
+  checkOut   String // YYYY-MM-DD
+  nights     Int
+  guests     Json   @default("{\"adults\":1,\"children\":0,\"infants\":0}")
+  totalPrice Float
+  serviceFee Float      @default(0)
+  status     TripStatus @default(upcoming)
+
+  confirmationCode String  @unique
+  cancelledAt      String?
+  refundAmount     Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+model Wishlist {
+  id String @id @default(uuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  name        String
+  propertyIds String[] @default([]) // Property ids; $addToSet dedup handled in controller
+  isDefault   Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}

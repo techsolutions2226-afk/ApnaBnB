@@ -210,7 +210,7 @@
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: #ff385c;
+  background: #1a8f5a;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -358,7 +358,7 @@
 .tr-review-submit {
   width: 100%;
   padding: 14px;
-  background: #ff385c;
+  background: #1a8f5a;
   color: #fff;
   border: none;
   border-radius: 8px;

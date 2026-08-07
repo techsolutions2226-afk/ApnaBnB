@@ -19,12 +19,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiSearch, FiPaperclip, FiSend, FiArrowLeft } from "react-icons/fi";
+import { FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../hooks/useSocket";
 import messageService from "../services/messageService";
+import matchService from "../services/matchService";
 import uploadService from "../services/uploadService";
+import DealRoomPanel from "../components/messages/DealRoomPanel";
 import "../styles/Messages.css";
+
+/* The id of the "other" party in a match (property owner vs requirement poster). */
+const otherPartyOfMatch = (match, currentUserId) => {
+  const ownerId = match?.property?.listedBy?._id || match?.property?.listedBy || null;
+  const seekerId = match?.requirement?.requiredBy?._id || match?.requirement?.requiredBy || null;
+  if (ownerId && ownerId !== currentUserId) return ownerId;
+  if (seekerId && seekerId !== currentUserId) return seekerId;
+  return null;
+};
 
 /* ── Date helpers ─────────────────────────────────────── */
 const startOfDay = (date) => {
@@ -109,9 +120,12 @@ const conversationInitial = (conversation, currentUserId) => {
 
 const previewText = (lastMessage) => {
   if (!lastMessage) return "No messages yet";
-  if (lastMessage.attachments?.length > 0 && !lastMessage.content) return "📷 Photo";
-  if (lastMessage.attachments?.length > 0 && lastMessage.content) {
-    return `📷 ${lastMessage.content}`;
+  const atts = lastMessage.attachments || [];
+  if (atts.length > 0) {
+    const isFile = atts[0].type === "file";
+    const icon = isFile ? "📎" : "📷";
+    const label = isFile ? "Document" : "Photo";
+    return lastMessage.content ? `${icon} ${lastMessage.content}` : `${icon} ${label}`;
   }
   return lastMessage.content || "";
 };
@@ -134,9 +148,11 @@ const Messages = () => {
   const [search, setSearch] = useState("");
   const [connected, setConnected] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
+  const [dealMatch, setDealMatch] = useState(null);
 
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
+  const docInputRef = useRef(null);
   const activeIdRef = useRef(null);
   useEffect(() => {
     activeIdRef.current = activeId;
@@ -148,8 +164,35 @@ const Messages = () => {
     setLoadingConvs(true);
 
     const openFromUrl = async (list) => {
+      const matchId = searchParams.get("match");
       const convId = searchParams.get("conversation");
       const withUser = searchParams.get("with");
+
+      // Deal room — open the conversation linked to a match and show context.
+      if (matchId) {
+        try {
+          const match = await matchService.getById(matchId);
+          let dealConvId = match.conversationId;
+          if (!dealConvId) {
+            const otherId = otherPartyOfMatch(match, currentUser?.id);
+            if (otherId) {
+              const conv = await messageService.findOrCreateDirect(otherId);
+              dealConvId = conv._id;
+            }
+          }
+          const fresh = await messageService.getConversations();
+          if (!cancelled) {
+            setConversations(fresh);
+            if (dealConvId) setActiveId(dealConvId);
+            setDealMatch({ ...match, conversationId: dealConvId });
+            searchParams.delete("match");
+            setSearchParams(searchParams, { replace: true });
+          }
+        } catch (err) {
+          toast.error(err?.message || "Could not open deal room");
+        }
+        return;
+      }
 
       if (convId && list.find((c) => c._id === convId)) {
         setActiveId(convId);
@@ -458,6 +501,34 @@ const Messages = () => {
     }
   };
 
+  /* ── Attach document flow (PDF / Word / Excel / text) ── */
+  const handlePickDoc = () => docInputRef.current?.click();
+
+  const handleDocChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Document must be 10 MB or smaller");
+      if (docInputRef.current) docInputRef.current.value = "";
+      return;
+    }
+    setUploading(true);
+    try {
+      const result = await uploadService.uploadDocument(file);
+      const url = result?.document?.url || result?.url;
+      if (!url) throw new Error("Upload succeeded but no URL returned");
+      setPendingAttachments((prev) => [
+        ...prev,
+        { url, type: "file", name: file.name, size: file.size },
+      ]);
+    } catch (err) {
+      toast.error(err?.message || "Document upload failed");
+    } finally {
+      setUploading(false);
+      if (docInputRef.current) docInputRef.current.value = "";
+    }
+  };
+
   /* ── Render ────────────────────────────────────────── */
   return (
     <div className={`msg-shell ${activeId ? "msg-shell--has-active" : ""}`}>
@@ -606,6 +677,16 @@ const Messages = () => {
               </div>
             </header>
 
+            {dealMatch && dealMatch.conversationId === activeId && (
+              <DealRoomPanel
+                match={dealMatch}
+                currentUser={currentUser}
+                onMatchChange={(patch) =>
+                  setDealMatch((prev) => (prev ? { ...prev, ...patch } : prev))
+                }
+              />
+            )}
+
             <div className="msg-chat-stream" ref={streamRef}>
               {loadingMessages ? (
                 <div style={{ textAlign: "center", color: "#555" }}>
@@ -641,15 +722,31 @@ const Messages = () => {
                           mine ? "msg-bubble--mine" : "msg-bubble--theirs"
                         }`}
                       >
-                        {m.attachments?.map((a, i) => (
-                          <img
-                            key={i}
-                            src={a.url}
-                            alt={a.name || "attachment"}
-                            className="msg-bubble-image"
-                            onClick={() => window.open(a.url, "_blank")}
-                          />
-                        ))}
+                        {m.attachments?.map((a, i) =>
+                          a.type === "file" ? (
+                            <a
+                              key={i}
+                              href={a.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="msg-bubble-file"
+                            >
+                              <FiFileText size={18} />
+                              <span className="msg-bubble-file-name">
+                                {a.name || "Document"}
+                              </span>
+                              <FiDownload size={15} />
+                            </a>
+                          ) : (
+                            <img
+                              key={i}
+                              src={a.url}
+                              alt={a.name || "attachment"}
+                              className="msg-bubble-image"
+                              onClick={() => window.open(a.url, "_blank")}
+                            />
+                          ),
+                        )}
                         {m.content && <div>{m.content}</div>}
                         <span className="msg-bubble-time">
                           {formatTime(m.createdAt)}
@@ -665,7 +762,13 @@ const Messages = () => {
               <div style={{ padding: "8px 14px 0", background: "#f0f2f5" }}>
                 {pendingAttachments.map((a, i) => (
                   <div key={i} className="msg-attach-preview">
-                    <img src={a.url} alt={a.name} />
+                    {a.type === "file" ? (
+                      <span className="msg-attach-file">
+                        <FiFileText size={16} /> {a.name}
+                      </span>
+                    ) : (
+                      <img src={a.url} alt={a.name} />
+                    )}
                     <button
                       type="button"
                       onClick={() =>
@@ -695,6 +798,21 @@ const Messages = () => {
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+              <button
+                className="msg-composer-attach"
+                onClick={handlePickDoc}
+                disabled={uploading}
+                title="Attach document (PDF, Word, Excel)"
+              >
+                <FiFileText size={20} />
+              </button>
+              <input
+                ref={docInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf"
+                onChange={handleDocChange}
                 style={{ display: "none" }}
               />
               <textarea

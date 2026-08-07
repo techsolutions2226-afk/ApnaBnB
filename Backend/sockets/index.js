@@ -18,9 +18,9 @@
 
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
-const Message = require('../models/Message');
-const Conversation = require('../models/Conversation');
-const User = require('../models/User');
+const prisma = require('../db/prisma');
+const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
+const { withIds } = require('../utils/serializeIds');
 
 // Same PII regex the REST controller uses — we re-run it on socket messages
 // so going through WebSocket can't bypass the filter.
@@ -70,10 +70,11 @@ const initSockets = (httpServer) => {
 
     // Auto-join every conversation room the user is a participant in.
     try {
-      const convs = await Conversation.find({
-        participants: userId,
-      }).select('_id');
-      convs.forEach((c) => socket.join(`conv:${c._id}`));
+      const convs = await prisma.conversation.findMany({
+        where: { participants: { some: { id: userId } } },
+        select: { id: true },
+      });
+      convs.forEach((c) => socket.join(`conv:${c.id}`));
     } catch (err) {
       console.error('Failed to auto-join conversation rooms:', err.message);
     }
@@ -100,11 +101,14 @@ const initSockets = (httpServer) => {
         }
 
         // Membership check — only participants can post into the room.
-        const conversation = await Conversation.findById(conversationId);
+        const conversation = await prisma.conversation.findUnique({
+          where: { id: conversationId },
+          include: { participants: { select: { id: true } } },
+        });
         if (!conversation) {
           return ack && ack({ ok: false, error: 'Conversation not found' });
         }
-        if (!conversation.participants.some((p) => p.toString() === userId)) {
+        if (!conversation.participants.some((p) => p.id === userId)) {
           return ack && ack({ ok: false, error: 'Not a participant' });
         }
 
@@ -113,22 +117,25 @@ const initSockets = (httpServer) => {
           ? String(content).replace(personalInfoRegex, '[filtered]')
           : '';
 
-        // Persist — Mongoose setter encrypts content with AES-256-GCM.
-        const messageDoc = await Message.create({
-          conversationId,
-          sender: userId,
-          content: sanitized,
-          attachments: hasAttachments ? attachments : [],
+        // Persist — content is encrypted with AES-256-GCM before it hits the DB.
+        const populated = await prisma.message.create({
+          data: {
+            conversationId,
+            senderId: userId,
+            content: encryptMessage(sanitized),
+            attachments: hasAttachments ? attachments : [],
+          },
+          include: {
+            sender: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+          },
         });
 
-        // Re-fetch with populate so the broadcast carries sender info too.
-        // toJSON() runs the getter → plaintext reaches every receiver.
-        const populated = await Message.findById(messageDoc._id).populate(
-          'sender',
-          'name email role avatar',
-        );
-
-        const payloadToBroadcast = populated.toJSON();
+        // Broadcast with plaintext content (decrypted back for receivers) and
+        // `_id` filled in on the message + nested sender.
+        const payloadToBroadcast = withIds({
+          ...populated,
+          content: decryptMessage(populated.content),
+        });
         io.to(`conv:${conversationId}`).emit('new_message', payloadToBroadcast);
 
         // Lightweight conversation-list update for sidebars.

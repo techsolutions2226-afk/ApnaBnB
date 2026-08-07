@@ -1,0 +1,65 @@
+/* ====================================================
+   cinematic.css — additive scroll-animation layer for the
+   landing page. Transforms, perspective, shadow and Lenis
+   plumbing ONLY. No layout, colour, typography or spacing
+   changes — the design stays exactly as authored.
+   ==================================================== */
+
+/* 3D context + compositor hints, only when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  /* GSAP drives the hero reveal now — silence the CSS keyframe so the two
+     don't fight over the grid's opacity/transform (that fight was what left
+     the hero hidden until the first scroll). Reduced-motion users, who skip
+     GSAP entirely, keep the original CSS fade below. */
+  .home-landing-grid {
+    animation: none !important;
+  }
+
+  .home-landing-right {
+    perspective: 1200px;
+  }
+  .home-featured-grid {
+    perspective: 1400px;
+  }
+  .home-feature-card,
+  .home-featured-grid .prop-card {
+    transform-style: preserve-3d;
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+}
+
+/* Premium hover depth — box-shadow only, so it composes cleanly with the
+   GSAP-driven transforms (which own the `transform` property). */
+.home-feature-card {
+  transition: box-shadow 0.3s ease;
+}
+.home-feature-card:hover {
+  box-shadow: 0 30px 60px -22px rgba(15, 29, 20, 0.45);
+}
+.home-featured-grid .prop-card {
+  transition: box-shadow 0.3s ease;
+  border-radius: 12px;
+}
+.home-featured-grid .prop-card:hover {
+  box-shadow: 0 24px 48px -18px rgba(15, 29, 20, 0.32);
+}
+
+/* ── Lenis smooth-scroll plumbing (scoped by the `lenis` class Lenis adds to
+   <html> only while the landing page is mounted) ── */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}

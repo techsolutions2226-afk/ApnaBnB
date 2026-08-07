@@ -3,9 +3,11 @@
    plus filter tabs (by type / status) and per-card actions. */
 
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useMyMatches } from "../hooks/useMatches";
+import matchService from "../services/matchService";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
 import FilterTabs from "../components/common/FilterTabs";
@@ -55,6 +57,27 @@ const Matches = () => {
   const { currentUser, getDashboardPath } = useAuth();
   const { matches, isLoading, error, refetch } = useMyMatches();
   const [activeFilter, setActiveFilter] = useState("all");
+  const navigate = useNavigate();
+  const [busyId, setBusyId] = useState(null);
+
+  // Accept / reject a match. Accepting opens the private deal room.
+  const handleStatus = async (match, status) => {
+    setBusyId(match._id);
+    try {
+      await matchService.updateStatus(match._id, status);
+      if (status === "accepted") {
+        toast.success("Match accepted — opening your deal room.");
+        navigate(`/messages?match=${match._id}`);
+        return;
+      }
+      toast.info("Match dismissed.");
+      refetch();
+    } catch (e) {
+      toast.error(e.message || "Could not update match.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (activeFilter === "all") return matches || [];
@@ -435,58 +458,51 @@ const Matches = () => {
                   </p>
                 )}
 
-                {/* Actions */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 10,
-                    marginTop: 4,
-                  }}
-                >
+                {/* Actions — driven by the deal state */}
+                <div className="mtch-actions">
+                  {match.status === "pending" && (
+                    <>
+                      <button
+                        type="button"
+                        className="mtch-btn mtch-btn--primary"
+                        disabled={busyId === match._id}
+                        onClick={() => handleStatus(match, "accepted")}
+                      >
+                        {busyId === match._id ? "Working…" : "Accept & open deal room"}
+                      </button>
+                      <button
+                        type="button"
+                        className="mtch-btn mtch-btn--ghost"
+                        disabled={busyId === match._id}
+                        onClick={() => handleStatus(match, "rejected")}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+                  {match.status === "accepted" && (
+                    <button
+                      type="button"
+                      className="mtch-btn mtch-btn--primary"
+                      onClick={() => navigate(`/messages?match=${match._id}`)}
+                    >
+                      Open deal room →
+                    </button>
+                  )}
+                  {match.status === "closed" && (
+                    <span className="mtch-deal-done">✓ Deal closed</span>
+                  )}
+                  {match.status === "rejected" && (
+                    <span className="mtch-deal-rejected">Dismissed</span>
+                  )}
                   {property._id && (
                     <Link
                       to={`/property/${property._id}`}
-                      className="mtch-btn mtch-btn--primary"
+                      className="mtch-btn mtch-btn--secondary"
                     >
                       View property
                     </Link>
                   )}
-                  {(() => {
-                    // Build the "other party" userId so /messages?with=<id>
-                    // opens (or creates) the right 1-1 conversation.
-                    // Prefer requirement poster when viewer is the property
-                    // owner, otherwise the property owner.
-                    const propOwnerId =
-                      property?.listedBy?._id ||
-                      property?.listedBy ||
-                      null;
-                    const reqOwnerId =
-                      requirement?.requiredBy?._id ||
-                      requirement?.requiredBy ||
-                      null;
-                    const target =
-                      propOwnerId && propOwnerId !== currentUser?.id
-                        ? propOwnerId
-                        : reqOwnerId && reqOwnerId !== currentUser?.id
-                          ? reqOwnerId
-                          : null;
-                    return target ? (
-                      <Link
-                        to={`/messages?with=${target}`}
-                        className="mtch-btn mtch-btn--secondary"
-                      >
-                        Message
-                      </Link>
-                    ) : (
-                      <Link
-                        to="/messages"
-                        className="mtch-btn mtch-btn--secondary"
-                      >
-                        Message
-                      </Link>
-                    );
-                  })()}
                 </div>
               </div>
             );

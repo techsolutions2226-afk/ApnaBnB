@@ -178,7 +178,7 @@ const Services = () => {
                 onClick={(e) => toggleLike(svc.id, e)}
               >
                 {liked[svc.id] ? (
-                  <AiFillHeart size={20} color="#ff385c" />
+                  <AiFillHeart size={20} color="#1a8f5a" />
                 ) : (
                   <FiHeart size={20} color="#fff" strokeWidth={2.2} />
                 )}

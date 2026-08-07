@@ -61,6 +61,27 @@ const matchService = {
     }
   },
 
+  // Update a match's status (pending | accepted | rejected | closed).
+  // Accepting opens the private Deal Room and returns it on the match.
+  updateStatus: async (id, status) => {
+    try {
+      const response = await apiClient.put(`/matches/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update match status' };
+    }
+  },
+
+  // Get the counterpart's contact details — revealed only once accepted.
+  getContact: async (id) => {
+    try {
+      const response = await apiClient.get(`/matches/${id}/contact`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Contact not available yet' };
+    }
+  },
+
   // Create a match (when property matches with requirement)
   create: async (matchData) => {
     try {

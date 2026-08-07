@@ -1,6 +1,6 @@
 const express = require('express');
-const { uploadImage, uploadMultipleImages, deleteImage } = require('../controllers/uploadController');
-const { upload, profileUpload } = require('../config/cloudinary');
+const { uploadImage, uploadMultipleImages, uploadDocument, deleteImage } = require('../controllers/uploadController');
+const { upload, profileUpload, documentUpload } = require('../config/cloudinary');
 const verifyToken = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -10,6 +10,7 @@ const router = express.Router();
 router.post('/image', verifyToken, upload.single('image'), uploadImage);
 router.post('/images', verifyToken, upload.array('images', 6), uploadMultipleImages);
 router.post('/profile', verifyToken, profileUpload.single('image'), uploadImage); // → Profile-Images/
+router.post('/document', verifyToken, documentUpload.single('document'), uploadDocument); // → deal_documents/
 router.delete('/image/:publicId', verifyToken, deleteImage);
 
 module.exports = router;

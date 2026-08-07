@@ -145,35 +145,6 @@ const BuyerDashboard = () => {
         <StatCard icon="🔔" value={stats.notifications} label="Notifications" />
       </div>
 
-      {/* ── Quick Actions ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Quick Actions</h2>
-        </div>
-        <div className="dash-actions">
-          <Link to="/" className="dash-action">
-            <span className="dash-action-icon">🔍</span>
-            Browse Properties
-          </Link>
-          <Link to="/requirements/new" className="dash-action">
-            <span className="dash-action-icon">📝</span>
-            Post Requirement
-          </Link>
-          <Link to="/matches" className="dash-action">
-            <span className="dash-action-icon">🔗</span>
-            View Matches
-          </Link>
-          <Link to="/messages" className="dash-action">
-            <span className="dash-action-icon">💬</span>
-            View Messages
-          </Link>
-          <Link to="/wishlists" className="dash-action">
-            <span className="dash-action-icon">❤️</span>
-            My Wishlists
-          </Link>
-        </div>
-      </div>
-
         {/* ── My Requirements Table ── */}
        <div className="dash-section">
          <div className="dash-section-header">

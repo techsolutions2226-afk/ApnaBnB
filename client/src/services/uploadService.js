@@ -69,6 +69,28 @@ const uploadService = {
     }
   },
 
+  // Upload a document (PDF/Word/Excel/text) for deal-room sharing. Lands in
+  // the deal_documents Cloudinary folder as a raw resource.
+  uploadDocument: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+
+      const response = await apiClient.post('/upload/document', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || {
+        success: false,
+        message: 'Failed to upload document. Please try again.',
+      };
+    }
+  },
+
   // Delete image from Cloudinary
   deleteImage: async (publicId) => {
     try {

@@ -1,6 +1,12 @@
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
-const mongoose = require('mongoose');
+const prisma = require('../db/prisma');
+const { decryptMessage } = require('../utils/messageCrypto');
+
+const participantSelect = {
+  select: { id: true, name: true, email: true, role: true, avatar: true },
+};
+const senderSelect = {
+  select: { id: true, name: true, email: true, role: true, avatar: true },
+};
 
 // Create new conversation
 const createConversation = async (req, res) => {
@@ -11,71 +17,60 @@ const createConversation = async (req, res) => {
   }
 
   try {
-    const conversation = await Conversation.create({ participants });
+    const conversation = await prisma.conversation.create({
+      data: { participants: { connect: participants.map((id) => ({ id })) } },
+      include: { participants: participantSelect },
+    });
     res.status(201).json(conversation);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get all conversations for the logged-in user, enriched with the last
-// message (decrypted, via the model getter) and the count of unread messages
-// sent by the OTHER party. Sorted by most-recently-active first.
+// Get all conversations for the logged-in user, enriched with the last message
+// (decrypted) and the count of unread messages sent by the OTHER party.
 const getConversations = async (req, res) => {
   try {
-    const conversations = await Conversation.find({
-      participants: req.user.id,
-    }).populate('participants', 'name email role avatar');
-
-    // Build per-conversation last-message + unread-count maps in two batched
-    // queries instead of N+1 round-trips.
-    const ids = conversations.map((c) => c._id);
-    const [lastMessages, unreadAgg] = await Promise.all([
-      Message.aggregate([
-        { $match: { conversationId: { $in: ids } } },
-        { $sort: { createdAt: -1 } },
-        {
-          $group: {
-            _id: '$conversationId',
-            // Keep the FULL document so we can re-hydrate as a Mongoose
-            // model below and trigger the decryption getter on content.
-            doc: { $first: '$$ROOT' },
-          },
-        },
-      ]),
-      Message.aggregate([
-        {
-          $match: {
-            conversationId: { $in: ids },
-            read: false,
-            sender: { $ne: new mongoose.Types.ObjectId(req.user.id) },
-          },
-        },
-        { $group: { _id: '$conversationId', count: { $sum: 1 } } },
-      ]),
-    ]);
-
-    const lastByConv = new Map();
-    for (const row of lastMessages) {
-      // Re-hydrate as a Mongoose doc so the content getter (AES decrypt) fires
-      // when we serialise.
-      const hydrated = Message.hydrate(row.doc);
-      lastByConv.set(row._id.toString(), hydrated.toJSON());
-    }
-    const unreadByConv = new Map(
-      unreadAgg.map((row) => [row._id.toString(), row.count]),
-    );
-
-    const enriched = conversations.map((c) => {
-      const obj = c.toJSON();
-      const key = c._id.toString();
-      obj.lastMessage = lastByConv.get(key) || null;
-      obj.unreadCount = unreadByConv.get(key) || 0;
-      return obj;
+    const conversations = await prisma.conversation.findMany({
+      where: { participants: { some: { id: req.user.id } } },
+      include: { participants: participantSelect },
     });
 
-    // Sort by lastMessage.createdAt (newest first), conversations with no
-    // messages go to the bottom.
+    const ids = conversations.map((c) => c.id);
+
+    // Last message per conversation (decrypted).
+    const lastByConv = {};
+    await Promise.all(
+      ids.map(async (cid) => {
+        const m = await prisma.message.findFirst({
+          where: { conversationId: cid },
+          orderBy: { createdAt: 'desc' },
+          include: { sender: senderSelect },
+        });
+        if (m) lastByConv[cid] = { ...m, content: decryptMessage(m.content) };
+      }),
+    );
+
+    // Unread counts (messages from the other party) in one grouped query.
+    const unreadRows = await prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: ids },
+        read: false,
+        senderId: { not: req.user.id },
+      },
+      _count: { _all: true },
+    });
+    const unreadByConv = {};
+    for (const row of unreadRows) unreadByConv[row.conversationId] = row._count._all;
+
+    const enriched = conversations.map((c) => ({
+      ...c,
+      lastMessage: lastByConv[c.id] || null,
+      unreadCount: unreadByConv[c.id] || 0,
+    }));
+
+    // Sort by lastMessage.createdAt (newest first); empty conversations last.
     enriched.sort((a, b) => {
       const ta = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
       const tb = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
@@ -89,8 +84,7 @@ const getConversations = async (req, res) => {
 };
 
 // Find a 1-1 conversation between the current user and `otherUserId`, or
-// create one if it doesn't exist. Used when buyer clicks "Message" on a
-// match / dealer profile / property — no need to know about existing convs.
+// create one if it doesn't exist.
 const findOrCreateDirect = async (req, res) => {
   const { otherUserId } = req.body;
   if (!otherUserId) {
@@ -101,22 +95,29 @@ const findOrCreateDirect = async (req, res) => {
   }
 
   try {
-    // Match a conversation whose participants are EXACTLY these two ids.
-    let conversation = await Conversation.findOne({
-      participants: { $all: [req.user.id, otherUserId], $size: 2 },
+    // A conversation whose participants are EXACTLY these two: both present
+    // (two `some`) AND every participant is one of the two (`every`).
+    let conversation = await prisma.conversation.findFirst({
+      where: {
+        AND: [
+          { participants: { some: { id: req.user.id } } },
+          { participants: { some: { id: otherUserId } } },
+          { participants: { every: { id: { in: [req.user.id, otherUserId] } } } },
+        ],
+      },
+      include: { participants: participantSelect },
     });
 
     if (!conversation) {
-      conversation = await Conversation.create({
-        participants: [req.user.id, otherUserId],
+      conversation = await prisma.conversation.create({
+        data: {
+          participants: { connect: [{ id: req.user.id }, { id: otherUserId }] },
+        },
+        include: { participants: participantSelect },
       });
     }
 
-    const populated = await Conversation.findById(conversation._id).populate(
-      'participants',
-      'name email role avatar',
-    );
-    res.status(200).json(populated);
+    res.status(200).json(conversation);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -127,14 +128,16 @@ const getConversationById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const conversation = await Conversation.findById(id).populate('participants', 'name email');
-    
+    const conversation = await prisma.conversation.findUnique({
+      where: { id },
+      include: { participants: participantSelect },
+    });
+
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found.' });
     }
 
-    // Verify user is a participant
-    if (!conversation.participants.some(p => p._id.toString() === req.user.id)) {
+    if (!conversation.participants.some((p) => p.id === req.user.id)) {
       return res.status(403).json({ message: 'You are not a participant in this conversation.' });
     }
 
@@ -143,6 +146,16 @@ const getConversationById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Load a conversation with just participant ids for membership checks.
+const loadForMembership = (id) =>
+  prisma.conversation.findUnique({
+    where: { id },
+    include: { participants: { select: { id: true } } },
+  });
+
+const isParticipant = (conversation, userId) =>
+  conversation.participants.some((p) => p.id === userId);
 
 // Update conversation
 const updateConversation = async (req, res) => {
@@ -150,45 +163,39 @@ const updateConversation = async (req, res) => {
   const { archived } = req.body;
 
   try {
-    const conversation = await Conversation.findById(id);
-    
+    const conversation = await loadForMembership(id);
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found.' });
     }
-
-    // Verify user is a participant
-    if (!conversation.participants.includes(req.user.id)) {
+    if (!isParticipant(conversation, req.user.id)) {
       return res.status(403).json({ message: 'You are not a participant in this conversation.' });
     }
 
-    if (archived !== undefined) {
-      conversation.archived = archived;
-    }
-
-    await conversation.save();
-    res.status(200).json(conversation);
+    const updated = await prisma.conversation.update({
+      where: { id },
+      data: archived !== undefined ? { archived } : {},
+      include: { participants: participantSelect },
+    });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Delete conversation
+// Delete conversation (messages cascade via FK onDelete)
 const deleteConversation = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const conversation = await Conversation.findById(id);
-    
+    const conversation = await loadForMembership(id);
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found.' });
     }
-
-    // Verify user is a participant
-    if (!conversation.participants.includes(req.user.id)) {
+    if (!isParticipant(conversation, req.user.id)) {
       return res.status(403).json({ message: 'You are not authorized to delete this conversation.' });
     }
 
-    await Conversation.findByIdAndDelete(id);
+    await prisma.conversation.delete({ where: { id } });
     res.status(200).json({ message: 'Conversation deleted successfully.' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -205,31 +212,34 @@ const updateMembers = async (req, res) => {
   }
 
   try {
-    const conversation = await Conversation.findById(id);
-    
+    const conversation = await loadForMembership(id);
     if (!conversation) {
       return res.status(404).json({ message: 'Conversation not found.' });
     }
-
-    // Verify user is a participant (only participants can modify members)
-    if (!conversation.participants.includes(req.user.id)) {
+    if (!isParticipant(conversation, req.user.id)) {
       return res.status(403).json({ message: 'You are not authorized to modify this conversation.' });
     }
 
+    const alreadyMember = isParticipant(conversation, userId);
     if (action === 'add') {
-      if (conversation.participants.includes(userId)) {
+      if (alreadyMember) {
         return res.status(400).json({ message: 'User is already a participant.' });
       }
-      conversation.participants.push(userId);
-    } else if (action === 'remove') {
-      if (!conversation.participants.includes(userId)) {
-        return res.status(400).json({ message: 'User is not a participant.' });
-      }
-      conversation.participants = conversation.participants.filter(p => p.toString() !== userId);
+    } else if (!alreadyMember) {
+      return res.status(400).json({ message: 'User is not a participant.' });
     }
 
-    await conversation.save();
-    res.status(200).json(conversation);
+    const updated = await prisma.conversation.update({
+      where: { id },
+      data: {
+        participants:
+          action === 'add'
+            ? { connect: { id: userId } }
+            : { disconnect: { id: userId } },
+      },
+      include: { participants: participantSelect },
+    });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

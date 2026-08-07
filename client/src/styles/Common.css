@@ -245,7 +245,7 @@
 }
 
 .cm-avatar-badge svg {
-  color: #ff385c;
+  color: #1a8f5a;
 }
 
 .cm-avatar--sm .cm-avatar-badge svg {
@@ -433,8 +433,8 @@
 }
 
 .cm-carousel-wishlist--saved svg {
-  color: #ff385c;
-  fill: #ff385c;
+  color: #1a8f5a;
+  fill: #1a8f5a;
 }
 
 .cm-carousel-wishlist--unsaved svg {

@@ -417,6 +417,9 @@ const PostRequirement = () => {
           bathrooms: Number(form.bathrooms) || undefined,
           notes: form.notes.trim() || undefined,
           urgency: form.urgency || undefined,
+          // Role the user is acting as (from the dashboard selector). Backend
+          // clamps to buyer|dealer; falls back to account role when absent.
+          actingRole: localStorage.getItem("dash_view_role") || undefined,
         };
 
         await requirementService.create(requirementData);

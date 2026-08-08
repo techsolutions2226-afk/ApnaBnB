@@ -163,16 +163,8 @@ const Messages = () => {
 
   /* ── Multi-select ("select more") + "delete for me" ── */
   const [selectedIds, setSelectedIds] = useState([]);
-  /* Messages the current user chose to hide for themselves (delete for me).
-     Persisted per-user in localStorage so they stay hidden across reloads. */
-  const [hiddenIds, setHiddenIds] = useState(() => {
-    if (!currentUser?.id) return [];
-    try {
-      return JSON.parse(localStorage.getItem(`hidden_msgs_${currentUser.id}`) || "[]");
-    } catch {
-      return [];
-    }
-  });
+  /* "Delete for me" is DB-backed now (Message.deletedForMe) — the server stops
+     returning hidden messages, so no local persistence is needed. */
 
   /* ── Typing indicator + read receipts ── */
   const [otherTyping, setOtherTyping] = useState(false);
@@ -340,58 +332,6 @@ const Messages = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId]);
 
-  /* ── Silent sync (client-only): the backend can't be touched, so it never
-     pushes edit/delete events to other dashboards. While a conversation is
-     open we refetch it every few seconds and apply any diff — messages the
-     other side deleted vanish, edited ones update, and the sidebar preview
-     refreshes when the last message changes. ── */
-  useEffect(() => {
-    if (!activeId) return;
-    let cancelled = false;
-
-    const sync = async () => {
-      try {
-        const data = await messageService.getMessages(activeId);
-        if (cancelled) return;
-        const list = Array.isArray(data) ? data : [];
-        setMessages((prev) => {
-          const same =
-            prev.length === list.length &&
-            prev.every((m, i) => {
-              const n = list[i];
-              return (
-                n &&
-                m._id === n._id &&
-                m.updatedAt === n.updatedAt &&
-                m.read === n.read
-              );
-            });
-          return same ? prev : list;
-        });
-        /* If the sidebar's preview (last message) was deleted or edited,
-           refresh the conversation list so the preview matches. */
-        const conv = conversationsRef.current.find((c) => c._id === activeId);
-        if (conv?.lastMessage) {
-          const cur = list.find((m) => m._id === conv.lastMessage._id);
-          if (!cur || cur.updatedAt !== conv.lastMessage.updatedAt) {
-            messageService
-              .getConversations()
-              .then(setConversations)
-              .catch(() => {});
-          }
-        }
-      } catch {
-        /* silent — transient failures during polling shouldn't spam toasts */
-      }
-    };
-
-    const t = setInterval(sync, 2500);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
-  }, [activeId]);
-
   /* ── Socket event handlers ─────────────────────────── */
   useEffect(() => {
     if (!socket) return;
@@ -528,12 +468,28 @@ const Messages = () => {
       }
     };
 
+    /* The recipient read the message — flip our ✓ to ✓✓ live. */
+    const onMessageRead = ({ messageId }) => {
+      if (!messageId) return;
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, read: true } : m)),
+      );
+    };
+
+    /* "Delete for me" done on another device — drop it here too. */
+    const onMessageHidden = ({ messageId }) => {
+      if (!messageId) return;
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("new_message", onNewMessage);
     socket.on("message_updated", onMessageUpdated);
     socket.on("message_deleted", onMessageDeleted);
     socket.on("typing", onTyping);
+    socket.on("message_read", onMessageRead);
+    socket.on("message_hidden", onMessageHidden);
 
     if (socket.connected) setConnected(true);
 
@@ -544,6 +500,8 @@ const Messages = () => {
       socket.off("message_updated", onMessageUpdated);
       socket.off("message_deleted", onMessageDeleted);
       socket.off("typing", onTyping);
+      socket.off("message_read", onMessageRead);
+      socket.off("message_hidden", onMessageHidden);
       clearTimeout(typingClearRef.current);
     };
   }, [socket, currentUser?.id]);
@@ -591,21 +549,14 @@ const Messages = () => {
     [conversations, activeId],
   );
 
-  /* Everything in this conversation minus the messages the user hid with
-     "delete for me". Re-applies after every load + socket arrival. */
-  const visibleMessages = useMemo(
-    () => messages.filter((m) => !hiddenIds.includes(m._id)),
-    [messages, hiddenIds],
-  );
-
-  /* Multi-select ("select more") is delete-for-me only, so every visible
-     message can be ticked regardless of who sent it. */
-  const allVisibleIds = useMemo(() => visibleMessages.map((m) => m._id), [visibleMessages]);
+  /* Multi-select ("select more") is delete-for-me only, so every message can
+     be ticked regardless of who sent it. */
+  const allVisibleIds = useMemo(() => messages.map((m) => m._id), [messages]);
 
   const groupedStream = useMemo(() => {
     const out = [];
     let lastDayKey = null;
-    visibleMessages.forEach((m) => {
+    messages.forEach((m) => {
       const dayKey = startOfDay(m.createdAt);
       if (dayKey !== lastDayKey) {
         out.push({ kind: "day", id: `day-${dayKey}`, day: m.createdAt });
@@ -614,7 +565,7 @@ const Messages = () => {
       out.push({ kind: "msg", id: m._id, msg: m });
     });
     return out;
-  }, [visibleMessages]);
+  }, [messages]);
 
   /* ── Send handler ──────────────────────────────────── */
   const handleSend = useCallback(async () => {
@@ -799,26 +750,24 @@ const Messages = () => {
     });
   };
 
-  /* ── "Delete for me" — hides the messages from THIS user only. Pure
-     client-side: never touches the DB or the other participant. Persisted in
-     localStorage so it survives reloads. ── */
+  /* ── "Delete for me" — DB-backed (Message.deletedForMe). The server stops
+     returning these messages for THIS user (all devices), while everyone
+     else still sees them. ── */
   const handleDeleteForMe = useCallback(async () => {
     const ids = deleteRequest?.ids || [];
-    if (!ids.length) return;
-    const key = `hidden_msgs_${currentUser?.id}`;
-    setHiddenIds((prev) => {
-      const next = [...new Set([...prev, ...ids])];
-      try {
-        localStorage.setItem(key, JSON.stringify(next));
-      } catch {
-        /* ignore private-mode / quota errors */
-      }
-      return next;
-    });
-    setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
-    setDeleteRequest(null);
-    setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
-  }, [deleteRequest, currentUser?.id]);
+    if (!ids.length || deleting) return;
+    setDeleting(true);
+    try {
+      await Promise.all(ids.map((id) => messageService.hideMessage(id)));
+      setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
+      setDeleteRequest(null);
+      setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+    } catch (err) {
+      toast.error(err?.message || "Failed to hide messages");
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteRequest, deleting]);
 
   /* ── "Delete for everyone" — existing backend DELETE /messages/:id. Only
      works on your own messages (the server returns 403 otherwise). ── */

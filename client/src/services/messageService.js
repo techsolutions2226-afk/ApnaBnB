@@ -92,6 +92,16 @@ const messageService = {
     }
   },
 
+  // "Delete for me" — hide a message from your own view (DB-backed).
+  hideMessage: async (messageId) => {
+    try {
+      const response = await apiClient.put(`/messages/${messageId}/me`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to hide message' };
+    }
+  },
+
   deleteMessage: async (messageId) => {
     try {
       const response = await apiClient.delete(`/messages/${messageId}`);

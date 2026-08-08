@@ -15,6 +15,7 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const prisma = require('./db/prisma');
+const { encryptMessage } = require('./utils/messageCrypto');
 const { generateMatchesForProperty } = require('./controllers/propertyController');
 
 const TEST_EMAILS = [
@@ -32,7 +33,25 @@ async function main() {
   }
 
   /* ── 1. Clean up any prior runs — deleting the users cascades every
-     property / listing / requirement / match / trip / wishlist they own. ── */
+     property / listing / requirement / match / trip / wishlist they own.
+     Conversations are the one exception (no FK back to a user), so drop any
+     that involve the test emails first. ── */
+  const existingUsers = await prisma.user.findMany({
+    where: { email: { in: TEST_EMAILS } },
+    select: { id: true },
+  });
+  const oldUserIds = existingUsers.map((u) => u.id);
+  if (oldUserIds.length > 0) {
+    const oldConvs = await prisma.conversation.findMany({
+      where: { participants: { some: { id: { in: oldUserIds } } } },
+      select: { id: true },
+    });
+    if (oldConvs.length > 0) {
+      await prisma.conversation.deleteMany({
+        where: { id: { in: oldConvs.map((c) => c.id) } },
+      });
+    }
+  }
   const del = await prisma.user.deleteMany({ where: { email: { in: TEST_EMAILS } } });
   if (del.count > 0) {
     console.log(`Cleared ${del.count} existing test user(s) + their data.`);
@@ -168,7 +187,107 @@ async function main() {
   }
   console.log(`Match engine produced ${totalMatches} match record(s).`);
 
-  /* ── 6. Summary ── */
+  /* ── 6. Demo conversations + messages ── */
+  const now = Date.now();
+  const agoMs = (ms) => new Date(now - ms);
+
+  // Create an encrypted message; when `edited` is set, content is re-written
+  // so updatedAt > createdAt and the client renders the "Edited" tag.
+  const makeMessage = async ({ conversationId, senderId, content, read = false, createdAt, edited, attachments = [] }) => {
+    const m = await prisma.message.create({
+      data: {
+        conversationId,
+        senderId,
+        content: encryptMessage(content),
+        attachments,
+        read,
+        createdAt,
+        // Match updatedAt to createdAt so only the truly-edited message below
+        // trips the client's "Edited" (updatedAt > createdAt) heuristic.
+        updatedAt: createdAt,
+      },
+    });
+    if (edited) {
+      await prisma.message.update({
+        where: { id: m.id },
+        data: { content: encryptMessage(edited) },
+      });
+    }
+    return m.id;
+  };
+
+  // Thread 1 — Gulberg III house (Ahmed the seller ↔ Fatima the buyer).
+  const convSellerBuyer = await prisma.conversation.create({
+    data: {
+      participants: { connect: [{ id: seller.id }, { id: buyer.id }] },
+      createdAt: agoMs(6 * 3600e3),
+    },
+  });
+  await makeMessage({
+    conversationId: convSellerBuyer.id, senderId: seller.id,
+    content: "Hello! I saw you're interested in the Gulberg III house — happy to answer any questions.",
+    read: true, createdAt: agoMs(5.5 * 3600e3),
+  });
+  await makeMessage({
+    conversationId: convSellerBuyer.id, senderId: buyer.id,
+    content: "Yes! My family loves the area. What's your best price?",
+    read: true, createdAt: agoMs(5 * 3600e3),
+  });
+  await makeMessage({
+    conversationId: convSellerBuyer.id, senderId: seller.id,
+    content: 'Listed at 50M. I can do 47.5M if we close this month.',
+    read: true, createdAt: agoMs(4.5 * 3600e3),
+    edited: 'Listed at 50M. I can do 47.5M if we close this month — fittings included.',
+  });
+  await makeMessage({
+    conversationId: convSellerBuyer.id, senderId: buyer.id,
+    content: 'Sounds fair. Could we visit this weekend?',
+    read: true, createdAt: agoMs(3 * 3600e3),
+  });
+  await makeMessage({
+    conversationId: convSellerBuyer.id, senderId: seller.id,
+    content: "Sure — Saturday 11am works. I'll have the documents ready.",
+    read: false, createdAt: agoMs(1.5 * 3600e3),
+  });
+  await makeMessage({
+    conversationId: convSellerBuyer.id, senderId: buyer.id,
+    content: 'Actually, could you share more photos of the interior?',
+    read: false, createdAt: agoMs(30 * 60e3),
+  });
+
+  // Thread 2 — furnished DHA Karachi flat (Bilal the dealer ↔ Fatima).
+  const convDealerBuyer = await prisma.conversation.create({
+    data: {
+      participants: { connect: [{ id: dealer.id }, { id: buyer.id }] },
+      createdAt: agoMs(2 * 24 * 3600e3),
+    },
+  });
+  await makeMessage({
+    conversationId: convDealerBuyer.id, senderId: dealer.id,
+    content: 'I manage a fully furnished 3-bed flat in DHA Karachi — 150k/month.',
+    read: true, createdAt: agoMs(2 * 24 * 3600e3),
+  });
+  await makeMessage({
+    conversationId: convDealerBuyer.id, senderId: buyer.id,
+    content: 'Are utilities included?',
+    read: true, createdAt: agoMs(26 * 3600e3),
+  });
+  await makeMessage({
+    conversationId: convDealerBuyer.id, senderId: dealer.id,
+    content: "Yes, and a refundable 300k deposit. Here's the living room:",
+    read: false, createdAt: agoMs(22 * 3600e3),
+    attachments: [{
+      url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=900&q=80&auto=format&fit=crop',
+      type: 'image', name: 'living-room.jpg', size: 0,
+    }],
+  });
+
+  const totalMessages = await prisma.message.count({
+    where: { conversationId: { in: [convSellerBuyer.id, convDealerBuyer.id] } },
+  });
+  console.log(`Created 2 demo conversations with ${totalMessages} messages (incl. an edited + an image message).`);
+
+  /* ── 7. Summary ── */
   console.log('\n────────────────────────────────────────────');
   console.log('  DEMO DATA SEEDED');
   console.log('────────────────────────────────────────────');
@@ -180,6 +299,7 @@ async function main() {
   console.log(`  Listings created:    ${properties.length}`);
   console.log(`  Requirements:        ${requirementsData.length}`);
   console.log(`  Matches generated:   ${totalMatches}`);
+  console.log(`  Conversations:       2 (${totalMessages} messages)`);
   console.log('────────────────────────────────────────────\n');
 
   await prisma.$disconnect();

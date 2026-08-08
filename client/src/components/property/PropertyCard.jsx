@@ -1,9 +1,28 @@
 import { Link } from "react-router-dom";
 import { AiFillStar } from "react-icons/ai";
-import ImageCarousel from "../common/ImageCarousel";
+import { FiHeart } from "react-icons/fi";
 import { useWishlist } from "../../context/WishlistContext";
 
-/* ─── Enhanced Property Card with carousel + wishlist ─── */
+/* ─── Airbnb-style property card (Tailwind) ───
+ *   Square rounded image → hover zoom · "Guest favorite" pill top-left ·
+ *   heart top-right · content sits directly below with a bold title + rating
+ *   on one row, muted location / availability lines, then price + "night".
+ */
+const formatLocation = (location) => {
+  if (!location) return "";
+  if (typeof location === "string") return location;
+  return [location.area, location.city].filter(Boolean).join(", ");
+};
+
+const formatPrice = (price) => Number(price || 0).toLocaleString();
+
+const formatRating = (rating) => {
+  const v = Number(rating);
+  if (!v) return "New";
+  const s = v % 1 === 0 ? String(v) : v.toFixed(2).replace(/0$/, "");
+  return s.replace(/\.$/, "");
+};
+
 const PropertyCard = ({
   id,
   _id,
@@ -18,53 +37,104 @@ const PropertyCard = ({
   propertyType,
   size,
   sizeUnit,
-  listedBy,
+  availability,
 }) => {
   const actualId = id || _id;
   const { isWishlisted, toggleWishlist } = useWishlist();
   const saved = isWishlisted(actualId);
 
-  /* Use gallery if available, fall back to photos from backend, then single image */
-  const images = gallery?.length > 0 ? gallery : (photos?.length > 0 ? photos : [image]);
+  const src =
+    gallery && gallery.length > 0
+      ? gallery[0]
+      : photos && photos.length > 0
+        ? photos[0]
+        : image;
+
+  const metaLine = [size ? `${size} ${sizeUnit || ""}` : null, propertyType]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="prop-card">
-      <Link to={`/property/${actualId}`} className="prop-card-link">
-        <ImageCarousel
-          images={images}
-          alt={title}
-          badge={isGuestFav ? "Guest favorite" : null}
-          isWishlisted={saved}
-          onWishlistToggle={() => toggleWishlist(actualId)}
-        />
-        <div className="prop-info">
-          <div className="prop-top-row">
-            <span className="prop-title">{title}</span>
-            <span className="prop-rating">
-              <AiFillStar size={13} /> {rating}
-            </span>
+    <div className="group w-full">
+      <div className="relative">
+        {/* ── Image: square, rounded, hover zoom ── */}
+        <Link to={`/property/${actualId}`} aria-label={title}>
+          <div className="aspect-square w-full overflow-hidden rounded-2xl bg-neutral-200">
+            {src ? (
+              <img
+                src={src}
+                alt={title || "Property"}
+                className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-neutral-400">
+                No image
+              </div>
+            )}
           </div>
-          {location && (
-            <span className="prop-location">
-              {typeof location === "object" 
-                ? [location.area, location.city].filter(Boolean).join(", ") 
-                : location}
-            </span>
-          )}
-          <span className="prop-price">
-            <strong>PKR {Number(price || 0).toLocaleString()}</strong>
-            <span className="prop-meta">
-              {propertyType ? ` · ${propertyType}` : ""}
-              {size ? ` · ${size} ${sizeUnit || ""}` : ""}
-            </span>
+        </Link>
+
+        {/* ── Top-left "Guest favorite" pill ── */}
+        {isGuestFav && (
+          <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-black shadow-sm">
+            Guest favorite
           </span>
-          {listedBy && (
-            <span className="prop-listed-by">
-              Listed by {listedBy.role === "dealer" ? "Dealer" : "Owner"}
-            </span>
-          )}
+        )}
+
+        {/* ── Top-right heart (dark stroke/drop shadow) ── */}
+        <button
+          type="button"
+          aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleWishlist(actualId);
+          }}
+          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full text-neutral-900 transition-transform duration-200 hover:scale-110"
+        >
+          <FiHeart
+            className={`h-6 w-6 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)] ${
+              saved ? "fill-red-500 text-red-500" : "fill-white text-neutral-700"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* ── Content directly below the image ── */}
+      <div className="mt-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="truncate text-[15px] font-medium text-neutral-800">
+            {title}
+          </h3>
+          <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-neutral-800">
+            <AiFillStar className="h-[13px] w-[13px] text-neutral-800" />
+            <span>{formatRating(rating)}</span>
+          </div>
         </div>
-      </Link>
+
+        {formatLocation(location) && (
+          <p className="mt-0.5 truncate text-sm text-neutral-500">
+            {formatLocation(location)}
+          </p>
+        )}
+
+        {(availability || metaLine) && (
+          <p className="truncate text-sm text-neutral-500">
+            {availability || metaLine}
+          </p>
+        )}
+
+        <div className="mt-0.5 text-[15px]">
+          <span className="font-semibold text-neutral-900">
+            PKR {formatPrice(price)}
+          </span>
+          <span className="text-neutral-500"> night</span>
+        </div>
+      </div>
     </div>
   );
 };

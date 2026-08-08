@@ -1,5 +1,5 @@
 const express = require('express');
-const { sendMessage, getMessages, updateMessage, deleteMessage, markMessageAsRead, getUnreadCount, markMultipleAsRead } = require('../controllers/messageController');
+const { sendMessage, getMessages, updateMessage, deleteMessage, markMessageAsRead, getUnreadCount, markMultipleAsRead, hideMessage } = require('../controllers/messageController');
 const verifyToken = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -8,9 +8,12 @@ const router = express.Router();
 router.post('/', verifyToken, sendMessage);
 router.get('/:conversationId', verifyToken, getMessages);
 router.put('/:id', verifyToken, updateMessage);
+router.put('/:id/me', verifyToken, hideMessage);
 router.delete('/:id', verifyToken, deleteMessage);
+// NOTE: static "/batch/read" MUST come before "/:id/read", otherwise
+// "batch" is captured as :id and bulk marking silently 404s.
+router.put('/batch/read', verifyToken, markMultipleAsRead);
 router.put('/:id/read', verifyToken, markMessageAsRead);
 router.get('/:conversationId/unread', verifyToken, getUnreadCount);
-router.put('/batch/read', verifyToken, markMultipleAsRead);
 
 module.exports = router;

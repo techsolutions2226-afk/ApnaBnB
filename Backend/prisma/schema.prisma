@@ -284,6 +284,10 @@ model Message {
   attachments Json    @default("[]") // [{ url, type, name, size }]
   read        Boolean @default(false)
 
+  // "Delete for me" — userIds that hid this message. They never see it again
+  // (getMessages filters it out), while everyone else still does.
+  deletedForMe String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

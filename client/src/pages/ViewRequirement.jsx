@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import useViewRole from "../hooks/useViewRole";
 import { toast } from "react-toastify";
 import requirementService from "../services/requirementService";
 import { FiMapPin, FiHome, FiDollarSign, FiCalendar, FiClock, FiFileText, FiEdit2, FiArrowLeft } from "react-icons/fi";
@@ -14,7 +14,6 @@ import "../styles/Requirement.css";
 
 const ViewRequirement = () => {
   const { id } = useParams(); /* requirement ID from URL */
-  const { currentUser, getDashboardPath } = useAuth();
   const navigate = useNavigate();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +45,9 @@ const ViewRequirement = () => {
     loadRequirement();
   }, [id]);
 
-  const isDealer = currentUser?.role === "dealer";
+  /* The hat the user is wearing in the dashboard — NOT their signup role. */
+  const { viewRole } = useViewRole();
+  const isDealer = viewRole === "dealer";
 
   const getStatusConfig = (status) => {
     const configs = {
@@ -77,7 +78,7 @@ const ViewRequirement = () => {
         <nav className="dash-breadcrumb">
           <Link to="/" className="dash-breadcrumb-link">Home</Link>
           <span className="dash-breadcrumb-sep">/</span>
-          <Link to={getDashboardPath()} className="dash-breadcrumb-link">Dashboard</Link>
+          <Link to={`/dashboard/${viewRole}`} className="dash-breadcrumb-link">Dashboard</Link>
           <span className="dash-breadcrumb-sep">/</span>
           <span className="dash-breadcrumb-current">Requirement Details</span>
         </nav>
@@ -87,7 +88,7 @@ const ViewRequirement = () => {
           <h1 className="req-title">Requirement Not Found</h1>
           <p className="req-subtitle">{error || "The requirement you're looking for doesn't exist."}</p>
           <div className="req-actions">
-            <Link to={getDashboardPath()} className="req-btn req-btn--primary">
+            <Link to={`/dashboard/${viewRole}`} className="req-btn req-btn--primary">
               <FiArrowLeft /> Back to Dashboard
             </Link>
           </div>
@@ -107,7 +108,7 @@ const ViewRequirement = () => {
       <nav className="dash-breadcrumb">
         <Link to="/" className="dash-breadcrumb-link">Home</Link>
         <span className="dash-breadcrumb-sep">/</span>
-        <Link to={getDashboardPath()} className="dash-breadcrumb-link">Dashboard</Link>
+        <Link to={`/dashboard/${viewRole}`} className="dash-breadcrumb-link">Dashboard</Link>
         <span className="dash-breadcrumb-sep">/</span>
         <span className="dash-breadcrumb-current">Requirement Details</span>
       </nav>
@@ -248,7 +249,7 @@ const ViewRequirement = () => {
                 <FiEdit2 />
                 Edit Requirement
               </Link>
-              <Link to={getDashboardPath()} className="req-view-action-btn req-view-action-btn--secondary">
+              <Link to={`/dashboard/${viewRole}`} className="req-view-action-btn req-view-action-btn--secondary">
                 <FiArrowLeft />
                 Back to Dashboard
               </Link>

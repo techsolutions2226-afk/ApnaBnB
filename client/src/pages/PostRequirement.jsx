@@ -8,6 +8,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useViewRole from "../hooks/useViewRole";
 import { toast } from "react-toastify";
 import { FiCrosshair, FiSave } from "react-icons/fi";
 import requirementService from "../services/requirementService";
@@ -193,7 +194,10 @@ const PostRequirement = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isDealer = currentUser?.role === "dealer";
+  /* The hat the user is wearing in the dashboard — NOT their signup role.
+     A buyer viewing as dealer posts a dealer requirement, and vice versa. */
+  const { viewRole } = useViewRole();
+  const isDealer = viewRole === "dealer";
 
   // Restore a previously-saved draft on mount (per user).
   const draftKey = currentUser?.id;
@@ -419,7 +423,7 @@ const PostRequirement = () => {
           urgency: form.urgency || undefined,
           // Role the user is acting as (from the dashboard selector). Backend
           // clamps to buyer|dealer; falls back to account role when absent.
-          actingRole: localStorage.getItem("dash_view_role") || undefined,
+          actingRole: viewRole,
         };
 
         await requirementService.create(requirementData);
@@ -429,13 +433,13 @@ const PostRequirement = () => {
 
         setIsSubmitting(false);
         toast.success("Requirement posted successfully!");
-        navigate(isDealer ? "/dashboard/dealer" : "/dashboard/buyer");
+        navigate(`/dashboard/${viewRole}`);
       } catch (error) {
         setIsSubmitting(false);
         toast.error(error.message || "Failed to post requirement");
       }
     },
-    [form, isDealer, navigate, draftKey]
+    [form, viewRole, navigate, draftKey]
   );
 
   /* ── Error helpers ── */
@@ -450,7 +454,7 @@ const PostRequirement = () => {
         <Link to="/" className="dash-breadcrumb-link">Home</Link>
         <span className="dash-breadcrumb-sep">/</span>
         <Link
-          to={isDealer ? "/dashboard/dealer" : "/dashboard/buyer"}
+          to={`/dashboard/${viewRole}`}
           className="dash-breadcrumb-link"
         >
           Dashboard
@@ -1029,7 +1033,7 @@ const PostRequirement = () => {
             {isSubmitting ? "Posting..." : "Post Requirement"}
           </button>
           <Link
-            to={isDealer ? "/dashboard/dealer" : "/dashboard/buyer"}
+            to={`/dashboard/${viewRole}`}
             className="req-btn req-btn--secondary"
           >
             Cancel

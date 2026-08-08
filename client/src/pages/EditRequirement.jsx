@@ -7,6 +7,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useViewRole from "../hooks/useViewRole";
 import { toast } from "react-toastify";
 import requirementService from "../services/requirementService";
 import "../styles/Requirement.css";
@@ -59,7 +60,9 @@ const EditRequirement = () => {
   const [error, setError] = useState(null);
   const [originalRequirement, setOriginalRequirement] = useState(null);
 
-  const isDealer = currentUser?.role === "dealer";
+  /* The hat the user is wearing in the dashboard — NOT their signup role. */
+  const { viewRole } = useViewRole();
+  const isDealer = viewRole === "dealer";
 
   const [form, setForm] = useState({
     title: "",
@@ -185,14 +188,14 @@ const EditRequirement = () => {
 
         /* Navigate to dashboard after update */
         navigate(
-           isDealer ? "/dashboard/dealer" : "/dashboard/buyer"
+           `/dashboard/${viewRole}`
          );
        } catch (error) {
          setIsSubmitting(false);
          toast.error(error.message || "Failed to update requirement");
        }
      },
-     [form, isDealer, navigate, id]
+     [form, viewRole, navigate, id]
    );
 
   /* ── Error helpers ── */

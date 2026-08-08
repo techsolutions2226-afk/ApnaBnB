@@ -70,6 +70,7 @@ export function AuthProvider({ children }) {
         name: response.name,
         email: response.email,
         role: response.role,
+        viewRole: response.viewRole || null,
         avatar: response.avatar || "",
       };
       setCurrentUser(user);
@@ -161,7 +162,7 @@ export function AuthProvider({ children }) {
 
   /* ── Update profile — persists all whitelisted fields via the API. ── */
   const updateProfile = async (updates) => {
-    const apiFields = ['name', 'avatar', 'phone', 'location', 'emergencyContact'];
+    const apiFields = ['name', 'avatar', 'phone', 'location', 'emergencyContact', 'viewRole'];
     const apiUpdates = {};
     const localUpdates = { ...updates };
     for (const key of apiFields) {
@@ -183,6 +184,7 @@ export function AuthProvider({ children }) {
               phone: updated.phone || "",
               location: updated.location || "",
               emergencyContact: updated.emergencyContact || "",
+              viewRole: updated.viewRole ?? prev.viewRole ?? null,
             }
           : null
       );
@@ -201,6 +203,7 @@ export function AuthProvider({ children }) {
               phone: updated.phone || "",
               location: updated.location || "",
               emergencyContact: updated.emergencyContact || "",
+              viewRole: updated.viewRole ?? parsed.viewRole ?? null,
             })
           );
         } catch {

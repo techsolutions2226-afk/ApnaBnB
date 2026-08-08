@@ -32,11 +32,22 @@ const getPublicUser = async (req, res) => {
 
 // Authenticated user updates their own profile. Whitelisted fields only —
 // callers can't escalate role or flip `verified` through this endpoint.
+const VIEW_ROLES = ['seller', 'buyer', 'dealer'];
+
 const updateMe = async (req, res) => {
-  const allowed = ['name', 'avatar', 'phone', 'location', 'emergencyContact'];
+  const allowed = ['name', 'avatar', 'phone', 'location', 'emergencyContact', 'viewRole'];
   const updates = {};
   for (const key of allowed) {
     if (key in req.body) updates[key] = req.body[key];
+  }
+
+  // The "Viewing as" hat must be a real dashboard role (or null to clear).
+  if ('viewRole' in updates) {
+    if (updates.viewRole === null || updates.viewRole === '') {
+      updates.viewRole = null;
+    } else if (!VIEW_ROLES.includes(updates.viewRole)) {
+      return res.status(400).json({ message: 'Invalid viewRole.' });
+    }
   }
 
   try {
@@ -48,6 +59,7 @@ const updateMe = async (req, res) => {
         name: true,
         email: true,
         role: true,
+        viewRole: true,
         verified: true,
         avatar: true,
         phone: true,

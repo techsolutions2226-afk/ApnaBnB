@@ -96,6 +96,12 @@ model User {
   location         String @default("")
   emergencyContact String @default("")
 
+  // The role the user is currently ACTING AS in their dashboard ("Viewing as"
+  // selector): seller | buyer | dealer. Null until first pick — clients fall
+  // back to `role`. Persisted so the chosen hat follows the user across
+  // devices/sessions instead of living only in localStorage.
+  viewRole String?
+
   // Email-verification OTP (hashed). Cleared once the user verifies.
   otpHash       String?
   otpExpiresAt  DateTime?

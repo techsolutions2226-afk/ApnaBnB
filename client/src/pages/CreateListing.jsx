@@ -8,6 +8,7 @@ import { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
+import useViewRole from "../hooks/useViewRole";
 import { useCreateProperty } from "../hooks/useProperties";
 import { useCreateListing } from "../hooks/useListings";
 import { clearListingDraft } from "../utils/listingDraft";
@@ -19,6 +20,9 @@ import "../styles/Listing.css";
 const CreateListing = () => {
   const { currentUser, getDashboardPath } = useAuth();
   const navigate = useNavigate();
+  /* The hat the user is wearing in the dashboard — NOT their signup role.
+     Recorded on the property so match types derive from it. */
+  const { viewRole } = useViewRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { create: createProperty, error: propError } = useCreateProperty();
   const { create: createListing, error: listError } = useCreateListing();
@@ -60,8 +64,7 @@ const CreateListing = () => {
           contactPhone: formData.contactPhone,
           // The role the user is acting as (from the dashboard role selector).
           // Backend clamps this to seller|dealer and stores it on the property.
-          actingRole:
-            localStorage.getItem("dash_view_role") || currentUser?.role,
+          actingRole: viewRole,
         };
 
         const createdProperty = await createProperty(propertyData);

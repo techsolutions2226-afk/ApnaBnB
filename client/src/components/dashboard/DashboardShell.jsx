@@ -18,7 +18,7 @@ const STORAGE_KEY = "dash_view_role";
  * backend or the account's real role, and is persisted to localStorage.
  */
 export default function DashboardShell() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
 
   const realRole =
@@ -26,7 +26,12 @@ export default function DashboardShell() {
       ? currentUser.role
       : "buyer";
 
+  /* Initial hat: DB-persisted viewRole wins, then the local cache, then the
+     account role. */
   const [viewRole, setViewRoleState] = useState(() => {
+    if (currentUser?.viewRole && ROLES.includes(currentUser.viewRole)) {
+      return currentUser.viewRole;
+    }
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       return stored && ROLES.includes(stored) ? stored : realRole;
@@ -42,6 +47,13 @@ export default function DashboardShell() {
       localStorage.setItem(STORAGE_KEY, role);
     } catch {
       /* ignore quota / private-mode errors */
+    }
+    // Persist the chosen hat to the user record so it follows them across
+    // devices and sessions (fire-and-forget; local state is already updated).
+    if (currentUser?.viewRole !== role) {
+      updateProfile({ viewRole: role }).catch(() => {
+        /* non-fatal — localStorage keeps the pick for this device */
+      });
     }
   };
 

@@ -55,10 +55,14 @@ const PropertyCard = ({
     .join(" · ");
 
   return (
-    <div className="group w-full">
-      <div className="relative">
+    <div className="group w-full min-w-0">
+      <Link
+        to={`/property/${actualId}`}
+        aria-label={title}
+        className="block"
+      >
         {/* ── Image: square, rounded, hover zoom ── */}
-        <Link to={`/property/${actualId}`} aria-label={title}>
+        <div className="relative">
           <div className="aspect-square w-full overflow-hidden rounded-2xl bg-neutral-200">
             {src ? (
               <img
@@ -76,65 +80,65 @@ const PropertyCard = ({
               </div>
             )}
           </div>
-        </Link>
 
-        {/* ── Top-left "Guest favorite" pill ── */}
-        {isGuestFav && (
-          <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-black shadow-sm">
-            Guest favorite
-          </span>
-        )}
+          {/* ── Top-left "Guest favorite" pill ── */}
+          {isGuestFav && (
+            <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-black shadow-sm">
+              Guest favorite
+            </span>
+          )}
 
-        {/* ── Top-right heart (dark stroke/drop shadow) ── */}
-        <button
-          type="button"
-          aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleWishlist(actualId);
-          }}
-          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full text-neutral-900 transition-transform duration-200 hover:scale-110"
-        >
-          <FiHeart
-            className={`h-6 w-6 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)] ${
-              saved ? "fill-red-500 text-red-500" : "fill-white text-neutral-700"
-            }`}
-          />
-        </button>
-      </div>
+          {/* ── Top-right heart (dark stroke/drop shadow) ── */}
+          <button
+            type="button"
+            aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleWishlist(actualId);
+            }}
+            className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full text-neutral-900 transition-transform duration-200 hover:scale-110"
+          >
+            <FiHeart
+              className={`h-6 w-6 drop-shadow-[0_1px_3px_rgba(255,255,255,0.9)] ${
+                saved ? "fill-red-500 text-red-500" : "fill-white text-neutral-700"
+              }`}
+            />
+          </button>
+        </div>
 
-      {/* ── Content directly below the image ── */}
-      <div className="mt-2.5">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="truncate text-[15px] font-medium text-neutral-800">
-            {title}
-          </h3>
-          <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-neutral-800">
-            <AiFillStar className="h-[13px] w-[13px] text-neutral-800" />
-            <span>{formatRating(rating)}</span>
+        {/* ── Content directly below the image ── */}
+        <div className="mt-2.5">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="truncate text-[15px] font-medium text-neutral-800">
+              {title}
+            </h3>
+            <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-neutral-800">
+              <AiFillStar className="h-[13px] w-[13px] text-neutral-800" />
+              <span>{formatRating(rating)}</span>
+            </div>
+          </div>
+
+          {formatLocation(location) && (
+            <p className="mt-0.5 truncate text-sm text-neutral-500">
+              {formatLocation(location)}
+            </p>
+          )}
+
+          {(availability || metaLine) && (
+            <p className="truncate text-sm text-neutral-500">
+              {availability || metaLine}
+            </p>
+          )}
+
+          <div className="mt-0.5 text-[15px]">
+            <span className="font-semibold text-neutral-900">
+              PKR {formatPrice(price)}
+            </span>
+            <span className="text-neutral-500"> night</span>
           </div>
         </div>
-
-        {formatLocation(location) && (
-          <p className="mt-0.5 truncate text-sm text-neutral-500">
-            {formatLocation(location)}
-          </p>
-        )}
-
-        {(availability || metaLine) && (
-          <p className="truncate text-sm text-neutral-500">
-            {availability || metaLine}
-          </p>
-        )}
-
-        <div className="mt-0.5 text-[15px]">
-          <span className="font-semibold text-neutral-900">
-            PKR {formatPrice(price)}
-          </span>
-          <span className="text-neutral-500"> night</span>
-        </div>
-      </div>
+      </Link>
     </div>
   );
 };

@@ -111,10 +111,26 @@ async function main() {
     { title: 'Studio Apartment for Rent — Clifton', city: 'Karachi', area: 'Clifton', price: 80000, propertyType: 'apartment', category: 'home', purpose: 'rent', bedrooms: 2, bathrooms: 2, size: 950, sizeUnit: 'sq ft', furnished: 'semi-furnished', securityDeposit: 160000, leaseTerm: 12 },
   ];
 
-  const buildProp = (data, owner) => ({
+  /* Each property gets its own distinct photo set (Unsplash IDs) so listings
+     don't all share one image. Each set = 2 shots (exterior + interior). */
+  const PHOTO_SETS = [
+    ['photo-1564013799919-ab600027ffc6', 'photo-1600585154340-be6161a56a0c'],
+    ['photo-1568605114967-8130f3a36994', 'photo-1600607687939-ce8a6c25118c'],
+    ['photo-1580587771525-78b9dba3b914', 'photo-1605276374104-dee2a0ed3cd6'],
+    ['photo-1600596542815-ffad4c1539a9', 'photo-1613490493576-7fde63acd811'],
+    ['photo-1570129477492-45c003edd2be', 'photo-1613977363129-3cfc25d51e77'],
+    ['photo-1600585154340-be6161a56a0c', 'photo-1560448204-e02f11c3d0e2'],
+    ['photo-1512917774080-9991f1c4c750', 'photo-1522708323590-d24dbb6b0267'],
+    ['photo-1600566753086-00f18fb6b3ea', 'photo-1502672260266-1c1ef2d93688'],
+    ['photo-1600047509807-ba8f99d2cdde', 'photo-1493809842364-78817add7ffb'],
+    ['photo-1449844908441-8829872d2607', 'photo-1502005229762-cf1b2da7c5d6'],
+  ];
+  const img = (id) => `https://images.unsplash.com/${id}?w=900&q=80&auto=format&fit=crop`;
+
+  const buildProp = (data, owner, idx) => ({
     title: data.title,
     description: `Demo property listed under ${owner.name}. ${data.purpose === 'rent' ? 'Monthly rent in PKR.' : 'Sale price in PKR.'}`,
-    photos: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&q=80&auto=format&fit=crop'],
+    photos: (data.photos || PHOTO_SETS[idx % PHOTO_SETS.length]).map(img),
     location: { city: data.city, area: data.area },
     price: data.price,
     purpose: data.purpose,
@@ -135,9 +151,10 @@ async function main() {
     listedById: owner.id,
   });
 
+  let propIdx = 0;
   const allPropsData = [
-    ...sellerPropsData.map((d) => buildProp(d, seller)),
-    ...dealerPropsData.map((d) => buildProp(d, dealer)),
+    ...sellerPropsData.map((d) => buildProp(d, seller, propIdx++)),
+    ...dealerPropsData.map((d) => buildProp(d, dealer, propIdx++)),
   ];
 
   const properties = [];

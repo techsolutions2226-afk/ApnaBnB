@@ -82,6 +82,16 @@ const messageService = {
     }
   },
 
+  // Edit the content of a message you sent.
+  updateMessage: async (messageId, content) => {
+    try {
+      const response = await apiClient.put(`/messages/${messageId}`, { content });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to edit message' };
+    }
+  },
+
   deleteMessage: async (messageId) => {
     try {
       const response = await apiClient.delete(`/messages/${messageId}`);

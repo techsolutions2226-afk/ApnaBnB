@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload } from "react-icons/fi";
+import { FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload, FiChevronDown, FiEdit2, FiTrash2, FiX, FiCheck } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../hooks/useSocket";
 import messageService from "../services/messageService";
@@ -150,13 +150,47 @@ const Messages = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [dealMatch, setDealMatch] = useState(null);
 
+  /* ── Edit / delete (WhatsApp-style) ── */
+  const [menuForId, setMenuForId] = useState(null); // msg whose ⌄ menu is open
+  const [editingMessage, setEditingMessage] = useState(null); // msg being edited
+  const [editDraft, setEditDraft] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  /* Pending delete dialog — { ids: [...], multiple: bool }. Delete is offered
+     two ways: "for me" (client-side, hides locally) and "for everyone"
+     (existing backend DELETE /messages/:id). */
+  const [deleteRequest, setDeleteRequest] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* ── Multi-select ("select more") + "delete for me" ── */
+  const [selectedIds, setSelectedIds] = useState([]);
+  /* Messages the current user chose to hide for themselves (delete for me).
+     Persisted per-user in localStorage so they stay hidden across reloads. */
+  const [hiddenIds, setHiddenIds] = useState(() => {
+    if (!currentUser?.id) return [];
+    try {
+      return JSON.parse(localStorage.getItem(`hidden_msgs_${currentUser.id}`) || "[]");
+    } catch {
+      return [];
+    }
+  });
+
+  /* ── Typing indicator + read receipts ── */
+  const [otherTyping, setOtherTyping] = useState(false);
+
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
   const docInputRef = useRef(null);
+  const menuRef = useRef(null);
+  const conversationsRef = useRef([]);
+  const typingTimeoutRef = useRef(null);
+  const typingClearRef = useRef(null);
   const activeIdRef = useRef(null);
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
 
   /* ── Initial fetch + URL handling ──────────────────── */
   useEffect(() => {
@@ -245,23 +279,116 @@ const Messages = () => {
     }
     let cancelled = false;
     setLoadingMessages(true);
+    setOtherTyping(false);
+    setMenuForId(null);
+    setEditingMessage(null);
+    setEditDraft("");
+    setSelectedIds([]);
+    setDeleteRequest(null);
     messageService
       .getMessages(activeId)
       .then((data) => {
         if (cancelled) return;
-        setMessages(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setMessages(list);
         setConversations((prev) =>
           prev.map((c) => (c._id === activeId ? { ...c, unreadCount: 0 } : c)),
         );
+
+        /* Mark the other party's unread messages as read (read receipts). */
+        const unreadIds = list
+          .filter(
+            (m) =>
+              !m.read && (m.sender?._id || m.sender) !== currentUser?.id,
+          )
+          .map((m) => m._id);
+        if (unreadIds.length > 0) {
+          messageService
+            .markMultipleAsRead(unreadIds)
+            .then(() => {
+              if (cancelled) return;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  unreadIds.includes(m._id) ? { ...m, read: true } : m,
+                ),
+              );
+            })
+            .catch(() => {});
+        }
       })
       .catch((err) => {
-        if (!cancelled) toast.error(err?.message || "Failed to load messages");
+        if (cancelled) return;
+        /* One silent retry — transient Supabase-pooler blips clear in a second;
+           only surface a toast if the retry also fails. */
+        setTimeout(async () => {
+          if (cancelled) return;
+          try {
+            const retryData = await messageService.getMessages(activeId);
+            if (cancelled) return;
+            setMessages(Array.isArray(retryData) ? retryData : []);
+          } catch {
+            if (!cancelled) toast.error(err?.message || "Failed to load messages");
+          }
+        }, 1500);
       })
       .finally(() => {
         if (!cancelled) setLoadingMessages(false);
       });
     return () => {
       cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  /* ── Silent sync (client-only): the backend can't be touched, so it never
+     pushes edit/delete events to other dashboards. While a conversation is
+     open we refetch it every few seconds and apply any diff — messages the
+     other side deleted vanish, edited ones update, and the sidebar preview
+     refreshes when the last message changes. ── */
+  useEffect(() => {
+    if (!activeId) return;
+    let cancelled = false;
+
+    const sync = async () => {
+      try {
+        const data = await messageService.getMessages(activeId);
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : [];
+        setMessages((prev) => {
+          const same =
+            prev.length === list.length &&
+            prev.every((m, i) => {
+              const n = list[i];
+              return (
+                n &&
+                m._id === n._id &&
+                m.updatedAt === n.updatedAt &&
+                m.read === n.read
+              );
+            });
+          return same ? prev : list;
+        });
+        /* If the sidebar's preview (last message) was deleted or edited,
+           refresh the conversation list so the preview matches. */
+        const conv = conversationsRef.current.find((c) => c._id === activeId);
+        if (conv?.lastMessage) {
+          const cur = list.find((m) => m._id === conv.lastMessage._id);
+          if (!cur || cur.updatedAt !== conv.lastMessage.updatedAt) {
+            messageService
+              .getConversations()
+              .then(setConversations)
+              .catch(() => {});
+          }
+        }
+      } catch {
+        /* silent — transient failures during polling shouldn't spam toasts */
+      }
+    };
+
+    const t = setInterval(sync, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
     };
   }, [activeId]);
 
@@ -288,6 +415,15 @@ const Messages = () => {
           if (prev.find((m) => m._id === msg._id)) return prev;
           return [...prev, msg];
         });
+        /* A live message lands while we're watching — stop "typing…" and
+           mark it read so the sender sees ✓✓ right away. */
+        setOtherTyping(false);
+        clearTimeout(typingClearRef.current);
+        const fromMe =
+          msg.sender?._id === currentUser?.id || msg.sender === currentUser?.id;
+        if (!fromMe && msg._id) {
+          messageService.markAsRead(msg._id).catch(() => {});
+        }
       }
 
       setConversations((prev) => {
@@ -353,9 +489,51 @@ const Messages = () => {
       }
     };
 
+    /* A message was edited (by us on another device, or by the other party). */
+    const onMessageUpdated = (msg) => {
+      if (!msg?._id) return;
+      setMessages((prev) =>
+        prev.map((m) => (m._id === msg._id ? { ...m, ...msg } : m)),
+      );
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.lastMessage?._id === msg._id ? { ...c, lastMessage: msg } : c,
+        ),
+      );
+    };
+
+    /* A message was deleted — drop it, and refresh the sidebar preview if it
+       was the conversation's last message. */
+    const onMessageDeleted = ({ messageId, conversationId }) => {
+      if (!messageId) return;
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+      const conv = conversationsRef.current.find((c) => c._id === conversationId);
+      if (conv?.lastMessage?._id === messageId) {
+        messageService
+          .getConversations()
+          .then((list) => setConversations(list))
+          .catch(() => {});
+      }
+    };
+
+    /* The other party is typing (server relays; we only show it for the
+       conversation we're currently looking at). */
+    const onTyping = ({ conversationId, userId: from, isTyping }) => {
+      if (conversationId !== activeIdRef.current) return;
+      if (from === currentUser?.id) return;
+      setOtherTyping(!!isTyping);
+      clearTimeout(typingClearRef.current);
+      if (isTyping) {
+        typingClearRef.current = setTimeout(() => setOtherTyping(false), 3000);
+      }
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("new_message", onNewMessage);
+    socket.on("message_updated", onMessageUpdated);
+    socket.on("message_deleted", onMessageDeleted);
+    socket.on("typing", onTyping);
 
     if (socket.connected) setConnected(true);
 
@@ -363,8 +541,11 @@ const Messages = () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("new_message", onNewMessage);
+      socket.off("message_updated", onMessageUpdated);
+      socket.off("message_deleted", onMessageDeleted);
+      socket.off("typing", onTyping);
+      clearTimeout(typingClearRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, currentUser?.id]);
 
   /* ── Join socket room for active conversation ─────── */
@@ -410,10 +591,21 @@ const Messages = () => {
     [conversations, activeId],
   );
 
+  /* Everything in this conversation minus the messages the user hid with
+     "delete for me". Re-applies after every load + socket arrival. */
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !hiddenIds.includes(m._id)),
+    [messages, hiddenIds],
+  );
+
+  /* Multi-select ("select more") is delete-for-me only, so every visible
+     message can be ticked regardless of who sent it. */
+  const allVisibleIds = useMemo(() => visibleMessages.map((m) => m._id), [visibleMessages]);
+
   const groupedStream = useMemo(() => {
     const out = [];
     let lastDayKey = null;
-    messages.forEach((m) => {
+    visibleMessages.forEach((m) => {
       const dayKey = startOfDay(m.createdAt);
       if (dayKey !== lastDayKey) {
         out.push({ kind: "day", id: `day-${dayKey}`, day: m.createdAt });
@@ -422,7 +614,7 @@ const Messages = () => {
       out.push({ kind: "msg", id: m._id, msg: m });
     });
     return out;
-  }, [messages]);
+  }, [visibleMessages]);
 
   /* ── Send handler ──────────────────────────────────── */
   const handleSend = useCallback(async () => {
@@ -438,6 +630,10 @@ const Messages = () => {
 
     setDraft("");
     setPendingAttachments([]);
+    clearTimeout(typingTimeoutRef.current);
+    if (socket?.connected) {
+      socket.emit("typing", { conversationId: activeId, isTyping: false });
+    }
 
     if (socket && socket.connected) {
       socket.emit("send_message", payload, (response) => {
@@ -469,6 +665,187 @@ const Messages = () => {
       handleSend();
     }
   };
+
+  /* Draft changes → let the other side know we're typing (throttled stop
+     signal after 1.5s of silence). */
+  const handleDraftChange = (e) => {
+    setDraft(e.target.value);
+    if (socket?.connected && activeId) {
+      socket.emit("typing", { conversationId: activeId, isTyping: true });
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        if (socket?.connected && activeIdRef.current) {
+          socket.emit("typing", {
+            conversationId: activeIdRef.current,
+            isTyping: false,
+          });
+        }
+      }, 1500);
+    }
+  };
+
+  /* ── Close chat (back arrow / Escape) ──────────────── */
+  const closeChat = useCallback(() => {
+    setActiveId(null);
+    setMenuForId(null);
+    setEditingMessage(null);
+    setEditDraft("");
+    setSelectedIds([]);
+  }, []);
+
+  /* Escape key: cancel edit → close delete dialog → exit select mode → close
+     menu → close chat. */
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (editingMessage) {
+        setEditingMessage(null);
+        setEditDraft("");
+        return;
+      }
+      if (deleteRequest) {
+        setDeleteRequest(null);
+        return;
+      }
+      if (selectedIds.length > 0) {
+        setSelectedIds([]);
+        return;
+      }
+      if (menuForId) {
+        setMenuForId(null);
+        return;
+      }
+      if (activeId) closeChat();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editingMessage, deleteRequest, selectedIds, menuForId, activeId, closeChat]);
+
+  /* Close the ⌄ message menu when clicking anywhere outside it. */
+  useEffect(() => {
+    if (!menuForId) return;
+    const onDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuForId(null);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuForId]);
+
+  /* ── Edit message flow ─────────────────────────────── */
+  const startEdit = (m) => {
+    setEditingMessage(m);
+    setEditDraft(m.content || "");
+    setMenuForId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessage(null);
+    setEditDraft("");
+  };
+
+  const handleEditSave = useCallback(async () => {
+    const trimmed = editDraft.trim();
+    if (!editingMessage || !trimmed || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      const updated = await messageService.updateMessage(
+        editingMessage._id,
+        trimmed,
+      );
+      setMessages((prev) =>
+        prev.map((m) => (m._id === updated._id ? { ...m, ...updated } : m)),
+      );
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.lastMessage?._id === updated._id
+            ? { ...c, lastMessage: { ...c.lastMessage, ...updated } }
+            : c,
+        ),
+      );
+      cancelEdit();
+    } catch (err) {
+      toast.error(err?.message || "Failed to edit message");
+    } finally {
+      setSavingEdit(false);
+    }
+  }, [editingMessage, editDraft, savingEdit]);
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleEditSave();
+    }
+  };
+
+  /* ── Multi-select ("select more") ──────────────────── */
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  /* "Select all" ticks every visible message — select mode deletes for me
+     only, which works on any message. */
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const all = allVisibleIds;
+      if (all.length === 0) return prev;
+      const hasAll = all.every((id) => prev.includes(id));
+      return hasAll
+        ? prev.filter((id) => !all.includes(id))
+        : [...new Set([...prev, ...all])];
+    });
+  };
+
+  /* ── "Delete for me" — hides the messages from THIS user only. Pure
+     client-side: never touches the DB or the other participant. Persisted in
+     localStorage so it survives reloads. ── */
+  const handleDeleteForMe = useCallback(async () => {
+    const ids = deleteRequest?.ids || [];
+    if (!ids.length) return;
+    const key = `hidden_msgs_${currentUser?.id}`;
+    setHiddenIds((prev) => {
+      const next = [...new Set([...prev, ...ids])];
+      try {
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        /* ignore private-mode / quota errors */
+      }
+      return next;
+    });
+    setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
+    setDeleteRequest(null);
+    setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+  }, [deleteRequest, currentUser?.id]);
+
+  /* ── "Delete for everyone" — existing backend DELETE /messages/:id. Only
+     works on your own messages (the server returns 403 otherwise). ── */
+  const handleDeleteEveryone = useCallback(async () => {
+    const ids = deleteRequest?.ids || [];
+    if (!ids.length || deleting) return;
+    setDeleting(true);
+    try {
+      await Promise.all(ids.map((id) => messageService.deleteMessage(id)));
+      setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
+      const conv = conversationsRef.current.find(
+        (c) => c._id === activeIdRef.current,
+      );
+      if (conv?.lastMessage && ids.includes(conv.lastMessage._id)) {
+        messageService
+          .getConversations()
+          .then((list) => setConversations(list))
+          .catch(() => {});
+      }
+      setDeleteRequest(null);
+      setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+    } catch (err) {
+      toast.error(err?.message || "Failed to delete messages");
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleteRequest, deleting]);
 
   /* ── Attach image flow ─────────────────────────────── */
   const handlePickFile = () => fileInputRef.current?.click();
@@ -639,17 +1016,55 @@ const Messages = () => {
           </div>
         ) : (
           <>
+            {selectedIds.length > 0 ? (
+              <header className="msg-select-bar">
+                <button
+                  type="button"
+                  className="msg-select-close"
+                  onClick={() => setSelectedIds([])}
+                  aria-label="Exit selection"
+                  title="Exit selection (Esc)"
+                >
+                  <FiX size={20} />
+                </button>
+                <span className="msg-select-count">
+                  {selectedIds.length} selected
+                </span>
+                <div className="msg-select-actions">
+                  <button
+                    type="button"
+                    className="msg-select-btn"
+                    onClick={toggleSelectAll}
+                  >
+                    <FiCheck size={15} />
+                    {allVisibleIds.length > 0 &&
+                    allVisibleIds.every((id) => selectedIds.includes(id))
+                      ? "Deselect all"
+                      : "Select all"}
+                  </button>
+                  <button
+                    type="button"
+                    className="msg-select-btn msg-select-btn--danger"
+                    onClick={() =>
+                      setDeleteRequest({
+                        ids: [...selectedIds],
+                        multiple: selectedIds.length > 1,
+                        onlyMe: true,
+                      })
+                    }
+                  >
+                    <FiTrash2 size={15} />
+                    Delete
+                  </button>
+                </div>
+              </header>
+            ) : (
             <header className="msg-chat-header">
               <button
-                onClick={() => setActiveId(null)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 4,
-                  display: window.innerWidth < 900 ? "inline-flex" : "none",
-                }}
-                aria-label="Back"
+                className="msg-chat-back"
+                onClick={closeChat}
+                aria-label="Back to conversations"
+                title="Back"
               >
                 <FiArrowLeft size={20} />
               </button>
@@ -672,10 +1087,13 @@ const Messages = () => {
                   {conversationTitle(activeConv, currentUser?.id)}
                 </div>
                 <div className="msg-chat-header-role">
-                  {getOtherParticipant(activeConv, currentUser?.id)?.role || ""}
+                  {otherTyping
+                    ? <span className="msg-typing-hint">typing…</span>
+                    : getOtherParticipant(activeConv, currentUser?.id)?.role || ""}
                 </div>
               </div>
             </header>
+            )}
 
             {dealMatch && dealMatch.conversationId === activeId && (
               <DealRoomPanel
@@ -710,17 +1128,84 @@ const Messages = () => {
                   const m = row.msg;
                   const mine =
                     (m.sender?._id || m.sender) === currentUser?.id;
+                  const isEdited =
+                    m.updatedAt &&
+                    m.createdAt &&
+                    new Date(m.updatedAt).getTime() - new Date(m.createdAt).getTime() > 1000;
+                  const selecting = selectedIds.length > 0;
+                  const isSelected = selecting && selectedIds.includes(m._id);
+                  const selectable = selecting;
+                  const menuOpen = menuForId === m._id;
                   return (
                     <div
                       key={row.id}
                       className={`msg-bubble-row ${
                         mine ? "msg-bubble-row--mine" : ""
-                      }`}
+                      }${selecting ? " msg-bubble-row--selecting" : ""}`}
                     >
+                      {!selecting && (
+                        <div
+                          className="msg-menu-wrap"
+                          ref={menuOpen ? menuRef : null}
+                        >
+                          <button
+                            type="button"
+                            className="msg-menu-trigger"
+                            onClick={() =>
+                              setMenuForId(menuOpen ? null : m._id)
+                            }
+                            aria-label="Message options"
+                            aria-expanded={menuOpen}
+                          >
+                            <FiChevronDown size={15} />
+                          </button>
+                          {menuOpen && (
+                            <div className="msg-menu">
+                              {mine && (
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(m)}
+                                >
+                                  <FiEdit2 size={14} /> Edit message
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className={mine ? "msg-menu-danger" : ""}
+                                onClick={() => {
+                                  setDeleteRequest({
+                                    ids: [m._id],
+                                    multiple: false,
+                                    onlyMe: !mine,
+                                  });
+                                  setMenuForId(null);
+                                }}
+                              >
+                                <FiTrash2 size={14} />{" "}
+                                {mine ? "Delete message" : "Delete for me"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedIds([m._id]);
+                                  setMenuForId(null);
+                                }}
+                              >
+                                <FiCheck size={14} /> Select more
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div
                         className={`msg-bubble ${
                           mine ? "msg-bubble--mine" : "msg-bubble--theirs"
+                        }${selectable ? " msg-bubble--selectable" : ""}${
+                          isSelected ? " msg-bubble--selected" : ""
                         }`}
+                        onClick={selectable ? () => toggleSelect(m._id) : undefined}
+                        role={selectable ? "checkbox" : undefined}
+                        aria-checked={selectable ? isSelected : undefined}
                       >
                         {m.attachments?.map((a, i) =>
                           a.type === "file" ? (
@@ -730,6 +1215,7 @@ const Messages = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="msg-bubble-file"
+                              onClick={(e) => selecting && e.preventDefault()}
                             >
                               <FiFileText size={18} />
                               <span className="msg-bubble-file-name">
@@ -743,13 +1229,37 @@ const Messages = () => {
                               src={a.url}
                               alt={a.name || "attachment"}
                               className="msg-bubble-image"
-                              onClick={() => window.open(a.url, "_blank")}
+                              onClick={(e) => {
+                                if (selecting) {
+                                  e.preventDefault();
+                                  if (selectable) toggleSelect(m._id);
+                                } else {
+                                  window.open(a.url, "_blank");
+                                }
+                              }}
                             />
                           ),
                         )}
+                        {isSelected && (
+                          <span className="msg-bubble-check">
+                            <FiCheck size={14} />
+                          </span>
+                        )}
                         {m.content && <div>{m.content}</div>}
                         <span className="msg-bubble-time">
+                          {isEdited && (
+                            <span className="msg-bubble-edited">Edited · </span>
+                          )}
                           {formatTime(m.createdAt)}
+                          {mine && (
+                            <span
+                              className={`msg-tick ${
+                                m.read ? "msg-tick--read" : ""
+                              }`}
+                            >
+                              {m.read ? "✓✓" : "✓"}
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -784,63 +1294,173 @@ const Messages = () => {
               </div>
             )}
 
-            <div className="msg-composer">
-              <button
-                className="msg-composer-attach"
-                onClick={handlePickFile}
-                disabled={uploading}
-                title="Attach image"
-              >
-                <FiPaperclip size={20} />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-              />
-              <button
-                className="msg-composer-attach"
-                onClick={handlePickDoc}
-                disabled={uploading}
-                title="Attach document (PDF, Word, Excel)"
-              >
-                <FiFileText size={20} />
-              </button>
-              <input
-                ref={docInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf"
-                onChange={handleDocChange}
-                style={{ display: "none" }}
-              />
-              <textarea
-                className="msg-composer-input"
-                placeholder={
-                  uploading ? "Uploading image…" : "Type a message…"
-                }
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                disabled={uploading}
-              />
-              <button
-                className="msg-composer-send"
-                onClick={handleSend}
-                disabled={
-                  uploading ||
-                  (!draft.trim() && pendingAttachments.length === 0)
-                }
-                title="Send"
-              >
-                <FiSend size={18} />
-              </button>
-            </div>
+            {editingMessage ? (
+              <div className="msg-edit-bar">
+                <div className="msg-edit-bar-head">
+                  <FiEdit2 size={14} />
+                  <span>Edit message</span>
+                </div>
+                <div className="msg-edit-bar-row">
+                  <button
+                    type="button"
+                    className="msg-edit-cancel"
+                    onClick={cancelEdit}
+                    aria-label="Cancel edit"
+                    title="Cancel (Esc)"
+                  >
+                    <FiX size={18} />
+                  </button>
+                  <input
+                    className="msg-edit-input"
+                    value={editDraft}
+                    onChange={(e) => setEditDraft(e.target.value)}
+                    onKeyDown={handleEditKeyDown}
+                    placeholder="Edit message…"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    className="msg-edit-save"
+                    onClick={handleEditSave}
+                    disabled={!editDraft.trim() || savingEdit}
+                    aria-label="Save edit"
+                    title="Save (Enter)"
+                  >
+                    <FiCheck size={18} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="msg-composer">
+                <button
+                  className="msg-composer-attach"
+                  onClick={handlePickFile}
+                  disabled={uploading}
+                  title="Attach image"
+                >
+                  <FiPaperclip size={20} />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="msg-composer-attach"
+                  onClick={handlePickDoc}
+                  disabled={uploading}
+                  title="Attach document (PDF, Word, Excel)"
+                >
+                  <FiFileText size={20} />
+                </button>
+                <input
+                  ref={docInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf"
+                  onChange={handleDocChange}
+                  style={{ display: "none" }}
+                />
+                <textarea
+                  className="msg-composer-input"
+                  placeholder={
+                    uploading ? "Uploading image…" : "Type a message…"
+                  }
+                  value={draft}
+                  onChange={handleDraftChange}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  disabled={uploading}
+                />
+                <button
+                  className="msg-composer-send"
+                  onClick={handleSend}
+                  disabled={
+                    uploading ||
+                    (!draft.trim() && pendingAttachments.length === 0)
+                  }
+                  title="Send"
+                >
+                  <FiSend size={18} />
+                </button>
+              </div>
+            )}
           </>
         )}
       </section>
+
+      {/* ── Delete confirmation — "for me" or "for everyone" ── */}
+      {deleteRequest && (
+        <div
+          className="msg-modal-overlay"
+          onClick={() => !deleting && setDeleteRequest(null)}
+        >
+          <div className="msg-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>
+              {deleteRequest.ids.length > 1
+                ? `Delete ${deleteRequest.ids.length} messages?`
+                : "Delete message?"}
+            </h3>
+            <p>
+              {deleteRequest.onlyMe ? (
+                <>
+                  This removes the{" "}
+                  {deleteRequest.ids.length > 1 ? "messages" : "message"} only
+                  from <strong>your</strong> view. The other person can still
+                  see {deleteRequest.ids.length > 1 ? "them" : "it"}.
+                </>
+              ) : (
+                <>
+                  <strong>Delete for me</strong> hides it only from your view —
+                  the other person still sees it.{" "}
+                  <strong>Delete for everyone</strong> removes it permanently
+                  from the conversation.
+                </>
+              )}
+            </p>
+            <div className="msg-modal-actions">
+              <button
+                type="button"
+                className="msg-modal-btn"
+                onClick={() => setDeleteRequest(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              {deleteRequest.onlyMe ? (
+                <button
+                  type="button"
+                  className="msg-modal-btn msg-modal-btn--danger"
+                  onClick={handleDeleteForMe}
+                  disabled={deleting}
+                >
+                  Delete for me
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="msg-modal-btn msg-modal-btn--warn"
+                    onClick={handleDeleteForMe}
+                    disabled={deleting}
+                  >
+                    Delete for me
+                  </button>
+                  <button
+                    type="button"
+                    className="msg-modal-btn msg-modal-btn--danger"
+                    onClick={handleDeleteEveryone}
+                    disabled={deleting}
+                  >
+                    {deleting ? "Deleting…" : "Delete for everyone"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

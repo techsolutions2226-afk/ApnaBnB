@@ -205,7 +205,13 @@
 }
 
 .navbar-logo { flex-shrink: 0; cursor: pointer; }
-.navbar-logo img { height: 32px; width: auto; object-fit: contain; }
+.navbar-logo img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  /* Brand logo recolored from coral-red to green (no asset edit needed). */
+  filter: hue-rotate(120deg);
+}
 
 /* ── Tabs ── */
 .navbar-tabs { display: flex; align-items: center; gap: 4px; }

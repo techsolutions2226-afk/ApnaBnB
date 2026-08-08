@@ -515,9 +515,12 @@
   background: rgba(0, 0, 0, 0.07);
 }
 
-/* ── Per-message ⌄ menu (own messages) ──────────────── */
+/* ── Per-message ⌄ menu ─────────────────────────────── */
+/* The wrap is static so the dropdown's containing block is the full-width
+   row (position: relative) — every menu opens pinned to the far RIGHT edge
+   of the pane, for own AND received messages. */
 .msg-menu-wrap {
-  position: relative;
+  position: static;
   display: flex;
   align-items: flex-start;
   flex-shrink: 0;
@@ -525,14 +528,6 @@
 /* Received messages: the ⌄ trigger sits to the RIGHT of the bubble. */
 .msg-bubble-row:not(.msg-bubble-row--mine) .msg-menu-wrap {
   order: 2;
-}
-/* ...and the opened dropdown anchors to the right edge of the pane, so it
-   appears on the right side of the message. */
-.msg-bubble-row:not(.msg-bubble-row--mine) .msg-menu-wrap {
-  position: static;
-}
-.msg-bubble-row:not(.msg-bubble-row--mine) .msg-menu {
-  right: 8px;
 }
 .msg-menu-trigger {
   width: 24px;
@@ -561,7 +556,7 @@
 .msg-menu {
   position: absolute;
   top: calc(100% + 4px);
-  right: 0;
+  right: 10px;
   z-index: 12;
   min-width: 180px;
   background: #fff;

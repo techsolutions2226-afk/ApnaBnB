@@ -14,3 +14,8 @@ build/
 .idea/
 .DS_Store
 Thumbs.db
+
+# ── Environment / secrets (NEVER commit these) ──
+.env
+.env.*
+!.env.example

@@ -193,6 +193,7 @@ const Messages = () => {
       const matchId = searchParams.get("match");
       const convId = searchParams.get("conversation");
       const withUser = searchParams.get("with");
+      const draftParam = searchParams.get("draft");
 
       // Deal room — open the conversation linked to a match and show context.
       if (matchId) {
@@ -222,6 +223,9 @@ const Messages = () => {
 
       if (convId && list.find((c) => c._id === convId)) {
         setActiveId(convId);
+        if (draftParam) setDraft(draftParam);
+        searchParams.delete("draft");
+        setSearchParams(searchParams, { replace: true });
         return;
       }
 
@@ -232,7 +236,11 @@ const Messages = () => {
           if (!cancelled) {
             setConversations(fresh);
             setActiveId(conv._id);
+            /* Pre-fill the composer with the inquiry message the user typed
+               on the property page, if one was passed via ?draft=. */
+            if (draftParam) setDraft(draftParam);
             searchParams.delete("with");
+            searchParams.delete("draft");
             setSearchParams(searchParams, { replace: true });
           }
         } catch (err) {
@@ -240,6 +248,7 @@ const Messages = () => {
         }
       } else if (list.length > 0) {
         setActiveId(list[0]._id);
+        if (draftParam) setDraft(draftParam);
       }
     };
 

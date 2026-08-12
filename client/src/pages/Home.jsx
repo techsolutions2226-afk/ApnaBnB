@@ -5,6 +5,8 @@ import {
   FiArrowRight,
   FiChevronLeft,
   FiChevronRight,
+  FiChevronDown,
+  FiMapPin,
   FiHome,
   FiGrid,
   FiMap,
@@ -47,28 +49,62 @@ const CTA_CARDS = [
   },
 ];
 
-const PRICE_PRESETS = [
-  { label: "Any price", value: "" },
+const PROPERTY_TYPES = [
+  { label: "Homes", value: "" },
+  { label: "House", value: "house" },
+  { label: "Apartments / Flats", value: "flat" },
+  { label: "Plots", value: "plot" },
+  { label: "Commercial", value: "commercial" },
+];
+
+const CITIES = [
+  "Lahore",
+  "Karachi",
+  "Islamabad",
+  "Rawalpindi",
+  "Faisalabad",
+  "Multan",
+  "Peshawar",
+  "Quetta",
+  "Sialkot",
+  "Gujranwala",
+];
+
+const AREA_OPTS = [
+  { label: "Area (Marla)", value: "" },
+  { label: "3 Marla", value: "3" },
+  { label: "5 Marla", value: "5" },
+  { label: "10 Marla", value: "10" },
+  { label: "1 Kanal", value: "20" },
+  { label: "2 Kanal", value: "40" },
+];
+
+const BEDS_OPTS = [
+  { label: "Beds", value: "" },
+  { label: "1 Bed", value: "1" },
+  { label: "2 Beds", value: "2" },
+  { label: "3 Beds", value: "3" },
+  { label: "4 Beds", value: "4" },
+  { label: "5+ Beds", value: "5" },
+];
+
+const PRICE_OPTS = [
+  { label: "Price (PKR)", value: "" },
   { label: "Up to 5,000,000", value: "5000000" },
   { label: "Up to 10,000,000", value: "10000000" },
   { label: "Up to 20,000,000", value: "20000000" },
   { label: "Up to 50,000,000", value: "50000000" },
 ];
 
-const PROPERTY_TYPES = [
-  { label: "Homes, Plots, Commercial…", value: "" },
-  { label: "Homes", value: "house" },
-  { label: "Apartments / Flats", value: "flat" },
-  { label: "Plots", value: "plot" },
-  { label: "Commercial", value: "commercial" },
-];
-
 const Home = () => {
   const navigate = useNavigate();
 
   const [tab, setTab] = useState("buy"); // buy | rent
+  const [city, setCity] = useState("");
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
+  const [area, setArea] = useState("");
+  const [beds, setBeds] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
 
   /* Fetch active properties for the showcase row (real, dynamic data). */
@@ -89,12 +125,20 @@ const Home = () => {
   const runSearch = (e, overrides = {}) => {
     e?.preventDefault();
     const params = new URLSearchParams();
-    const dest = overrides.dest ?? location.trim();
+
+    // Combine the free-text location with the selected city into `dest`.
+    const loc = location.trim();
+    const dest =
+      overrides.dest ??
+      (loc && city ? `${loc}, ${city}` : loc || city || "");
     const type = overrides.propertyType ?? propertyType;
     const price = overrides.maxPrice ?? maxPrice;
+
     if (dest) params.set("dest", dest);
     if (type) params.set("propertyType", type);
     if (price) params.set("maxPrice", price);
+    if (beds) params.set("bedrooms", beds);
+    if (area) params.set("minArea", area);
 
     const base = (overrides.tab ?? tab) === "rent" ? "/rent" : "/sale";
     const q = params.toString();
@@ -137,51 +181,114 @@ const Home = () => {
             </button>
           </div>
 
-          {/* Search bar */}
-          <form className="abn-search" onSubmit={runSearch}>
-            <div className="abn-search-field">
-              <span className="abn-search-label">Location</span>
-              <input
-                type="text"
-                className="abn-search-input"
-                placeholder="Where in Pakistan?"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
+          {/* Search bar — two rows: City / Location / Type · Area / Beds / Price / Search */}
+          <form className="abn-search2" onSubmit={runSearch}>
+            <div className="abn-s2-row">
+              {/* City */}
+              <div className="abn-s2-field abn-s2-city">
+                <FiMapPin className="abn-s2-ico" size={16} />
+                <select
+                  className="abn-s2-select"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  aria-label="City"
+                >
+                  <option value="">City</option>
+                  {CITIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <FiChevronDown className="abn-s2-chev" size={16} />
+              </div>
+
+              {/* Location */}
+              <div className="abn-s2-field abn-s2-loc">
+                <FiSearch className="abn-s2-ico abn-s2-ico--muted" size={16} />
+                <input
+                  type="text"
+                  className="abn-s2-input"
+                  placeholder="Search by Location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+
+              {/* Property type */}
+              <div className="abn-s2-field">
+                <select
+                  className="abn-s2-select"
+                  value={propertyType}
+                  onChange={(e) => setPropertyType(e.target.value)}
+                  aria-label="Property type"
+                >
+                  {PROPERTY_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+                <FiChevronDown className="abn-s2-chev" size={16} />
+              </div>
             </div>
-            <span className="abn-search-sep" />
-            <div className="abn-search-field">
-              <span className="abn-search-label">Property Type</span>
-              <select
-                className="abn-search-select"
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
-              >
-                {PROPERTY_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+
+            <div className="abn-s2-row">
+              {/* Area */}
+              <div className="abn-s2-field">
+                <select
+                  className="abn-s2-select"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  aria-label="Area"
+                >
+                  {AREA_OPTS.map((a) => (
+                    <option key={a.value} value={a.value}>
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+                <FiChevronDown className="abn-s2-chev" size={16} />
+              </div>
+
+              {/* Beds */}
+              <div className="abn-s2-field">
+                <select
+                  className="abn-s2-select"
+                  value={beds}
+                  onChange={(e) => setBeds(e.target.value)}
+                  aria-label="Bedrooms"
+                >
+                  {BEDS_OPTS.map((b) => (
+                    <option key={b.value} value={b.value}>
+                      {b.label}
+                    </option>
+                  ))}
+                </select>
+                <FiChevronDown className="abn-s2-chev" size={16} />
+              </div>
+
+              {/* Price */}
+              <div className="abn-s2-field">
+                <select
+                  className="abn-s2-select"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  aria-label="Price"
+                >
+                  {PRICE_OPTS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+                <FiChevronDown className="abn-s2-chev" size={16} />
+              </div>
+
+              <button type="submit" className="abn-s2-btn">
+                Search
+              </button>
             </div>
-            <span className="abn-search-sep" />
-            <div className="abn-search-field">
-              <span className="abn-search-label">Price</span>
-              <select
-                className="abn-search-select"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-              >
-                {PRICE_PRESETS.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button type="submit" className="abn-search-btn" aria-label="Search">
-              <FiSearch size={20} />
-            </button>
           </form>
 
           {/* Category pills */}

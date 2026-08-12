@@ -92,83 +92,102 @@ body.hide-navbar-search .nav-mobile-pill {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
-/* Search bar */
-.abn-search {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* Search bar — two-row zameen-style panel */
+.abn-search2 {
   background: #fff;
-  border-radius: 999px;
-  padding: 8px 8px 8px 22px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-  max-width: 720px;
+  border-radius: 14px;
+  padding: 14px;
+  max-width: 860px;
   margin: 0 auto;
-}
-
-.abn-search-field {
-  flex: 1;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.28);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
+  gap: 12px;
+}
+
+.abn-s2-row {
+  display: flex;
+  gap: 12px;
+}
+
+.abn-s2-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
   min-width: 0;
-  padding: 4px 6px;
+  height: 48px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
 }
 
-.abn-search-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #222;
-  margin-bottom: 2px;
+/* Row-1 field weighting to mirror the reference (city | location | type). */
+.abn-s2-city {
+  flex: 1.1;
+}
+.abn-s2-loc {
+  flex: 2.4;
 }
 
-.abn-search-input,
-.abn-search-select {
-  width: 100%;
+.abn-s2-ico {
+  color: #2f6f4a;
+  flex-shrink: 0;
+}
+.abn-s2-ico--muted {
+  color: #9a9a9a;
+}
+
+.abn-s2-input,
+.abn-s2-select {
+  flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;
   font-size: 14px;
   color: #333;
-  padding: 0;
+  font-family: inherit;
 }
 
-.abn-search-input::placeholder {
-  color: #8a8a8a;
+.abn-s2-input::placeholder {
+  color: #9a9a9a;
 }
 
-.abn-search-select {
-  cursor: pointer;
+.abn-s2-select {
   appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 18px; /* room for the chevron */
 }
 
-.abn-search-sep {
-  width: 1px;
-  height: 34px;
-  background: #e6e6e6;
-  flex-shrink: 0;
+.abn-s2-chev {
+  position: absolute;
+  right: 12px;
+  color: #6b6b6b;
+  pointer-events: none;
 }
 
-.abn-search-btn {
-  flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+.abn-s2-btn {
+  flex: 1.4;
+  height: 48px;
   border: none;
-  background: #1a8f5a;
+  border-radius: 10px;
+  background: #1f9d55;
   color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
 }
 
-.abn-search-btn:hover {
-  background: #134e2c;
+.abn-s2-btn:hover {
+  background: #16813f;
 }
-.abn-search-btn:active {
-  transform: scale(0.96);
+.abn-s2-btn:active {
+  transform: scale(0.98);
 }
 
 /* Category pills */
@@ -374,26 +393,23 @@ body.hide-navbar-search .nav-mobile-pill {
   .abn-cta-grid {
     grid-template-columns: 1fr;
   }
-  .abn-search {
-    flex-wrap: wrap;
-    border-radius: 20px;
-    padding: 12px;
-  }
-  .abn-search-sep {
-    display: none;
-  }
-  .abn-search-field {
-    flex: 1 1 100%;
-    border-bottom: 1px solid #eee;
-    padding: 8px 6px;
-  }
-  .abn-search-btn {
-    width: 100%;
-    border-radius: 12px;
-    margin-top: 8px;
-  }
   .abn-cta-content {
     max-width: 85%;
+  }
+}
+
+@media (max-width: 620px) {
+  .abn-s2-row {
+    flex-direction: column;
+  }
+  .abn-s2-city,
+  .abn-s2-loc {
+    flex: 1;
+  }
+  .abn-s2-field,
+  .abn-s2-btn {
+    width: 100%;
+    flex: 1 1 auto;
   }
 }
 

@@ -5,7 +5,6 @@ import {
   FiArrowRight,
   FiChevronLeft,
   FiChevronRight,
-  FiChevronDown,
   FiMapPin,
   FiHome,
   FiGrid,
@@ -14,7 +13,18 @@ import {
 } from "react-icons/fi";
 import { useProperties } from "../hooks/useProperties";
 import PropertyCard from "../components/property/PropertyCard";
+import {
+  CITIES,
+  PROPERTY_TABS,
+  AREA_UNITS,
+  CURRENCIES,
+} from "../config/searchOptions";
+import SearchableList from "../components/search/dropdowns/SearchableList";
+import TabbedGrid from "../components/search/dropdowns/TabbedGrid";
+import RangeInputWithUnit from "../components/search/dropdowns/RangeInputWithUnit";
+import BedCountPanel from "../components/search/dropdowns/BedCountPanel";
 import "../styles/Home.css";
+import "../styles/SearchDropdowns.css";
 
 /* Hero background — a dusk modern home, matching the reference design. */
 const HERO_IMG =
@@ -49,52 +59,10 @@ const CTA_CARDS = [
   },
 ];
 
-const PROPERTY_TYPES = [
-  { label: "Homes", value: "" },
-  { label: "House", value: "house" },
-  { label: "Apartments / Flats", value: "flat" },
-  { label: "Plots", value: "plot" },
-  { label: "Commercial", value: "commercial" },
-];
-
-const CITIES = [
-  "Lahore",
-  "Karachi",
-  "Islamabad",
-  "Rawalpindi",
-  "Faisalabad",
-  "Multan",
-  "Peshawar",
-  "Quetta",
-  "Sialkot",
-  "Gujranwala",
-];
-
-const AREA_OPTS = [
-  { label: "Area (Marla)", value: "" },
-  { label: "3 Marla", value: "3" },
-  { label: "5 Marla", value: "5" },
-  { label: "10 Marla", value: "10" },
-  { label: "1 Kanal", value: "20" },
-  { label: "2 Kanal", value: "40" },
-];
-
-const BEDS_OPTS = [
-  { label: "Beds", value: "" },
-  { label: "1 Bed", value: "1" },
-  { label: "2 Beds", value: "2" },
-  { label: "3 Beds", value: "3" },
-  { label: "4 Beds", value: "4" },
-  { label: "5+ Beds", value: "5" },
-];
-
-const PRICE_OPTS = [
-  { label: "Price (PKR)", value: "" },
-  { label: "Up to 5,000,000", value: "5000000" },
-  { label: "Up to 10,000,000", value: "10000000" },
-  { label: "Up to 20,000,000", value: "20000000" },
-  { label: "Up to 50,000,000", value: "50000000" },
-];
+/* Dropdown option lists (built from shared config). */
+const CITY_OPTIONS = CITIES.map((c) => ({ value: c, label: c }));
+const AREA_UNIT_OPTIONS = AREA_UNITS.map((u) => ({ value: u, label: u }));
+const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({ value: c, label: c }));
 
 const Home = () => {
   const navigate = useNavigate();
@@ -103,9 +71,15 @@ const Home = () => {
   const [city, setCity] = useState("");
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
-  const [area, setArea] = useState("");
-  const [beds, setBeds] = useState("");
+  const [propertyTab, setPropertyTab] = useState("home"); // home | plot | commercial
+  const [area, setArea] = useState(""); // min area
+  const [maxArea, setMaxArea] = useState("");
+  const [areaUnit, setAreaUnit] = useState("Marla");
+  const [beds, setBeds] = useState(0); // 0 = any
+  const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [currency, setCurrency] = useState("PKR");
+  const [openField, setOpenField] = useState(null); // only one dropdown open
 
   /* Fetch active properties for the showcase row (real, dynamic data). */
   const { properties: allProps = [], isLoading: propsLoading } = useProperties();
@@ -122,8 +96,7 @@ const Home = () => {
 
   /* Build the search URL and navigate — same routing the old widget used:
      buy → /sale, rent → /rent, with dest/propertyType/maxPrice params. */
-  const runSearch = (e, overrides = {}) => {
-    e?.preventDefault();
+  const submitSearch = (overrides = {}) => {
     const params = new URLSearchParams();
 
     // Combine the free-text location with the selected city into `dest`.
@@ -139,10 +112,19 @@ const Home = () => {
     if (price) params.set("maxPrice", price);
     if (beds) params.set("bedrooms", beds);
     if (area) params.set("minArea", area);
+    if (maxArea) params.set("maxArea", maxArea);
+    if (minPrice) params.set("minPrice", minPrice);
 
     const base = (overrides.tab ?? tab) === "rent" ? "/rent" : "/sale";
     const q = params.toString();
     navigate(`${base}${q ? `?${q}` : ""}`);
+  };
+
+  /* The form can never navigate on its own. onSubmit always stops the native
+     submit (Enter in an input, implicit submission, etc.); only the Search
+     button's onClick → submitSearch (and the category pills) run a search. */
+  const preventFormSubmit = (e) => {
+    e.preventDefault();
   };
 
   /* Horizontal scroll for the "Popular homes" row. */
@@ -182,26 +164,19 @@ const Home = () => {
           </div>
 
           {/* Search bar — two rows: City / Location / Type · Area / Beds / Price / Search */}
-          <form className="abn-search2" onSubmit={runSearch}>
+          <form className="abn-search2" onSubmit={preventFormSubmit}>
             <div className="abn-s2-row">
               {/* City */}
-              <div className="abn-s2-field abn-s2-city">
-                <FiMapPin className="abn-s2-ico" size={16} />
-                <select
-                  className="abn-s2-select"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  aria-label="City"
-                >
-                  <option value="">City</option>
-                  {CITIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <FiChevronDown className="abn-s2-chev" size={16} />
-              </div>
+              <SearchableList
+                className="abn-s2-city"
+                options={CITY_OPTIONS}
+                value={city}
+                onChange={setCity}
+                placeholder="City"
+                icon={FiMapPin}
+                open={openField === "city"}
+                onOpenChange={(o) => setOpenField(o ? "city" : null)}
+              />
 
               {/* Location */}
               <div className="abn-s2-field abn-s2-loc">
@@ -216,76 +191,66 @@ const Home = () => {
               </div>
 
               {/* Property type */}
-              <div className="abn-s2-field">
-                <select
-                  className="abn-s2-select"
-                  value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value)}
-                  aria-label="Property type"
-                >
-                  {PROPERTY_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-                <FiChevronDown className="abn-s2-chev" size={16} />
-              </div>
+              <TabbedGrid
+                tabs={PROPERTY_TABS}
+                value={propertyType}
+                activeTab={propertyTab}
+                onTabChange={setPropertyTab}
+                onChange={(val, tabId) => {
+                  setPropertyType(val);
+                  setPropertyTab(tabId);
+                }}
+                open={openField === "propertyType"}
+                onOpenChange={(o) => setOpenField(o ? "propertyType" : null)}
+              />
             </div>
 
             <div className="abn-s2-row">
               {/* Area */}
-              <div className="abn-s2-field">
-                <select
-                  className="abn-s2-select"
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  aria-label="Area"
-                >
-                  {AREA_OPTS.map((a) => (
-                    <option key={a.value} value={a.value}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-                <FiChevronDown className="abn-s2-chev" size={16} />
-              </div>
+              <RangeInputWithUnit
+                title="Area"
+                unit={areaUnit}
+                changeLabel="Area Unit"
+                modalTitle="Change Area"
+                unitOptions={AREA_UNIT_OPTIONS}
+                min={area}
+                max={maxArea}
+                onChange={({ min, max }) => {
+                  setArea(min);
+                  setMaxArea(max);
+                }}
+                onUnitChange={setAreaUnit}
+                open={openField === "area"}
+                onOpenChange={(o) => setOpenField(o ? "area" : null)}
+              />
 
               {/* Beds */}
-              <div className="abn-s2-field">
-                <select
-                  className="abn-s2-select"
-                  value={beds}
-                  onChange={(e) => setBeds(e.target.value)}
-                  aria-label="Bedrooms"
-                >
-                  {BEDS_OPTS.map((b) => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
-                <FiChevronDown className="abn-s2-chev" size={16} />
-              </div>
+              <BedCountPanel
+                value={beds}
+                onChange={setBeds}
+                open={openField === "beds"}
+                onOpenChange={(o) => setOpenField(o ? "beds" : null)}
+              />
 
               {/* Price */}
-              <div className="abn-s2-field">
-                <select
-                  className="abn-s2-select"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  aria-label="Price"
-                >
-                  {PRICE_OPTS.map((p) => (
-                    <option key={p.value} value={p.value}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-                <FiChevronDown className="abn-s2-chev" size={16} />
-              </div>
+              <RangeInputWithUnit
+                title="Price"
+                unit={currency}
+                changeLabel="Currency"
+                modalTitle="Change Currency"
+                unitOptions={CURRENCY_OPTIONS}
+                min={minPrice}
+                max={maxPrice}
+                onChange={({ min, max }) => {
+                  setMinPrice(min);
+                  setMaxPrice(max);
+                }}
+                onUnitChange={setCurrency}
+                open={openField === "price"}
+                onOpenChange={(o) => setOpenField(o ? "price" : null)}
+              />
 
-              <button type="submit" className="abn-s2-btn">
+              <button type="button" className="abn-s2-btn" onClick={() => submitSearch()}>
                 Search
               </button>
             </div>
@@ -300,7 +265,7 @@ const Home = () => {
                   key={c.label}
                   type="button"
                   className="abn-pill"
-                  onClick={(e) => runSearch(e, { propertyType: c.value })}
+                  onClick={() => submitSearch({ propertyType: c.value })}
                 >
                   <Icon size={15} />
                   <span>{c.label}</span>

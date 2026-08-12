@@ -1,0 +1,451 @@
+/* ====================================================
+   SearchDropdowns.css — click-to-open dropdown panels for
+   the home search bar (city, type, area, beds, price).
+   Panels float above the page (position:fixed) so they never
+   clip inside the hero or shift the layout.
+   Accent green: #4a934a (site palette uses #1a8f5a too).
+   ==================================================== */
+
+/* ── Trigger (wraps the existing .abn-s2-field look) ── */
+.dd-field {
+  padding: 0 !important;
+}
+
+.dd-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: #333;
+  font-size: 14px;
+  text-align: left;
+}
+
+.dd-trigger-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+  font-weight: 500;
+}
+
+.dd-trigger-placeholder {
+  color: #9a9a9a;
+  font-weight: 400;
+}
+
+.dd-chev {
+  position: static !important;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  color: #6b6b6b;
+}
+
+.dd-field--open {
+  border-color: #4a934a !important;
+  box-shadow: 0 0 0 3px rgba(74, 147, 74, 0.14);
+}
+
+.dd-field--open .dd-chev {
+  transform: rotate(180deg);
+}
+
+/* ── Floating panel shell ── */
+.dd-panel {
+  position: fixed;
+  z-index: 90;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
+  animation: dd-pop 0.14s ease;
+}
+
+/* Range + beds panels contain floating autocomplete layers — they must NOT
+   clip them, otherwise the suggestion list gets cut off inside the panel
+   instead of floating above the Reset / Done row. */
+.dd-range,
+.dd-beds {
+  overflow: visible;
+}
+
+@keyframes dd-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Searchable list (City) ── */
+.dd-sl {
+  width: 280px;
+}
+
+.dd-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.dd-search-ico {
+  color: #9a9a9a;
+  flex-shrink: 0;
+}
+
+.dd-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+}
+
+.dd-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.dd-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+}
+
+.dd-item:hover {
+  background: #f4f4f4;
+}
+
+.dd-item--active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.dd-empty {
+  padding: 16px;
+  text-align: center;
+  color: #888;
+  font-size: 13px;
+}
+
+/* ── Tabbed grid (Property type) ── */
+.dd-tg {
+  width: 420px;
+  padding: 14px;
+}
+
+.dd-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 12px;
+}
+
+.dd-tab {
+  padding: 8px 10px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #555;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s;
+}
+
+.dd-tab:hover {
+  color: #333;
+}
+
+.dd-tab--active {
+  color: #4a934a;
+  border-bottom-color: #4a934a;
+  font-weight: 700;
+}
+
+.dd-tg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dd-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.dd-card:hover {
+  border-color: #4a934a;
+}
+
+.dd-card--active {
+  border-color: #4a934a;
+  background: #e8f5e9;
+}
+
+.dd-card-icon {
+  color: #4a934a;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.dd-card-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dd-card--active .dd-card-label {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+/* ── Range panel (Area / Price) ── */
+.dd-range {
+  width: 320px;
+  padding: 14px;
+}
+
+.dd-range-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dd-range-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+}
+
+.dd-change-link {
+  border: none;
+  background: none;
+  color: #4a934a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.dd-change-link:hover {
+  text-decoration: underline;
+}
+
+.dd-range-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dd-range-field {
+  position: relative;
+}
+
+.dd-range-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.dd-range-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.dd-range-input:focus {
+  border-color: #4a934a;
+  box-shadow: 0 0 0 3px rgba(74, 147, 74, 0.14);
+}
+
+/* Autocomplete suggestions — independent floating layer anchored to the
+   focused input (not the whole panel). width:100% of the input field via
+   left/right:0; high z-index so it floats ABOVE the Reset / Done row and
+   anything else inside the panel. Panel height never changes (absolute). */
+.dd-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 40;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+  max-height: 180px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.dd-suggest button {
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  color: #333;
+}
+
+.dd-suggest button:hover {
+  background: #f4f4f4;
+}
+
+/* Range actions */
+.dd-range-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.dd-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.dd-btn--outline {
+  background: #fff;
+  border: 1px solid #4a934a;
+  color: #4a934a;
+}
+
+.dd-btn--outline:hover {
+  background: #f2faf2;
+}
+
+.dd-btn--solid {
+  background: #4a934a;
+  border: 1px solid #4a934a;
+  color: #fff;
+}
+
+.dd-btn--solid:hover {
+  background: #3f7f3f;
+}
+
+/* ── Beds panel ── */
+.dd-beds {
+  width: 300px;
+  padding: 14px;
+}
+
+/* ── Unit / currency picker modal ── */
+.dd-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dd-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  color: #333;
+}
+
+.dd-opt:hover {
+  background: #f4f4f4;
+}
+
+.dd-opt--active {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
+.dd-opt-check {
+  color: #4a934a;
+}
+
+/* ── Responsive tweaks ── */
+@media (max-width: 620px) {
+  .dd-tg {
+    width: min(420px, calc(100vw - 16px));
+  }
+  .dd-sl {
+    width: min(280px, calc(100vw - 16px));
+  }
+  .dd-range {
+    width: min(320px, calc(100vw - 16px));
+  }
+  .dd-beds {
+    width: min(300px, calc(100vw - 16px));
+  }
+}

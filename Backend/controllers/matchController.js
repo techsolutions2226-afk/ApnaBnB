@@ -1,5 +1,6 @@
 const prisma = require('../db/prisma');
 const { calculateMatchScore } = require('../utils/matchScore');
+const { enrichMatchesWithAI } = require('../utils/aiMatch');
 
 // Shared populate shape for match records.
 const matchInclude = {
@@ -128,6 +129,9 @@ const createMatch = async (req, res) => {
       },
       include: matchInclude,
     });
+
+    // Background AI semantic scoring (non-blocking).
+    enrichMatchesWithAI([{ matchId: match.id, ruleScore: score }]);
 
     res.status(201).json(match);
   } catch (error) {

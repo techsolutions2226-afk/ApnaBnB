@@ -200,6 +200,43 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
                     {Math.round(match.score || 0)}%
                   </span>
                 </div>
+
+                {match.aiReason && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 6,
+                      fontSize: 12,
+                      color: "#3b4252",
+                      background: "#f3f6fb",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 8,
+                      padding: "6px 10px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                        background: "#135332",
+                        color: "#fff",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: 0.4,
+                        textTransform: "uppercase",
+                        marginTop: 1,
+                      }}
+                    >
+                      AI
+                    </span>
+                    <span>{match.aiReason}</span>
+                  </div>
+                )}
               </Link>
             );
           })}

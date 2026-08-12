@@ -243,6 +243,13 @@ model Match {
   status MatchStatus @default(pending)
   notes  String      @default("")
 
+  // AI matchmaking (Gemini). score holds the blended 0-100 once AI completes;
+  // these keep the raw AI output + provenance so the UI can show explanations.
+  aiScore  Float?
+  aiReason String?
+  aiStatus String  @default("pending") // pending | scored | failed
+  aiError  String?
+
   // The private "Deal Room" — created/linked when the match is accepted.
   conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   conversationId String?

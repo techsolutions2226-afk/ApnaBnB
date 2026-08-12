@@ -15,6 +15,7 @@ function GuestRow({ label, sublabel, count, onInc, onDec, minVal = 0, link }) {
       </div>
       <div className="guest-counter">
         <button
+          type="button"
           className={`guest-btn ${count <= minVal ? "guest-btn--disabled" : ""}`}
           onClick={() => count > minVal && onDec()}
           disabled={count <= minVal}
@@ -22,7 +23,7 @@ function GuestRow({ label, sublabel, count, onInc, onDec, minVal = 0, link }) {
           <FiMinus size={14} />
         </button>
         <span className="guest-count">{count}</span>
-        <button className="guest-btn" onClick={onInc}>
+        <button type="button" className="guest-btn" onClick={onInc}>
           <FiPlus size={14} />
         </button>
       </div>

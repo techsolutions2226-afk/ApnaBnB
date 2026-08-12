@@ -292,7 +292,7 @@
 @media (max-width: 640px) {
   .prop-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+    gap: 12px;
   }
 
   .prop-grid-wrapper {
@@ -304,27 +304,26 @@
   }
 
   /* Tighten card typography & spacing so 2 cards still fit cleanly */
-  .prop-img-wrap { border-radius: 12px; }
-  .prop-info { margin-top: 8px; gap: 2px; }
-  .prop-title { font-size: 13px; }
+  .prop-img-wrap { border-radius: 14px; }
+  .prop-info { margin-top: 6px; gap: 2px; }
+  .prop-title { font-size: 13px; font-weight: 600; }
   .prop-rating { font-size: 12px; }
   .prop-location { font-size: 12px; }
   .prop-price { font-size: 12px; }
   .prop-listed-by { font-size: 11px; }
-  .prop-badge { font-size: 10px; padding: 3px 8px; top: 8px; left: 8px; }
+  .prop-badge { font-size: 9.5px; padding: 3px 8px; top: 8px; left: 8px; border-radius: 20px; }
 
   /* Legacy */
   .prop-row .prop-card-link {
-    flex: 0 0 calc((100% - 1 * 16px) / 2.3);
+    flex: 0 0 calc((100% - 1 * 12px) / 2);
   }
 }
 
-/* 1 column — only on very narrow phones (e.g. iPhone SE) */
 @media (max-width: 380px) {
   .prop-grid {
-    grid-template-columns: 1fr;
-    gap: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
-  .prop-title { font-size: 14px; }
-  .prop-rating, .prop-location, .prop-price { font-size: 13px; }
+  .prop-title { font-size: 12.5px; }
+  .prop-rating, .prop-location, .prop-price { font-size: 11.5px; }
 }

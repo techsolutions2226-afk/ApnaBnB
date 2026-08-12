@@ -458,6 +458,20 @@ const Matches = () => {
                   </p>
                 )}
 
+                {/* AI matchmaking explanation */}
+                {(match.aiReason || match.aiStatus === "pending") && (
+                  <div className="mtch-ai">
+                    <span className="mtch-ai-badge">AI</span>
+                    {match.aiStatus === "pending" ? (
+                      <span className="mtch-ai-pending">
+                        AI scoring in progress…
+                      </span>
+                    ) : (
+                      <span>Matched because: {match.aiReason}</span>
+                    )}
+                  </div>
+                )}
+
                 {/* Actions — driven by the deal state */}
                 <div className="mtch-actions">
                   {match.status === "pending" && (

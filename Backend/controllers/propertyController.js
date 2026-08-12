@@ -1,5 +1,6 @@
 const prisma = require('../db/prisma');
 const { geocodeAddress } = require('../utils/geocode');
+const { enrichMatchesWithAI } = require('../utils/aiMatch');
 const {
   calculateMatchScore,
   determineMatchType,
@@ -76,6 +77,7 @@ const generateMatchesForProperty = async (property, userId) => {
     });
 
     const matches = [];
+    const aiEntries = [];
     for (const requirement of requirements) {
       if (!isMatchCandidate(property, requirement)) continue;
 
@@ -104,7 +106,10 @@ const generateMatchesForProperty = async (property, userId) => {
         },
       });
       matches.push(match);
+      aiEntries.push({ matchId: match.id, ruleScore: score });
     }
+    // Kick off AI semantic scoring in the background (non-blocking).
+    enrichMatchesWithAI(aiEntries);
     return matches;
   } catch (error) {
     console.error('Error generating matches:', error);

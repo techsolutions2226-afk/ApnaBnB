@@ -1,672 +1,285 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiSearch,
-  FiHeart,
-  FiCheck,
-  FiChevronDown,
-  FiChevronUp,
   FiArrowRight,
+  FiChevronLeft,
+  FiChevronRight,
+  FiHome,
+  FiGrid,
+  FiMap,
+  FiBriefcase,
 } from "react-icons/fi";
 import { useProperties } from "../hooks/useProperties";
 import PropertyCard from "../components/property/PropertyCard";
-import useHomeCinematic from "../animation/useHomeCinematic";
 import "../styles/Home.css";
-import "../styles/cinematic.css";
 
-/* Featured cards on the right column. */
-const FEATURED_CARDS = [
+/* Hero background — a dusk modern home, matching the reference design. */
+const HERO_IMG =
+  "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1800&q=80&auto=format&fit=crop";
+
+/* Category quick-filter pills under the search bar. Each maps to a real
+   propertyType/category the search page already understands. */
+const CATEGORY_PILLS = [
+  { label: "Villas", value: "house", icon: FiHome },
+  { label: "Apartments", value: "flat", icon: FiGrid },
+  { label: "Plots", value: "plot", icon: FiMap },
+  { label: "Commercial", value: "commercial", icon: FiBriefcase },
+];
+
+/* The two big call-to-action cards (buy / rent). */
+const CTA_CARDS = [
   {
-    badge: "FOR SALE",
-    variant: "sage",
     href: "/sale",
     image:
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=900&q=80&auto=format&fit=crop",
-    headline: "Looking to buy?",
-    cta: "Click to browse properties for sale",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1000&q=80&auto=format&fit=crop",
+    title: "Looking to buy?",
+    text: "Find your dream home or next investment opportunity across Pakistan's premium locations.",
+    cta: "Explore Properties",
   },
   {
-    badge: "FOR RENT",
-    variant: "sand",
     href: "/rent",
     image:
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=900&q=80&auto=format&fit=crop",
-    headline: "Looking to rent?",
-    cta: "Click to browse rentals",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1000&q=80&auto=format&fit=crop",
+    title: "Looking to rent?",
+    text: "Discover meticulously curated rentals, from chic city apartments to expansive family villas.",
+    cta: "Find Rentals",
   },
 ];
 
-const SEARCH_TABS = [
-  { value: "buy", label: "BUY" },
-  { value: "rent", label: "RENT" },
+const PRICE_PRESETS = [
+  { label: "Any price", value: "" },
+  { label: "Up to 5,000,000", value: "5000000" },
+  { label: "Up to 10,000,000", value: "10000000" },
+  { label: "Up to 20,000,000", value: "20000000" },
+  { label: "Up to 50,000,000", value: "50000000" },
 ];
 
-/* Major cities first, then alphabetical — matches zameen.com style. */
-const PK_CITIES = [
-  "Islamabad",
-  "Karachi",
-  "Lahore",
-  "Rawalpindi",
-  "Abbottabad",
-  "Abdul Hakim",
-  "Bahawalpur",
-  "Faisalabad",
-  "Gujranwala",
-  "Hyderabad",
-  "Jhang",
-  "Larkana",
-  "Mardan",
-  "Mirpur Khas",
-  "Multan",
-  "Peshawar",
-  "Quetta",
-  "Rahim Yar Khan",
-  "Sargodha",
-  "Sheikhupura",
-  "Sialkot",
-  "Sukkur",
+const PROPERTY_TYPES = [
+  { label: "Homes, Plots, Commercial…", value: "" },
+  { label: "Homes", value: "house" },
+  { label: "Apartments / Flats", value: "flat" },
+  { label: "Plots", value: "plot" },
+  { label: "Commercial", value: "commercial" },
 ];
-
-const PROPERTY_TYPE_TREE = [
-  {
-    value: "homes",
-    label: "Homes",
-    subTypes: [
-      { label: "Upper portion", value: "upper-portion" },
-      { label: "Lower portion", value: "lower-portion" },
-      { label: "Complete house", value: "house" },
-      { label: "Flats / Apartments", value: "flat" },
-    ],
-  },
-  { value: "plots", label: "Plots", subTypes: [] },
-  { value: "commercial", label: "Commercial", subTypes: [] },
-];
-
-/* Preset numeric ladders for the Price + Area overlays. */
-const PRICE_MIN_PRESETS = [
-  { label: "0", value: "0" },
-  { label: "500,000", value: "500000" },
-  { label: "1,000,000", value: "1000000" },
-  { label: "2,000,000", value: "2000000" },
-  { label: "3,500,000", value: "3500000" },
-  { label: "5,000,000", value: "5000000" },
-];
-const PRICE_MAX_PRESETS = [
-  { label: "Any", value: "" },
-  { label: "500,000", value: "500000" },
-  { label: "1,000,000", value: "1000000" },
-  { label: "2,000,000", value: "2000000" },
-  { label: "3,500,000", value: "3500000" },
-  { label: "5,000,000", value: "5000000" },
-];
-const AREA_MIN_PRESETS = [
-  { label: "0", value: "0" },
-  { label: "450", value: "450" },
-  { label: "675", value: "675" },
-  { label: "1,125", value: "1125" },
-  { label: "1,800", value: "1800" },
-  { label: "2,250", value: "2250" },
-];
-const AREA_MAX_PRESETS = [
-  { label: "Any", value: "" },
-  { label: "450", value: "450" },
-  { label: "675", value: "675" },
-  { label: "1,125", value: "1125" },
-  { label: "1,800", value: "1800" },
-  { label: "2,250", value: "2250" },
-];
-
-const BEDS_LIST = ["All", "Studio", "1", "2", "3", "4", "5"];
-const AREA_UNITS = ["Sq. Ft", "Marla", "Kanal"];
-
-const digits = (s) => String(s).replace(/[^\d]/g, "");
-const fmt = (s) => (s ? Number(s).toLocaleString() : "");
 
 const Home = () => {
   const navigate = useNavigate();
 
-  /* Cinematic scroll layer (Lenis + GSAP) — additive, GPU transforms only,
-     scoped to this page and disabled under prefers-reduced-motion. */
-  const cinematicRef = useHomeCinematic();
-
-  /* Top-level widget state */
-  const [activeTab, setActiveTab] = useState("buy");
-  const [city, setCity] = useState("");
-  const [citySearch, setCitySearch] = useState("");
+  const [tab, setTab] = useState("buy"); // buy | rent
   const [location, setLocation] = useState("");
-  const [expanded, setExpanded] = useState(false);
-
-  /* Filter values */
-  const [propertyType, setPropertyType] = useState("homes");
-  const [propertySubType, setPropertySubType] = useState("");
-  const [minPrice, setMinPrice] = useState("");
+  const [propertyType, setPropertyType] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [minArea, setMinArea] = useState("");
-  const [maxArea, setMaxArea] = useState("");
-  const [areaUnit, setAreaUnit] = useState("Sq. Ft");
-  const [beds, setBeds] = useState("All");
 
-  /* Single state controls which overlay is open. */
-  const [openMenu, setOpenMenu] = useState(null); // "city" | "pt" | "price" | "area" | "beds" | null
-  const widgetRef = useRef(null);
-
-  /* Fetch all active properties (seller + dealer listings) for the showcase
-     section under the hero. Backend defaults to status=active. */
+  /* Fetch active properties for the showcase row (real, dynamic data). */
   const { properties: allProps = [], isLoading: propsLoading } = useProperties();
   const featuredProps = useMemo(
     () => (Array.isArray(allProps) ? allProps.slice(0, 8) : []),
     [allProps],
   );
 
-  /* Hide the navbar's search bar while we're on the landing. */
+  /* Hide the navbar's own search bar while the landing hero is up. */
   useEffect(() => {
     document.body.classList.add("hide-navbar-search");
     return () => document.body.classList.remove("hide-navbar-search");
   }, []);
 
-  /* Click outside the widget closes any open dropdown + collapses row 2. */
-  useEffect(() => {
-    const onDown = (e) => {
-      if (widgetRef.current && !widgetRef.current.contains(e.target)) {
-        setOpenMenu(null);
-        setExpanded(false);
-      }
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, []);
-
-  /* Helper — toggle one menu at a time. */
-  const toggleMenu = (which) =>
-    setOpenMenu((cur) => (cur === which ? null : which));
-  const close = () => setOpenMenu(null);
-
-  /* Filtered city list — case-insensitive substring match on citySearch. */
-  const filteredCities = useMemo(() => {
-    const q = citySearch.trim().toLowerCase();
-    if (!q) return PK_CITIES;
-    return PK_CITIES.filter((c) => c.toLowerCase().includes(q));
-  }, [citySearch]);
-
-  /* Property-type display label */
-  const ptLabel = (() => {
-    const top = PROPERTY_TYPE_TREE.find((p) => p.value === propertyType);
-    if (!top) return "Select";
-    if (propertySubType) {
-      const sub = top.subTypes.find((s) => s.value === propertySubType);
-      if (sub) return `${top.label} · ${sub.label}`;
-    }
-    return top.label;
-  })();
-
-  const priceLabel = (() => {
-    if (!minPrice && !maxPrice) return "0 to Any";
-    return `${minPrice ? fmt(minPrice) : "0"} to ${maxPrice ? fmt(maxPrice) : "Any"}`;
-  })();
-
-  const areaLabel = (() => {
-    if (!minArea && !maxArea) return "0 to Any";
-    return `${minArea ? fmt(minArea) : "0"} to ${maxArea ? fmt(maxArea) : "Any"}`;
-  })();
-
-  /* Build URL + navigate */
-  const handleSubmit = (e) => {
+  /* Build the search URL and navigate — same routing the old widget used:
+     buy → /sale, rent → /rent, with dest/propertyType/maxPrice params. */
+  const runSearch = (e, overrides = {}) => {
     e?.preventDefault();
     const params = new URLSearchParams();
-    if (city && location.trim())
-      params.set("dest", `${location.trim()}, ${city}`);
-    else if (city) params.set("dest", city);
-    else if (location.trim()) params.set("dest", location.trim());
-    if (minPrice) params.set("minPrice", minPrice);
-    if (maxPrice) params.set("maxPrice", maxPrice);
-    if (beds && beds !== "All") {
-      params.set("bedrooms", beds === "Studio" ? "0" : beds.replace("+", ""));
-    }
-    if (propertySubType) params.set("propertyType", propertySubType);
+    const dest = overrides.dest ?? location.trim();
+    const type = overrides.propertyType ?? propertyType;
+    const price = overrides.maxPrice ?? maxPrice;
+    if (dest) params.set("dest", dest);
+    if (type) params.set("propertyType", type);
+    if (price) params.set("maxPrice", price);
 
-    let basePath = "/search";
-    if (activeTab === "buy") basePath = "/sale";
-    else if (activeTab === "rent") basePath = "/rent";
-
+    const base = (overrides.tab ?? tab) === "rent" ? "/rent" : "/sale";
     const q = params.toString();
-    navigate(`${basePath}${q ? `?${q}` : ""}`);
+    navigate(`${base}${q ? `?${q}` : ""}`);
   };
 
-  const resetAll = () => {
-    setCity("");
-    setCitySearch("");
-    setLocation("");
-    setPropertyType("homes");
-    setPropertySubType("");
-    setMinPrice("");
-    setMaxPrice("");
-    setMinArea("");
-    setMaxArea("");
-    setAreaUnit("Sq. Ft");
-    setBeds("All");
-    setOpenMenu(null);
+  /* Horizontal scroll for the "Popular homes" row. */
+  const rowRef = useRef(null);
+  const scrollRow = (dir) => {
+    if (!rowRef.current) return;
+    rowRef.current.scrollBy({ left: dir * 320, behavior: "smooth" });
   };
 
   return (
-    <div className="home-landing" ref={cinematicRef}>
-      <div className="home-landing-grid">
-        {/* LEFT — copy + search widget */}
-        <div className="home-landing-left">
-          <span className="home-landing-eyebrow">
-            — Pakistan's home for homes
-          </span>
+    <div className="abn-home">
+      {/* ══ HERO ══ */}
+      <section
+        className="abn-hero"
+        style={{ backgroundImage: `url(${HERO_IMG})` }}
+      >
+        <span className="abn-hero-shade" aria-hidden="true" />
+        <div className="abn-hero-inner">
+          <h1 className="abn-hero-title">Discover Your Next Chapter</h1>
 
-          <h1 className="home-landing-title">
-            Find your{" "}
-            <em className="home-landing-title-accent">perfect place</em>
-          </h1>
-
-          {/* ══ Tabbed search widget ══ */}
-          <div className="hero-search" ref={widgetRef}>
-            {/* Tabs */}
-            <div className="hero-search-tabs">
-              {SEARCH_TABS.map((t) => {
-                const active = activeTab === t.value;
-                return (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setActiveTab(t.value)}
-                    className={`hero-search-tab ${active ? "hero-search-tab--active" : ""}`}
-                  >
-                    {t.label}
-                    {active && (
-                      <span
-                        className="hero-search-tab-tri"
-                        aria-hidden="true"
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <form className="hero-search-card" onSubmit={handleSubmit}>
-              {/* ── Row 1 ── */}
-              <div className="hero-search-row1">
-                {/* City selector */}
-                <div className="hero-search-field hero-search-field--city">
-                  <span className="hero-search-flabel">CITY</span>
-                  <button
-                    type="button"
-                    className="hero-search-city-btn"
-                    onClick={() => toggleMenu("city")}
-                  >
-                    <span className={!city ? "hero-search-placeholder" : ""}>
-                      {city || "Select city"}
-                    </span>
-                    <FiChevronDown
-                      size={16}
-                      style={{
-                        transform: openMenu === "city" ? "rotate(180deg)" : "none",
-                        transition: "transform .15s",
-                      }}
-                    />
-                  </button>
-
-                  {openMenu === "city" && (
-                    <div className="hero-overlay hero-overlay--city">
-                      <div className="hero-overlay-search">
-                        <FiSearch size={14} />
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder="Search city…"
-                          value={citySearch}
-                          onChange={(e) => setCitySearch(e.target.value)}
-                        />
-                      </div>
-                      <ul className="hero-overlay-list">
-                        {filteredCities.length === 0 ? (
-                          <li className="hero-overlay-empty">No matches</li>
-                        ) : (
-                          filteredCities.map((c) => (
-                            <li
-                              key={c}
-                              className={`hero-overlay-item${
-                                c === city ? " hero-overlay-item--active" : ""
-                              }`}
-                              onClick={() => {
-                                setCity(c);
-                                setCitySearch("");
-                                close();
-                              }}
-                            >
-                              {c}
-                            </li>
-                          ))
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                <div className="hero-search-vdiv" />
-
-                {/* Location input */}
-                <div className="hero-search-field hero-search-field--loc">
-                  <span className="hero-search-flabel">LOCATION</span>
-                  <input
-                    type="text"
-                    className="hero-search-input"
-                    placeholder="Neighborhood, area, or society"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    onFocus={() => setExpanded(true)}
-                  />
-                </div>
-
-                <button type="submit" className="hero-search-find">
-                  <FiSearch size={16} />
-                  <span>FIND</span>
-                </button>
-              </div>
-
-              {/* ── Row 2 — expandable filters ── */}
-              {expanded && (
-                <>
-                  <div className="hero-search-row2">
-                    {/* Property type */}
-                    <div className="hero-search-filter">
-                      <span className="hero-search-flabel">PROPERTY TYPE</span>
-                      <button
-                        type="button"
-                        className="hero-search-filter-btn"
-                        onClick={() => toggleMenu("pt")}
-                      >
-                        <span>{ptLabel}</span>
-                        <FiChevronDown size={14} />
-                      </button>
-                      {openMenu === "pt" && (
-                        <div className="hero-overlay hero-overlay--pt">
-                          {PROPERTY_TYPE_TREE.map((top) => (
-                            <div key={top.value} className="hero-overlay-pt-group">
-                              <button
-                                type="button"
-                                className={`hero-overlay-pt-top${
-                                  top.value === propertyType
-                                    ? " hero-overlay-pt-top--active"
-                                    : ""
-                                }`}
-                                onClick={() => {
-                                  setPropertyType(top.value);
-                                  setPropertySubType("");
-                                  if (top.subTypes.length === 0) close();
-                                }}
-                              >
-                                {top.label}
-                                {top.subTypes.length > 0 && (
-                                  <FiChevronDown size={12} />
-                                )}
-                              </button>
-                              {top.value === propertyType &&
-                                top.subTypes.length > 0 && (
-                                  <div className="hero-overlay-pt-subs">
-                                    {top.subTypes.map((s) => (
-                                      <button
-                                        key={s.value}
-                                        type="button"
-                                        className={`hero-overlay-pt-sub${
-                                          s.value === propertySubType
-                                            ? " hero-overlay-pt-sub--active"
-                                            : ""
-                                        }`}
-                                        onClick={() => {
-                                          setPropertySubType(s.value);
-                                          close();
-                                        }}
-                                      >
-                                        {s.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Price */}
-                    <div className="hero-search-filter">
-                      <span className="hero-search-flabel">PRICE (PKR)</span>
-                      <button
-                        type="button"
-                        className="hero-search-filter-btn"
-                        onClick={() => toggleMenu("price")}
-                      >
-                        <span>{priceLabel}</span>
-                        <FiChevronDown size={14} />
-                      </button>
-                      {openMenu === "price" && (
-                        <RangeOverlay
-                          minPresets={PRICE_MIN_PRESETS}
-                          maxPresets={PRICE_MAX_PRESETS}
-                          minValue={minPrice}
-                          maxValue={maxPrice}
-                          onMin={setMinPrice}
-                          onMax={setMaxPrice}
-                          onClose={close}
-                        />
-                      )}
-                    </div>
-
-                    {/* Area */}
-                    <div className="hero-search-filter">
-                      <span className="hero-search-flabel">
-                        AREA ({areaUnit})
-                      </span>
-                      <button
-                        type="button"
-                        className="hero-search-filter-btn"
-                        onClick={() => toggleMenu("area")}
-                      >
-                        <span>{areaLabel}</span>
-                        <FiChevronDown size={14} />
-                      </button>
-                      {openMenu === "area" && (
-                        <RangeOverlay
-                          minPresets={AREA_MIN_PRESETS}
-                          maxPresets={AREA_MAX_PRESETS}
-                          minValue={minArea}
-                          maxValue={maxArea}
-                          onMin={setMinArea}
-                          onMax={setMaxArea}
-                          onClose={close}
-                        />
-                      )}
-                    </div>
-
-                    {/* Beds */}
-                    <div className="hero-search-filter">
-                      <span className="hero-search-flabel">BEDS</span>
-                      <button
-                        type="button"
-                        className="hero-search-filter-btn"
-                        onClick={() => toggleMenu("beds")}
-                      >
-                        <span>{beds}</span>
-                        <FiChevronDown size={14} />
-                      </button>
-                      {openMenu === "beds" && (
-                        <div className="hero-overlay hero-overlay--single">
-                          <ul className="hero-overlay-list">
-                            {BEDS_LIST.map((b) => (
-                              <li
-                                key={b}
-                                className={`hero-overlay-item${
-                                  b === beds ? " hero-overlay-item--active" : ""
-                                }`}
-                                onClick={() => {
-                                  setBeds(b);
-                                  close();
-                                }}
-                              >
-                                {b}
-                              </li>
-                            ))}
-                          </ul>
-                          <button
-                            type="button"
-                            className="hero-overlay-close"
-                            onClick={close}
-                          >
-                            Close
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ── Utility line under row 2 ── */}
-                  <div className="hero-search-utils">
-                    <button
-                      type="button"
-                      className="hero-search-util hero-search-util--strong"
-                      onClick={() => {
-                        setExpanded(false);
-                        close();
-                      }}
-                    >
-                      <FiChevronUp size={14} /> Less Options
-                    </button>
-                    <span className="hero-search-util-sep" />
-                    <button
-                      type="button"
-                      className="hero-search-util"
-                      onClick={() => {
-                        /* Currency switch placeholder — only PKR supported today. */
-                      }}
-                    >
-                      Change Currency
-                    </button>
-                    <span className="hero-search-util-sep" />
-                    <button
-                      type="button"
-                      className="hero-search-util"
-                      onClick={() => {
-                        const idx = AREA_UNITS.indexOf(areaUnit);
-                        const next = AREA_UNITS[(idx + 1) % AREA_UNITS.length];
-                        setAreaUnit(next);
-                      }}
-                    >
-                      Change Area Unit
-                    </button>
-                    <span className="hero-search-util-sep" />
-                    <button
-                      type="button"
-                      className="hero-search-util"
-                      onClick={resetAll}
-                    >
-                      Reset Search
-                    </button>
-                  </div>
-                </>
-              )}
-            </form>
-          </div>
-
-          <p className="home-landing-tagline">
-            Buy, rent, or list across Karachi, Lahore, Islamabad and beyond.
-            Verified owners and dealers, secure chat, zero hidden fees.
-          </p>
-
-          <ul className="home-feature-tags">
-            <li>
-              <FiCheck /> 48,000+ verified listings
-            </li>
-            <li>
-              <FiCheck /> Owners, dealers & agents
-            </li>
-            <li>
-              <FiCheck /> Zero middleman fees
-            </li>
-          </ul>
-        </div>
-
-        {/* RIGHT — featured masonry cards */}
-        <div className="home-landing-right">
-          {FEATURED_CARDS.map((card, idx) => (
+          {/* BUY / RENT toggle */}
+          <div className="abn-hero-toggle">
             <button
-              key={idx}
               type="button"
-              onClick={() => navigate(card.href)}
-              className={`home-feature-card home-feature-card--${card.variant}`}
-              style={{ backgroundImage: `url(${card.image})` }}
+              className={`abn-toggle-btn ${tab === "buy" ? "abn-toggle-btn--active" : ""}`}
+              onClick={() => setTab("buy")}
             >
-              <span className="home-feature-card-shade" aria-hidden="true" />
-              <span
-                className="home-feature-card-heart"
-                aria-label="Save"
-                role="button"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <FiHeart size={14} />
-              </span>
-              <span className="home-feature-card-badge">{card.badge}</span>
-              <div className="home-feature-card-cta">
-                <p className="home-feature-card-headline">{card.headline}</p>
-                <p className="home-feature-card-cta-text">
-                  {card.cta} <span aria-hidden="true">→</span>
-                </p>
-              </div>
+              BUY
             </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ══ Featured properties — all active listings from sellers + dealers ══ */}
-      <section className="home-featured">
-        <div className="home-featured-head">
-          <div>
-            <span className="home-featured-eyebrow">Latest listings</span>
-            <h2 className="home-featured-title">Properties on ApnaBnB</h2>
-            <p className="home-featured-sub">
-              Verified homes, plots and commercial spaces posted by owners and
-              dealers across Pakistan.
-            </p>
+            <button
+              type="button"
+              className={`abn-toggle-btn ${tab === "rent" ? "abn-toggle-btn--active" : ""}`}
+              onClick={() => setTab("rent")}
+            >
+              RENT
+            </button>
           </div>
+
+          {/* Search bar */}
+          <form className="abn-search" onSubmit={runSearch}>
+            <div className="abn-search-field">
+              <span className="abn-search-label">Location</span>
+              <input
+                type="text"
+                className="abn-search-input"
+                placeholder="Where in Pakistan?"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+            <span className="abn-search-sep" />
+            <div className="abn-search-field">
+              <span className="abn-search-label">Property Type</span>
+              <select
+                className="abn-search-select"
+                value={propertyType}
+                onChange={(e) => setPropertyType(e.target.value)}
+              >
+                {PROPERTY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <span className="abn-search-sep" />
+            <div className="abn-search-field">
+              <span className="abn-search-label">Price</span>
+              <select
+                className="abn-search-select"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              >
+                {PRICE_PRESETS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="abn-search-btn" aria-label="Search">
+              <FiSearch size={20} />
+            </button>
+          </form>
+
+          {/* Category pills */}
+          <div className="abn-hero-pills">
+            {CATEGORY_PILLS.map((c) => {
+              const Icon = c.icon;
+              return (
+                <button
+                  key={c.label}
+                  type="button"
+                  className="abn-pill"
+                  onClick={(e) => runSearch(e, { propertyType: c.value })}
+                >
+                  <Icon size={15} />
+                  <span>{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ BUY / RENT CTA CARDS ══ */}
+      <section className="abn-cta-grid">
+        {CTA_CARDS.map((card) => (
           <button
+            key={card.href}
             type="button"
-            className="home-featured-viewall"
-            onClick={() => navigate("/search")}
+            className="abn-cta-card"
+            style={{ backgroundImage: `url(${card.image})` }}
+            onClick={() => navigate(card.href)}
           >
-            View all <FiArrowRight size={14} />
+            <span className="abn-cta-shade" aria-hidden="true" />
+            <div className="abn-cta-content">
+              <h3 className="abn-cta-title">{card.title}</h3>
+              <p className="abn-cta-text">{card.text}</p>
+              <span className="abn-cta-link">
+                {card.cta} <FiArrowRight size={16} />
+              </span>
+            </div>
           </button>
+        ))}
+      </section>
+
+      {/* ══ POPULAR HOMES (dynamic properties) ══ */}
+      <section className="abn-popular">
+        <div className="abn-popular-head">
+          <h2 className="abn-popular-title">
+            Popular homes in Islamabad <FiArrowRight size={20} />
+          </h2>
+          <div className="abn-popular-nav">
+            <button
+              type="button"
+              className="abn-popular-arrow"
+              aria-label="Scroll left"
+              onClick={() => scrollRow(-1)}
+            >
+              <FiChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              className="abn-popular-arrow"
+              aria-label="Scroll right"
+              onClick={() => scrollRow(1)}
+            >
+              <FiChevronRight size={18} />
+            </button>
+          </div>
         </div>
 
         {propsLoading ? (
-          <div className="home-featured-grid">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="home-featured-skel" />
+          <div className="abn-popular-row">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="abn-popular-skel" />
             ))}
           </div>
         ) : featuredProps.length === 0 ? (
-          <p className="home-featured-empty">
+          <p className="abn-popular-empty">
             No properties yet — be the first to list one.
           </p>
         ) : (
-          <div className="home-featured-grid">
+          <div className="abn-popular-row" ref={rowRef}>
             {featuredProps.map((p) => (
-              <PropertyCard
-                key={p._id || p.id}
-                _id={p._id}
-                id={p.id}
-                title={p.title}
-                photos={p.photos}
-                location={p.location}
-                price={p.price}
-                rating={p.rating || 4.5}
-                propertyType={p.propertyType}
-                size={p.size}
-                sizeUnit={p.sizeUnit}
-                listedBy={p.listedBy}
-              />
+              <div className="abn-popular-cell" key={p._id || p.id}>
+                <PropertyCard
+                  _id={p._id}
+                  id={p.id}
+                  title={p.title}
+                  photos={p.photos}
+                  location={p.location}
+                  price={p.price}
+                  rating={p.rating || 4.5}
+                  propertyType={p.propertyType}
+                  size={p.size}
+                  sizeUnit={p.sizeUnit}
+                  listedBy={p.listedBy}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -674,78 +287,5 @@ const Home = () => {
     </div>
   );
 };
-
-/* ──────────────────────────────────────────────────────
-   Reusable two-column range overlay for Price + Area.
-   Both columns: text input + scrollable preset list.
-   ────────────────────────────────────────────────────── */
-function RangeOverlay({
-  minPresets,
-  maxPresets,
-  minValue,
-  maxValue,
-  onMin,
-  onMax,
-  onClose,
-}) {
-  return (
-    <div className="hero-overlay hero-overlay--range">
-      <div className="hero-overlay-range-cols">
-        <div className="hero-overlay-range-col">
-          <div className="hero-overlay-range-input">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={minValue ? Number(minValue).toLocaleString() : ""}
-              placeholder="Min"
-              onChange={(e) => onMin(digits(e.target.value))}
-            />
-          </div>
-          <ul className="hero-overlay-range-list">
-            {minPresets.map((p) => (
-              <li
-                key={`min-${p.value}`}
-                className={`hero-overlay-item${
-                  p.value === minValue ? " hero-overlay-item--active" : ""
-                }`}
-                onClick={() => onMin(p.value)}
-              >
-                {p.label}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="hero-overlay-range-col">
-          <div className="hero-overlay-range-input">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={maxValue ? Number(maxValue).toLocaleString() : ""}
-              placeholder="Any"
-              onChange={(e) => onMax(digits(e.target.value))}
-            />
-          </div>
-          <ul className="hero-overlay-range-list">
-            {maxPresets.map((p) => (
-              <li
-                key={`max-${p.label}`}
-                className={`hero-overlay-item${
-                  p.value === maxValue ? " hero-overlay-item--active" : ""
-                }`}
-                onClick={() => onMax(p.value)}
-              >
-                {p.label}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      <button type="button" className="hero-overlay-close" onClick={onClose}>
-        Close
-      </button>
-    </div>
-  );
-}
 
 export default Home;

@@ -103,13 +103,12 @@ const hosting = [
   "Refer a host",
 ];
 
-const airbnb = [
-  "2025 Summer Release",
+const apnabnb = [
   "Newsroom",
+  "New features",
   "Careers",
   "Investors",
   "Gift cards",
-  "Airbnb.org emergency stays",
 ];
 
 const COLS = 6; // destinations per row
@@ -207,8 +206,8 @@ const Footer = () => {
           ))}
         </div>
         <div className="footer-col">
-          <h3 className="footer-col-title">Airbnb</h3>
-          {airbnb.map((item) => (
+          <h3 className="footer-col-title">apnabnb</h3>
+          {apnabnb.map((item) => (
             <a key={item} href="#" className="footer-link">
               {item}
             </a>
@@ -221,7 +220,7 @@ const Footer = () => {
       {/* ── Bottom bar ── */}
       <div className="footer-bottom">
         <div className="footer-bottom-left">
-          <span>© 2026 Airbnb, Inc.</span>
+          <span>© 2024 apnabnb, Inc.</span>
           <span className="footer-dot">·</span>
           <a href="#" className="footer-bottom-link">
             Privacy

@@ -12,14 +12,20 @@ body.hide-navbar-search .nav-mobile-pill {
 }
 
 .abn-home {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 20px 24px 64px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 20px clamp(32px, 5vw, 52px) 64px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #0f1d14;
 }
 
-/* ══════════════════════════════════════ HERO ══ */
+/* ══════════════════════════════════════ HERO ══
+   The hero stretches edge-to-edge (full viewport width) even though it
+   lives inside the centered .abn-home container. The 50% - 50vw trick pulls
+   it leftward by exactly the container's left offset and sizes it to the
+   viewport, so it touches BOTH viewport edges without any horizontal
+   overflow/scrollbar (100vw minus nothing overlapping). */
 .abn-hero {
   position: relative;
   border-radius: 22px;
@@ -31,6 +37,10 @@ body.hide-navbar-search .nav-mobile-pill {
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
+
+  /* Edge-to-edge, away from the container's max-width + padding. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
 }
 
 .abn-hero-shade {
@@ -415,7 +425,7 @@ body.hide-navbar-search .nav-mobile-pill {
 
 @media (max-width: 560px) {
   .abn-home {
-    padding: 14px 14px 48px;
+    padding: 14px 16px 48px;
   }
   .abn-hero {
     min-height: 420px;

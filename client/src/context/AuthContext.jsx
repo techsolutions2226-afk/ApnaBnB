@@ -114,6 +114,63 @@ export function AuthProvider({ children }) {
     }
   };
 
+  /* ── Continue with Google ──
+     Handles both branches of POST /api/auth/google:
+       • existing account → response has { token, ... } → auto-authenticate
+       • new account      → { requiresRole: true } → call googleComplete(role)
+     Returns the raw backend response so callers can branch on `requiresRole`. */
+  const googleSignIn = async (idToken) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.googleLogin(idToken);
+      if (response.token) {
+        const user = {
+          id: response.id,
+          name: response.name,
+          email: response.email,
+          role: response.role,
+          viewRole: response.viewRole || null,
+          avatar: response.avatar || "",
+        };
+        setCurrentUser(user);
+      }
+      return response;
+    } catch (err) {
+      const errorMessage = err.message || "Google sign-in failed";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* Complete account creation for a brand-new Google user after they pick
+     a role. Mirrors `login` — stores the token and authenticates. */
+  const googleComplete = async (idToken, role) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.googleComplete(idToken, role);
+      const user = {
+        id: response.id,
+        name: response.name,
+        email: response.email,
+        role: response.role,
+        viewRole: response.viewRole || null,
+        avatar: response.avatar || "",
+      };
+      setCurrentUser(user);
+      return user;
+    } catch (err) {
+      const errorMessage = err.message || "Google sign-in failed";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   /* ── Logout ── */
   const logout = () => {
     authService.logout();
@@ -229,6 +286,8 @@ export function AuthProvider({ children }) {
       getDashboardPath,
       login,
       signup,
+      googleSignIn,
+      googleComplete,
       logout,
       updateProfile,
     }),

@@ -412,6 +412,140 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// ─── Google OAuth ("Continue with Google") ────────────────────────────────
+//
+// Google Identity Services hands the browser a one-time ID token (JWT). We
+// verify it against Google's tokeninfo endpoint (Node 18+ built-in fetch —
+// same zero-dependency pattern as geocode.js), then find-or-create the user.
+// No Client Secret needed for the ID-token flow.
+
+const GOOGLE_TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
+
+// Verify a Google ID token. Returns the verified payload or throws.
+const verifyGoogleIdToken = async (idToken) => {
+  if (!idToken) {
+    const err = new Error('Google ID token is required.');
+    err.status = 400;
+    throw err;
+  }
+
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    console.error('GOOGLE_CLIENT_ID is not set in .env — skipping Google auth.');
+    const err = new Error('Google sign-in is not configured yet.');
+    err.status = 500;
+    throw err;
+  }
+
+  const res = await fetch(`${GOOGLE_TOKENINFO_URL}?id_token=${encodeURIComponent(idToken)}`);
+  if (!res.ok) {
+    const err = new Error('Google rejected the sign-in token.');
+    err.status = 401;
+    throw err;
+  }
+
+  const payload = await res.json();
+  if (payload.aud !== clientId) {
+    const err = new Error('ID token was not issued for this application.');
+    err.status = 401;
+    throw err;
+  }
+  if (!payload.email) {
+    const err = new Error('Google account has no verified email.');
+    err.status = 400;
+    throw err;
+  }
+  return payload;
+};
+
+// Random unusable bcrypt hash for Google-created accounts. There is no
+// password to log in with, and "forgot password" can never be used to reset
+// one of these accounts (the random hash never matches an attacker's input).
+const randomUnusablePassword = () => hashPassword(crypto.randomBytes(24).toString('hex'));
+
+// Same user payload shape as loginUser/verifyOtp so the client treats both
+// flows identically.
+const googleUserPayload = (user) => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  viewRole: user.viewRole || null,
+  avatar: user.avatar || '',
+  phone: user.phone || '',
+  location: user.location || '',
+  emergencyContact: user.emergencyContact || '',
+  verified: true,
+  token: generateToken(user.id, user.role),
+});
+
+// POST /api/auth/google — exchange a Google ID token for a session.
+//   • Existing email  → { ...user, token }
+//   • New email       → { requiresRole: true, profile: { name, email, avatar } }
+//                       (no account created yet — the client must pick a role
+//                        and confirm via POST /api/auth/google/complete)
+const googleAuth = async (req, res) => {
+  const { idToken } = req.body;
+
+  try {
+    const payload = await verifyGoogleIdToken(idToken);
+    const email = String(payload.email).toLowerCase();
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(200).json(googleUserPayload(existing));
+    }
+
+    res.status(200).json({
+      requiresRole: true,
+      profile: {
+        name: String(payload.name || payload.email.split('@')[0] || 'New Member'),
+        email,
+        avatar: String(payload.picture || ''),
+      },
+    });
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+};
+
+// POST /api/auth/google/complete — finish creating a brand-new Google account
+// once the client has chosen their role (Buyer/Seller/Dealer).
+const googleComplete = async (req, res) => {
+  const { idToken, role } = req.body;
+
+  const VALID_ROLES = ['seller', 'buyer', 'dealer'];
+  if (!role || !VALID_ROLES.includes(role)) {
+    return res.status(400).json({ message: 'Please select a valid role.' });
+  }
+
+  try {
+    const payload = await verifyGoogleIdToken(idToken);
+    const email = String(payload.email).toLowerCase();
+
+    // Re-check: the account may have been created between the two calls.
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(200).json(googleUserPayload(existing));
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        name: String(payload.name || email.split('@')[0] || 'New Member'),
+        email,
+        password: await randomUnusablePassword(),
+        role,
+        verified: true, // Google has already verified this email
+        avatar: String(payload.picture || ''),
+      },
+    });
+
+    res.status(201).json(googleUserPayload(user));
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -420,4 +554,6 @@ module.exports = {
   forgotPassword,
   verifyResetToken,
   resetPassword,
+  googleAuth,
+  googleComplete,
 };

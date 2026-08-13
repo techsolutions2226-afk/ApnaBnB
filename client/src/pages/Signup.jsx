@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiEye, FiEyeOff, FiMail } from "react-icons/fi";
-import { FcGoogle } from "react-icons/fc";
 import { FaApple, FaFacebook } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
+import GoogleAuthButton from "../components/common/GoogleAuthButton";
 import "../styles/Auth.css";
 
 /* ── Role options for the selector ── */
@@ -412,10 +412,7 @@ const Signup = () => {
 
           {/* Social Signup Buttons */}
           <div className="signup-social-list">
-            <button className="signup-social-btn" disabled={isLoading}>
-              <FcGoogle size={20} className="signup-social-icon" />
-              <span>Continue with Google</span>
-            </button>
+            <GoogleAuthButton className="signup-social-btn" />
             <button className="signup-social-btn" disabled={isLoading}>
               <FaFacebook
                 size={20}

@@ -135,6 +135,63 @@ const authService = {
       throw error.response?.data || { message: 'Failed to reset password' };
     }
   },
+
+  // Continue with Google — exchange a Google ID token for a session.
+  //   • existing user → { ...user, token }
+  //   • new user      → { requiresRole: true, profile: {...} }
+  googleLogin: async (idToken) => {
+    try {
+      const response = await apiClient.post('/auth/google', { idToken });
+      // Existing account → persistence identical to `login`.
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+        const user = {
+          id: response.data.id,
+          name: response.data.name,
+          email: response.data.email,
+          role: response.data.role,
+          viewRole: response.data.viewRole || null,
+          avatar: response.data.avatar || '',
+          phone: response.data.phone || '',
+          location: response.data.location || '',
+          emergencyContact: response.data.emergencyContact || '',
+        };
+        localStorage.setItem('current_user', JSON.stringify(user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Google sign-in failed' };
+    }
+  },
+
+  // Finish creating a brand-new Google account after the role is chosen.
+  // Same storage behavior as login (token + current_user in localStorage).
+  googleComplete: async (idToken, role) => {
+    try {
+      const response = await apiClient.post('/auth/google/complete', {
+        idToken,
+        role,
+      });
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+        const user = {
+          id: response.data.id,
+          name: response.data.name,
+          email: response.data.email,
+          role: response.data.role,
+          viewRole: response.data.viewRole || null,
+          avatar: response.data.avatar || '',
+          phone: response.data.phone || '',
+          location: response.data.location || '',
+          emergencyContact: response.data.emergencyContact || '',
+        };
+        localStorage.setItem('current_user', JSON.stringify(user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Google sign-in failed' };
+    }
+  },
 };
 
 export default authService;

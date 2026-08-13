@@ -1576,6 +1576,30 @@
   cursor: not-allowed;
 }
 
+/* ── "Continue with Google" loading state ── */
+.auth-google-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-google-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(17, 24, 39, 0.25);
+  border-top-color: #134e2c;
+  border-radius: 50%;
+  animation: auth-google-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes auth-google-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .signup-social-icon {
   flex-shrink: 0;
   margin-right: 10px;

@@ -1,7 +1,7 @@
 import apiClient from '../api/apiClient';
 
 const adminService = {
-  // Get platform statistics
+  // ── Stats ──
   getStats: async () => {
     try {
       const response = await apiClient.get('/admin/stats');
@@ -11,7 +11,7 @@ const adminService = {
     }
   },
 
-  // Get all users
+  // ── Users ──
   getUsers: async (filters = {}) => {
     try {
       const response = await apiClient.get('/admin/users', { params: filters });
@@ -21,7 +21,6 @@ const adminService = {
     }
   },
 
-  // Get user by ID
   getUser: async (userId) => {
     try {
       const response = await apiClient.get(`/admin/users/${userId}`);
@@ -31,7 +30,33 @@ const adminService = {
     }
   },
 
-  // Verify user
+  createUser: async (userData) => {
+    try {
+      const response = await apiClient.post('/admin/users', userData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to create user' };
+    }
+  },
+
+  updateUser: async (userId, userData) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${userId}`, userData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update user' };
+    }
+  },
+
+  deleteUser: async (userId) => {
+    try {
+      const response = await apiClient.delete(`/admin/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete user' };
+    }
+  },
+
   verifyUser: async (userId) => {
     try {
       const response = await apiClient.put(`/admin/users/${userId}/verify`);
@@ -41,7 +66,6 @@ const adminService = {
     }
   },
 
-  // Suspend user
   suspendUser: async (userId, reason) => {
     try {
       const response = await apiClient.put(`/admin/users/${userId}/suspend`, { reason });
@@ -51,7 +75,7 @@ const adminService = {
     }
   },
 
-  // Get all properties
+  // ── Properties ──
   getProperties: async (filters = {}) => {
     try {
       const response = await apiClient.get('/admin/properties', { params: filters });
@@ -61,7 +85,24 @@ const adminService = {
     }
   },
 
-  // Approve property
+  updateProperty: async (propertyId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/properties/${propertyId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update property' };
+    }
+  },
+
+  deleteProperty: async (propertyId) => {
+    try {
+      const response = await apiClient.delete(`/admin/properties/${propertyId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete property' };
+    }
+  },
+
   approveProperty: async (propertyId) => {
     try {
       const response = await apiClient.put(`/admin/properties/${propertyId}/approve`);
@@ -71,7 +112,6 @@ const adminService = {
     }
   },
 
-  // Reject property
   rejectProperty: async (propertyId, reason) => {
     try {
       const response = await apiClient.put(`/admin/properties/${propertyId}/reject`, {
@@ -83,7 +123,82 @@ const adminService = {
     }
   },
 
-  // Get all messages
+  // ── Listings ──
+  getListings: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/admin/listings', { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch listings' };
+    }
+  },
+
+  updateListing: async (listingId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/listings/${listingId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update listing' };
+    }
+  },
+
+  deleteListing: async (listingId) => {
+    try {
+      const response = await apiClient.delete(`/admin/listings/${listingId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete listing' };
+    }
+  },
+
+  // ── Requirements ──
+  getRequirements: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/admin/requirements', { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch requirements' };
+    }
+  },
+
+  updateRequirement: async (requirementId, data) => {
+    try {
+      const response = await apiClient.put(`/admin/requirements/${requirementId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update requirement' };
+    }
+  },
+
+  deleteRequirement: async (requirementId) => {
+    try {
+      const response = await apiClient.delete(`/admin/requirements/${requirementId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete requirement' };
+    }
+  },
+
+  // ── Matches ──
+  getMatches: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/admin/matches', { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch matches' };
+    }
+  },
+
+  deleteMatch: async (matchId) => {
+    try {
+      const response = await apiClient.delete(`/admin/matches/${matchId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete match' };
+    }
+  },
+
+  // ── Messages ──
   getMessages: async (filters = {}) => {
     try {
       const response = await apiClient.get('/admin/messages', { params: filters });
@@ -93,13 +208,31 @@ const adminService = {
     }
   },
 
-  // Get activity logs
+  deleteMessage: async (messageId) => {
+    try {
+      const response = await apiClient.delete(`/admin/messages/${messageId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete message' };
+    }
+  },
+
+  // ── Activity logs ──
   getActivityLogs: async (filters = {}) => {
     try {
       const response = await apiClient.get('/admin/activity', { params: filters });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch activity logs' };
+    }
+  },
+
+  getUserActivity: async (userId, filters = {}) => {
+    try {
+      const response = await apiClient.get(`/admin/activity/user/${userId}`, { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch user activity' };
     }
   },
 };

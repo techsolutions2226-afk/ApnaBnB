@@ -49,7 +49,15 @@ import Messages from "./pages/Messages";
 import Matches from "./pages/Matches";
 
 /* ── Admin Panel (Step 8) ── */
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminShell from "./components/admin/AdminShell";
+import AdminOverview from "./pages/admin/AdminOverview";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import AdminListings from "./pages/admin/AdminListings";
+import AdminRequirements from "./pages/admin/AdminRequirements";
+import AdminMatches from "./pages/admin/AdminMatches";
+import AdminMessages from "./pages/admin/AdminMessages";
+import AdminLogs from "./pages/admin/AdminLogs";
 
 /* ── Subscription Plans (Step 10) ── */
 import Plans from "./pages/Plans";
@@ -118,16 +126,27 @@ function App() {
                   <Route path="/rent" element={<SearchResults />} />
                   <Route path="/plans" element={<Plans />} />
                   <Route path="/users/:id" element={<Profile />} />
+                </Route>
 
-                  {/* ── Admin ── */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute roles={["admin"]}>
-                        <AdminDashboard />
-                      </ProtectedRoute>
-                    }
-                  />
+                {/* ── Admin panel (standalone shell — fixed sidebar, NO
+                    navbar/footer). The outer ProtectedRoute requires the
+                    admin role; sub-routes render inside the shell. ── */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute roles={["admin"]}>
+                      <AdminShell />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<AdminOverview />} />
+                  <Route path="users" element={<AdminUsers />} />
+                  <Route path="users/:id" element={<AdminUserDetail />} />
+                  <Route path="listings" element={<AdminListings />} />
+                  <Route path="requirements" element={<AdminRequirements />} />
+                  <Route path="matches" element={<AdminMatches />} />
+                  <Route path="messages" element={<AdminMessages />} />
+                  <Route path="logs" element={<AdminLogs />} />
                 </Route>
 
                 {/* ── Auth pages (no layout — standalone) ── */}

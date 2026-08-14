@@ -3,16 +3,32 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useUserListings, useDeleteListing } from "../hooks/useListings";
-import { useDealerBuyerMatches, useDealerDealerMatches } from "../hooks/useMatches";
+import { useMyMatches } from "../hooks/useMatches";
+import { useDashboardData } from "../hooks/useDashboardData";
+import DashStat from "../components/dashboard/DashStat";
+import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
-import { useProperties } from "../hooks/useProperties";
-import { formatPrice, formatLocation, formatCity } from "../utils/formatters";
-import Breadcrumb from "../components/common/Breadcrumb";
-import StatCard from "../components/common/StatCard";
-import StatusBadge from "../components/common/StatusBadge";
-import NotificationItem from "../components/common/NotificationItem";
-import ConfirmDialog from "../components/common/ConfirmDialog";
 import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import {
+  FiHome,
+  FiEye,
+  FiMail,
+  FiGitMerge,
+  FiMessageSquare,
+  FiPlusSquare,
+  FiList,
+  FiClipboard,
+  FiCreditCard,
+  FiEdit3,
+  FiEye as FiView,
+  FiEdit2,
+  FiTrash2,
+  FiZap,
+} from "react-icons/fi";
+import { formatLocation } from "../utils/formatters";
+import Breadcrumb from "../components/common/Breadcrumb";
+import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
 
 const DealerDashboard = () => {
@@ -26,54 +42,22 @@ const DealerDashboard = () => {
   // Delete listing hook
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
 
-  // State for delete confirmation
+  // Live aggregate data
+  const { unreadMessages } = useDashboardData();
+
+  // All matches involving this dealer
+  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches();
+  const matchCount = myMatches?.length || 0;
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
-  
-  // Fetch matches for dealer (dealer-buyer and dealer-dealer)
-  const { matches: buyerMatches, isLoading: buyerLoading, error: buyerError } = useDealerBuyerMatches();
-  const { matches: dealerMatches, isLoading: dealerLoading, error: dealerError } = useDealerDealerMatches();
-  const matches = [...(buyerMatches || []), ...(dealerMatches || [])];
-  
-  // Fetch all properties for mapping
-  const { properties, isLoading: propsLoading } = useProperties({}, true);
 
-  // Calculate stats
   const stats = {
-    activeListings: listings?.filter(l => l.status === 'active').length || 0,
+    activeListings: listings?.filter((l) => l.status === "active").length || 0,
     totalViews: listings?.reduce((sum, l) => sum + (l.views || 0), 0) || 0,
     totalInquiries: listings?.reduce((sum, l) => sum + (l.inquiries || 0), 0) || 0,
-    activeRequirements: 0, // TODO: Get from requirements for clients
-    matches: matches?.length || 0,
-    messages: 0, // TODO: Get from messages service
-    notifications: 0, // TODO: Get from notifications
   };
 
-  // Enrich listings with property details
-  const enrichedListings = listings?.map(listing => {
-    const propertyObj = (listing.property && typeof listing.property === 'object') 
-      ? listing.property 
-      : properties?.find(p => p._id === (listing.property || listing.propertyId));
-      
-    return {
-      ...listing,
-      propertyDetails: propertyObj
-    };
-  }) || [];
-
-  // Enrich matches with property details
-  const enrichedMatches = matches?.map(m => {
-    const propertyObj = (m.property && typeof m.property === 'object') 
-      ? m.property 
-      : properties?.find(p => p._id === (m.property || m.propertyId));
-      
-    return {
-      ...m,
-      propertyDetails: propertyObj
-    };
-  }) || [];
-
-  // Handle delete listing
   const handleDeleteClick = (listing) => {
     setListingToDelete(listing);
     setDeleteModalOpen(true);
@@ -81,7 +65,6 @@ const DealerDashboard = () => {
 
   const handleConfirmDelete = async () => {
     if (!listingToDelete) return;
-
     try {
       await deleteListing(listingToDelete._id);
       toast.success("Listing deleted successfully");
@@ -94,30 +77,23 @@ const DealerDashboard = () => {
     }
   };
 
-  // Placeholder data
-  const requirements = [];
-  const deals = [];
-  const activeSub = null;
-  const plan = null;
-  const notifications = [];
-
-  if (listingsLoading || buyerLoading || dealerLoading || propsLoading) {
+  if (listingsLoading) {
     return (
       <div className="dash-page">
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <div className="auth-spinner" style={{ margin: '0 auto 20px' }} />
-          <p>Loading your dashboard...</p>
+        <div className="dash-loading">
+          <div className="auth-spinner" style={{ margin: "0 auto 20px" }} />
+          <p className="dash-loading-text">Loading your dashboard…</p>
         </div>
       </div>
     );
   }
 
-  if (listingsError || buyerError || dealerError) {
+  if (listingsError) {
     return (
       <div className="dash-page">
-        <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>
-          <p>Error loading dashboard: {listingsError || buyerError || dealerError}</p>
-          <button onClick={refetchListings} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+        <div className="dash-error">
+          <p className="dash-error-text">Error loading listings: {listingsError}</p>
+          <button onClick={refetchListings} className="dash-retry">
             Retry
           </button>
         </div>
@@ -127,7 +103,6 @@ const DealerDashboard = () => {
 
   return (
     <div className="dash-page">
-      {/* ── Breadcrumb ── */}
       <Breadcrumb
         items={[
           { label: "Home", to: "/" },
@@ -146,52 +121,94 @@ const DealerDashboard = () => {
         <span className="dash-role-badge dash-role-badge--dealer">Dealer</span>
       </div>
 
-      {/* ── Subscription Card ── */}
-      {plan ? (
-        <div className="dash-sub-card">
-          <div className="dash-sub-info">
-            <div className="dash-sub-plan">{plan.name} Plan</div>
-            <div className="dash-sub-detail">
-              {activeSub.billing === "yearly" ? "Annual" : "Monthly"} billing
-              &middot; Renews {activeSub.endDate}
-            </div>
-          </div>
-          <Link to="/plans" className="dash-sub-action">
-            Manage Plan
-          </Link>
-        </div>
-      ) : (
-        <div className="dash-sub-none">
-          <span className="dash-sub-none-text">
-            No active subscription — upgrade to unlock premium features
-          </span>
-          <Link to="/plans" className="dash-sub-none-link">
-            View Plans
-          </Link>
-        </div>
-      )}
+      {/* ── Plans CTA ── */}
+      <div className="dash-sub-none">
+        <span className="dash-sub-none-text">
+          No active subscription — upgrade to unlock premium features
+        </span>
+        <Link to="/plans" className="dash-sub-none-link">
+          <FiZap size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+          View Plans
+        </Link>
+      </div>
 
       {/* ── Stat Cards ── */}
       <div className="dash-stats">
-        <StatCard icon="🏠" value={stats.activeListings} label="Active Listings" />
-        <StatCard icon="👁️" value={stats.totalViews.toLocaleString()} label="Total Views" />
-        <StatCard icon="📩" value={stats.totalInquiries} label="Inquiries" />
-        <StatCard icon="📝" value={stats.activeRequirements} label="Active Requirements" />
-        <StatCard icon="🔗" value={stats.matches} label="Matches" />
-        <StatCard icon="💬" value={stats.messages} label="Unread Messages" />
-        <StatCard icon="🤝" value={deals.length} label="Total Deals" />
-        <StatCard icon="🔔" value={stats.notifications} label="Notifications" />
+        <DashStat
+          icon={FiHome}
+          value={stats.activeListings}
+          label="Active Listings"
+          accent="#1a8f5a"
+          to="/my-listings"
+        />
+        <DashStat
+          icon={FiEye}
+          value={stats.totalViews.toLocaleString()}
+          label="Total Views"
+          accent="#1f4a6d"
+        />
+        <DashStat
+          icon={FiMail}
+          value={stats.totalInquiries}
+          label="Inquiries"
+          accent="#a16207"
+        />
+        <DashStat
+          icon={FiGitMerge}
+          value={matchCount}
+          label="Matches"
+          accent="#7c3aed"
+          to="/matches"
+        />
+        <DashStat
+          icon={FiMessageSquare}
+          value={unreadMessages}
+          label="Unread Messages"
+          accent="#0284c7"
+          to="/messages"
+        />
+      </div>
+
+      {/* ── Quick Actions ── */}
+      <div className="dash-section">
+        <SectionHeader title="Quick Actions" />
+        <div className="dash-quick-grid">
+          <Link to="/listing/new" className="dash-quick">
+            <span className="dash-quick-icon">
+              <FiPlusSquare size={17} />
+            </span>
+            Create Listing
+          </Link>
+          <Link to="/my-listings" className="dash-quick dash-quick--alt">
+            <span className="dash-quick-icon">
+              <FiList size={17} />
+            </span>
+            Manage Listings
+          </Link>
+          <Link to="/requirements" className="dash-quick">
+            <span className="dash-quick-icon">
+              <FiClipboard size={17} />
+            </span>
+            Requirements Board
+          </Link>
+          <Link to="/requirements/new" className="dash-quick dash-quick--alt">
+            <span className="dash-quick-icon">
+              <FiEdit3 size={17} />
+            </span>
+            Post Requirement
+          </Link>
+        </div>
       </div>
 
       {/* ── My Listings Table ── */}
       <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">My Listings</h2>
-          <Link to="/my-listings" className="dash-section-link">
-            View all
-          </Link>
-        </div>
-        {enrichedListings.length > 0 ? (
+        <SectionHeader
+          title="My Listings"
+          to="/my-listings"
+          actionText="Manage Listings"
+          actionIcon={FiList}
+        />
+        {listings.length > 0 ? (
           <div className="dash-table-wrap">
             <table className="dash-table">
               <thead>
@@ -205,8 +222,8 @@ const DealerDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {enrichedListings.map((listing) => {
-                  const property = listing.propertyDetails;
+                {listings.map((listing) => {
+                  const property = listing.property;
                   return (
                     <tr key={listing._id}>
                       <td data-label="Property">
@@ -214,12 +231,11 @@ const DealerDashboard = () => {
                           {property?.title || listing.propertyId}
                         </div>
                         <div className="dash-table-sub">
-                          {formatLocation(property?.location, property?.city)}
-                          {listing.featured && (
+                          {formatLocation(property?.location)}
+                          {listing.status === "featured" && (
                             <>
                               {" "}
-                              &middot;{" "}
-                              <StatusBadge status="featured" prefix="dash-badge" />
+                              · <StatusBadge status="featured" prefix="dash-badge" />
                             </>
                           )}
                         </div>
@@ -229,7 +245,9 @@ const DealerDashboard = () => {
                       </td>
                       <td data-label="Views">{(listing.views || 0).toLocaleString()}</td>
                       <td data-label="Inquiries">{listing.inquiries || 0}</td>
-                      <td data-label="Listed">{new Date(listing.createdAt).toLocaleDateString()}</td>
+                      <td data-label="Listed">
+                        {new Date(listing.createdAt).toLocaleDateString()}
+                      </td>
                       <td data-label="Actions">
                         <div className="dash-actions-cell">
                           <button
@@ -237,14 +255,14 @@ const DealerDashboard = () => {
                             onClick={() => navigate(`/listing/${listing._id}`)}
                             title="View Details"
                           >
-                            👁️
+                            <FiView size={15} />
                           </button>
                           <button
                             className="dash-action-btn dash-action-btn--edit"
                             onClick={() => navigate(`/listing/${listing._id}/edit`)}
                             title="Edit Listing"
                           >
-                            ✏️
+                            <FiEdit2 size={15} />
                           </button>
                           <button
                             className="dash-action-btn dash-action-btn--delete"
@@ -252,7 +270,7 @@ const DealerDashboard = () => {
                             title="Delete Listing"
                             disabled={isDeleting}
                           >
-                            🗑️
+                            <FiTrash2 size={15} />
                           </button>
                         </div>
                       </td>
@@ -275,151 +293,34 @@ const DealerDashboard = () => {
         )}
       </div>
 
-      {/* ── Client Requirements ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">My Client Requirements</h2>
-          <Link to="/requirements" className="dash-section-link">
-            Browse board
-          </Link>
-        </div>
-        {requirements.length > 0 ? (
-          <div className="dash-table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Requirement</th>
-                  <th>City</th>
-                  <th>Budget</th>
-                  <th>Type</th>
-                  <th>Urgency</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requirements.map((req) => (
-                    <tr key={req.id}>
-                      <td data-label="Requirement">
-                        <div className="dash-table-title">{req.title}</div>
-                        <div className="dash-table-sub">
-                          {req.area} &middot; {req.size}
-                        </div>
-                      </td>
-                      <td data-label="City">{req.city}</td>
-                      <td data-label="Budget">
-                        {formatPrice(req.budgetMin)} – {formatPrice(req.budgetMax)}
-                      </td>
-                      <td data-label="Type">{req.propertyType}</td>
-                      <td data-label="Urgency">{req.urgency}</td>
-                      <td data-label="Status">
-                        <StatusBadge status={req.status} prefix="dash-badge" />
-                      </td>
-                    </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">📝</div>
-            <p className="dash-empty-text">No client requirements posted.</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Matches ── */}
-      <RecentMatches
-        emptyMessage="No matches yet. List a property or post a requirement and we'll surface leads as soon as the city, area, and price line up."
-      />
-
-      {/* ── Deals ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">My Deals</h2>
-        </div>
-        {deals.length > 0 ? (
-          <div className="dash-table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Property</th>
-                  <th>Type</th>
-                  <th>Agreed Price</th>
-                  <th>Commission</th>
-                  <th>Status</th>
-                  <th>Started</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deals.map((deal) => {
-                  const property = properties?.find((p) => p._id === deal.propertyId);
-                  return (
-                    <tr key={deal.id}>
-                      <td data-label="Property">
-                        <div className="dash-table-title">
-                          {property?.title || deal.propertyId}
-                        </div>
-                        <div className="dash-table-sub">
-                          {formatCity(property?.location, property?.city)}
-                        </div>
-                      </td>
-                      <td data-label="Type">{deal.type.replace(/-/g, " \u2192 ")}</td>
-                      <td data-label="Agreed Price">PKR {formatPrice(deal.agreedPrice)}</td>
-                      <td data-label="Commission">
-                        {deal.commission > 0
-                          ? `PKR ${formatPrice(deal.commission)}`
-                          : "\u2014"}
-                      </td>
-                      <td data-label="Status">
-                        <StatusBadge status={deal.status} prefix="dash-badge" />
-                      </td>
-                      <td data-label="Started">{deal.startedAt}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">🤝</div>
-            <p className="dash-empty-text">
-              No deals yet. Start connecting buyers with sellers.
-            </p>
-          </div>
-        )}
-      </div>
+      {/* ── Recent Matches ── */}
+      {!matchesLoading && (
+        <RecentMatches
+          emptyMessage="No matches yet. List a property or post a requirement and we'll surface leads as soon as the city, area, and price line up."
+        />
+      )}
 
       {/* ── Reviews on My Properties ── */}
       <OwnerReviewsSection userId={userId} />
 
-      {/* ── Recent Notifications ── */}
+      {/* ── Plans CTA footer ── */}
       <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Recent Notifications</h2>
-          <Link to="/account/notifications" className="dash-section-link">
-            View all
+        <div className="dash-sub-none">
+          <span className="dash-sub-none-text">
+            Upgrade to a Pro plan and get featured listings + more leads.
+          </span>
+          <Link to="/plans" className="dash-sub-none-link">
+            <FiCreditCard size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+            View Plans
           </Link>
         </div>
-        {notifications.length > 0 ? (
-          <div className="dash-notif-list">
-            {notifications.map((n) => (
-              <NotificationItem key={n.id} notification={n} />
-            ))}
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">🔔</div>
-            <p className="dash-empty-text">No notifications.</p>
-          </div>
-        )}
       </div>
 
       {/* ── Delete Confirmation Modal ── */}
       <ConfirmDialog
         isOpen={deleteModalOpen}
         title="Delete Listing"
-        message={`Are you sure you want to delete "${listingToDelete?.propertyDetails?.title || 'this listing'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${listingToDelete?.property?.title || "this listing"}"? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleConfirmDelete}

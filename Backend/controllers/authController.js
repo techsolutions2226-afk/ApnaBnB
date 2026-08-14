@@ -258,6 +258,12 @@ const loginUser = async (req, res, next) => {
         email: user.email,
       });
     }
+    if (user.suspended) {
+      return res.status(403).json({
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'This account has been suspended. Contact support.',
+      });
+    }
     res.status(200).json({
       id: user.id,
       name: user.name,

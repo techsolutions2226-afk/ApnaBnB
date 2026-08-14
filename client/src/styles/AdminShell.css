@@ -1,0 +1,294 @@
+/* ════════════════════════════════════════════════════════════════
+   AdminShell.css — admin panel app shell
+   Fixed navy sidebar + scrolling content column.
+   Palette: navy #16324f · green #1a8f5a · soft neutral greys.
+   ════════════════════════════════════════════════════════════════ */
+
+.ash-shell {
+  display: flex;
+  min-height: 100vh;
+  background: #f4f6f8;
+}
+
+/* ── Sidebar ── */
+.ash-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #16324f 0%, #0f2438 100%);
+  color: #cbd8e5;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 60;
+  transition: transform 0.25s ease;
+}
+
+.ash-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 22px 22px 18px;
+  text-decoration: none;
+}
+
+.ash-logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1a8f5a;
+  box-shadow: 0 0 0 4px rgba(26, 143, 90, 0.18);
+}
+
+.ash-logo-word {
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.ash-logo-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #8fd3b0;
+  background: rgba(26, 143, 90, 0.2);
+  border: 1px solid rgba(26, 143, 90, 0.45);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ash-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  margin: 4px 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+}
+
+.ash-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ash-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a8f5a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.ash-brand-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ash-brand-name {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ash-brand-role {
+  font-size: 11px;
+  color: #8aa3bb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Nav ── */
+.ash-nav {
+  flex: 1;
+  padding: 0 12px;
+  overflow-y: auto;
+}
+
+.ash-nav-heading {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #5f7a94;
+  padding: 8px 12px 8px;
+}
+
+.ash-navlink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 2px;
+  border-radius: 10px;
+  color: #b7c8d8;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ash-navlink:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.ash-navlink--active {
+  background: #1a8f5a;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(26, 143, 90, 0.35);
+}
+
+.ash-navicon {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+/* ── Sidebar footer ── */
+.ash-sidebar-foot {
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ash-foot-link,
+.ash-foot-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: none;
+  border: none;
+  color: #b7c8d8;
+  font-size: 13.5px;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ash-foot-link:hover,
+.ash-foot-logout:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.ash-foot-logout {
+  color: #f2a0a0;
+}
+
+.ash-foot-logout:hover {
+  background: rgba(185, 28, 28, 0.2);
+  color: #fff;
+}
+
+/* ── Main column ── */
+.ash-main {
+  flex: 1;
+  margin-left: 250px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ash-topbar {
+  height: 60px;
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid #e6eaef;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.ash-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: #16324f;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.ash-topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #16324f;
+}
+
+.ash-topbar-spacer {
+  flex: 1;
+}
+
+.ash-topbar-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #1a8f5a;
+  background: rgba(26, 143, 90, 0.12);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.ash-content {
+  flex: 1;
+  padding: 24px;
+  min-width: 0;
+}
+
+.ash-scrim {
+  display: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .ash-sidebar {
+    transform: translateX(-100%);
+  }
+  .ash-sidebar--open {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+  }
+  .ash-main {
+    margin-left: 0;
+  }
+  .ash-hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ash-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 36, 56, 0.5);
+    z-index: 55;
+  }
+  .ash-content {
+    padding: 16px;
+  }
+}

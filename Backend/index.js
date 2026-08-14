@@ -5,6 +5,7 @@ const cors = require("cors");
 const prisma = require("./db/prisma");
 const limiter = require("./middleware/rateLimitMiddleware");
 const securityHeaders = require("./middleware/securityHeaders");
+const auditActivity = require("./middleware/activityMiddleware");
 const { withIds } = require("./utils/serializeIds");
 const { initSockets } = require("./sockets");
 
@@ -45,6 +46,11 @@ app.use((req, res, next) => {
   res.json = (body) => json(withIds(body));
   next();
 });
+
+// Audit trail — one ActivityLog row per successful mutating API action.
+// Mounted globally (works without touching any controller); reads req.user
+// lazily at response-finish time so auth middleware has already run.
+app.use(auditActivity);
 
 // Postgres (Supabase) connection via Prisma.
 prisma

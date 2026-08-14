@@ -90,6 +90,12 @@ model User {
   password String
   role     Role
   verified Boolean @default(false)
+
+  // Admin suspension — independent of `verified`. A suspended user is blocked
+  // at login (auth.login returns ACCOUNT_SUSPENDED) but stays "verified", so
+  // the two states never blur together.
+  suspended Boolean @default(false)
+
   avatar   String  @default("")
 
   phone            String @default("")

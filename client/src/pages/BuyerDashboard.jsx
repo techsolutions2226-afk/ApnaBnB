@@ -3,46 +3,50 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useUserRequirements, useDeleteRequirement } from "../hooks/useRequirements";
-import { useSellerBuyerMatches, useDealerBuyerMatches } from "../hooks/useMatches";
+import { useMyMatches } from "../hooks/useMatches";
+import { useDashboardData } from "../hooks/useDashboardData";
+import DashStat from "../components/dashboard/DashStat";
+import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
-import { useProperties } from "../hooks/useProperties";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import {
+  FiFileText,
+  FiHeart,
+  FiCalendar,
+  FiGitMerge,
+  FiMessageSquare,
+  FiPlusSquare,
+  FiSearch,
+  FiEye,
+  FiEdit2,
+  FiTrash2,
+} from "react-icons/fi";
 import { formatPrice, formatCity } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
-import StatCard from "../components/common/StatCard";
 import StatusBadge from "../components/common/StatusBadge";
-import NotificationItem from "../components/common/NotificationItem";
-import ConfirmDialog from "../components/common/ConfirmDialog";
 import "../styles/Dashboard.css";
 
 const BuyerDashboard = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const userId = currentUser?.id;
-  
+
   // Fetch user's requirements
   const { requirements, isLoading: reqLoading, error: reqError, refetch: refetchReqs } = useUserRequirements(userId);
-  
+
   // Delete requirement hook
   const { remove: deleteRequirement, isLoading: isDeleting } = useDeleteRequirement();
-  
-  // State for delete confirmation
+
+  // Live aggregate data (unread messages, wishlist, upcoming trips)
+  const { unreadMessages, savedProperties, upcomingTrips, upcomingList } = useDashboardData();
+
+  // All matches involving this user
+  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches();
+  const matchCount = myMatches?.length || 0;
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [requirementToDelete, setRequirementToDelete] = useState(null);
-  
-  // Fetch matches for this buyer. Their requirements can match either a seller's
-  // or a dealer's property, so we pull both types and combine.
-  const { matches: sellerMatches, isLoading: sbLoading, error: sbError } = useSellerBuyerMatches();
-  const { matches: dealerMatches, isLoading: dbLoading, error: dbError } = useDealerBuyerMatches();
-  const matches = [...(sellerMatches || []), ...(dealerMatches || [])].sort(
-    (a, b) => (b.score || 0) - (a.score || 0)
-  );
-  const matchesLoading = sbLoading || dbLoading;
-  const matchesError = sbError || dbError;
-  
-  // Fetch all properties for mapping
-  const { properties, isLoading: propsLoading } = useProperties({}, true);
 
-  // Handle delete requirement
   const handleDeleteClick = (req) => {
     setRequirementToDelete(req);
     setDeleteModalOpen(true);
@@ -50,7 +54,6 @@ const BuyerDashboard = () => {
 
   const handleConfirmDelete = async () => {
     if (!requirementToDelete) return;
-    
     try {
       await deleteRequirement(requirementToDelete._id);
       toast.success("Requirement deleted successfully");
@@ -63,50 +66,27 @@ const BuyerDashboard = () => {
     }
   };
 
-  // Calculate stats
   const stats = {
-    activeRequirements: requirements?.filter(r => r.status === 'active').length || 0,
-    savedProperties: 0, // TODO: Get from wishlists/saved service
-    upcomingVisits: 0, // TODO: Get from trips service
-    matches: matches?.length || 0,
-    messages: 0, // TODO: Get from messages service
-    notifications: 0, // TODO: Get from notifications
+    activeRequirements: requirements?.filter((r) => r.status === "active").length || 0,
   };
 
-  // Enrich matches with property details
-  const enrichedMatches = matches?.map(m => {
-    const propertyObj = (m.property && typeof m.property === 'object') 
-      ? m.property 
-      : properties?.find(p => p._id === (m.property || m.propertyId));
-      
-    return {
-      ...m,
-      propertyDetails: propertyObj
-    };
-  }) || [];
-
-  const deals = []; // TODO: Get from deals service
-  const wishlists = []; // TODO: Get from wishlists service
-  const trips = []; // TODO: Get from trips service
-  const notifications = [];
-
-  if (reqLoading || matchesLoading || propsLoading) {
+  if (reqLoading) {
     return (
       <div className="dash-page">
-        <div style={{ padding: '40px', textAlign: 'center' }}>
-          <div className="auth-spinner" style={{ margin: '0 auto 20px' }} />
-          <p>Loading your dashboard...</p>
+        <div className="dash-loading">
+          <div className="auth-spinner" style={{ margin: "0 auto 20px" }} />
+          <p className="dash-loading-text">Loading your dashboard…</p>
         </div>
       </div>
     );
   }
 
-  if (reqError || matchesError) {
+  if (reqError) {
     return (
       <div className="dash-page">
-        <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>
-          <p>Error loading dashboard: {reqError || matchesError}</p>
-          <button onClick={() => { refetchReqs(); }} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+        <div className="dash-error">
+          <p className="dash-error-text">Error loading dashboard: {reqError}</p>
+          <button onClick={refetchReqs} className="dash-retry">
             Retry
           </button>
         </div>
@@ -116,7 +96,6 @@ const BuyerDashboard = () => {
 
   return (
     <div className="dash-page">
-      {/* ── Breadcrumb ── */}
       <Breadcrumb
         items={[
           { label: "Home", to: "/" },
@@ -137,148 +116,213 @@ const BuyerDashboard = () => {
 
       {/* ── Stat Cards ── */}
       <div className="dash-stats">
-        <StatCard icon="📝" value={stats.activeRequirements} label="Active Requirements" />
-        <StatCard icon="❤️" value={stats.savedProperties} label="Saved Properties" />
-        <StatCard icon="📅" value={stats.upcomingVisits} label="Upcoming Visits" />
-        <StatCard icon="🔗" value={stats.matches} label="Matches" />
-        <StatCard icon="💬" value={stats.messages} label="Unread Messages" />
-        <StatCard icon="🔔" value={stats.notifications} label="Notifications" />
+        <DashStat
+          icon={FiFileText}
+          value={stats.activeRequirements}
+          label="Active Requirements"
+          accent="#1a8f5a"
+          to="/requirements"
+        />
+        <DashStat
+          icon={FiHeart}
+          value={savedProperties}
+          label="Saved Properties"
+          accent="#db2777"
+          to="/wishlists"
+        />
+        <DashStat
+          icon={FiCalendar}
+          value={upcomingTrips}
+          label="Upcoming Visits"
+          accent="#1f4a6d"
+          to="/trips"
+        />
+        <DashStat
+          icon={FiGitMerge}
+          value={matchCount}
+          label="Matches"
+          accent="#7c3aed"
+          to="/matches"
+        />
+        <DashStat
+          icon={FiMessageSquare}
+          value={unreadMessages}
+          label="Unread Messages"
+          accent="#0284c7"
+          to="/messages"
+        />
       </div>
 
-        {/* ── My Requirements Table ── */}
-       <div className="dash-section">
-         <div className="dash-section-header">
-           <h2 className="dash-section-title">My Requirements</h2>
-           <Link to="/requirements/new" className="dash-section-link">
-             Post new
-           </Link>
-         </div>
-         {requirements.length > 0 ? (
-           <div className="dash-table-wrap">
-             <table className="dash-table">
-               <thead>
-                 <tr>
-                   <th>Requirement</th>
-                   <th>City</th>
-                   <th>Budget</th>
-                   <th>Type</th>
-                   <th>Status</th>
-                   <th>Posted</th>
-                   <th>Actions</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {requirements.map((req) => (
-                    <tr key={req._id}>
-                      <td data-label="Requirement">
-                        <div className="dash-table-title">{req.title || `${req.propertyType} in ${req.location?.city}`}</div>
-                        <div className="dash-table-sub">
-                          {req.location?.area || "N/A"} &middot; {req.bedrooms || "N/A"} beds
-                        </div>
-                      </td>
-                      <td data-label="City">{req.location?.city}</td>
-                      <td data-label="Budget">
-                        PKR {formatPrice(req.budget?.min || 0)} – {formatPrice(req.budget?.max || 0)}
-                      </td>
-                      <td data-label="Type">{req.propertyType}</td>
-                      <td data-label="Status">
-                        <StatusBadge status={req.status || 'active'} prefix="dash-badge" />
-                      </td>
-                      <td data-label="Posted">{new Date(req.createdAt).toLocaleDateString()}</td>
-                      <td data-label="Actions">
-                        <div className="dash-actions-cell">
-                         <button 
-                           className="dash-action-btn dash-action-btn--view"
-                           onClick={() => navigate(`/requirements/${req._id}`)}
-                           title="View Details"
-                         >
-                           👁️
-                         </button>
-                         <button 
-                           className="dash-action-btn dash-action-btn--edit"
-                           onClick={() => navigate(`/requirements/${req._id}/edit`)}
-                           title="Edit"
-                         >
-                           ✏️
-                         </button>
-                         <button 
-                           className="dash-action-btn dash-action-btn--delete"
-                           onClick={() => handleDeleteClick(req)}
-                           title="Delete"
-                           disabled={isDeleting}
-                         >
-                           🗑️
-                         </button>
-                       </div>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-           </div>
-         ) : (
-           <div className="dash-empty">
-             <div className="dash-empty-icon">📝</div>
-             <p className="dash-empty-text">
-               You haven't posted any requirements yet. Let sellers know what
-               you're looking for.
-             </p>
-             <Link to="/requirements/new" className="dash-empty-link">
-               Post Your First Requirement
-             </Link>
-           </div>
-         )}
-       </div>
+      {/* ── Quick Actions ── */}
+      <div className="dash-section">
+        <SectionHeader title="Quick Actions" />
+        <div className="dash-quick-grid">
+          <Link to="/requirements/new" className="dash-quick">
+            <span className="dash-quick-icon">
+              <FiPlusSquare size={17} />
+            </span>
+            Post Requirement
+          </Link>
+          <Link to="/" className="dash-quick dash-quick--alt">
+            <span className="dash-quick-icon">
+              <FiSearch size={17} />
+            </span>
+            Browse Properties
+          </Link>
+          <Link to="/wishlists" className="dash-quick">
+            <span className="dash-quick-icon">
+              <FiHeart size={17} />
+            </span>
+            My Wishlists
+          </Link>
+          <Link to="/messages" className="dash-quick dash-quick--alt">
+            <span className="dash-quick-icon">
+              <FiMessageSquare size={17} />
+            </span>
+            Messages
+          </Link>
+        </div>
+      </div>
 
-      {/* ── Matches ── */}
-      <RecentMatches
-        emptyMessage="No matches yet. Post a requirement and we'll find properties for you — matches appear when a property is in the same city, same area, and within +/-10% of your budget."
-      />
+      {/* ── My Requirements Table ── */}
+      <div className="dash-section">
+        <SectionHeader
+          title="My Requirements"
+          to="/requirements/new"
+          actionText="Post new"
+          actionIcon={FiPlusSquare}
+        />
+        {requirements.length > 0 ? (
+          <div className="dash-table-wrap">
+            <table className="dash-table">
+              <thead>
+                <tr>
+                  <th>Requirement</th>
+                  <th>City</th>
+                  <th>Budget</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Posted</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requirements.map((req) => (
+                  <tr key={req._id}>
+                    <td data-label="Requirement">
+                      <div className="dash-table-title">
+                        {req.title || `${req.propertyType} in ${req.location?.city}`}
+                      </div>
+                      <div className="dash-table-sub">
+                        {req.location?.area || "N/A"} · {req.bedrooms || "N/A"} beds
+                      </div>
+                    </td>
+                    <td data-label="City">{req.location?.city}</td>
+                    <td data-label="Budget">
+                      {formatPrice(req.budget?.min || 0, { prefix: true })} –{" "}
+                      {formatPrice(req.budget?.max || 0, { prefix: true })}
+                    </td>
+                    <td data-label="Type">{req.propertyType}</td>
+                    <td data-label="Status">
+                      <StatusBadge status={req.status || "active"} prefix="dash-badge" />
+                    </td>
+                    <td data-label="Posted">
+                      {new Date(req.createdAt).toLocaleDateString()}
+                    </td>
+                    <td data-label="Actions">
+                      <div className="dash-actions-cell">
+                        <button
+                          className="dash-action-btn dash-action-btn--view"
+                          onClick={() => navigate(`/requirements/${req._id}`)}
+                          title="View Details"
+                        >
+                          <FiEye size={15} />
+                        </button>
+                        <button
+                          className="dash-action-btn dash-action-btn--edit"
+                          onClick={() => navigate(`/requirements/${req._id}/edit`)}
+                          title="Edit"
+                        >
+                          <FiEdit2 size={15} />
+                        </button>
+                        <button
+                          className="dash-action-btn dash-action-btn--delete"
+                          onClick={() => handleDeleteClick(req)}
+                          title="Delete"
+                          disabled={isDeleting}
+                        >
+                          <FiTrash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="dash-empty">
+            <div className="dash-empty-icon">📝</div>
+            <p className="dash-empty-text">
+              You haven't posted any requirements yet. Let sellers know what
+              you're looking for.
+            </p>
+            <Link to="/requirements/new" className="dash-empty-link">
+              Post Your First Requirement
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* ── Recent Matches ── */}
+      {!matchesLoading && (
+        <RecentMatches
+          emptyMessage="No matches yet. Post a requirement and we'll find properties for you — matches appear when a property is in the same city, same area, and within ±10% of your budget."
+        />
+      )}
 
       {/* ── Upcoming Visits ── */}
       <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Property Visits</h2>
-          <Link to="/trips" className="dash-section-link">
-            View all
-          </Link>
-        </div>
-        {trips.length > 0 ? (
+        <SectionHeader title="Upcoming Visits" to="/trips" actionIcon={FiCalendar} />
+        {upcomingList.length > 0 ? (
           <div className="dash-table-wrap">
             <table className="dash-table">
               <thead>
                 <tr>
                   <th>Property</th>
-                  <th>Date</th>
-                  <th>Time</th>
+                  <th>Check-in</th>
+                  <th>Check-out</th>
+                  <th>Guests</th>
+                  <th>Total</th>
                   <th>Status</th>
-                  <th>Code</th>
                 </tr>
               </thead>
               <tbody>
-                {trips.slice(0, 5).map((trip) => {
-                  const property = properties?.find((p) => p._id === trip.propertyId);
-                  return (
-                    <tr key={trip.id}>
-                      <td data-label="Property">
-                        <div className="dash-table-title">
-                          {property?.title || trip.propertyId}
-                        </div>
-                        <div className="dash-table-sub">
-                          {formatCity(property?.location, property?.city)}
-                        </div>
-                      </td>
-                      <td data-label="Date">{trip.visitDate}</td>
-                      <td data-label="Time">{trip.visitTime}</td>
-                      <td data-label="Status">
-                        <StatusBadge status={trip.status} prefix="dash-badge" />
-                      </td>
-                      <td data-label="Code" style={{ fontFamily: "monospace", fontSize: 12 }}>
-                        {trip.confirmationCode}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {upcomingList.slice(0, 5).map((trip) => (
+                  <tr key={trip.id}>
+                    <td data-label="Property">
+                      <div className="dash-table-title">
+                        {trip.property?.title || "Scheduled visit"}
+                      </div>
+                      <div className="dash-table-sub">
+                        {formatCity(trip.property?.location)}
+                      </div>
+                    </td>
+                    <td data-label="Check-in">{trip.checkIn || "—"}</td>
+                    <td data-label="Check-out">{trip.checkOut || "—"}</td>
+                    <td data-label="Guests">
+                      {(trip.guests?.adults || 0) +
+                        (trip.guests?.children || 0) +
+                        (trip.guests?.infants || 0)}
+                    </td>
+                    <td data-label="Total">
+                      {formatPrice(trip.totalPrice || 0, { prefix: true })}
+                    </td>
+                    <td data-label="Status">
+                      <StatusBadge status={trip.status || "upcoming"} prefix="dash-badge" />
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -293,101 +337,11 @@ const BuyerDashboard = () => {
         )}
       </div>
 
-      {/* ── Deals ── */}
-      {deals.length > 0 && (
-        <div className="dash-section">
-          <div className="dash-section-header">
-            <h2 className="dash-section-title">My Deals</h2>
-          </div>
-          <div className="dash-table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Property</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Started</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deals.map((deal) => {
-                  const property = properties?.find((p) => p._id === deal.propertyId);
-                  return (
-                    <tr key={deal.id}>
-                      <td data-label="Property">
-                        <div className="dash-table-title">
-                          {property?.title || deal.propertyId}
-                        </div>
-                        <div className="dash-table-sub">
-                          {formatCity(property?.location, property?.city)}
-                        </div>
-                      </td>
-                      <td data-label="Price">PKR {formatPrice(deal.agreedPrice)}</td>
-                      <td data-label="Status">
-                        <StatusBadge status={deal.status} prefix="dash-badge" />
-                      </td>
-                      <td data-label="Started">{deal.startedAt}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ── Wishlists ── */}
-      {wishlists.length > 0 && (
-        <div className="dash-section">
-          <div className="dash-section-header">
-            <h2 className="dash-section-title">My Wishlists</h2>
-            <Link to="/wishlists" className="dash-section-link">
-              View all
-            </Link>
-          </div>
-          <div className="dash-actions">
-            {wishlists.map((wl) => (
-              <Link to="/wishlists" key={wl.id} className="dash-action">
-                <span className="dash-action-icon">❤️</span>
-                <span>
-                  {wl.name}{" "}
-                  <span style={{ color: "#717171", fontWeight: 400 }}>
-                    ({wl.propertyIds.length})
-                  </span>
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Recent Notifications ── */}
-      <div className="dash-section">
-        <div className="dash-section-header">
-          <h2 className="dash-section-title">Recent Notifications</h2>
-          <Link to="/account/notifications" className="dash-section-link">
-            View all
-          </Link>
-        </div>
-        {notifications.length > 0 ? (
-          <div className="dash-notif-list">
-            {notifications.map((n) => (
-              <NotificationItem key={n.id} notification={n} />
-            ))}
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">🔔</div>
-            <p className="dash-empty-text">No notifications.</p>
-          </div>
-        )}
-      </div>
-
       {/* ── Delete Confirmation Modal ── */}
       <ConfirmDialog
         isOpen={deleteModalOpen}
         title="Delete Requirement"
-        message={`Are you sure you want to delete "${requirementToDelete?.title || 'this requirement'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${requirementToDelete?.title || "this requirement"}"? This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleConfirmDelete}

@@ -91,19 +91,6 @@ const matchService = {
       throw error.response?.data || { message: 'Failed to create match' };
     }
   },
-
-  // Get match score between property and requirement
-  getScore: async (propertyId, requirementId) => {
-    try {
-      const response = await apiClient.post('/matches/score', {
-        propertyId,
-        requirementId,
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to calculate match score' };
-    }
-  },
 };
 
 export default matchService;

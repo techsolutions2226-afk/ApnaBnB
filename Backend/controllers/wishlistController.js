@@ -17,17 +17,17 @@ const ensureDefaultAndList = async (userId) => {
 };
 
 // GET /api/wishlists — all wishlists for the authenticated user
-const getMyWishlists = async (req, res) => {
+const getMyWishlists = async (req, res, next) => {
   try {
     const lists = await ensureDefaultAndList(req.user.id);
     res.status(200).json(lists);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/wishlists — create a new (non-default) wishlist
-const createWishlist = async (req, res) => {
+const createWishlist = async (req, res, next) => {
   const { name } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ message: 'Name is required.' });
@@ -38,12 +38,12 @@ const createWishlist = async (req, res) => {
     });
     res.status(201).json(wishlist);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // PUT /api/wishlists/:id — rename a wishlist (allowed even for default)
-const updateWishlist = async (req, res) => {
+const updateWishlist = async (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
   if (!name || !name.trim()) {
@@ -60,12 +60,12 @@ const updateWishlist = async (req, res) => {
     const wishlist = await prisma.wishlist.findUnique({ where: { id } });
     res.status(200).json(wishlist);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // DELETE /api/wishlists/:id — delete a wishlist (default cannot be deleted)
-const deleteWishlist = async (req, res) => {
+const deleteWishlist = async (req, res, next) => {
   const { id } = req.params;
   try {
     const wishlist = await prisma.wishlist.findFirst({ where: { id, userId: req.user.id } });
@@ -78,12 +78,12 @@ const deleteWishlist = async (req, res) => {
     await prisma.wishlist.delete({ where: { id } });
     res.status(200).json({ message: 'Wishlist deleted.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/wishlists/:id/properties — add a property to a wishlist
-const addProperty = async (req, res) => {
+const addProperty = async (req, res, next) => {
   const { id } = req.params;
   const { propertyId } = req.body;
   if (!propertyId) {
@@ -104,12 +104,12 @@ const addProperty = async (req, res) => {
     }
     res.status(200).json(wishlist);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // DELETE /api/wishlists/:id/properties/:propertyId — remove from one list
-const removeProperty = async (req, res) => {
+const removeProperty = async (req, res, next) => {
   const { id, propertyId } = req.params;
   try {
     const wishlist = await prisma.wishlist.findFirst({ where: { id, userId: req.user.id } });
@@ -122,12 +122,12 @@ const removeProperty = async (req, res) => {
     });
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // DELETE /api/wishlists/properties/:propertyId — remove from all the user's lists
-const removeFromAll = async (req, res) => {
+const removeFromAll = async (req, res, next) => {
   const { propertyId } = req.params;
   try {
     const lists = await prisma.wishlist.findMany({ where: { userId: req.user.id } });
@@ -144,7 +144,7 @@ const removeFromAll = async (req, res) => {
     const updated = await ensureDefaultAndList(req.user.id);
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

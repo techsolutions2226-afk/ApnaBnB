@@ -11,6 +11,7 @@ import { useAuth } from "../context/AuthContext";
 import useViewRole from "../hooks/useViewRole";
 import { useCreateProperty } from "../hooks/useProperties";
 import { useCreateListing } from "../hooks/useListings";
+import propertyService from "../services/propertyService";
 import { clearListingDraft } from "../utils/listingDraft";
 import { FiArrowLeft, FiPlusCircle, FiSave } from "react-icons/fi";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
@@ -70,12 +71,16 @@ const CreateListing = () => {
         const createdProperty = await createProperty(propertyData);
         console.log("Created property:", createdProperty);
 
-        // Then create the listing
-        const listingData = {
-          propertyId: createdProperty._id,
-        };
-
-        await createListing(listingData);
+        // Then create the listing. If this step fails, roll back the orphaned
+        // property so a half-created listing never pollutes the marketplace.
+        try {
+          await createListing({
+            propertyId: createdProperty._id,
+          });
+        } catch (err) {
+          propertyService.delete(createdProperty._id).catch(() => {});
+          throw err;
+        }
         console.log("Created listing for property:", createdProperty._id);
 
         // Listing committed to the server — drop the local draft.
@@ -91,7 +96,7 @@ const CreateListing = () => {
         toast.error(errorMessage);
       }
     },
-    [currentUser, navigate, createProperty, createListing, propError, listError]
+    [currentUser, navigate, createProperty, createListing, propError, listError, viewRole]
   );
 
   return (

@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const { geocodeAddress } = require('../utils/geocode');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
+const { parsePagination, paginated } = require('../utils/pagination');
 const {
   calculateMatchScore,
   determineMatchType,
@@ -76,8 +77,7 @@ const generateMatchesForProperty = async (property, userId) => {
       include: { requiredBy: { select: { id: true, role: true } } },
     });
 
-    const matches = [];
-    const aiEntries = [];
+    const candidates = [];
     for (const requirement of requirements) {
       if (!isMatchCandidate(property, requirement)) continue;
 
@@ -89,24 +89,38 @@ const generateMatchesForProperty = async (property, userId) => {
       );
       if (!matchType) continue;
 
-      const existingMatch = await prisma.match.findFirst({
-        where: { propertyId: property.id, requirementId: requirement.id },
-      });
-      if (existingMatch) continue;
+      candidates.push({ requirement, matchType });
+    }
 
-      const score = calculateMatchScore(property, requirement);
-      const match = await prisma.match.create({
-        data: {
-          propertyId: property.id,
-          requirementId: requirement.id,
-          initiatorId: userId,
-          score,
-          type: matchType,
-          status: 'pending',
-        },
-      });
-      matches.push(match);
-      aiEntries.push({ matchId: match.id, ruleScore: score });
+    // Dedupe + create each candidate in parallel. Same matchmaking decision
+    // (same set, scoring, and order) — the I/O just isn't serialized anymore.
+    const matches = [];
+    const aiEntries = [];
+    const produced = await Promise.all(
+      candidates.map(async ({ requirement, matchType }) => {
+        const existingMatch = await prisma.match.findFirst({
+          where: { propertyId: property.id, requirementId: requirement.id },
+        });
+        if (existingMatch) return null;
+
+        const score = calculateMatchScore(property, requirement);
+        const match = await prisma.match.create({
+          data: {
+            propertyId: property.id,
+            requirementId: requirement.id,
+            initiatorId: userId,
+            score,
+            type: matchType,
+            status: 'pending',
+          },
+        });
+        return { match, score };
+      }),
+    );
+    for (const entry of produced) {
+      if (!entry) continue;
+      matches.push(entry.match);
+      aiEntries.push({ matchId: entry.match.id, ruleScore: entry.score });
     }
     // Kick off AI semantic scoring in the background (non-blocking).
     enrichMatchesWithAI(aiEntries);
@@ -118,7 +132,7 @@ const generateMatchesForProperty = async (property, userId) => {
 };
 
 // Create a new property
-const createProperty = async (req, res) => {
+const createProperty = async (req, res, next) => {
   const { title, location, price, propertyType } = req.body;
 
   // Validation
@@ -165,35 +179,55 @@ const createProperty = async (req, res) => {
 
     res.status(201).json(property);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all properties (with filters)
-const getProperties = async (req, res) => {
-  const { city, price, propertyType } = req.query;
+const getProperties = async (req, res, next) => {
+  const { city, price, propertyType, status } = req.query;
   const where = {};
+
+  // Only published statuses show up by default. An explicit `status` query
+  // still overrides (used internally/for debugging); without one, admin
+  // pending/rejected listings must never appear in public results.
+  where.status = status || { notIn: ['pending', 'rejected'] };
 
   if (city) where.location = { path: ['city'], equals: city };
   if (price) {
-    const [min, max] = price.split('-');
-    where.price = { gte: Number(min), lte: Number(max) };
+    // Accepts "1000", "1000-5000", or "-5000". Invalid/empty segments are
+    // skipped instead of producing a NaN range that matches nothing.
+    const [rawMin, rawMax] = String(price).split('-');
+    const min = Number(rawMin);
+    const max = rawMax !== undefined ? Number(rawMax) : undefined;
+    if (!Number.isNaN(min)) where.price = { ...where.price, gte: min };
+    if (!Number.isNaN(max)) where.price = { ...where.price, lte: max };
   }
   if (propertyType) where.propertyType = propertyType;
 
   try {
-    const properties = await prisma.property.findMany({
-      where,
-      include: { listedBy: listedBySelect },
-    });
+    const pag = parsePagination(req);
+    const args = { where, include: { listedBy: listedBySelect } };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    const properties = await prisma.property.findMany(args);
+
+    if (pag.enabled) {
+      const total = await prisma.property.count({ where });
+      return res.status(200).json(paginated(properties, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(properties);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Update a property
-const updateProperty = async (req, res) => {
+const updateProperty = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -211,12 +245,12 @@ const updateProperty = async (req, res) => {
     const property = await prisma.property.findUnique({ where: { id } });
     res.status(200).json(property);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete a property (listings/matches/trips cascade via FK onDelete)
-const deleteProperty = async (req, res) => {
+const deleteProperty = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -229,12 +263,12 @@ const deleteProperty = async (req, res) => {
 
     res.status(200).json({ message: 'Property and listing deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get single property by ID
-const getPropertyById = async (req, res) => {
+const getPropertyById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -247,12 +281,12 @@ const getPropertyById = async (req, res) => {
     }
     res.status(200).json(property);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Search properties with text search
-const searchProperties = async (req, res) => {
+const searchProperties = async (req, res, next) => {
   const { q, city, area, minPrice, maxPrice, propertyType, bedrooms, bathrooms } = req.query;
   const where = {};
 
@@ -284,13 +318,23 @@ const searchProperties = async (req, res) => {
   if (bathrooms) where.bathrooms = { gte: Number(bathrooms) };
 
   try {
-    const properties = await prisma.property.findMany({
-      where,
-      include: { listedBy: listedBySelect },
-    });
+    const pag = parsePagination(req);
+    const args = { where, include: { listedBy: listedBySelect } };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    const properties = await prisma.property.findMany(args);
+
+    if (pag.enabled) {
+      const total = await prisma.property.count({ where });
+      return res.status(200).json(paginated(properties, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(properties);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

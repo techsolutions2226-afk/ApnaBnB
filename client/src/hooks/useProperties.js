@@ -20,11 +20,17 @@ export const useProperties = (filters = {}, initialFetch = true) => {
     }
   };
 
+  // Key on the serialized filters (not the object identity — callers pass
+  // fresh `{}` literals every render) so the list refetches when the actual
+  // filter VALUES change, without looping on unrelated re-renders.
+  const filtersKey = JSON.stringify(filters);
+
   useEffect(() => {
     if (initialFetch) {
       fetchProperties();
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]);
 
   return { properties, isLoading, error, refetch: fetchProperties };
 };

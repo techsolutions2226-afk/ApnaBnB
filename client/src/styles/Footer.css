@@ -1,290 +1,252 @@
 /* ===================================================
-   Footer.css — Airbnb-style Footer
+   Footer.css — dark professional real-estate footer
+   Charcoal background, light-gray text, 4 columns.
    =================================================== */
 
 .footer {
   width: 100%;
-  background-color: #f7f7f7;
-  border-top: 1px solid #ebebeb;
+  background-color: #16181b;
+  color: #c7cbd1;
   font-family: "Circular", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: #222222;
+  margin-top: 0;
 }
 
-/* ── Inspiration Section ── */
-.footer-inspiration {
-  padding: 48px 80px 32px;
+/* Centered max-width container */
+.footer-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  box-sizing: border-box;
 }
 
-.footer-heading {
-  font-size: 22px;
-  font-weight: 600;
-  color: #222222;
-  margin: 0 0 24px;
-}
-
-/* ── Category Tabs ── */
-.footer-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  border-bottom: 1px solid #dddddd;
-}
-
-.footer-tab {
-  background: none;
-  border: none;
-  padding: 12px 16px 12px 0;
-  font-size: 14px;
-  color: #717171;
-  cursor: pointer;
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition:
-    color 0.2s,
-    border-color 0.2s;
-}
-
-.footer-tab:hover {
-  color: #222222;
-}
-
-.footer-tab--active {
-  color: #222222;
-  font-weight: 600;
-  border-bottom: 2px solid #222222;
-}
-
-.footer-tab-line {
-  height: 1px;
-  background: #dddddd;
-  margin-bottom: 28px;
-  display: none; /* handled by border-bottom on tabs */
-}
-
-/* ── Destination Grid ── */
-.dest-grid {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.dest-row {
+/* ── Main grid ── */
+.footer-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr 1fr 1.2fr 1.3fr;
+  gap: 48px;
+  padding: 56px 0 48px;
 }
 
-.dest-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dest-city {
-  font-size: 14px;
-  font-weight: 600;
-  color: #222222;
-  text-decoration: none;
-  transition: text-decoration 0.15s;
-}
-.dest-city:hover {
-  text-decoration: underline;
-}
-
-.dest-type {
-  font-size: 13px;
-  color: #717171;
-}
-
-/* Show more button */
-.show-more-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 24px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: #222222;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  transition: opacity 0.15s;
-}
-.show-more-btn:hover {
-  opacity: 0.7;
-}
-
-/* ── Divider ── */
-.footer-divider {
-  height: 1px;
-  background: #dddddd;
-  margin: 0 80px;
-}
-
-/* ── Links Section ── */
-.footer-links {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  padding: 40px 80px;
-}
-
+/* ── Columns ── */
 .footer-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.footer-col-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f5f6f8;
+  margin: 0 0 18px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.footer-col-links {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.footer-col-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px;
-  text-transform: none;
-}
-
 .footer-link {
   font-size: 14px;
-  color: #222222;
+  color: #c7cbd1;
   text-decoration: none;
-  transition: text-decoration 0.15s;
   width: fit-content;
+  line-height: 1.4;
+  transition: color 0.2s ease;
 }
 .footer-link:hover {
+  color: #ffffff;
   text-decoration: underline;
 }
 
-/* ── Bottom Bar ── */
-.footer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 20px 80px 28px;
-  font-size: 14px;
-  color: #222222;
+/* Inline links (phone / email) inherit the contact row layout. */
+.footer-link--inline {
+  line-height: 1.4;
 }
 
-.footer-bottom-left {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.footer-dot {
-  color: #717171;
-}
-
-.footer-bottom-link {
-  color: #222222;
-  text-decoration: none;
-  transition: text-decoration 0.15s;
-}
-.footer-bottom-link:hover {
-  text-decoration: underline;
-}
-
-/* Privacy toggle pill (decorative) */
-.privacy-toggle {
-  width: 34px;
-  height: 18px;
-  background: #0070f3;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  padding: 2px;
-  cursor: pointer;
-}
-.privacy-toggle-inner {
-  width: 14px;
-  height: 14px;
-  background: #ffffff;
-  border-radius: 50%;
-  margin-left: auto;
-}
-
-/* Right side: locale + socials */
-.footer-bottom-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.footer-locale-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: #222222;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-.footer-locale-btn:hover {
-  background: #ebebeb;
-}
-
-.footer-socials {
-  display: flex;
-  align-items: center;
+/* ── Contact list ── */
+.footer-contact-list {
   gap: 14px;
 }
 
-.social-link {
-  color: #222222;
-  text-decoration: none;
-  transition: opacity 0.15s;
+.footer-contact {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c7cbd1;
+}
+
+.footer-contact-icon {
+  color: #8b8f96;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.footer-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.footer-hours-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.footer-hours-day {
+  color: #9aa0a8;
+}
+
+.footer-hours-time {
+  color: #e8eaed;
+  font-weight: 600;
+}
+
+/* ── Brand column ── */
+.footer-brand-col {
+  align-items: flex-start;
+}
+
+.footer-brand {
+  display: inline-flex;
+  margin-bottom: 14px;
+  filter: brightness(0) invert(1);
+  opacity: 0.95;
+}
+
+.footer-brand-tag {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #9aa0a8;
+  margin: 0 0 22px;
+  max-width: 280px;
+}
+
+.footer-connect-title {
+  margin-bottom: 14px;
+}
+
+/* ── Social icons ── */
+.footer-socials {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
-.social-link:hover {
-  opacity: 0.6;
+
+.footer-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #23262b;
+  color: #d6d9de;
+  text-decoration: none;
+  border: 1px solid #2f333a;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+.footer-social:hover {
+  background: #ff385c;
+  color: #ffffff;
+  border-color: #ff385c;
+  transform: translateY(-2px);
+}
+
+/* ── Bottom row ── */
+.footer-bottom {
+  border-top: 1px solid #2a2d33;
+  background-color: #131518;
+}
+
+.footer-bottom-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 40px;
+}
+
+.footer-bottom-text {
+  font-size: 13.5px;
+  color: #9aa0a8;
+}
+
+/* TOP button */
+.footer-top-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #3a3f47;
+  border-radius: 6px;
+  background: transparent;
+  color: #d6d9de;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.25s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+.footer-top-btn--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.footer-top-btn:hover {
+  background: #ff385c;
+  color: #ffffff;
+  border-color: #ff385c;
 }
 
 /* ── Responsive ── */
 @media (max-width: 1024px) {
-  .footer-inspiration,
-  .footer-links,
-  .footer-bottom {
-    padding-left: 40px;
-    padding-right: 40px;
-  }
-  .footer-divider {
-    margin: 0 40px;
-  }
-  .dest-row {
-    grid-template-columns: repeat(4, 1fr);
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
   }
 }
 
 @media (max-width: 768px) {
-  .footer-inspiration,
-  .footer-links,
-  .footer-bottom {
+  .footer-container,
+  .footer-bottom-inner {
     padding-left: 24px;
     padding-right: 24px;
   }
-  .footer-divider {
-    margin: 0 24px;
-  }
-  .dest-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .footer-links {
+  .footer-grid {
     grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 0 32px;
   }
-  .footer-bottom {
+  .footer-col-title {
+    margin-bottom: 14px;
+  }
+  .footer-bottom-inner {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    padding-top: 18px;
+    padding-bottom: 18px;
   }
 }

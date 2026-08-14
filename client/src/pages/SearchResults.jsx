@@ -226,7 +226,7 @@ const SearchResults = () => {
     }
 
     return result;
-  }, [dest, filters, sortBy, properties]);
+  }, [dest, filters, sortBy, properties, purpose, activeType]);
 
   /* Pagination */
   const totalPages = Math.ceil(filteredProperties.length / PER_PAGE);

@@ -28,11 +28,10 @@ body.hide-navbar-search .nav-mobile-pill {
    overflow/scrollbar (100vw minus nothing overlapping). */
 .abn-hero {
   position: relative;
-  border-radius: 22px;
   overflow: hidden;
   background-size: cover;
   background-position: center;
-  min-height: 460px;
+  min-height: 580px;
   display: flex;
   align-items: center;
   justify-content: center;

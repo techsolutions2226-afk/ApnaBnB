@@ -1,10 +1,11 @@
 const prisma = require('../db/prisma');
 const { sendListingCreatedEmail } = require('../utils/mailer');
+const { parsePagination, paginated } = require('../utils/pagination');
 
 const ownerSelect = { select: { id: true, name: true, email: true, role: true } };
 
 // Create Listing
-const createListing = async (req, res) => {
+const createListing = async (req, res, next) => {
   const { propertyId } = req.body;
 
   if (!propertyId) {
@@ -61,12 +62,12 @@ const createListing = async (req, res) => {
 
     res.status(201).json(listing);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get All Listings (with filters)
-const getListings = async (req, res) => {
+const getListings = async (req, res, next) => {
   const { status, featured } = req.query;
   const where = {};
 
@@ -74,18 +75,28 @@ const getListings = async (req, res) => {
   if (featured === 'true') where.status = 'featured';
 
   try {
-    const listings = await prisma.listing.findMany({
-      where,
-      include: { property: true, owner: ownerSelect },
-    });
+    const pag = parsePagination(req);
+    const args = { where, include: { property: true, owner: ownerSelect } };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    const listings = await prisma.listing.findMany(args);
+
+    if (pag.enabled) {
+      const total = await prisma.listing.count({ where });
+      return res.status(200).json(paginated(listings, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(listings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Update Listing
-const updateListing = async (req, res) => {
+const updateListing = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -109,12 +120,12 @@ const updateListing = async (req, res) => {
     });
     res.status(200).json(listing);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get Listings for a specific user
-const getUserListings = async (req, res) => {
+const getUserListings = async (req, res, next) => {
   const { userId } = req.params;
 
   try {
@@ -124,12 +135,12 @@ const getUserListings = async (req, res) => {
     });
     res.status(200).json(listings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete Listing — also removes the underlying property (cascades matches etc.)
-const deleteListing = async (req, res) => {
+const deleteListing = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -148,12 +159,12 @@ const deleteListing = async (req, res) => {
 
     res.status(200).json({ message: 'Listing and property deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get single listing by ID
-const getListingById = async (req, res) => {
+const getListingById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -173,7 +184,7 @@ const getListingById = async (req, res) => {
     }
     res.status(200).json(listing);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

@@ -209,7 +209,7 @@ const DealerDashboard = () => {
                   const property = listing.propertyDetails;
                   return (
                     <tr key={listing._id}>
-                      <td>
+                      <td data-label="Property">
                         <div className="dash-table-title">
                           {property?.title || listing.propertyId}
                         </div>
@@ -224,13 +224,13 @@ const DealerDashboard = () => {
                           )}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <StatusBadge status={listing.status} prefix="dash-badge" />
                       </td>
-                      <td>{(listing.views || 0).toLocaleString()}</td>
-                      <td>{listing.inquiries || 0}</td>
-                      <td>{new Date(listing.createdAt).toLocaleDateString()}</td>
-                      <td>
+                      <td data-label="Views">{(listing.views || 0).toLocaleString()}</td>
+                      <td data-label="Inquiries">{listing.inquiries || 0}</td>
+                      <td data-label="Listed">{new Date(listing.createdAt).toLocaleDateString()}</td>
+                      <td data-label="Actions">
                         <div className="dash-actions-cell">
                           <button
                             className="dash-action-btn dash-action-btn--view"
@@ -298,23 +298,23 @@ const DealerDashboard = () => {
               </thead>
               <tbody>
                 {requirements.map((req) => (
-                  <tr key={req.id}>
-                    <td>
-                      <div className="dash-table-title">{req.title}</div>
-                      <div className="dash-table-sub">
-                        {req.area} &middot; {req.size}
-                      </div>
-                    </td>
-                    <td>{req.city}</td>
-                    <td>
-                      {formatPrice(req.budgetMin)} – {formatPrice(req.budgetMax)}
-                    </td>
-                    <td>{req.propertyType}</td>
-                    <td>{req.urgency}</td>
-                    <td>
-                      <StatusBadge status={req.status} prefix="dash-badge" />
-                    </td>
-                  </tr>
+                    <tr key={req.id}>
+                      <td data-label="Requirement">
+                        <div className="dash-table-title">{req.title}</div>
+                        <div className="dash-table-sub">
+                          {req.area} &middot; {req.size}
+                        </div>
+                      </td>
+                      <td data-label="City">{req.city}</td>
+                      <td data-label="Budget">
+                        {formatPrice(req.budgetMin)} – {formatPrice(req.budgetMax)}
+                      </td>
+                      <td data-label="Type">{req.propertyType}</td>
+                      <td data-label="Urgency">{req.urgency}</td>
+                      <td data-label="Status">
+                        <StatusBadge status={req.status} prefix="dash-badge" />
+                      </td>
+                    </tr>
                 ))}
               </tbody>
             </table>
@@ -355,7 +355,7 @@ const DealerDashboard = () => {
                   const property = properties?.find((p) => p._id === deal.propertyId);
                   return (
                     <tr key={deal.id}>
-                      <td>
+                      <td data-label="Property">
                         <div className="dash-table-title">
                           {property?.title || deal.propertyId}
                         </div>
@@ -363,17 +363,17 @@ const DealerDashboard = () => {
                           {formatCity(property?.location, property?.city)}
                         </div>
                       </td>
-                      <td>{deal.type.replace(/-/g, " \u2192 ")}</td>
-                      <td>PKR {formatPrice(deal.agreedPrice)}</td>
-                      <td>
+                      <td data-label="Type">{deal.type.replace(/-/g, " \u2192 ")}</td>
+                      <td data-label="Agreed Price">PKR {formatPrice(deal.agreedPrice)}</td>
+                      <td data-label="Commission">
                         {deal.commission > 0
                           ? `PKR ${formatPrice(deal.commission)}`
                           : "\u2014"}
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <StatusBadge status={deal.status} prefix="dash-badge" />
                       </td>
-                      <td>{deal.startedAt}</td>
+                      <td data-label="Started">{deal.startedAt}</td>
                     </tr>
                   );
                 })}

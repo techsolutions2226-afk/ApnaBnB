@@ -282,7 +282,7 @@ const Navbar = () => {
                   <img src={currentUser.avatar} alt="" className="menu-avatar" />
                 ) : (
                   <span className="menu-avatar-fallback">
-                    {currentUser.firstName?.[0] || "U"}
+                    {currentUser.name?.[0] || "U"}
                   </span>
                 )
               ) : (

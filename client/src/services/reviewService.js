@@ -38,7 +38,11 @@ const reviewService = {
   // Get single review
   getById: async (reviewId) => {
     try {
-      const response = await apiClient.get(`/reviews/${reviewId}`);
+      // /reviews/:targetId requires a targetType — reviews are polymorphic,
+      // so default to 'property' unless the caller knows otherwise.
+      const response = await apiClient.get(`/reviews/${reviewId}`, {
+        params: { targetType: 'property' },
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch review' };
@@ -78,8 +82,8 @@ const reviewService = {
   // Get average rating for target
   getAverageRating: async (targetId, targetType = 'property') => {
     try {
-      const response = await apiClient.get('/reviews/rating/average', {
-        params: { targetId, targetType },
+      const response = await apiClient.get(`/reviews/${targetId}/average`, {
+        params: { targetType },
       });
       return response.data;
     } catch (error) {

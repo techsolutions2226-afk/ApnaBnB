@@ -4,8 +4,10 @@ import authService from "../services/authService";
 import userService from "../services/userService";
 import { disconnectSocket } from "../api/socket";
 
-/* How long the user can be idle before we log them out automatically. */
-const IDLE_LOGOUT_MS = 2 * 60 * 1000; // 2 minutes
+/* How long the user can be idle before we log them out automatically.
+   Default 30 minutes; override per-deploy with VITE_IDLE_LOGOUT_MINUTES. */
+const IDLE_LOGOUT_MS =
+  (Number(import.meta.env.VITE_IDLE_LOGOUT_MINUTES) || 30) * 60 * 1000;
 
 const AuthContext = createContext(null);
 

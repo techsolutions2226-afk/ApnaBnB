@@ -21,11 +21,7 @@ const { Server } = require('socket.io');
 const prisma = require('../db/prisma');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const { withIds } = require('../utils/serializeIds');
-
-// Same PII regex the REST controller uses — we re-run it on socket messages
-// so going through WebSocket can't bypass the filter.
-const personalInfoRegex =
-  /(\d{10,}|\+[0-9]{1,4}[- .]?\d{6,}|\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6}|(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9._-]+\.[a-zA-Z]{2,6})/g;
+const { filterPersonalInfo } = require('../utils/personalInfo');
 
 let io = null;
 
@@ -113,9 +109,7 @@ const initSockets = (httpServer) => {
         }
 
         // PII filter before encryption (so the filter sees plaintext).
-        const sanitized = hasContent
-          ? String(content).replace(personalInfoRegex, '[filtered]')
-          : '';
+        const sanitized = hasContent ? filterPersonalInfo(content) : '';
 
         // Persist — content is encrypted with AES-256-GCM before it hits the DB.
         const populated = await prisma.message.create({

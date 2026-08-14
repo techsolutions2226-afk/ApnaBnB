@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const { calculateMatchScore } = require('../utils/matchScore');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
+const { parsePagination, paginated } = require('../utils/pagination');
 
 // Shared populate shape for match records.
 const matchInclude = {
@@ -26,7 +27,7 @@ const involvedWhere = (userId) => ({
 });
 
 // Calculate matches for a property against requirements (preview, no persist)
-const matchPropertyToRequirements = async (req, res) => {
+const matchPropertyToRequirements = async (req, res, next) => {
   const { propertyId } = req.body;
 
   if (!propertyId) {
@@ -53,12 +54,12 @@ const matchPropertyToRequirements = async (req, res) => {
 
     res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Calculate matches for a requirement against properties (preview, no persist)
-const matchRequirementsToProperties = async (req, res) => {
+const matchRequirementsToProperties = async (req, res, next) => {
   const { requirementId } = req.body;
 
   if (!requirementId) {
@@ -85,12 +86,12 @@ const matchRequirementsToProperties = async (req, res) => {
 
     res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Create a new match
-const createMatch = async (req, res) => {
+const createMatch = async (req, res, next) => {
   const { propertyId, requirementId, type, notes } = req.body;
 
   if (!propertyId || !requirementId || !type) {
@@ -135,26 +136,39 @@ const createMatch = async (req, res) => {
 
     res.status(201).json(match);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all matches involving the current user
-const getMatches = async (req, res) => {
+const getMatches = async (req, res, next) => {
   try {
-    const matches = await prisma.match.findMany({
+    const pag = parsePagination(req);
+    const args = {
       where: involvedWhere(req.user.id),
       include: matchInclude,
       orderBy: { createdAt: 'desc' },
-    });
+    };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    const matches = await prisma.match.findMany(args);
+
+    if (pag.enabled) {
+      const total = await prisma.match.count({ where: involvedWhere(req.user.id) });
+      return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get single match by ID
-const getMatchById = async (req, res) => {
+const getMatchById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -169,21 +183,36 @@ const getMatchById = async (req, res) => {
 
     res.status(200).json(match);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Matches of a given type involving the current user, sorted by score desc.
-const getMatchesByType = (type) => async (req, res) => {
+const getMatchesByType = (type) => async (req, res, next) => {
   try {
-    const matches = await prisma.match.findMany({
+    const pag = parsePagination(req);
+    const args = {
       where: { type, ...involvedWhere(req.user.id) },
       include: matchInclude,
       orderBy: { score: 'desc' },
-    });
+    };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    const matches = await prisma.match.findMany(args);
+
+    if (pag.enabled) {
+      const total = await prisma.match.count({
+        where: { type, ...involvedWhere(req.user.id) },
+      });
+      return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -192,16 +221,29 @@ const getDealerBuyerMatches = getMatchesByType('dealer-buyer');
 const getDealerDealerMatches = getMatchesByType('dealer-dealer');
 
 // Every match involving the current user, newest first. Used by dashboards.
-const getMyMatches = async (req, res) => {
+const getMyMatches = async (req, res, next) => {
   try {
-    const matches = await prisma.match.findMany({
+    const pag = parsePagination(req);
+    const args = {
       where: involvedWhere(req.user.id),
       include: matchInclude,
       orderBy: { createdAt: 'desc' },
-    });
+    };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    const matches = await prisma.match.findMany(args);
+
+    if (pag.enabled) {
+      const total = await prisma.match.count({ where: involvedWhere(req.user.id) });
+      return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(matches);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -235,7 +277,7 @@ const matchParties = (match) => ({
 
 // Update match status. Only the two involved parties may change it. Accepting
 // opens the private Deal Room (a conversation linked to the match).
-const updateMatchStatus = async (req, res) => {
+const updateMatchStatus = async (req, res, next) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -279,13 +321,13 @@ const updateMatchStatus = async (req, res) => {
     });
     res.status(200).json(match);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // GET /api/matches/:id/contact — the OTHER party's contact details, revealed
 // only once the match is accepted (or closed) and only to the two parties.
-const getMatchContact = async (req, res) => {
+const getMatchContact = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -341,12 +383,12 @@ const getMatchContact = async (req, res) => {
 
     res.status(200).json({ revealed: true, contact });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete match
-const deleteMatch = async (req, res) => {
+const deleteMatch = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -360,7 +402,7 @@ const deleteMatch = async (req, res) => {
 
     res.status(200).json({ message: 'Match deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

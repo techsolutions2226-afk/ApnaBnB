@@ -176,7 +176,7 @@ const SellerDashboard = () => {
                   const property = listing.propertyDetails;
                   return (
                     <tr key={listing._id}>
-                      <td>
+                      <td data-label="Property">
                         <div className="dash-table-title">
                           {property?.title || listing.propertyId}
                         </div>
@@ -191,13 +191,13 @@ const SellerDashboard = () => {
                           )}
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Status">
                         <StatusBadge status={listing.status} prefix="dash-badge" />
                       </td>
-                      <td>{(listing.views || 0).toLocaleString()}</td>
-                      <td>{listing.inquiries || 0}</td>
-                      <td>{new Date(listing.createdAt).toLocaleDateString()}</td>
-                      <td>
+                      <td data-label="Views">{(listing.views || 0).toLocaleString()}</td>
+                      <td data-label="Inquiries">{listing.inquiries || 0}</td>
+                      <td data-label="Listed">{new Date(listing.createdAt).toLocaleDateString()}</td>
+                      <td data-label="Actions">
                         <div className="dash-actions-cell">
                           <button
                             className="dash-action-btn dash-action-btn--view"
@@ -269,7 +269,7 @@ const SellerDashboard = () => {
                   const property = properties?.find((p) => p._id === deal.propertyId);
                   return (
                     <tr key={deal.id}>
-                      <td>
+                      <td data-label="Property">
                         <div className="dash-table-title">
                           {property?.title || deal.propertyId}
                         </div>
@@ -277,12 +277,12 @@ const SellerDashboard = () => {
                           {formatCity(property?.location, property?.city)}
                         </div>
                       </td>
-                      <td>{deal.type.replace(/-/g, " \u2192 ")}</td>
-                      <td>PKR {formatPrice(deal.agreedPrice)}</td>
-                      <td>
+                      <td data-label="Type">{deal.type.replace(/-/g, " \u2192 ")}</td>
+                      <td data-label="Price">PKR {formatPrice(deal.agreedPrice)}</td>
+                      <td data-label="Status">
                         <StatusBadge status={deal.status} prefix="dash-badge" />
                       </td>
-                      <td>{deal.startedAt}</td>
+                      <td data-label="Started">{deal.startedAt}</td>
                     </tr>
                   );
                 })}

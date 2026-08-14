@@ -1,5 +1,6 @@
 const prisma = require('../db/prisma');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
+const { parsePagination, paginated } = require('../utils/pagination');
 const {
   calculateMatchScore,
   determineMatchType,
@@ -45,8 +46,7 @@ const generateMatchesForRequirement = async (requirement, userId) => {
       include: { listedBy: { select: { id: true, role: true } } },
     });
 
-    const matches = [];
-    const aiEntries = [];
+    const candidates = [];
     for (const property of properties) {
       if (!isMatchCandidate(property, requirement)) continue;
 
@@ -57,24 +57,38 @@ const generateMatchesForRequirement = async (requirement, userId) => {
       );
       if (!matchType) continue;
 
-      const existingMatch = await prisma.match.findFirst({
-        where: { propertyId: property.id, requirementId: requirement.id },
-      });
-      if (existingMatch) continue;
+      candidates.push({ property, matchType });
+    }
 
-      const score = calculateMatchScore(property, requirement);
-      const match = await prisma.match.create({
-        data: {
-          propertyId: property.id,
-          requirementId: requirement.id,
-          initiatorId: userId,
-          score,
-          type: matchType,
-          status: 'pending',
-        },
-      });
-      matches.push(match);
-      aiEntries.push({ matchId: match.id, ruleScore: score });
+    // Dedupe + create each candidate in parallel. Same matchmaking decision
+    // (same set, scoring, and order) — the I/O just isn't serialized anymore.
+    const matches = [];
+    const aiEntries = [];
+    const produced = await Promise.all(
+      candidates.map(async ({ property, matchType }) => {
+        const existingMatch = await prisma.match.findFirst({
+          where: { propertyId: property.id, requirementId: requirement.id },
+        });
+        if (existingMatch) return null;
+
+        const score = calculateMatchScore(property, requirement);
+        const match = await prisma.match.create({
+          data: {
+            propertyId: property.id,
+            requirementId: requirement.id,
+            initiatorId: userId,
+            score,
+            type: matchType,
+            status: 'pending',
+          },
+        });
+        return { match, score };
+      }),
+    );
+    for (const entry of produced) {
+      if (!entry) continue;
+      matches.push(entry.match);
+      aiEntries.push({ matchId: entry.match.id, ruleScore: entry.score });
     }
     // Kick off AI semantic scoring in the background (non-blocking).
     enrichMatchesWithAI(aiEntries);
@@ -86,7 +100,7 @@ const generateMatchesForRequirement = async (requirement, userId) => {
 };
 
 // Create Requirement
-const createRequirement = async (req, res) => {
+const createRequirement = async (req, res, next) => {
   const { title, location, budget, propertyType, size, bedrooms, bathrooms, notes, urgency } = req.body;
 
   // Validation
@@ -119,12 +133,12 @@ const createRequirement = async (req, res) => {
 
     res.status(201).json(requirement);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get Requirements (with filters)
-const getRequirements = async (req, res) => {
+const getRequirements = async (req, res, next) => {
   const { city, propertyType, budget } = req.query;
   const where = {};
 
@@ -132,27 +146,42 @@ const getRequirements = async (req, res) => {
   if (propertyType) where.propertyType = propertyType;
 
   try {
-    let requirements = await prisma.requirement.findMany({
-      where,
-      include: { requiredBy: requiredBySelect },
-    });
+    // DB-level pagination when `page`/`limit` are passed; otherwise the flat
+    // array the UI expects. The post-query budget JS filter below then runs on
+    // that result set (legacy callers never combine budget + page).
+    const pag = parsePagination(req);
+    const args = { where, include: { requiredBy: requiredBySelect } };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
 
-    // Budget filter applied in JS (budget is a JSON column).
+    let requirements = await prisma.requirement.findMany(args);
+
+    // Budget filter applied in JS (budget is a JSON column). Skip NaN pieces.
     if (budget) {
-      const [min, max] = budget.split('-').map(Number);
+      const [rawMin, rawMax] = budget.split('-');
+      const min = Number(rawMin);
+      const max = rawMax !== undefined ? Number(rawMax) : Infinity;
       requirements = requirements.filter(
-        (r) => (r.budget?.min ?? 0) >= min && (r.budget?.max ?? Infinity) <= max,
+        (r) => (!Number.isNaN(min) ? (r.budget?.min ?? 0) >= min : true) &&
+               (!Number.isNaN(max) ? (r.budget?.max ?? Infinity) <= max : true),
       );
+    }
+
+    if (pag.enabled) {
+      const total = await prisma.requirement.count({ where });
+      return res.status(200).json(paginated(requirements, total, pag.page, pag.limit));
     }
 
     res.status(200).json(requirements);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Update Requirement
-const updateRequirement = async (req, res) => {
+const updateRequirement = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -181,12 +210,12 @@ const updateRequirement = async (req, res) => {
     const requirement = await prisma.requirement.findUnique({ where: { id } });
     res.status(200).json(requirement);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get Requirement by ID
-const getRequirementById = async (req, res) => {
+const getRequirementById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -199,12 +228,12 @@ const getRequirementById = async (req, res) => {
     }
     res.status(200).json(requirement);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get Requirements for a specific user
-const getUserRequirements = async (req, res) => {
+const getUserRequirements = async (req, res, next) => {
   const { userId } = req.params;
 
   try {
@@ -214,12 +243,12 @@ const getUserRequirements = async (req, res) => {
     });
     res.status(200).json(requirements);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete Requirement (matches cascade via FK onDelete)
-const deleteRequirement = async (req, res) => {
+const deleteRequirement = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -232,12 +261,12 @@ const deleteRequirement = async (req, res) => {
 
     res.status(200).json({ message: 'Requirement deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Search requirements with filters
-const searchRequirements = async (req, res) => {
+const searchRequirements = async (req, res, next) => {
   const { q, city, area, minBudget, maxBudget, propertyType, bedrooms, bathrooms } = req.query;
   const where = {};
 
@@ -258,10 +287,14 @@ const searchRequirements = async (req, res) => {
   if (bathrooms) where.bathrooms = { gte: Number(bathrooms) };
 
   try {
-    let requirements = await prisma.requirement.findMany({
-      where,
-      include: { requiredBy: requiredBySelect },
-    });
+    const pag = parsePagination(req);
+    const args = { where, include: { requiredBy: requiredBySelect } };
+    if (pag.enabled) {
+      args.skip = pag.skip;
+      args.take = pag.take;
+    }
+
+    let requirements = await prisma.requirement.findMany(args);
 
     // Budget overlap filter applied in JS (budget is JSON).
     if (minBudget || maxBudget) {
@@ -274,9 +307,14 @@ const searchRequirements = async (req, res) => {
       });
     }
 
+    if (pag.enabled) {
+      const total = await prisma.requirement.count({ where });
+      return res.status(200).json(paginated(requirements, total, pag.page, pag.limit));
+    }
+
     res.status(200).json(requirements);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

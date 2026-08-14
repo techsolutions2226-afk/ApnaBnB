@@ -1,23 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  MapContainer,
+  GoogleMap,
   Marker,
-  Popup,
-  TileLayer,
-} from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+  InfoWindow,
+  useJsApiLoader,
+  useGoogleMap,
+} from "@react-google-maps/api";
 
-// Same marker-icon fix as LocationPicker (idempotent if applied twice).
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-const PAKISTAN_CENTER = [30.3753, 69.3451];
+const PAKISTAN_CENTER = { lat: 30.3753, lng: 69.3451 };
+const PAKISTAN_ZOOM = 5;
 
 /** Extract { lat, lng } from a property regardless of shape.
  *  Properties can store coords either flat on the object or nested under .location.coordinates. */
@@ -30,7 +22,7 @@ const getCoords = (p) => {
     Number.isFinite(c.lat) &&
     Number.isFinite(c.lng)
   ) {
-    return [c.lat, c.lng];
+    return { lat: c.lat, lng: c.lng };
   }
   return null;
 };
@@ -40,7 +32,30 @@ const formatPrice = (price) => {
   return `PKR ${Number(price).toLocaleString()}`;
 };
 
+/* Fits the viewport to all markers once the map is ready. */
+const FitBounds = ({ points }) => {
+  const map = useGoogleMap();
+
+  useEffect(() => {
+    if (!map || !points.length) return;
+    const bounds = new window.google.maps.LatLngBounds();
+    points.forEach((p) => bounds.extend(p.coords));
+    map.fitBounds(bounds);
+  }, [map, points]);
+
+  return null;
+};
+
 const PropertySearchMap = ({ properties = [], height = 600 }) => {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: apiKey,
+  });
+
+  const [active, setActive] = useState(null); // property id with open InfoWindow
+
   const points = useMemo(
     () =>
       properties
@@ -50,7 +65,6 @@ const PropertySearchMap = ({ properties = [], height = 600 }) => {
   );
 
   const center = points[0]?.coords || PAKISTAN_CENTER;
-  const initialZoom = points.length > 0 ? 11 : 5;
 
   return (
     <div
@@ -62,70 +76,114 @@ const PropertySearchMap = ({ properties = [], height = 600 }) => {
         position: "relative",
       }}
     >
-      <MapContainer
-        center={center}
-        zoom={initialZoom}
-        scrollWheelZoom
-        style={{ width: "100%", height: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {points.map(({ property, coords }) => {
-          const id = property._id || property.id;
-          const cover = property.photos?.[0] || property.image;
-          return (
-            <Marker key={id} position={coords}>
-              <Popup>
-                <div style={{ minWidth: 200 }}>
-                  {cover && (
-                    <img
-                      src={cover}
-                      alt={property.title}
-                      style={{
-                        width: "100%",
-                        height: 110,
-                        objectFit: "cover",
-                        borderRadius: 6,
-                        marginBottom: 8,
-                      }}
-                    />
-                  )}
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                    {property.title || "Untitled property"}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#717171", marginBottom: 6 }}>
-                    {property.location?.area || property.area || ""}
-                    {(property.location?.area || property.area) &&
-                    (property.location?.city || property.city)
-                      ? ", "
-                      : ""}
-                    {property.location?.city || property.city || ""}
-                  </div>
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                    {formatPrice(property.price)}
-                  </div>
-                  <Link
-                    to={`/property/${id}`}
-                    style={{
-                      display: "inline-block",
-                      padding: "6px 12px",
-                      background: "#222",
-                      color: "#fff",
-                      borderRadius: 6,
-                      textDecoration: "none",
-                      fontSize: 13,
-                    }}
-                  >
-                    View details
-                  </Link>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
+      {loadError && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            color: "#555",
+            fontSize: 14,
+            padding: 16,
+            textAlign: "center",
+          }}
+        >
+          Map failed to load. Check your Google Maps API key.
+        </div>
+      )}
+      {!loadError && !isLoaded && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100%",
+            color: "#777",
+            fontSize: 13,
+          }}
+        >
+          Loading map…
+        </div>
+      )}
+      {isLoaded && (
+        <GoogleMap
+          mapContainerStyle={{ width: "100%", height: "100%" }}
+          center={center}
+          zoom={PAKISTAN_ZOOM}
+          options={{
+            streetViewControl: false,
+            mapTypeControl: false,
+          }}
+        >
+          <FitBounds points={points} />
+          {points.map(({ property, coords }) => {
+            const id = property._id || property.id;
+            const cover = property.photos?.[0] || property.image;
+            return (
+              <Marker
+                key={id}
+                position={coords}
+                onClick={() => setActive(id)}
+              >
+                {active === id && (
+                  <InfoWindow onCloseClick={() => setActive(null)}>
+                    <div style={{ minWidth: 200 }}>
+                      {cover && (
+                        <img
+                          src={cover}
+                          alt={property.title}
+                          style={{
+                            width: "100%",
+                            height: 110,
+                            objectFit: "cover",
+                            borderRadius: 6,
+                            marginBottom: 8,
+                          }}
+                        />
+                      )}
+                      <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                        {property.title || "Untitled property"}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#717171",
+                          marginBottom: 6,
+                        }}
+                      >
+                        {property.location?.area || property.area || ""}
+                        {(property.location?.area || property.area) &&
+                        (property.location?.city || property.city)
+                          ? ", "
+                          : ""}
+                        {property.location?.city || property.city || ""}
+                      </div>
+                      <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                        {formatPrice(property.price)}
+                      </div>
+                      <Link
+                        to={`/property/${id}`}
+                        style={{
+                          display: "inline-block",
+                          padding: "6px 12px",
+                          background: "#222",
+                          color: "#fff",
+                          borderRadius: 6,
+                          textDecoration: "none",
+                          fontSize: 13,
+                        }}
+                      >
+                        View details
+                      </Link>
+                    </div>
+                  </InfoWindow>
+                )}
+              </Marker>
+            );
+          })}
+        </GoogleMap>
+      )}
       {points.length === 0 && (
         <div
           style={{

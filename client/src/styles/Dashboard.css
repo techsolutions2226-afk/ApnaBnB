@@ -659,3 +659,94 @@
   background: #d32f2f;
   color: white;
 }
+
+/* ══════════════════════════════════════
+   RESPONSIVE: TABLES → STACKED CARDS (≤768px)
+   The wide dashboard tables (listings, requirements, deals, visits)
+   reflow from a scrollable <table> into stacked label/value cards on
+   phones + tablets. Each <td> exposes its header via data-label.
+   ══════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* Drop the horizontal-scroll wrapper so rows flow full-width. */
+  .dash-table-wrap {
+    overflow: visible;
+    border: none;
+    background: transparent;
+  }
+
+  .dash-table {
+    display: block;
+    width: 100%;
+  }
+
+  .dash-table thead {
+    display: none; /* header row becomes the per-cell label */
+  }
+
+  .dash-table tbody {
+    display: block;
+  }
+
+  .dash-table tr {
+    display: block;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+
+  .dash-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .dash-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+    text-align: right;
+  }
+
+  .dash-table td:last-child {
+    border-bottom: none;
+  }
+
+  /* Bold grey uppercase label pulled from data-label. */
+  .dash-table td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #717171;
+    text-align: left;
+  }
+
+  /* First cell keeps the title/sub stacked on the left, label above. */
+  .dash-table td:first-child {
+    display: block;
+    text-align: left;
+    padding-top: 0;
+  }
+
+  .dash-table td:first-child::before {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Action buttons stay inline (no label to the left). */
+  .dash-table .dash-actions-cell {
+    justify-content: flex-end;
+  }
+
+  /* Badges/mono text shouldn't wrap awkwardly in the tight space. */
+  .dash-table .dash-badge {
+    white-space: nowrap;
+  }
+}

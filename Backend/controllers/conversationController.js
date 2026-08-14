@@ -9,7 +9,7 @@ const senderSelect = {
 };
 
 // Create new conversation
-const createConversation = async (req, res) => {
+const createConversation = async (req, res, next) => {
   const { participants } = req.body;
 
   if (!participants || participants.length < 2) {
@@ -23,13 +23,13 @@ const createConversation = async (req, res) => {
     });
     res.status(201).json(conversation);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all conversations for the logged-in user, enriched with the last message
 // (decrypted) and the count of unread messages sent by the OTHER party.
-const getConversations = async (req, res) => {
+const getConversations = async (req, res, next) => {
   try {
     const conversations = await prisma.conversation.findMany({
       where: { participants: { some: { id: req.user.id } } },
@@ -79,13 +79,13 @@ const getConversations = async (req, res) => {
 
     res.status(200).json(enriched);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Find a 1-1 conversation between the current user and `otherUserId`, or
 // create one if it doesn't exist.
-const findOrCreateDirect = async (req, res) => {
+const findOrCreateDirect = async (req, res, next) => {
   const { otherUserId } = req.body;
   if (!otherUserId) {
     return res.status(400).json({ message: 'otherUserId is required.' });
@@ -119,12 +119,12 @@ const findOrCreateDirect = async (req, res) => {
 
     res.status(200).json(conversation);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get single conversation by ID
-const getConversationById = async (req, res) => {
+const getConversationById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -143,7 +143,7 @@ const getConversationById = async (req, res) => {
 
     res.status(200).json(conversation);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -158,7 +158,7 @@ const isParticipant = (conversation, userId) =>
   conversation.participants.some((p) => p.id === userId);
 
 // Update conversation
-const updateConversation = async (req, res) => {
+const updateConversation = async (req, res, next) => {
   const { id } = req.params;
   const { archived } = req.body;
 
@@ -178,12 +178,12 @@ const updateConversation = async (req, res) => {
     });
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete conversation (messages cascade via FK onDelete)
-const deleteConversation = async (req, res) => {
+const deleteConversation = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -198,12 +198,12 @@ const deleteConversation = async (req, res) => {
     await prisma.conversation.delete({ where: { id } });
     res.status(200).json({ message: 'Conversation deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Add or remove participants
-const updateMembers = async (req, res) => {
+const updateMembers = async (req, res, next) => {
   const { id } = req.params;
   const { action, userId } = req.body; // action: 'add' or 'remove'
 
@@ -241,7 +241,7 @@ const updateMembers = async (req, res) => {
     });
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

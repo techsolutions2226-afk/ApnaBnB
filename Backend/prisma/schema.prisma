@@ -362,3 +362,26 @@ model Wishlist {
 
   @@index([userId])
 }
+
+// ─────────────────────────── Audit Log ───────────────────────────
+// One row per tracked user/admin action on the platform. Powers the admin
+// "Activity Logs" view: who did what, to which entity, when, and from where.
+// Kept append-only — nothing deletes these rows except a full reset.
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?  // who acted (null for system/anonymous events)
+  userRole  String?  // snapshot of the actor's role at the time
+  userEmail String?  // snapshot of the actor's email (survives later renames)
+  userName  String?  // snapshot of the actor's name
+  action    String   // e.g. auth.login, property.create, match.accepted
+  entityType String  // property | listing | requirement | match | message | review | trip | wishlist | user | conversation | auth
+  entityId  String?
+  meta      Json?    // extra context (status before/after, ids, labels)
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

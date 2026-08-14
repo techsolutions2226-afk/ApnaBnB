@@ -2,7 +2,7 @@ const prisma = require('../db/prisma');
 const { decryptMessage } = require('../utils/messageCrypto');
 
 // Get platform stats
-const getPlatformStats = async (req, res) => {
+const getPlatformStats = async (req, res, next) => {
   try {
     const [
       totalUsers,
@@ -42,12 +42,12 @@ const getPlatformStats = async (req, res) => {
       listingsByStatus,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all users
-const getAllUsers = async (req, res) => {
+const getAllUsers = async (req, res, next) => {
   try {
     const { role, verified, page = 1, limit = 20 } = req.query;
     const where = {};
@@ -73,12 +73,12 @@ const getAllUsers = async (req, res) => {
       pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get single user by ID
-const getUserById = async (req, res) => {
+const getUserById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -95,12 +95,12 @@ const getUserById = async (req, res) => {
 
     res.status(200).json({ user, activity: { listings, requirements, matches } });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Verify/Suspend users
-const manageUser = async (req, res) => {
+const manageUser = async (req, res, next) => {
   const { id } = req.params;
   const { action } = req.body;
 
@@ -119,12 +119,12 @@ const manageUser = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Verify user endpoint (specific)
-const verifyUser = async (req, res) => {
+const verifyUser = async (req, res, next) => {
   const { id } = req.params;
   try {
     const user = await prisma.user.update({
@@ -137,12 +137,12 @@ const verifyUser = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Suspend user endpoint (specific)
-const suspendUser = async (req, res) => {
+const suspendUser = async (req, res, next) => {
   const { id } = req.params;
   try {
     const user = await prisma.user.update({
@@ -155,12 +155,12 @@ const suspendUser = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all properties (admin view)
-const getAllProperties = async (req, res) => {
+const getAllProperties = async (req, res, next) => {
   try {
     const { status, city, page = 1, limit = 20 } = req.query;
     const where = {};
@@ -186,12 +186,12 @@ const getAllProperties = async (req, res) => {
       pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Approve property
-const approveProperty = async (req, res) => {
+const approveProperty = async (req, res, next) => {
   const { id } = req.params;
   try {
     const property = await prisma.property.update({
@@ -204,12 +204,12 @@ const approveProperty = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Property not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Reject property
-const rejectProperty = async (req, res) => {
+const rejectProperty = async (req, res, next) => {
   const { id } = req.params;
   try {
     const property = await prisma.property.update({
@@ -222,12 +222,12 @@ const rejectProperty = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Property not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Moderate property (legacy - supports approve/reject/delete)
-const moderateProperty = async (req, res) => {
+const moderateProperty = async (req, res, next) => {
   const { id } = req.params;
   const { action } = req.body;
 
@@ -249,12 +249,12 @@ const moderateProperty = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Property not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all messages (admin view) — content decrypted for readability.
-const getAllMessages = async (req, res) => {
+const getAllMessages = async (req, res, next) => {
   try {
     const { page = 1, limit = 50 } = req.query;
 
@@ -280,12 +280,12 @@ const getAllMessages = async (req, res) => {
       pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get platform activity logs
-const getActivityLogs = async (req, res) => {
+const getActivityLogs = async (req, res, next) => {
   try {
     const { days = 7 } = req.query;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -305,7 +305,7 @@ const getActivityLogs = async (req, res) => {
       activity: { userSignups, newListings, newRequirements, newMatches, newMessages },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

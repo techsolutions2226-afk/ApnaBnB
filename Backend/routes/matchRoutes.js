@@ -32,7 +32,7 @@ router.get('/dealer-buyer', verifyToken, getDealerBuyerMatches);
 router.get('/dealer-dealer', verifyToken, getDealerDealerMatches);
 
 // Manual match generation
-router.post('/generate/property/:propertyId', verifyToken, async (req, res) => {
+router.post('/generate/property/:propertyId', verifyToken, async (req, res, next) => {
   try {
     const property = await prisma.property.findUnique({ where: { id: req.params.propertyId } });
     if (!property) {
@@ -45,11 +45,11 @@ router.post('/generate/property/:propertyId', verifyToken, async (req, res) => {
       matches 
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 
-router.post('/generate/requirement/:requirementId', verifyToken, async (req, res) => {
+router.post('/generate/requirement/:requirementId', verifyToken, async (req, res, next) => {
   try {
     const requirement = await prisma.requirement.findUnique({ where: { id: req.params.requirementId } });
     if (!requirement) {
@@ -62,7 +62,7 @@ router.post('/generate/requirement/:requirementId', verifyToken, async (req, res
       matches 
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 

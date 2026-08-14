@@ -8,7 +8,7 @@ const generateConfirmationCode = () =>
   Math.random().toString(36).substring(2, 10).toUpperCase();
 
 // Create a trip (reservation) for the authenticated user
-const createTrip = async (req, res) => {
+const createTrip = async (req, res, next) => {
   const { propertyId, checkIn, checkOut, nights, guests, totalPrice, serviceFee } = req.body;
 
   if (!propertyId || !checkIn || !checkOut || !nights || totalPrice == null) {
@@ -39,12 +39,12 @@ const createTrip = async (req, res) => {
 
     res.status(201).json(trip);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // List trips for the authenticated user (optionally filtered by status)
-const getMyTrips = async (req, res) => {
+const getMyTrips = async (req, res, next) => {
   const { status } = req.query;
   const where = { userId: req.user.id };
   if (status && ['upcoming', 'completed', 'cancelled'].includes(status)) {
@@ -59,12 +59,12 @@ const getMyTrips = async (req, res) => {
     });
     res.status(200).json(trips);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get a single trip by id (only if owned by the caller)
-const getTripById = async (req, res) => {
+const getTripById = async (req, res, next) => {
   const { id } = req.params;
   try {
     const trip = await prisma.trip.findFirst({
@@ -76,12 +76,12 @@ const getTripById = async (req, res) => {
     }
     res.status(200).json(trip);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Cancel a trip (refund = totalPrice - serviceFee)
-const cancelTrip = async (req, res) => {
+const cancelTrip = async (req, res, next) => {
   const { id } = req.params;
   try {
     const trip = await prisma.trip.findFirst({ where: { id, userId: req.user.id } });
@@ -103,7 +103,7 @@ const cancelTrip = async (req, res) => {
 
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

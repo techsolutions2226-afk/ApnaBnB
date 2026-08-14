@@ -1,264 +1,180 @@
-import { useState } from "react";
-import { FaFacebook, FaTwitter, FaInstagram, FaGlobe } from "react-icons/fa";
-import { FiDollarSign, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  FaFacebook,
+  FaInstagram,
+  FaYoutube,
+  FaTwitter,
+  FaLinkedin,
+  FaMapMarkerAlt,
+  FaPhoneAlt,
+  FaEnvelope,
+} from "react-icons/fa";
+import { FiChevronUp } from "react-icons/fi";
+import Logo from "../common/Logo";
 import "../../styles/Footer.css";
 
-/* ─── Data ─── */
-const tabs = [
-  "Popular",
-  "Arts & culture",
-  "Beach",
-  "Mountains",
-  "Outdoors",
-  "Things to do",
-  "Travel tips & inspiration",
-  "Airbnb-friendly apartments",
+/* ─── Links data ─── */
+const company = [
+  "About Us",
+  "Contact Us",
+  "Jobs",
+  "Help & Support",
+  "Advertise On ApnaBnB",
+  "Terms Of Use",
 ];
 
-const destinations = {
-  Popular: [
-    { city: "West Palm Beach", type: "Vacation rentals" },
-    { city: "Brooklyn", type: "Apartment rentals" },
-    { city: "Dallas", type: "Apartment rentals" },
-    { city: "Santo Domingo", type: "Monthly rentals" },
-    { city: "Milan", type: "Monthly Rentals" },
-    { city: "Barcelona", type: "Apartment rentals" },
-    { city: "San Antonio", type: "Vacation rentals" },
-    { city: "Charlotte", type: "Villa rentals" },
-    { city: "Clearwater", type: "Vacation rentals" },
-    { city: "Outer Banks", type: "Apartment rentals" },
-    { city: "Ocean City", type: "House rentals" },
-    { city: "North Myrtle Beach", type: "Condo rentals" },
-    { city: "Nice", type: "Condo rentals" },
-    { city: "Portland", type: "Cabin rentals" },
-    { city: "Minneapolis", type: "Condo rentals" },
-    { city: "Corpus Christi", type: "Villa rentals" },
-    { city: "Tokyo", type: "Condo rentals" },
-  ],
-  "Arts & culture": [
-    { city: "Paris", type: "Apartment rentals" },
-    { city: "New York", type: "Vacation rentals" },
-    { city: "London", type: "Studio rentals" },
-    { city: "Vienna", type: "Apartment rentals" },
-    { city: "Florence", type: "Villa rentals" },
-    { city: "Amsterdam", type: "Canal rentals" },
-  ],
-  Beach: [
-    { city: "Miami", type: "Beachfront rentals" },
-    { city: "Malibu", type: "Vacation rentals" },
-    { city: "Cancun", type: "Resort rentals" },
-    { city: "Bali", type: "Villa rentals" },
-    { city: "Santorini", type: "Cave rentals" },
-  ],
-  Mountains: [
-    { city: "Aspen", type: "Cabin rentals" },
-    { city: "Whistler", type: "Chalet rentals" },
-    { city: "Banff", type: "Vacation rentals" },
-    { city: "Zermatt", type: "Chalet rentals" },
-  ],
-  Outdoors: [
-    { city: "Yellowstone", type: "Cabin rentals" },
-    { city: "Moab", type: "Glamping rentals" },
-    { city: "Sedona", type: "Vacation rentals" },
-  ],
-  "Things to do": [
-    { city: "Las Vegas", type: "Vacation rentals" },
-    { city: "Orlando", type: "Villa rentals" },
-    { city: "Nashville", type: "Condo rentals" },
-  ],
-  "Travel tips & inspiration": [
-    { city: "Lisbon", type: "Apartment rentals" },
-    { city: "Prague", type: "Vacation rentals" },
-    { city: "Budapest", type: "Studio rentals" },
-  ],
-  "Airbnb-friendly apartments": [
-    { city: "Phoenix", type: "Apartment rentals" },
-    { city: "Atlanta", type: "Condo rentals" },
-    { city: "Denver", type: "Apartment rentals" },
-  ],
-};
-
-const support = [
-  "Help Center",
-  "Get help with a safety issue",
-  "AirCover",
-  "Travel insurance",
-  "Anti-discrimination",
-  "Disability support",
-  "Cancellation options",
-  "Report neighborhood concern",
+const connect = [
+  "Blog",
+  "News",
+  "Forum",
+  "Expo",
+  "Real Estate Agents",
+  "Add Property",
 ];
 
-const hosting = [
-  "Airbnb your home",
-  "Airbnb your experience",
-  "Airbnb your service",
-  "AirCover for Hosts",
-  "Hosting resources",
-  "Community forum",
-  "Hosting responsibly",
-  "Airbnb-friendly apartments",
-  "Join a free hosting class",
-  "Find a co-host",
-  "Refer a host",
+const hours = [
+  { day: "Monday – Friday", time: "9:00 AM – 6:00 PM" },
+  { day: "Saturday – Sunday", time: "10:00 AM – 4:00 PM" },
 ];
 
-const apnabnb = [
-  "Newsroom",
-  "New features",
-  "Careers",
-  "Investors",
-  "Gift cards",
+const socials = [
+  { label: "Facebook", Icon: FaFacebook },
+  { label: "Instagram", Icon: FaInstagram },
+  { label: "YouTube", Icon: FaYoutube },
+  { label: "X / Twitter", Icon: FaTwitter },
+  { label: "LinkedIn", Icon: FaLinkedin },
 ];
-
-const COLS = 6; // destinations per row
 
 /* ─── Component ─── */
 const Footer = () => {
-  const [activeTab, setActiveTab] = useState("Popular");
-  const [showMore, setShowMore] = useState(false);
+  const [showTop, setShowTop] = useState(false);
 
-  const list = destinations[activeTab] || [];
-  const visible = showMore ? list : list.slice(0, COLS * 3); // 3 rows visible initially
-  const hasMore = list.length > COLS * 3;
+  /* Show the TOP button only after the user has scrolled past 300px. */
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  // chunk into rows of COLS
-  const rows = [];
-  for (let i = 0; i < visible.length; i += COLS)
-    rows.push(visible.slice(i, i + COLS));
+  const scrollTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <footer className="footer">
-      {/* ── Inspiration section ── */}
-      <div className="footer-inspiration">
-        <h2 className="footer-heading">Inspiration for future getaways</h2>
-
-        {/* Tabs */}
-        <div className="footer-tabs">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              className={`footer-tab ${activeTab === tab ? "footer-tab--active" : ""}`}
-              onClick={() => {
-                setActiveTab(tab);
-                setShowMore(false);
-              }}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        <div className="footer-tab-line" />
-
-        {/* Destination grid */}
-        <div className="dest-grid">
-          {rows.map((row, ri) => (
-            <div key={ri} className="dest-row">
-              {row.map((d, ci) => (
-                <div key={ci} className="dest-cell">
-                  <a href="#" className="dest-city">
-                    {d.city}
-                  </a>
-                  <span className="dest-type">{d.type}</span>
-                </div>
+      {/* ── Main columns ── */}
+      <div className="footer-container">
+        <div className="footer-grid">
+          {/* Company */}
+          <div className="footer-col">
+            <h3 className="footer-col-title">Company</h3>
+            <div className="footer-col-links">
+              {company.map((item) => (
+                <a key={item} href="#" className="footer-link">
+                  {item}
+                </a>
               ))}
             </div>
-          ))}
-        </div>
+          </div>
 
-        {hasMore && (
-          <button
-            className="show-more-btn"
-            onClick={() => setShowMore((p) => !p)}
-          >
-            {showMore ? (
-              <>
-                Show less <FiChevronUp size={16} />
-              </>
-            ) : (
-              <>
-                Show more <FiChevronDown size={16} />
-              </>
-            )}
-          </button>
-        )}
+          {/* Connect */}
+          <div className="footer-col">
+            <h3 className="footer-col-title">Connect</h3>
+            <div className="footer-col-links">
+              {connect.map((item) => (
+                <a key={item} href="#" className="footer-link">
+                  {item}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Head Office */}
+          <div className="footer-col">
+            <h3 className="footer-col-title">Head Office</h3>
+            <div className="footer-col-links footer-contact-list">
+              <div className="footer-contact">
+                <FaMapMarkerAlt size={15} className="footer-contact-icon" />
+                <span>
+                  Main Boulevard, Gulberg III,
+                  <br />
+                  Lahore, Pakistan
+                </span>
+              </div>
+              <div className="footer-contact">
+                <FaPhoneAlt size={14} className="footer-contact-icon" />
+                <a href="tel:+920000000000" className="footer-link footer-link--inline">
+                  +92 (0) 000 000000
+                </a>
+              </div>
+              <div className="footer-contact">
+                <FaEnvelope size={14} className="footer-contact-icon" />
+                <a
+                  href="mailto:support@apnabnb.com"
+                  className="footer-link footer-link--inline"
+                >
+                  support@apnabnb.com
+                </a>
+              </div>
+              <div className="footer-hours">
+                {hours.map((h) => (
+                  <div key={h.day} className="footer-hours-row">
+                    <span className="footer-hours-day">{h.day}</span>
+                    <span className="footer-hours-time">{h.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Get Connected */}
+          <div className="footer-col footer-brand-col">
+            <Link to="/" className="footer-brand" aria-label="apnabnb home">
+              <Logo size={34} />
+            </Link>
+            <p className="footer-brand-tag">
+              Pakistan&apos;s intelligent property network — buy, rent, and
+              invest with confidence.
+            </p>
+            <h3 className="footer-col-title footer-connect-title">
+              Get Connected
+            </h3>
+            <div className="footer-socials">
+              {socials.map((s) => {
+                const Icon = s.Icon;
+                return (
+                  <a
+                    key={s.label}
+                    href="#"
+                    className="footer-social"
+                    aria-label={s.label}
+                  >
+                    <Icon size={17} />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="footer-divider" />
-
-      {/* ── Links section ── */}
-      <div className="footer-links">
-        <div className="footer-col">
-          <h3 className="footer-col-title">Support</h3>
-          {support.map((item) => (
-            <a key={item} href="#" className="footer-link">
-              {item}
-            </a>
-          ))}
-        </div>
-        <div className="footer-col">
-          <h3 className="footer-col-title">Hosting</h3>
-          {hosting.map((item) => (
-            <a key={item} href="#" className="footer-link">
-              {item}
-            </a>
-          ))}
-        </div>
-        <div className="footer-col">
-          <h3 className="footer-col-title">apnabnb</h3>
-          {apnabnb.map((item) => (
-            <a key={item} href="#" className="footer-link">
-              {item}
-            </a>
-          ))}
-        </div>
-      </div>
-
-      <div className="footer-divider" />
-
-      {/* ── Bottom bar ── */}
+      {/* ── Bottom copyright row ── */}
       <div className="footer-bottom">
-        <div className="footer-bottom-left">
-          <span>© 2024 apnabnb, Inc.</span>
-          <span className="footer-dot">·</span>
-          <a href="#" className="footer-bottom-link">
-            Privacy
-          </a>
-          <span className="footer-dot">·</span>
-          <a href="#" className="footer-bottom-link">
-            Terms
-          </a>
-          <span className="footer-dot">·</span>
-          <a href="#" className="footer-bottom-link">
-            Your Privacy Choices
-          </a>
-          {/* Privacy toggle pill */}
-          <div className="privacy-toggle">
-            <div className="privacy-toggle-inner" />
-          </div>
-        </div>
-
-        <div className="footer-bottom-right">
-          <button className="footer-locale-btn">
-            <FaGlobe size={15} />
-            <span>English (US)</span>
+        <div className="footer-container footer-bottom-inner">
+          <span className="footer-bottom-text">
+            © 2026 ApnaBnB. All Rights Reserved
+          </span>
+          <button
+            type="button"
+            className={`footer-top-btn${showTop ? " footer-top-btn--visible" : ""}`}
+            onClick={scrollTop}
+            aria-label="Scroll to top"
+          >
+            <FiChevronUp size={18} />
+            <span>TOP</span>
           </button>
-          <button className="footer-locale-btn">
-            <FiDollarSign size={15} />
-            <span>USD</span>
-          </button>
-          <div className="footer-socials">
-            <a href="#" className="social-link" aria-label="Facebook">
-              <FaFacebook size={18} />
-            </a>
-            <a href="#" className="social-link" aria-label="Twitter">
-              <FaTwitter size={18} />
-            </a>
-            <a href="#" className="social-link" aria-label="Instagram">
-              <FaInstagram size={18} />
-            </a>
-          </div>
         </div>
       </div>
     </footer>

@@ -169,24 +169,24 @@ const BuyerDashboard = () => {
                </thead>
                <tbody>
                  {requirements.map((req) => (
-                   <tr key={req._id}>
-                     <td>
-                       <div className="dash-table-title">{req.title || `${req.propertyType} in ${req.location?.city}`}</div>
-                       <div className="dash-table-sub">
-                         {req.location?.area || "N/A"} &middot; {req.bedrooms || "N/A"} beds
-                       </div>
-                     </td>
-                     <td>{req.location?.city}</td>
-                     <td>
-                       PKR {formatPrice(req.budget?.min || 0)} – {formatPrice(req.budget?.max || 0)}
-                     </td>
-                     <td>{req.propertyType}</td>
-                     <td>
-                       <StatusBadge status={req.status || 'active'} prefix="dash-badge" />
-                     </td>
-                     <td>{new Date(req.createdAt).toLocaleDateString()}</td>
-                     <td>
-                       <div className="dash-actions-cell">
+                    <tr key={req._id}>
+                      <td data-label="Requirement">
+                        <div className="dash-table-title">{req.title || `${req.propertyType} in ${req.location?.city}`}</div>
+                        <div className="dash-table-sub">
+                          {req.location?.area || "N/A"} &middot; {req.bedrooms || "N/A"} beds
+                        </div>
+                      </td>
+                      <td data-label="City">{req.location?.city}</td>
+                      <td data-label="Budget">
+                        PKR {formatPrice(req.budget?.min || 0)} – {formatPrice(req.budget?.max || 0)}
+                      </td>
+                      <td data-label="Type">{req.propertyType}</td>
+                      <td data-label="Status">
+                        <StatusBadge status={req.status || 'active'} prefix="dash-badge" />
+                      </td>
+                      <td data-label="Posted">{new Date(req.createdAt).toLocaleDateString()}</td>
+                      <td data-label="Actions">
+                        <div className="dash-actions-cell">
                          <button 
                            className="dash-action-btn dash-action-btn--view"
                            onClick={() => navigate(`/requirements/${req._id}`)}
@@ -260,7 +260,7 @@ const BuyerDashboard = () => {
                   const property = properties?.find((p) => p._id === trip.propertyId);
                   return (
                     <tr key={trip.id}>
-                      <td>
+                      <td data-label="Property">
                         <div className="dash-table-title">
                           {property?.title || trip.propertyId}
                         </div>
@@ -268,12 +268,12 @@ const BuyerDashboard = () => {
                           {formatCity(property?.location, property?.city)}
                         </div>
                       </td>
-                      <td>{trip.visitDate}</td>
-                      <td>{trip.visitTime}</td>
-                      <td>
+                      <td data-label="Date">{trip.visitDate}</td>
+                      <td data-label="Time">{trip.visitTime}</td>
+                      <td data-label="Status">
                         <StatusBadge status={trip.status} prefix="dash-badge" />
                       </td>
-                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>
+                      <td data-label="Code" style={{ fontFamily: "monospace", fontSize: 12 }}>
                         {trip.confirmationCode}
                       </td>
                     </tr>
@@ -314,7 +314,7 @@ const BuyerDashboard = () => {
                   const property = properties?.find((p) => p._id === deal.propertyId);
                   return (
                     <tr key={deal.id}>
-                      <td>
+                      <td data-label="Property">
                         <div className="dash-table-title">
                           {property?.title || deal.propertyId}
                         </div>
@@ -322,11 +322,11 @@ const BuyerDashboard = () => {
                           {formatCity(property?.location, property?.city)}
                         </div>
                       </td>
-                      <td>PKR {formatPrice(deal.agreedPrice)}</td>
-                      <td>
+                      <td data-label="Price">PKR {formatPrice(deal.agreedPrice)}</td>
+                      <td data-label="Status">
                         <StatusBadge status={deal.status} prefix="dash-badge" />
                       </td>
-                      <td>{deal.startedAt}</td>
+                      <td data-label="Started">{deal.startedAt}</td>
                     </tr>
                   );
                 })}

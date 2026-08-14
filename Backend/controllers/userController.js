@@ -2,7 +2,7 @@ const prisma = require('../db/prisma');
 
 // Public read-only profile lookup. Excludes password and email; we only expose
 // fields the client renders on the public Profile page.
-const getPublicUser = async (req, res) => {
+const getPublicUser = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -26,7 +26,7 @@ const getPublicUser = async (req, res) => {
 
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -34,7 +34,7 @@ const getPublicUser = async (req, res) => {
 // callers can't escalate role or flip `verified` through this endpoint.
 const VIEW_ROLES = ['seller', 'buyer', 'dealer'];
 
-const updateMe = async (req, res) => {
+const updateMe = async (req, res, next) => {
   const allowed = ['name', 'avatar', 'phone', 'location', 'emergencyContact', 'viewRole'];
   const updates = {};
   for (const key of allowed) {
@@ -74,7 +74,7 @@ const updateMe = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

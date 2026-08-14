@@ -2,9 +2,7 @@ const prisma = require('../db/prisma');
 const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const { getIO } = require('../sockets');
 const { withIds } = require('../utils/serializeIds');
-
-// Regex to filter personal information
-const personalInfoRegex = /(\d{10,}|\+[0-9]{1,4}[- .]?\d{6,}|\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,6}|(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9._-]+\.[a-zA-Z]{2,6})/g;
+const { filterPersonalInfo } = require('../utils/personalInfo');
 
 const senderSelect = {
   select: { id: true, name: true, email: true, role: true, avatar: true },
@@ -15,7 +13,7 @@ const senderSelect = {
 const withPlaintext = (msg) => ({ ...msg, content: decryptMessage(msg.content) });
 
 // Send a message via REST (fallback for clients without an active socket).
-const sendMessage = async (req, res) => {
+const sendMessage = async (req, res, next) => {
   const { conversationId, content, attachments } = req.body;
   const hasContent = content && String(content).trim().length > 0;
   const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
@@ -41,7 +39,7 @@ const sendMessage = async (req, res) => {
     }
 
     const sanitizedContent = hasContent
-      ? String(content).replace(personalInfoRegex, '[filtered]')
+      ? filterPersonalInfo(content)
       : '';
 
     const message = await prisma.message.create({
@@ -56,13 +54,13 @@ const sendMessage = async (req, res) => {
 
     res.status(201).json(withPlaintext(message));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all messages in a conversation, oldest → newest (content decrypted).
 // Messages the requesting user hid with "delete for me" are excluded.
-const getMessages = async (req, res) => {
+const getMessages = async (req, res, next) => {
   const { conversationId } = req.params;
 
   try {
@@ -76,12 +74,12 @@ const getMessages = async (req, res) => {
     });
     res.status(200).json(messages.map(withPlaintext));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Edit a message
-const updateMessage = async (req, res) => {
+const updateMessage = async (req, res, next) => {
   const { id } = req.params;
   const { content } = req.body;
 
@@ -100,7 +98,7 @@ const updateMessage = async (req, res) => {
       return res.status(403).json({ message: 'You can only edit your own messages.' });
     }
 
-    const sanitizedContent = content.replace(personalInfoRegex, '[filtered]');
+    const sanitizedContent = filterPersonalInfo(content);
     const updated = await prisma.message.update({
       where: { id },
       data: { content: encryptMessage(sanitizedContent) },
@@ -121,12 +119,12 @@ const updateMessage = async (req, res) => {
 
     res.status(200).json(payload);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete a message
-const deleteMessage = async (req, res) => {
+const deleteMessage = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -153,16 +151,35 @@ const deleteMessage = async (req, res) => {
 
     res.status(200).json({ message: 'Message deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Mark a message as read
-const markMessageAsRead = async (req, res) => {
+const markMessageAsRead = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const message = await prisma.message.update({
+    const message = await prisma.message.findUnique({ where: { id } });
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found.' });
+    }
+
+    // Only participants of the conversation may mark its messages as read.
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: message.conversationId },
+      include: { participants: { select: { id: true } } },
+    });
+    if (
+      !conversation ||
+      !conversation.participants.some((p) => p.id === req.user.id)
+    ) {
+      return res
+        .status(403)
+        .json({ message: 'You are not a participant in this conversation.' });
+    }
+
+    const updated = await prisma.message.update({
       where: { id },
       data: { read: true },
       include: { sender: { select: { id: true, name: true, email: true } } },
@@ -177,17 +194,17 @@ const markMessageAsRead = async (req, res) => {
       });
     }
 
-    res.status(200).json(withPlaintext(message));
+    res.status(200).json(withPlaintext(updated));
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Message not found.' });
     }
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get unread message count in a conversation
-const getUnreadCount = async (req, res) => {
+const getUnreadCount = async (req, res, next) => {
   const { conversationId } = req.params;
 
   try {
@@ -201,12 +218,12 @@ const getUnreadCount = async (req, res) => {
 
     res.status(200).json({ conversationId, unreadCount: count });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Mark multiple messages as read
-const markMultipleAsRead = async (req, res) => {
+const markMultipleAsRead = async (req, res, next) => {
   const { messageIds } = req.body;
 
   if (!messageIds || !Array.isArray(messageIds) || messageIds.length === 0) {
@@ -214,25 +231,39 @@ const markMultipleAsRead = async (req, res) => {
   }
 
   try {
-    const sample = await prisma.message.findFirst({
-      where: { id: { in: messageIds } },
-      select: { conversationId: true },
-    });
-
+    // Only mark messages the requesting user can actually see — those living
+    // in a conversation they participate in.
     const result = await prisma.message.updateMany({
-      where: { id: { in: messageIds } },
+      where: {
+        id: { in: messageIds },
+        conversation: {
+          is: { participants: { some: { id: req.user.id } } },
+        },
+      },
       data: { read: true },
     });
 
+    if (result.count === 0) {
+      return res
+        .status(403)
+        .json({ message: 'No messages found, or you are not a participant.' });
+    }
+
     // Push ✓✓ to the senders live (all ids belong to the same conversation).
     const io = getIO();
-    if (io && sample) {
-      messageIds.forEach((id) =>
-        io.to(`conv:${sample.conversationId}`).emit('message_read', {
-          messageId: id,
-          conversationId: sample.conversationId,
-        }),
-      );
+    if (io) {
+      const sample = await prisma.message.findFirst({
+        where: { id: { in: messageIds } },
+        select: { conversationId: true },
+      });
+      if (sample) {
+        messageIds.forEach((id) =>
+          io.to(`conv:${sample.conversationId}`).emit('message_read', {
+            messageId: id,
+            conversationId: sample.conversationId,
+          }),
+        );
+      }
     }
 
     res.status(200).json({
@@ -240,14 +271,14 @@ const markMultipleAsRead = async (req, res) => {
       modifiedCount: result.count,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // "Delete for me" — the requesting user hides the message from their own
 // view only. Works on any message in a conversation they participate in
 // (their own or received). Everyone else still sees it.
-const hideMessage = async (req, res) => {
+const hideMessage = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -291,7 +322,7 @@ const hideMessage = async (req, res) => {
 
     res.status(200).json({ message: 'Message hidden.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

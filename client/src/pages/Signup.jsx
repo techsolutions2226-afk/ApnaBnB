@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiEye, FiEyeOff, FiMail } from "react-icons/fi";
-import { FaApple, FaFacebook } from "react-icons/fa";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
@@ -413,22 +412,6 @@ const Signup = () => {
           {/* Social Signup Buttons */}
           <div className="signup-social-list">
             <GoogleAuthButton className="signup-social-btn" />
-            <button className="signup-social-btn" disabled={isLoading}>
-              <FaFacebook
-                size={20}
-                color="#1877F2"
-                className="signup-social-icon"
-              />
-              <span>Continue with Facebook</span>
-            </button>
-            <button className="signup-social-btn" disabled={isLoading}>
-              <FaApple size={20} className="signup-social-icon" />
-              <span>Continue with Apple</span>
-            </button>
-            <button className="signup-social-btn" disabled={isLoading}>
-              <FiMail size={20} className="signup-social-icon" />
-              <span>Continue with email</span>
-            </button>
           </div>
 
           {/* Login link */}

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowRight } from "react-icons/fi";
-import { FaApple } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
@@ -178,10 +177,6 @@ const Login = () => {
           {/* Social Login Buttons */}
           <div className="login-social-row">
             <GoogleAuthButton className="login-social-btn" />
-            <button className="login-social-btn" disabled={isLoading}>
-              <FaApple size={20} />
-              <span>Apple</span>
-            </button>
           </div>
 
           {/* Sign-up link */}

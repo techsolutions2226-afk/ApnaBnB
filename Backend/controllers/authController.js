@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../db/prisma');
 const { sendOtpEmail, sendResetEmail } = require('../utils/mailer');
+const { logActivity } = require('../utils/activityLogger');
 
 const OTP_TTL_MS = 5 * 60 * 1000;      // 5 minutes
 const OTP_RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
@@ -47,7 +48,7 @@ const issueOtpFor = async (user) => {
 
 // Register User — creates an unverified account and emails an OTP.
 // Does NOT return a JWT; user must verify first.
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
   if (!name || !email || !password || !role) {
@@ -89,6 +90,14 @@ const registerUser = async (req, res) => {
       },
     });
 
+    logActivity({
+      action: 'auth.register',
+      entityType: 'user',
+      entityId: user.id,
+      meta: { name, email: user.email, role },
+      req,
+    });
+
     try {
       await issueOtpFor(user);
     } catch (mailErr) {
@@ -107,12 +116,12 @@ const registerUser = async (req, res) => {
       requiresVerification: true,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Verify OTP — marks the account verified and returns a JWT.
-const verifyOtp = async (req, res) => {
+const verifyOtp = async (req, res, next) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
     return res.status(400).json({ message: 'Email and OTP are required.' });
@@ -176,12 +185,12 @@ const verifyOtp = async (req, res) => {
       message: 'Email verified successfully.',
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Resend OTP — rate-limited.
-const resendOtp = async (req, res) => {
+const resendOtp = async (req, res, next) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ message: 'Email is required.' });
@@ -217,12 +226,12 @@ const resendOtp = async (req, res) => {
     }
     res.status(200).json({ message: 'New verification code sent.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Login — distinguishes "email not found" from "wrong password" via codes.
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: 'Please provide email and password.' });
@@ -262,15 +271,14 @@ const loginUser = async (req, res) => {
       token: generateToken(user.id, user.role),
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/auth/forgot-password — emails a reset link if the account exists.
-// Returns EMAIL_NOT_FOUND when the address isn't registered so the UI can
 // surface it directly (per product requirement — trades enumeration safety
 // for clearer UX).
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ message: 'Email is required.' });
@@ -333,13 +341,13 @@ const forgotPassword = async (req, res) => {
       .status(200)
       .json({ message: 'A password reset link has been sent to your email.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/auth/verify-reset-token — called by the reset page on mount.
 // Returns 200 only when the (email, token) pair is valid and unexpired.
-const verifyResetToken = async (req, res) => {
+const verifyResetToken = async (req, res, next) => {
   const { email, token } = req.body;
   if (!email || !token) {
     return res.status(400).json({ message: 'Invalid reset link.' });
@@ -361,12 +369,12 @@ const verifyResetToken = async (req, res) => {
     }
     res.status(200).json({ valid: true, email: user.email });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/auth/reset-password — sets a new password if the link is valid.
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
   const { email, token, newPassword } = req.body;
   if (!email || !token || !newPassword) {
     return res
@@ -408,7 +416,7 @@ const resetPassword = async (req, res) => {
       .status(200)
       .json({ message: 'Password reset successful. You can now log in.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -484,7 +492,7 @@ const googleUserPayload = (user) => ({
 //   • New email       → { requiresRole: true, profile: { name, email, avatar } }
 //                       (no account created yet — the client must pick a role
 //                        and confirm via POST /api/auth/google/complete)
-const googleAuth = async (req, res) => {
+const googleAuth = async (req, res, next) => {
   const { idToken } = req.body;
 
   try {
@@ -505,13 +513,13 @@ const googleAuth = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(error.status || 500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/auth/google/complete — finish creating a brand-new Google account
 // once the client has chosen their role (Buyer/Seller/Dealer).
-const googleComplete = async (req, res) => {
+const googleComplete = async (req, res, next) => {
   const { idToken, role } = req.body;
 
   const VALID_ROLES = ['seller', 'buyer', 'dealer'];
@@ -542,7 +550,7 @@ const googleComplete = async (req, res) => {
 
     res.status(201).json(googleUserPayload(user));
   } catch (error) {
-    res.status(error.status || 500).json({ message: error.message });
+    next(error);
   }
 };
 

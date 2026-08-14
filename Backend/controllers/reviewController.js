@@ -10,7 +10,7 @@ const avgOf = (reviews) =>
     : 0;
 
 // Create a review
-const createReview = async (req, res) => {
+const createReview = async (req, res, next) => {
   const { target, targetType, rating, comment } = req.body;
 
   if (!target || !targetType || !rating) {
@@ -42,12 +42,12 @@ const createReview = async (req, res) => {
 
     res.status(201).json(review);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get reviews for a target (with query params)
-const getReviews = async (req, res) => {
+const getReviews = async (req, res, next) => {
   const { target, targetType } = req.query;
 
   if (!target || !targetType) {
@@ -66,12 +66,12 @@ const getReviews = async (req, res) => {
       count: reviews.length,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get reviews for a target by ID (URL parameter version)
-const getReviewsByTargetId = async (req, res) => {
+const getReviewsByTargetId = async (req, res, next) => {
   const { targetId } = req.params;
   const { targetType } = req.query;
 
@@ -91,12 +91,12 @@ const getReviewsByTargetId = async (req, res) => {
       count: reviews.length,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get average rating for a target
-const getAverageRating = async (req, res) => {
+const getAverageRating = async (req, res, next) => {
   const { targetId } = req.params;
   const { targetType } = req.query;
 
@@ -114,12 +114,12 @@ const getAverageRating = async (req, res) => {
       totalReviews: reviews.length,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get review count for a target
-const getReviewCount = async (req, res) => {
+const getReviewCount = async (req, res, next) => {
   const { targetId } = req.params;
   const { targetType } = req.query;
 
@@ -131,12 +131,12 @@ const getReviewCount = async (req, res) => {
     const count = await prisma.review.count({ where: { target: targetId, targetType } });
     res.status(200).json({ targetId, targetType, count });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Get all reviews authored by a given user
-const getReviewsByAuthor = async (req, res) => {
+const getReviewsByAuthor = async (req, res, next) => {
   const { userId } = req.params;
 
   try {
@@ -148,12 +148,12 @@ const getReviewsByAuthor = async (req, res) => {
 
     res.status(200).json({ reviews, count: reviews.length });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Update a review
-const updateReview = async (req, res) => {
+const updateReview = async (req, res, next) => {
   const { id } = req.params;
   const { rating, comment } = req.body;
 
@@ -181,12 +181,12 @@ const updateReview = async (req, res) => {
     const updated = await prisma.review.update({ where: { id }, data });
     res.status(200).json(updated);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // Delete a review
-const deleteReview = async (req, res) => {
+const deleteReview = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -200,12 +200,12 @@ const deleteReview = async (req, res) => {
 
     res.status(200).json({ message: 'Review deleted successfully.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // All reviews left on properties owned (listedBy) by a given user.
-const getReviewsForUserProperties = async (req, res) => {
+const getReviewsForUserProperties = async (req, res, next) => {
   const { userId } = req.params;
   try {
     const properties = await prisma.property.findMany({
@@ -228,7 +228,7 @@ const getReviewsForUserProperties = async (req, res) => {
 
     res.status(200).json({ reviews: enriched, count: reviews.length, averageRating: avgOf(reviews) });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

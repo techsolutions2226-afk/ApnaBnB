@@ -15,7 +15,7 @@ body.hide-navbar-search .nav-mobile-pill {
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 20px clamp(32px, 5vw, 52px) 64px;
+  padding: 0 clamp(32px, 5vw, 52px) 64px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #0f1d14;
 }
@@ -354,7 +354,7 @@ body.hide-navbar-search .nav-mobile-pill {
 .abn-popular-row {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(230px, 1fr);
+  grid-auto-columns: 300px;
   gap: 20px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -424,12 +424,12 @@ body.hide-navbar-search .nav-mobile-pill {
 
 @media (max-width: 560px) {
   .abn-home {
-    padding: 14px 16px 48px;
+    padding: 0 16px 48px;
   }
   .abn-hero {
     min-height: 420px;
   }
   .abn-popular-row {
-    grid-auto-columns: minmax(200px, 1fr);
+    grid-auto-columns: 240px;
   }
 }

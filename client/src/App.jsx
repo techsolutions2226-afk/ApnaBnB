@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import { BookingProvider } from "./context/BookingContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import RouteErrorBoundary from "./components/common/RouteErrorBoundary";
 import Layout from "./components/layout/Layout";
 
 /* ── Pages ── */
@@ -68,7 +69,8 @@ function App() {
       <WishlistProvider>
         <BookingProvider>
           <BrowserRouter>
-            <Routes>
+            <RouteErrorBoundary>
+              <Routes>
                 {/* ── Dashboard app shell (standalone — fixed sidebar, NO
                     navbar/footer). Presentational wrapper only; the outer
                     ProtectedRoute requires auth and each child keeps its OWN
@@ -156,6 +158,7 @@ function App() {
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>
+            </RouteErrorBoundary>
             <ToastContainer
               position="top-right"
               autoClose={4000}

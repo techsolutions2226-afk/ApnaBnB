@@ -99,16 +99,10 @@ const isMatchCandidate = (property, requirement) => {
   const rCity = (requirement.location?.city || '').toLowerCase();
   if (!pCity || !rCity || pCity !== rCity) return false;
 
-  // Area — when both sides specify one it must match (case-insensitive
-  // exact OR substring containment in either direction). If a side leaves
-  // area blank we don't penalise the match.
-  const pArea = (property.location?.area || '').toLowerCase();
-  const rArea = (requirement.location?.area || '').toLowerCase();
-  if (pArea && rArea) {
-    const exact = pArea === rArea;
-    const contains = pArea.includes(rArea) || rArea.includes(pArea);
-    if (!exact && !contains) return false;
-  }
+  // Area is NOT a hard filter — two neighbourhoods in the same city can still
+  // be a valid match (e.g. "Sadiqabad" requirement vs "Chandni Chowk" listing).
+  // It only contributes points via calculateMatchScore, so a mismatched area
+  // yields a lower score instead of blocking the match entirely.
 
   // Property type — case-insensitive exact.
   const pType = (property.propertyType || '').toLowerCase();

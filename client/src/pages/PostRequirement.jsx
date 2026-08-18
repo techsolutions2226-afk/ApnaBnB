@@ -10,21 +10,121 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import useViewRole from "../hooks/useViewRole";
 import { toast } from "react-toastify";
-import { FiCrosshair, FiSave } from "react-icons/fi";
+import {
+  FiCrosshair,
+  FiSave,
+  FiChevronDown,
+  FiCheck,
+  FiHome,
+  FiLayout,
+  FiChevronsUp,
+  FiChevronsDown,
+  FiSunrise,
+  FiColumns,
+  FiLayers,
+  FiBriefcase,
+  FiTruck,
+  FiFileText,
+  FiFolder,
+  FiShoppingBag,
+  FiMonitor,
+  FiTool,
+  FiBox,
+  FiGrid,
+} from "react-icons/fi";
 import requirementService from "../services/requirementService";
 import LocationPicker from "../components/common/LocationPicker";
 import MapView from "../components/common/MapView";
+import Modal from "../components/common/Modal";
+import { forwardGeocode } from "../utils/geocode";
 import {
   loadRequirementDraft,
   saveRequirementDraft,
   clearRequirementDraft,
 } from "../utils/requirementDraft";
 import "../styles/Requirement.css";
+import "../styles/Listing.css"; /* category/subtype/unit-picker styles shared with Create Listing */
+import "../styles/SearchDropdowns.css"; /* unit-picker modal option styles */
 
 /* ── Static Options ── */
-const PROPERTY_TYPES = ["House", "Apartment", "Plot"];
 const URGENCY_OPTIONS = ["30 days", "45 days", "60 days", "90 days"];
-const SIZE_UNITS = ["Marla", "Kanal", "sq ft"];
+
+// Buy vs rent — same two-option toggle as the Create Listing page.
+const PURPOSES = [
+  { value: "sale", label: "For Sale" },
+  { value: "rent", label: "For Rent" },
+];
+
+// Top-level property category — drives which sub-types the user can pick.
+// Mirrors the Create Listing form exactly so both pickers stay identical.
+const CATEGORIES = [
+  { value: "home", label: "Home", icon: "🏠" },
+  { value: "plot", label: "Plot", icon: "📐" },
+  { value: "commercial", label: "Commercial", icon: "🏢" },
+];
+
+// Sub-types per category (same values as listings — matchmaking compares
+// propertyType verbatim, so a requirement must use the listing's kebab-case).
+const SUBTYPES_BY_CATEGORY = {
+  home: [
+    { value: "house", label: "House", icon: FiHome },
+    { value: "flat", label: "Flat", icon: FiLayout },
+    { value: "upper-portion", label: "Upper Portion", icon: FiChevronsUp },
+    { value: "lower-portion", label: "Lower Portion", icon: FiChevronsDown },
+    { value: "farm-house", label: "Farm House", icon: FiSunrise },
+    { value: "room", label: "Room", icon: FiColumns },
+    { value: "penthouse", label: "Penthouse", icon: FiLayers },
+  ],
+  plot: [
+    { value: "residential-plot", label: "Residential Plot", icon: FiHome },
+    { value: "commercial-plot", label: "Commercial Plot", icon: FiBriefcase },
+    { value: "agricultural-land", label: "Agricultural Land", icon: FiSunrise },
+    { value: "industrial-land", label: "Industrial Land", icon: FiTruck },
+    { value: "plot-form", label: "Plot Form", icon: FiFileText },
+    { value: "plot-file", label: "Plot File", icon: FiFolder },
+  ],
+  commercial: [
+    { value: "shop", label: "Shop", icon: FiShoppingBag },
+    { value: "office", label: "Office", icon: FiMonitor },
+    { value: "warehouse", label: "Warehouse", icon: FiBox },
+    { value: "factory", label: "Factory", icon: FiTool },
+    { value: "building", label: "Building", icon: FiHome },
+    { value: "other", label: "Other", icon: FiGrid },
+  ],
+};
+
+// Lookup the category that owns a given sub-type (for draft restore).
+const CATEGORY_OF_SUBTYPE = Object.fromEntries(
+  Object.entries(SUBTYPES_BY_CATEGORY).flatMap(([cat, list]) =>
+    list.map((s) => [s.value, cat]),
+  ),
+);
+// Legacy "Apartment" from the old requirement dropdown → Flat.
+CATEGORY_OF_SUBTYPE.apartment = "home";
+
+// Same unit picker as the Create Listing form.
+const SIZE_UNITS = [
+  { value: "Sq. Ft.", label: "Square Feet" },
+  { value: "Sq. Yd.", label: "Square Yards" },
+  { value: "Sq. M.", label: "Square Meters" },
+  { value: "Marla", label: "Marla" },
+  { value: "Kanal", label: "Kanal" },
+];
+
+// Map legacy units onto the new picker values.
+const normalizeUnit = (unit) => (unit === "sq ft" ? "Sq. Ft." : unit || "Marla");
+
+// Normalize a stored/draft propertyType onto the current subtype vocabulary so
+// old "House"/"Apartment"/"Plot" drafts don't break the new card grid.
+const normalizeRestoredType = (value) => {
+  if (!value) return "";
+  const v = String(value).toLowerCase();
+  if (v === "apartment") return "flat";
+  const known = Object.values(SUBTYPES_BY_CATEGORY)
+    .flat()
+    .map((s) => s.value);
+  return known.includes(v) ? v : "";
+};
 
 const CITIES = [
   "Lahore",
@@ -120,10 +220,12 @@ const AREA_CENTERS = {
 
 const EMPTY_FORM = {
   title: "",
+  purpose: "sale",
   city: "",
   customCity: "",
   area: "",
   customArea: "",
+  category: "home",
   propertyType: "",
   budgetMin: "",
   budgetMax: "",
@@ -145,6 +247,13 @@ const validate = (data) => {
     errors.title = "Title must be at least 10 characters";
 
   if (!data.propertyType) errors.propertyType = "Select a property type";
+  else {
+    // Subtype must belong to the chosen category (prevents bypass via stale state).
+    const validForCategory = (SUBTYPES_BY_CATEGORY[data.category] || []).some(
+      (s) => s.value === data.propertyType,
+    );
+    if (!validForCategory) errors.propertyType = "Pick a type for this category";
+  }
 
   if (!data.city) errors.city = "Select a city";
   else if (data.city === "Other" && !data.customCity.trim())
@@ -206,17 +315,31 @@ const PostRequirement = () => {
     [draftKey]
   );
 
-  const [form, setForm] = useState(() =>
-    restoredDraft?.form ? { ...EMPTY_FORM, ...restoredDraft.form } : EMPTY_FORM
-  );
+  const [form, setForm] = useState(() => {
+    if (!restoredDraft?.form) return EMPTY_FORM;
+    const draft = restoredDraft.form;
+    const propertyType = normalizeRestoredType(draft.propertyType);
+    return {
+      ...EMPTY_FORM,
+      ...draft,
+      category: draft.category || CATEGORY_OF_SUBTYPE[propertyType] || "home",
+      propertyType,
+      sizeUnit: normalizeUnit(draft.sizeUnit),
+    };
+  });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [draftRestored, setDraftRestored] = useState(Boolean(restoredDraft));
+  // "Change Area" unit picker modal (Square Feet / Yards / Meters / Marla / Kanal).
+  const [unitModalOpen, setUnitModalOpen] = useState(false);
   // Mode-switching pin selector — same UX as the dealer's Create Listing form.
   const [locationMode, setLocationMode] = useState("map");
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  // Nominatim-resolved centre for a free-text ("Other") city/area — lets the map
+  // jump to a typed area instead of staying on the city centre.
+  const [resolvedAreaCenter, setResolvedAreaCenter] = useState(null);
 
   // Skip the first auto-save fire (just-loaded state).
   const skipFirstSaveRef = useRef(true);
@@ -265,21 +388,74 @@ const PostRequirement = () => {
     return AREAS_BY_CITY[form.city] || [];
   }, [form.city]);
 
+  /* ── Effective city + area (resolves "Other" to its custom text) ── */
+  const effectiveCity =
+    form.city === "Other" ? form.customCity.trim() : form.city;
+  const effectiveArea =
+    form.city === "Other" || form.area === "Other"
+      ? form.customArea.trim()
+      : form.area;
+
+  // When the user types a free-text area ("Other" in the dropdown), geocode
+  // "<area>, <city>, Pakistan" and recentre the map there. Debounced so typing
+  // doesn't hammer the geocoder on every keystroke.
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (!effectiveCity) {
+        if (!cancelled) setResolvedAreaCenter(null);
+        return;
+      }
+      const query = effectiveArea
+        ? `${effectiveArea}, ${effectiveCity}, Pakistan`
+        : `${effectiveCity}, Pakistan`;
+      forwardGeocode(query)
+        .then((hit) => {
+          if (cancelled || !hit) return;
+          setResolvedAreaCenter({ lat: hit.lat, lng: hit.lng });
+        })
+        .catch(() => {
+          if (!cancelled) setResolvedAreaCenter(null);
+        });
+    }, effectiveArea ? 400 : 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [effectiveCity, effectiveArea]);
+
+  /* ── Effective default centre + zoom for the LocationPicker ── */
+  // Priority: hardcoded area centre (instant, no network) > Nominatim-resolved
+  // coords (for "Other" free-text areas/cities) > known-city centre.
+  const hardcodedAreaCenter =
+    effectiveCity && effectiveArea
+      ? AREA_CENTERS[`${effectiveCity}|${effectiveArea}`] || null
+      : null;
+
   const mapCenter = useMemo(() => {
     if (form.coordinates) return form.coordinates;
-    if (!form.city || form.city === "Other") return undefined;
-    // Area selected → jump to the area centre if we know it, otherwise city centre.
-    if (form.area && form.area !== "Other") {
-      const areaKey = `${form.city}|${form.area}`;
-      if (AREA_CENTERS[areaKey]) return AREA_CENTERS[areaKey];
-    }
-    return CITY_CENTERS[form.city];
-  }, [form.coordinates, form.city, form.area]);
+    if (!effectiveCity) return undefined;
+    if (hardcodedAreaCenter) return hardcodedAreaCenter;
+    if (effectiveArea && resolvedAreaCenter) return resolvedAreaCenter;
+    if (CITY_CENTERS[effectiveCity]) return CITY_CENTERS[effectiveCity];
+    return undefined;
+  }, [form.coordinates, effectiveCity, effectiveArea, hardcodedAreaCenter, resolvedAreaCenter]);
+
+  const mapZoom = useMemo(() => {
+    const hasAreaCenter = Boolean(
+      hardcodedAreaCenter || (effectiveArea && resolvedAreaCenter),
+    );
+    return hasAreaCenter ? 14 : 11;
+  }, [effectiveArea, hardcodedAreaCenter, resolvedAreaCenter]);
 
   /* ── Handlers ── */
   const handleChange = useCallback((field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
+      // Switching category invalidates the previously-chosen subtype.
+      if (field === "category" && value !== prev.category) {
+        next.propertyType = "";
+      }
       // Reset area when city changes — areas list depends on city.
       if (field === "city") {
         next.area = "";
@@ -406,6 +582,7 @@ const PostRequirement = () => {
 
         const requirementData = {
           title: form.title.trim(),
+          purpose: form.purpose,
           location: {
             city: finalCity,
             area: finalArea,
@@ -543,6 +720,32 @@ const PostRequirement = () => {
           </div>
         )}
 
+        {/* ── Purpose — buy vs rent (same two-option toggle as Create Listing) ── */}
+        <div className="req-form-section">
+          <h3 className="req-form-section-title">Purpose</h3>
+          <p className="req-form-section-sub">
+            Are you looking to buy or rent?
+          </p>
+          <div className="lst-purpose-row">
+            {PURPOSES.map((p) => {
+              const active = form.purpose === p.value;
+              return (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => handleChange("purpose", p.value)}
+                  className={`lst-purpose-card ${active ? "lst-purpose-card--active" : ""}`}
+                >
+                  <span className="lst-purpose-icon">
+                    {p.value === "sale" ? "🏷️" : "🔑"}
+                  </span>
+                  <span className="lst-purpose-label">{p.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ── What are you looking for? ── */}
         <div className="req-form-section">
           <h3 className="req-form-section-title">
@@ -570,63 +773,93 @@ const PostRequirement = () => {
             {showError("title") && <div className="req-error">{errors.title}</div>}
           </div>
 
-          {/* Property Type + Size */}
-          <div className="req-row">
-            <div className="req-field">
-              <label className="req-label" htmlFor="req-type">
-                Property Type<Required />
-              </label>
-              <select
-                id="req-type"
-                className={fieldClass("req-select", "propertyType")}
-                value={form.propertyType}
-                onChange={(e) => handleChange("propertyType", e.target.value)}
-                onBlur={() => handleBlur("propertyType")}
-              >
-                <option value="">Select type</option>
-                {PROPERTY_TYPES.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-              {showError("propertyType") && (
-                <div className="req-error">{errors.propertyType}</div>
-              )}
+          {/* Property Type — category cards + subtype grid (same as Create Listing) */}
+          <div className="req-field">
+            <label className="req-label">
+              Property Type<Required />
+            </label>
+            <div className="lst-category-row">
+              {CATEGORIES.map((c) => {
+                const active = form.category === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => handleChange("category", c.value)}
+                    className={`lst-category-card ${active ? "lst-category-card--active" : ""}`}
+                  >
+                    <span className="lst-category-icon">{c.icon}</span>
+                    <span className="lst-category-label">{c.label}</span>
+                  </button>
+                );
+              })}
             </div>
+            <div className="lst-subtype-grid">
+              {(SUBTYPES_BY_CATEGORY[form.category] || []).map((s) => {
+                const active = form.propertyType === s.value;
+                const SIcon = s.icon;
+                return (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => handleChange("propertyType", s.value)}
+                    onBlur={() => handleBlur("propertyType")}
+                    className={`lst-subtype-card ${active ? "lst-subtype-card--active" : ""}`}
+                  >
+                    {SIcon && (
+                      <span className="lst-subtype-card-icon">
+                        <SIcon size={16} />
+                      </span>
+                    )}
+                    <span className="lst-subtype-card-label">{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {showError("propertyType") && (
+              <div className="req-error">{errors.propertyType}</div>
+            )}
+          </div>
 
-            <div className="req-field">
-              <label className="req-label" htmlFor="req-size">
-                Preferred Size<Required />
-                <span className="req-label-hint">(value + unit)</span>
-              </label>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  id="req-size"
-                  type="number"
-                  step="any"
-                  min="0"
-                  className={fieldClass("req-input", "size")}
-                  placeholder="e.g. 10"
-                  value={form.size}
-                  onChange={(e) => handleChange("size", e.target.value)}
-                  onBlur={() => handleBlur("size")}
-                  style={{ flex: 2 }}
-                />
-                <select
-                  id="req-size-unit"
-                  className={fieldClass("req-select", "sizeUnit")}
-                  value={form.sizeUnit}
-                  onChange={(e) => handleChange("sizeUnit", e.target.value)}
-                  onBlur={() => handleBlur("sizeUnit")}
-                  style={{ flex: 1 }}
+          {/* Preferred Size — value input + "Change Area" unit picker modal
+              (same trigger/UX as the Create Listing page) */}
+          <div className="req-field">
+            <label className="req-label" htmlFor="req-size">
+              Preferred Size<Required />
+              <span className="req-label-hint">(value + unit)</span>
+            </label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                id="req-size"
+                type="number"
+                step="any"
+                min="0"
+                className={fieldClass("req-input", "size")}
+                placeholder="e.g. 10"
+                value={form.size}
+                onChange={(e) => handleChange("size", e.target.value)}
+                onBlur={() => handleBlur("size")}
+                style={{ flex: 2 }}
+              />
+              <div style={{ flex: 1 }}>
+                <button
+                  type="button"
+                  className={`lst-unit-trigger${
+                    showError("sizeUnit") ? " lst-unit-trigger--error" : ""
+                  }`}
+                  onClick={() => setUnitModalOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={unitModalOpen}
                 >
-                  {SIZE_UNITS.map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
+                  <span className="lst-unit-trigger-value">
+                    {form.sizeUnit || "Marla"}
+                  </span>
+                  <FiChevronDown className="abn-s2-chev" size={16} />
+                </button>
               </div>
-              {showError("size") && <div className="req-error">{errors.size}</div>}
-              {showError("sizeUnit") && <div className="req-error">{errors.sizeUnit}</div>}
             </div>
+            {showError("size") && <div className="req-error">{errors.size}</div>}
+            {showError("sizeUnit") && <div className="req-error">{errors.sizeUnit}</div>}
           </div>
         </div>
 
@@ -774,6 +1007,7 @@ const PostRequirement = () => {
                 value={form.coordinates}
                 onPick={handleMapPick}
                 defaultCenter={mapCenter}
+                defaultZoom={mapZoom}
                 height={340}
               />
             )}
@@ -1040,6 +1274,34 @@ const PostRequirement = () => {
           </Link>
         </div>
       </form>
+
+      {/* ── "Change Area" unit picker modal — identical to Create Listing ── */}
+      <Modal
+        isOpen={unitModalOpen}
+        onClose={() => setUnitModalOpen(false)}
+        title="Change Area"
+        size="small"
+      >
+        <div className="dd-modal-list">
+          {SIZE_UNITS.map((u) => (
+            <button
+              key={u.value}
+              type="button"
+              className={`dd-opt${form.sizeUnit === u.value ? " dd-opt--active" : ""}`}
+              onClick={() => {
+                handleChange("sizeUnit", u.value);
+                handleBlur("sizeUnit");
+                setUnitModalOpen(false);
+              }}
+            >
+              <span className="dd-opt-label">{u.label}</span>
+              {form.sizeUnit === u.value && (
+                <FiCheck className="dd-opt-check" size={16} />
+              )}
+            </button>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 };

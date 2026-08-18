@@ -101,7 +101,7 @@ const generateMatchesForRequirement = async (requirement, userId) => {
 
 // Create Requirement
 const createRequirement = async (req, res, next) => {
-  const { title, location, budget, propertyType, size, bedrooms, bathrooms, notes, urgency } = req.body;
+  const { title, location, budget, propertyType, size, bedrooms, bathrooms, notes, urgency, purpose } = req.body;
 
   // Validation
   if (!title?.trim() || !location?.city || !propertyType) {
@@ -113,6 +113,10 @@ const createRequirement = async (req, res, next) => {
       data: {
         requiredById: req.user.id,
         title: title.trim(),
+        // Buy vs rent — clamp so a stray value never breaks the Postgres enum.
+        // Matchmaking compares purpose verbatim, so this must line up with the
+        // listing's purpose for rent requirements to match rent listings.
+        purpose: purpose === 'rent' ? 'rent' : 'sale',
         location,
         budget: toBudget(budget),
         propertyType: propertyType.toLowerCase(), // Normalize to lowercase

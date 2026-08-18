@@ -51,10 +51,12 @@ const listingService = {
     }
   },
 
-  // Get user's listings
-  getUserListings: async (userId) => {
+  // Get user's listings. Pass the current "viewing as" role to scope results
+  // to listings posted under that role (actingRole).
+  getUserListings: async (userId, viewRole) => {
     try {
-      const response = await apiClient.get(`/listings/user/${userId}`);
+      const params = viewRole ? { viewRole } : {};
+      const response = await apiClient.get(`/listings/user/${userId}`, { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch user listings' };

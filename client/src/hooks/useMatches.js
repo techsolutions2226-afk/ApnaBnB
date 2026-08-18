@@ -27,9 +27,10 @@ export const useMatches = (type = 'all') => {
   return { matches, isLoading, error, refetch: fetchMatches };
 };
 
-// All matches involving the current user, sorted by recency.
-// Used by every role's dashboard for the "Recent Matches" section.
-export const useMyMatches = () => {
+// All matches for the role the user is currently ACTING AS, sorted by recency.
+// Used by every role's dashboard for the "Recent Matches" section. Pass the
+// viewRole (seller|buyer|dealer) so each role only sees its own side's matches.
+export const useMyMatches = (viewRole) => {
   const [matches, setMatches] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,7 +39,7 @@ export const useMyMatches = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await matchService.getMyMatches();
+      const data = await matchService.getMyMatches(viewRole);
       setMatches(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || 'Failed to fetch your matches');
@@ -49,7 +50,8 @@ export const useMyMatches = () => {
 
   useEffect(() => {
     fetchMatches();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewRole]);
 
   return { matches, isLoading, error, refetch: fetchMatches };
 };

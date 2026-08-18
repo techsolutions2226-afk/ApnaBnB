@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useUserRequirements, useDeleteRequirement } from "../hooks/useRequirements";
 import { useMyMatches } from "../hooks/useMatches";
 import { useDashboardData } from "../hooks/useDashboardData";
+import useViewRole from "../hooks/useViewRole";
 import DashStat from "../components/dashboard/DashStat";
 import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
@@ -30,9 +31,10 @@ const BuyerDashboard = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const userId = currentUser?.id;
+  const { viewRole } = useViewRole();
 
-  // Fetch user's requirements
-  const { requirements, isLoading: reqLoading, error: reqError, refetch: refetchReqs } = useUserRequirements(userId);
+  // Fetch user's requirements — scoped to the role they're acting as (buyer)
+  const { requirements, isLoading: reqLoading, error: reqError, refetch: refetchReqs } = useUserRequirements(userId, viewRole);
 
   // Delete requirement hook
   const { remove: deleteRequirement, isLoading: isDeleting } = useDeleteRequirement();
@@ -40,8 +42,8 @@ const BuyerDashboard = () => {
   // Live aggregate data (unread messages, wishlist, upcoming trips)
   const { unreadMessages, savedProperties, upcomingTrips, upcomingList } = useDashboardData();
 
-  // All matches involving this user
-  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches();
+  // All matches for the role the user is ACTING AS (buyer side only)
+  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches(viewRole);
   const matchCount = myMatches?.length || 0;
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -121,7 +123,7 @@ const BuyerDashboard = () => {
           value={stats.activeRequirements}
           label="Active Requirements"
           accent="#1a8f5a"
-          to="/requirements"
+          to="/my-requirements"
         />
         <DashStat
           icon={FiHeart}

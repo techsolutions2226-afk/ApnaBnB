@@ -17,7 +17,7 @@ const EMPTY_STATS = {
   unreadMessages: 0,
 };
 
-export const useUserStats = () => {
+export const useUserStats = (viewRole) => {
   const [stats, setStats] = useState(EMPTY_STATS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,7 +26,7 @@ export const useUserStats = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await userService.getStats();
+      const data = await userService.getStats(viewRole);
       setStats({
         totalListings: data.totalListings ?? 0,
         activeListings: data.activeListings ?? 0,
@@ -40,7 +40,7 @@ export const useUserStats = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [viewRole]);
 
   useEffect(() => {
     fetchStats();

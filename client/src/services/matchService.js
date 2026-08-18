@@ -11,10 +11,13 @@ const matchService = {
     }
   },
 
-  // Get every match involving the current user (any type).
-  getMyMatches: async () => {
+  // Get every match involving the current user (any type). Pass the current
+  // "viewing as" role to scope matches to that role's side (e.g. buyer acting
+  // as seller sees only their seller-side matches).
+  getMyMatches: async (viewRole) => {
     try {
-      const response = await apiClient.get('/matches/mine');
+      const params = viewRole ? { viewRole } : {};
+      const response = await apiClient.get('/matches/mine', { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch your matches' };

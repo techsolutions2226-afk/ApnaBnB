@@ -123,7 +123,7 @@ export const useUpdateListing = () => {
   return { update, isLoading, error };
 };
 
-export const useUserListings = (userId) => {
+export const useUserListings = (userId, viewRole) => {
   const [listings, setListings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -133,7 +133,7 @@ export const useUserListings = (userId) => {
     setError(null);
 
     try {
-      const data = await listingService.getUserListings(userId);
+      const data = await listingService.getUserListings(userId, viewRole);
       setListings(data);
     } catch (err) {
       setError(err.message || 'Failed to fetch user listings');
@@ -146,7 +146,8 @@ export const useUserListings = (userId) => {
     if (userId) {
       fetchUserListings();
     }
-  }, [userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, viewRole]);
 
   return { listings, isLoading, error, refetch: fetchUserListings };
 };

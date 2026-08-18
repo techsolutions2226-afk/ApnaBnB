@@ -124,13 +124,19 @@ const updateListing = async (req, res, next) => {
   }
 };
 
-// Get Listings for a specific user
+// Get Listings for a specific user. Optional ?viewRole= scopes results to the
+// role the listing was posted under (property.actingRole) so e.g. a buyer
+// acting as dealer never sees listings they posted as a seller.
 const getUserListings = async (req, res, next) => {
   const { userId } = req.params;
+  const { viewRole } = req.query;
 
   try {
+    const where = { ownerId: userId };
+    if (viewRole) where.property = { actingRole: viewRole };
+
     const listings = await prisma.listing.findMany({
-      where: { ownerId: userId },
+      where,
       include: { property: true, owner: ownerSelect },
     });
     res.status(200).json(listings);

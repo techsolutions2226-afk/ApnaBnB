@@ -24,10 +24,15 @@ const CITY_FILTERS = ["All Cities", "Lahore", "Islamabad", "Karachi"];
 
 /* ── Helpers ── */
 const formatBudget = (num) => {
+  if (num === null || num === undefined || Number.isNaN(Number(num))) return "—";
   if (num >= 10000000) return `${(num / 10000000).toFixed(num % 10000000 === 0 ? 0 : 1)} Cr`;
   if (num >= 100000) return `${(num / 100000).toFixed(num % 100000 === 0 ? 0 : 1)} Lac`;
   return num.toLocaleString("en-PK");
 };
+
+// The API returns { requiredBy, actingRole } — not a flat `role`.
+const posterRole = (req) =>
+  req.actingRole || (req.requiredBy && typeof req.requiredBy === "object" ? req.requiredBy.role : null) || "—";
 
 const getUrgencyClass = (urgency) => {
   if (urgency === "30 days") return "req-card-urgency--urgent";
@@ -50,8 +55,8 @@ const RequirementsBoard = () => {
   const stats = useMemo(
     () => ({
       total: requirements.length,
-      buyer: requirements.filter((r) => r.role === "buyer").length,
-      dealer: requirements.filter((r) => r.role === "dealer").length,
+      buyer: requirements.filter((r) => posterRole(r) === "buyer").length,
+      dealer: requirements.filter((r) => posterRole(r) === "dealer").length,
       active: requirements.length, // Assuming all fetched are active
     }),
     [requirements]
@@ -63,23 +68,23 @@ const RequirementsBoard = () => {
 
     /* Role filter */
     if (roleFilter !== "all") {
-      result = result.filter((r) => r.role === roleFilter);
+      result = result.filter((r) => posterRole(r) === roleFilter);
     }
 
     /* City filter */
     if (cityFilter !== "All Cities") {
-      result = result.filter((r) => r.city === cityFilter);
+      result = result.filter((r) => r.location?.city === cityFilter);
     }
 
     /* Search — matches title, area, notes, or poster name */
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter((r) => {
-        const posterName = r.userId?.name || r.createdBy?.name || "";
+        const posterName = r.requiredBy?.name || r.createdBy?.name || "";
         return (
           r.title?.toLowerCase().includes(q) ||
-          r.area?.toLowerCase().includes(q) ||
-          r.city?.toLowerCase().includes(q) ||
+          r.location?.area?.toLowerCase().includes(q) ||
+          r.location?.city?.toLowerCase().includes(q) ||
           r.propertyType?.toLowerCase().includes(q) ||
           (r.notes && r.notes.toLowerCase().includes(q)) ||
           posterName.toLowerCase().includes(q)
@@ -211,16 +216,17 @@ const RequirementsBoard = () => {
         <div className="req-cards">
           {filteredRequirements.map((req) => {
             const poster =
-              (req.userId && typeof req.userId === "object" ? req.userId : null) ||
+              (req.requiredBy && typeof req.requiredBy === "object" ? req.requiredBy : null) ||
               (req.createdBy && typeof req.createdBy === "object" ? req.createdBy : null);
             const posterName = poster?.name || "Unknown";
             const posterInitial = posterName.charAt(0).toUpperCase();
             const isFulfilled = req.status === "fulfilled";
-            const isOwn = currentUser && (req.userId?._id === currentUser.id || req.userId === currentUser.id);
+            const isOwn = currentUser && (poster?._id === currentUser.id || poster?.id === currentUser.id);
+            const reqRole = posterRole(req);
 
             return (
               <div
-                key={req.id}
+                key={req.id || req._id}
                 className="req-card"
                 style={isFulfilled ? { opacity: 0.6 } : undefined}
               >
@@ -243,9 +249,9 @@ const RequirementsBoard = () => {
                     )}
                   </div>
                   <span
-                    className={`req-card-role req-card-role--${req.role}`}
+                    className={`req-card-role req-card-role--${reqRole}`}
                   >
-                    {req.role}
+                    {reqRole}
                   </span>
                 </div>
 
@@ -254,25 +260,25 @@ const RequirementsBoard = () => {
                   <div className="req-card-detail">
                     <span className="req-card-detail-label">Location</span>
                     <span className="req-card-detail-value">
-                      {req.area}, {req.city}
+                      {[req.location?.area, req.location?.city].filter(Boolean).join(", ") || "—"}
                     </span>
                   </div>
                   <div className="req-card-detail">
                     <span className="req-card-detail-label">Budget</span>
                     <span className="req-card-detail-value">
-                      {formatBudget(req.budgetMin)} — {formatBudget(req.budgetMax)}
+                      {formatBudget(req.budget?.min)} — {formatBudget(req.budget?.max)}
                     </span>
                   </div>
                   <div className="req-card-detail">
                     <span className="req-card-detail-label">Type</span>
                     <span className="req-card-detail-value">
-                      {req.propertyType} &middot; {req.size}
+                      {req.propertyType} &middot; {req.size || "—"}
                     </span>
                   </div>
                   <div className="req-card-detail">
                     <span className="req-card-detail-label">Rooms</span>
                     <span className="req-card-detail-value">
-                      {req.bedrooms > 0 || req.bathrooms > 0
+                      {(req.bedrooms > 0 || req.bathrooms > 0)
                         ? `${req.bedrooms} Bed / ${req.bathrooms} Bath`
                         : "N/A"}
                     </span>

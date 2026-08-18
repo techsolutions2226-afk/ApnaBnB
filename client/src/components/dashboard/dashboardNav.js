@@ -42,7 +42,6 @@ export const NAV_BY_ROLE = {
     DASH,
     { to: "/listing/new", label: "Create Listing", icon: FiPlusSquare },
     { to: "/my-listings", label: "My Listings", icon: FiList },
-    { to: "/requirements", label: "Requirements Board", icon: FiClipboard },
     MATCHES,
     MESSAGES,
     NOTIFS,
@@ -50,6 +49,7 @@ export const NAV_BY_ROLE = {
   buyer: [
     DASH,
     { to: "/requirements/new", label: "Post Requirement", icon: FiPlusSquare },
+    { to: "/my-requirements", label: "My Requirements", icon: FiClipboard },
     { to: "/", label: "Browse Properties", icon: FiSearch, end: true },
     { to: "/wishlists", label: "Wishlists", icon: FiHeart },
     MATCHES,

@@ -121,7 +121,7 @@ export const useDeleteRequirement = () => {
   return { remove, isLoading, error };
 };
 
-export const useUserRequirements = (userId) => {
+export const useUserRequirements = (userId, viewRole) => {
   const [requirements, setRequirements] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -131,7 +131,7 @@ export const useUserRequirements = (userId) => {
     setError(null);
 
     try {
-      const data = await requirementService.getUserRequirements(userId);
+      const data = await requirementService.getUserRequirements(userId, viewRole);
       setRequirements(data);
     } catch (err) {
       setError(err.message || 'Failed to fetch user requirements');
@@ -144,7 +144,8 @@ export const useUserRequirements = (userId) => {
     if (userId) {
       fetchUserRequirements();
     }
-  }, [userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, viewRole]);
 
   return { requirements, isLoading, error, refetch: fetchUserRequirements };
 };

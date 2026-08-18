@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useMyMatches } from "../hooks/useMatches";
+import useViewRole from "../hooks/useViewRole";
 import matchService from "../services/matchService";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -54,8 +55,9 @@ const formatBudget = (budget) => {
 };
 
 const Matches = () => {
-  const { currentUser, getDashboardPath } = useAuth();
-  const { matches, isLoading, error, refetch } = useMyMatches();
+    const { getDashboardPath } = useAuth();
+  const { viewRole } = useViewRole();
+  const { matches, isLoading, error, refetch } = useMyMatches(viewRole);
   const [activeFilter, setActiveFilter] = useState("all");
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState(null);

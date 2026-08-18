@@ -15,6 +15,9 @@
  */
 export const formatPrice = (n, { prefix = false } = {}) => {
   const p = prefix ? "PKR " : "";
+  if (n === null || n === undefined || Number.isNaN(Number(n))) {
+    return `${p}—`;
+  }
   if (n >= 10000000) return `${p}${(n / 10000000).toFixed(1)} Cr`;
   if (n >= 100000) return `${p}${(n / 100000).toFixed(1)} Lac`;
   return `${p}${n.toLocaleString()}`;

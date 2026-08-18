@@ -246,7 +246,12 @@ const PropertyDetail = () => {
     bathrooms != null && bathrooms > 0
       ? { icon: <FiDroplet size={14} />, label: `${bathrooms} Bath${bathrooms !== 1 ? "s" : ""}` }
       : null,
-    purpose ? { icon: <FiTag size={14} />, label: capitalize(purpose) } : null,
+    purpose
+      ? {
+          icon: <FiTag size={14} />,
+          label: purpose === "rent" ? "For Rent" : "For Sale",
+        }
+      : null,
     locationString
       ? { icon: <FiMapPin size={14} />, label: locationString }
       : null,
@@ -338,6 +343,11 @@ const PropertyDetail = () => {
         <div className="pd-header">
           <div className="pd-header-left">
             <h1 className="pd-title">{title}</h1>
+            {purpose && (
+              <span className={`pd-purpose-badge pd-purpose-badge--${purpose}`}>
+                {purpose === "rent" ? "For Rent" : "For Sale"}
+              </span>
+            )}
             <div className="pd-meta-row">
               {metaChips.map((chip, i) => (
                 <span key={i} className="pd-meta-chip">

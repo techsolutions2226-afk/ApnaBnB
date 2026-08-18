@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FiArrowRight } from "react-icons/fi";
 import { useMyMatches } from "../../hooks/useMatches";
+import useViewRole from "../../hooks/useViewRole";
 import SectionHeader from "./SectionHeader";
 
 /* Human-readable relationship labels per match type — same naming the
@@ -47,7 +48,8 @@ const matchTypeClass = (type) => {
  *  Pass `limit` to cap how many cards render (default 5).
  *  Pass `emptyMessage` to customise the empty-state copy per role. */
 const RecentMatches = ({ limit = 5, emptyMessage }) => {
-  const { matches, isLoading, error } = useMyMatches();
+  const { viewRole } = useViewRole();
+  const { matches, isLoading, error } = useMyMatches(viewRole);
 
   const title = "Recent Matches";
 

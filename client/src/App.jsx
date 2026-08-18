@@ -37,6 +37,9 @@ import EditListing from "./pages/EditListing";
 import ViewListing from "./pages/ViewListing";
 import MyListings from "./pages/MyListings";
 
+/* ── My Requirements (own requirements manager) ── */
+import MyRequirements from "./pages/MyRequirements";
+
 /* ── Requirements pages (Step 5) ── */
 import PostRequirement from "./pages/PostRequirement";
 import EditRequirement from "./pages/EditRequirement";
@@ -94,6 +97,7 @@ function App() {
                   <Route path="/listing/:id/edit" element={<EditListing />} />
                   <Route path="/listing/:id" element={<ViewListing />} />
                   <Route path="/my-listings" element={<MyListings />} />
+                  <Route path="/my-requirements" element={<MyRequirements />} />
 
                   {/* Requirements — any authenticated user. The acting role is
                       recorded on the requirement at create time. */}

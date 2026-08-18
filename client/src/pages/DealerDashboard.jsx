@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useUserListings, useDeleteListing } from "../hooks/useListings";
 import { useUserStats } from "../hooks/useUserStats";
+import useViewRole from "../hooks/useViewRole";
 import DashStat from "../components/dashboard/DashStat";
 import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
@@ -34,15 +35,17 @@ const DealerDashboard = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const userId = currentUser?.id;
+  const { viewRole } = useViewRole();
 
-  // Fetch dealer's listings
-  const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(userId);
+  // Fetch dealer's listings — scoped to the role they're acting as
+  const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(userId, viewRole);
 
   // Delete listing hook
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
 
-  // Live aggregate metrics from GET /users/me/stats
-  const { stats } = useUserStats();
+  // Live aggregate metrics from GET /users/me/stats — scoped to the role
+  // the user is ACTING AS so counts match what that role sees.
+  const { stats } = useUserStats(viewRole);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);

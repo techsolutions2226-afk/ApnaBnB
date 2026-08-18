@@ -36,7 +36,7 @@ import requirementService from "../services/requirementService";
 import LocationPicker from "../components/common/LocationPicker";
 import MapView from "../components/common/MapView";
 import Modal from "../components/common/Modal";
-import { forwardGeocode } from "../utils/geocode";
+import { forwardGeocode, forwardGeocodeWithGoogle } from "../utils/geocode";
 import {
   loadRequirementDraft,
   saveRequirementDraft,
@@ -398,7 +398,9 @@ const PostRequirement = () => {
 
   // When the user types a free-text area ("Other" in the dropdown), geocode
   // "<area>, <city>, Pakistan" and recentre the map there. Debounced so typing
-  // doesn't hammer the geocoder on every keystroke.
+  // doesn't hammer the geocoder on every keystroke. Prefers the already-loaded
+  // Google Maps Geocoder (Nominatim can be blocked/rate-limited); falls back to
+  // Nominatim only if Google isn't available.
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
@@ -409,10 +411,18 @@ const PostRequirement = () => {
       const query = effectiveArea
         ? `${effectiveArea}, ${effectiveCity}, Pakistan`
         : `${effectiveCity}, Pakistan`;
-      forwardGeocode(query)
-        .then((hit) => {
-          if (cancelled || !hit) return;
-          setResolvedAreaCenter({ lat: hit.lat, lng: hit.lng });
+
+      forwardGeocodeWithGoogle(query)
+        .then((googleHit) => {
+          if (cancelled) return;
+          if (googleHit) {
+            setResolvedAreaCenter({ lat: googleHit.lat, lng: googleHit.lng });
+            return;
+          }
+          return forwardGeocode(query).then((hit) => {
+            if (cancelled) return;
+            setResolvedAreaCenter(hit ? { lat: hit.lat, lng: hit.lng } : null);
+          });
         })
         .catch(() => {
           if (!cancelled) setResolvedAreaCenter(null);
@@ -425,8 +435,8 @@ const PostRequirement = () => {
   }, [effectiveCity, effectiveArea]);
 
   /* ── Effective default centre + zoom for the LocationPicker ── */
-  // Priority: hardcoded area centre (instant, no network) > Nominatim-resolved
-  // coords (for "Other" free-text areas/cities) > known-city centre.
+  // Priority: hardcoded area centre (instant, no network) > Google/Nominatim-
+  // resolved coords (for "Other" free-text areas/cities) > known-city centre.
   const hardcodedAreaCenter =
     effectiveCity && effectiveArea
       ? AREA_CENTERS[`${effectiveCity}|${effectiveArea}`] || null

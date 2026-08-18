@@ -6,6 +6,7 @@ import {
   useGoogleMap,
 } from "@react-google-maps/api";
 import { reverseGeocode } from "../../utils/geocode";
+import { GOOGLE_MAPS_LOADER_OPTIONS } from "../../config/mapsLoader";
 
 const DEFAULT_CENTER = { lat: 31.5204, lng: 74.3587 }; // Lahore
 const PICK_ZOOM = 14;
@@ -34,7 +35,7 @@ const LocationPicker = ({
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-script",
+    ...GOOGLE_MAPS_LOADER_OPTIONS,
     googleMapsApiKey: apiKey,
   });
 

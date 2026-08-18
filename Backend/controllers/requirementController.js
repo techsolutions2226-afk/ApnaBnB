@@ -236,13 +236,19 @@ const getRequirementById = async (req, res, next) => {
   }
 };
 
-// Get Requirements for a specific user
+// Get Requirements for a specific user. Optional ?viewRole= scopes results to
+// the role the requirement was posted under (actingRole) so e.g. a buyer
+// acting as dealer never sees requirements they posted as a buyer.
 const getUserRequirements = async (req, res, next) => {
   const { userId } = req.params;
+  const { viewRole } = req.query;
 
   try {
+    const where = { requiredById: userId };
+    if (viewRole) where.actingRole = viewRole;
+
     const requirements = await prisma.requirement.findMany({
-      where: { requiredById: userId },
+      where,
       include: { requiredBy: requiredBySelect },
     });
     res.status(200).json(requirements);

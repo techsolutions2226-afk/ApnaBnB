@@ -21,10 +21,12 @@ const userService = {
     }
   },
 
-  // Live dashboard metrics for the authenticated user.
-  getStats: async () => {
+  // Live dashboard metrics for the authenticated user. Pass the current
+  // "viewing as" role so the match count matches what that role sees.
+  getStats: async (viewRole) => {
     try {
-      const response = await apiClient.get('/users/me/stats');
+      const params = viewRole ? { viewRole } : {};
+      const response = await apiClient.get('/users/me/stats', { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch stats' };

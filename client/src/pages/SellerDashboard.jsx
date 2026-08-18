@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useUserListings, useDeleteListing } from "../hooks/useListings";
 import { useMyMatches } from "../hooks/useMatches";
 import { useDashboardData } from "../hooks/useDashboardData";
+import useViewRole from "../hooks/useViewRole";
 import DashStat from "../components/dashboard/DashStat";
 import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
@@ -18,7 +19,6 @@ import {
   FiMessageSquare,
   FiPlusSquare,
   FiList,
-  FiClipboard,
   FiEye as FiView,
   FiEdit2,
   FiTrash2,
@@ -33,8 +33,9 @@ const SellerDashboard = () => {
   const navigate = useNavigate();
   const userId = currentUser?.id;
 
-  // Fetch user's listings
-  const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(userId);
+  // Fetch user's listings — scoped to the role they're acting as
+  const { viewRole } = useViewRole();
+  const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(userId, viewRole);
 
   // Delete listing hook
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
@@ -42,8 +43,9 @@ const SellerDashboard = () => {
   // Live aggregate data (unread messages, wishlist, trips)
   const { unreadMessages } = useDashboardData();
 
-  // Recent matches (+ count for the stat card)
-  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches();
+  // Recent matches for the role the user is ACTING AS (seller side only)
+  // (+ count for the stat card)
+  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches(viewRole);
   const matchCount = myMatches?.length || 0;
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -171,11 +173,11 @@ const SellerDashboard = () => {
             </span>
             Manage Listings
           </Link>
-          <Link to="/requirements" className="dash-quick">
+          <Link to="/matches" className="dash-quick">
             <span className="dash-quick-icon">
-              <FiClipboard size={17} />
+              <FiGitMerge size={17} />
             </span>
-            Requirements Board
+            View Matches
           </Link>
           <Link to="/messages" className="dash-quick dash-quick--alt">
             <span className="dash-quick-icon">

@@ -1,4 +1,5 @@
 const prisma = require('../db/prisma');
+const { involvedWhere, roleInvolvedWhere } = require('./matchController');
 
 // Public read-only profile lookup. Excludes password and email; we only expose
 // fields the client renders on the public Profile page.
@@ -83,22 +84,24 @@ const updateMe = async (req, res, next) => {
 // unread messages) with one round-trip instead of several client-side fetches.
 const getUserStats = async (req, res, next) => {
   const userId = req.user.id;
+  const viewRole = req.query.viewRole;
+  // Scope match counts + listing counts to the role the user is acting as
+  // (same rule as the match/list/requirement endpoints) so every dashboard
+  // stat matches what that role sees.
+  const matchWhere = viewRole
+    ? roleInvolvedWhere(userId, viewRole)
+    : involvedWhere(userId);
+
+  const listingWhere = { ownerId: userId };
+  if (viewRole) listingWhere.property = { actingRole: viewRole };
 
   try {
     const [listings, matchCount, convs] = await Promise.all([
       prisma.listing.findMany({
-        where: { ownerId: userId },
+        where: listingWhere,
         select: { status: true, views: true, inquiries: true },
       }),
-      // Same "matches that involve me" rule as matchController.involvedWhere.
-      prisma.match.count({
-        where: {
-          OR: [
-            { property: { listedById: userId } },
-            { requirement: { requiredById: userId } },
-          ],
-        },
-      }),
+      prisma.match.count({ where: matchWhere }),
       prisma.conversation.findMany({
         where: { participants: { some: { id: userId } } },
         select: { id: true },

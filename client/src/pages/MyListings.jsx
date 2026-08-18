@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import { useUserListings, useUpdateListingStatus, useDeleteListing } from "../hooks/useListings";
 import { useProperties } from "../hooks/useProperties";
+import useViewRole from "../hooks/useViewRole";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
@@ -39,11 +40,12 @@ const FILTERS = [
 
 const MyListings = () => {
   const { currentUser, getDashboardPath } = useAuth();
+  const { viewRole } = useViewRole();
   const [activeFilter, setActiveFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
 
-  // Fetch user's listings
-  const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(currentUser?.id);
+  // Fetch user's listings (scoped to the role they're acting as)
+  const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(currentUser?.id, viewRole);
   
   // Fetch all properties for mapping
   const { properties, isLoading: propsLoading } = useProperties({}, true);

@@ -20,6 +20,63 @@ export const forwardGeocode = async (query) => {
   return { lat, lng, displayName: hit.display_name || null };
 };
 
+/**
+ * Google Maps Geocoder wrapper — used when the Maps JS script is already loaded
+ * (window.google.maps). Nominatim can be blocked/rate-limited, so prefer this
+ * on pages that already render a map. Polls briefly for the script so it also
+ * works if the map mounts a moment later. Resolves null on failure.
+ */
+export const forwardGeocodeWithGoogle = (query, { waitMs = 5000 } = {}) => {
+  if (!query || !query.trim()) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    const run = () => {
+      const Geocoder = window.google?.maps?.Geocoder;
+      if (!Geocoder) {
+        resolve(null);
+        return;
+      }
+      try {
+        const geocoder = new Geocoder();
+        geocoder.geocode(
+          { address: query.trim() },
+          (results, status) => {
+            if (status === "OK" && results?.[0]?.geometry?.location) {
+              const loc = results[0].geometry.location;
+              resolve({
+                lat: loc.lat(),
+                lng: loc.lng(),
+                displayName: results[0].formatted_address || null,
+              });
+            } else {
+              resolve(null);
+            }
+          },
+        );
+      } catch {
+        resolve(null);
+      }
+    };
+
+    if (window.google?.maps?.Geocoder) {
+      run();
+      return;
+    }
+
+    // The Maps script loads lazily — poll briefly, then give up.
+    const started = Date.now();
+    const poll = setInterval(() => {
+      if (window.google?.maps?.Geocoder) {
+        clearInterval(poll);
+        run();
+      } else if (Date.now() - started > waitMs) {
+        clearInterval(poll);
+        resolve(null);
+      }
+    }, 150);
+  });
+};
+
 /** Reverse-geocode lat/lng → { city, area, displayName } (any field may be null). */
 export const reverseGeocode = async ({ lat, lng }) => {
   const url = `${NOMINATIM_BASE}/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`;

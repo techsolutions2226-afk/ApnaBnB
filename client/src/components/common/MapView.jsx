@@ -3,18 +3,17 @@
    Pass `coordinates: { lat, lng }` to centre + place a marker. */
 
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GOOGLE_MAPS_LOADER_OPTIONS } from "../../config/mapsLoader";
 
 const FALLBACK_CENTER = { lat: 30.3753, lng: 69.3451 }; // Pakistan
 const FALLBACK_ZOOM = 5;
-const LIBRARIES = [];
 
 const MapView = ({ coordinates, zoom = 14, height = 360 }) => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
   const { isLoaded, loadError } = useJsApiLoader({
-    id: "google-map-script",
+    ...GOOGLE_MAPS_LOADER_OPTIONS,
     googleMapsApiKey: apiKey,
-    libraries: LIBRARIES,
   });
 
   const hasCoords =

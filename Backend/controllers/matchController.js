@@ -26,6 +26,51 @@ const involvedWhere = (userId) => ({
   ],
 });
 
+// "Matches for the role I'm ACTING AS" — filters by the hat worn when each
+// record was posted (actingRole). A buyer viewing as seller sees ONLY the
+// seller-side matches (their own listed properties) and never their buyer-side
+// requirement matches. Legacy rows with no actingRole are kept for their owner.
+const roleInvolvedWhere = (userId, viewRole) => {
+  if (viewRole === 'seller') {
+    return {
+      property: {
+        listedById: userId,
+        OR: [{ actingRole: 'seller' }, { actingRole: null }],
+      },
+    };
+  }
+  if (viewRole === 'buyer') {
+    return {
+      requirement: {
+        requiredById: userId,
+        OR: [{ actingRole: 'buyer' }, { actingRole: null }],
+      },
+    };
+  }
+  if (viewRole === 'dealer') {
+    return {
+      OR: [
+        {
+          property: {
+            listedById: userId,
+            OR: [{ actingRole: 'dealer' }, { actingRole: null }],
+          },
+        },
+        {
+          requirement: {
+            requiredById: userId,
+            OR: [{ actingRole: 'dealer' }, { actingRole: null }],
+          },
+        },
+      ],
+    };
+  }
+  return involvedWhere(userId);
+};
+
+// Resolve the scoped "where" from the optional ?viewRole query param.
+const scopedWhere = (req) => roleInvolvedWhere(req.user.id, req.query.viewRole);
+
 // Calculate matches for a property against requirements (preview, no persist)
 const matchPropertyToRequirements = async (req, res, next) => {
   const { propertyId } = req.body;
@@ -144,8 +189,9 @@ const createMatch = async (req, res, next) => {
 const getMatches = async (req, res, next) => {
   try {
     const pag = parsePagination(req);
+    const where = scopedWhere(req);
     const args = {
-      where: involvedWhere(req.user.id),
+      where,
       include: matchInclude,
       orderBy: { createdAt: 'desc' },
     };
@@ -157,7 +203,7 @@ const getMatches = async (req, res, next) => {
     const matches = await prisma.match.findMany(args);
 
     if (pag.enabled) {
-      const total = await prisma.match.count({ where: involvedWhere(req.user.id) });
+      const total = await prisma.match.count({ where });
       return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
     }
 
@@ -191,8 +237,9 @@ const getMatchById = async (req, res, next) => {
 const getMatchesByType = (type) => async (req, res, next) => {
   try {
     const pag = parsePagination(req);
+    const where = { type, ...scopedWhere(req) };
     const args = {
-      where: { type, ...involvedWhere(req.user.id) },
+      where,
       include: matchInclude,
       orderBy: { score: 'desc' },
     };
@@ -204,9 +251,7 @@ const getMatchesByType = (type) => async (req, res, next) => {
     const matches = await prisma.match.findMany(args);
 
     if (pag.enabled) {
-      const total = await prisma.match.count({
-        where: { type, ...involvedWhere(req.user.id) },
-      });
+      const total = await prisma.match.count({ where });
       return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
     }
 
@@ -224,8 +269,9 @@ const getDealerDealerMatches = getMatchesByType('dealer-dealer');
 const getMyMatches = async (req, res, next) => {
   try {
     const pag = parsePagination(req);
+    const where = scopedWhere(req);
     const args = {
-      where: involvedWhere(req.user.id),
+      where,
       include: matchInclude,
       orderBy: { createdAt: 'desc' },
     };
@@ -237,7 +283,7 @@ const getMyMatches = async (req, res, next) => {
     const matches = await prisma.match.findMany(args);
 
     if (pag.enabled) {
-      const total = await prisma.match.count({ where: involvedWhere(req.user.id) });
+      const total = await prisma.match.count({ where });
       return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
     }
 
@@ -419,4 +465,6 @@ module.exports = {
   updateMatchStatus,
   getMatchContact,
   deleteMatch,
+  involvedWhere,
+  roleInvolvedWhere,
 };

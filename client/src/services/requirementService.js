@@ -51,10 +51,12 @@ const requirementService = {
     }
   },
 
-  // Get user's requirements
-  getUserRequirements: async (userId) => {
+  // Get user's requirements. Pass the current "viewing as" role to scope
+  // results to requirements posted under that role (actingRole).
+  getUserRequirements: async (userId, viewRole) => {
     try {
-      const response = await apiClient.get(`/requirements/user/${userId}`);
+      const params = viewRole ? { viewRole } : {};
+      const response = await apiClient.get(`/requirements/user/${userId}`, { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch user requirements' };

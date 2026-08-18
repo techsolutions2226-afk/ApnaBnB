@@ -779,6 +779,15 @@ const ListingForm = ({
     [handleChange]
   );
 
+  // Security deposit — same thousands-separator UX as the Price input.
+  const handleDepositChange = useCallback(
+    (raw) => {
+      const digits = raw.replace(/[^\d]/g, "");
+      handleChange("securityDeposit", digits);
+    },
+    [handleChange]
+  );
+
   const handleApplyManualCoords = useCallback(() => {
     const lat = Number(manualLat);
     const lng = Number(manualLng);
@@ -1096,13 +1105,17 @@ const ListingForm = ({
                   <span className="lst-label-hint">(PKR)</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   className={fieldClass("lst-input", "securityDeposit")}
                   placeholder="e.g. 130,000"
-                  value={form.securityDeposit}
-                  onChange={(e) => handleChange("securityDeposit", e.target.value)}
+                  value={
+                    form.securityDeposit
+                      ? Number(form.securityDeposit).toLocaleString("en-US")
+                      : ""
+                  }
+                  onChange={(e) => handleDepositChange(e.target.value)}
                   onBlur={() => handleBlur("securityDeposit")}
-                  min="0"
                 />
                 {showError("securityDeposit") && (
                   <div className="lst-error">{errors.securityDeposit}</div>

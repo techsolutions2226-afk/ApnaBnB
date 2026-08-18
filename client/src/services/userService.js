@@ -20,6 +20,16 @@ const userService = {
       throw error.response?.data || { message: 'Failed to update profile' };
     }
   },
+
+  // Live dashboard metrics for the authenticated user.
+  getStats: async () => {
+    try {
+      const response = await apiClient.get('/users/me/stats');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch stats' };
+    }
+  },
 };
 
 export default userService;

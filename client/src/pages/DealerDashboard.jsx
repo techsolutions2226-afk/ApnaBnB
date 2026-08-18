@@ -3,8 +3,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useUserListings, useDeleteListing } from "../hooks/useListings";
-import { useMyMatches } from "../hooks/useMatches";
-import { useDashboardData } from "../hooks/useDashboardData";
+import { useUserStats } from "../hooks/useUserStats";
 import DashStat from "../components/dashboard/DashStat";
 import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
@@ -42,21 +41,11 @@ const DealerDashboard = () => {
   // Delete listing hook
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
 
-  // Live aggregate data
-  const { unreadMessages } = useDashboardData();
-
-  // All matches involving this dealer
-  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches();
-  const matchCount = myMatches?.length || 0;
+  // Live aggregate metrics from GET /users/me/stats
+  const { stats } = useUserStats();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
-
-  const stats = {
-    activeListings: listings?.filter((l) => l.status === "active").length || 0,
-    totalViews: listings?.reduce((sum, l) => sum + (l.views || 0), 0) || 0,
-    totalInquiries: listings?.reduce((sum, l) => sum + (l.inquiries || 0), 0) || 0,
-  };
 
   const handleDeleteClick = (listing) => {
     setListingToDelete(listing);
@@ -155,14 +144,14 @@ const DealerDashboard = () => {
         />
         <DashStat
           icon={FiGitMerge}
-          value={matchCount}
+          value={stats.matches}
           label="Matches"
           accent="#7c3aed"
           to="/matches"
         />
         <DashStat
           icon={FiMessageSquare}
-          value={unreadMessages}
+          value={stats.unreadMessages}
           label="Unread Messages"
           accent="#0284c7"
           to="/messages"
@@ -293,12 +282,10 @@ const DealerDashboard = () => {
         )}
       </div>
 
-      {/* ── Recent Matches ── */}
-      {!matchesLoading && (
-        <RecentMatches
-          emptyMessage="No matches yet. List a property or post a requirement and we'll surface leads as soon as the city, area, and price line up."
-        />
-      )}
+      {/* ── Recent Matches (self-fetching) ── */}
+      <RecentMatches
+        emptyMessage="No matches yet. List a property or post a requirement and we'll surface leads as soon as the city, area, and price line up."
+      />
 
       {/* ── Reviews on My Properties ── */}
       <OwnerReviewsSection userId={userId} />

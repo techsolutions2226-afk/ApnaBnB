@@ -54,6 +54,24 @@ const authService = {
     }
   },
 
+  // Session validator — asks the server to re-verify the stored token against
+  // the DB. Returns the fresh user payload, or throws { status, code, message }
+  // when the account was deleted / suspended / unverified / token expired — the
+  // client treats any 401/403 as "session is dead" and bounces to /login.
+  getMe: async () => {
+    try {
+      const response = await apiClient.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      const err = {
+        status: error.response?.status,
+        code: error.response?.data?.code,
+        message: error.response?.data?.message || 'Session check failed',
+      };
+      throw err;
+    }
+  },
+
   // Get auth token
   getToken: () => {
     return localStorage.getItem('auth_token');

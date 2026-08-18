@@ -224,7 +224,7 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     setMenuOpen(false);
-    navigate("/");
+    navigate("/login", { replace: true });
   };
 
   return (

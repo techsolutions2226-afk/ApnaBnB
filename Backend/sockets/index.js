@@ -42,18 +42,33 @@ const initSockets = (httpServer) => {
 
   // ── Auth handshake ──
   // Reject connections without a valid JWT so unauthenticated browsers
-  // can't even open a socket, let alone subscribe to rooms.
-  io.use((socket, next) => {
+  // can't even open a socket, let alone subscribe to rooms. Also re-verify
+  // the account still exists in the DB — a deleted/suspended user's socket is
+  // rejected even while their JWT is technically still valid.
+  io.use(async (socket, next) => {
     const token =
       socket.handshake?.auth?.token ||
       socket.handshake?.headers?.authorization?.replace(/^Bearer\s+/i, '');
     if (!token) return next(new Error('No auth token'));
+    let decoded;
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.user = { id: decoded.id, role: decoded.role };
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return next(new Error(`Auth failed: ${err.message}`));
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, role: true, verified: true, suspended: true },
+      });
+      if (!user) return next(new Error('Account no longer exists.'));
+      if (user.suspended) return next(new Error('Account suspended.'));
+      if (!user.verified) return next(new Error('Email not verified.'));
+      socket.user = { id: user.id, role: user.role };
       next();
     } catch (err) {
-      next(new Error(`Auth failed: ${err.message}`));
+      console.error('Socket auth DB check failed:', err.message);
+      next(new Error('Auth failed: internal error'));
     }
   });
 

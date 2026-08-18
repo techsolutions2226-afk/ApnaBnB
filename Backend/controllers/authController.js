@@ -281,6 +281,68 @@ const loginUser = async (req, res, next) => {
   }
 };
 
+// GET /api/auth/me — the session validator. Returns the FRESH user row from
+// the DB so the client can tell, on mount, whether the account still exists
+// and is usable. A deleted/suspended/unverified account yields 401/403 here,
+// which the client treats as "session is dead" and redirects to /login.
+const getMe = async (req, res, next) => {
+  try {
+    // verifyToken already confirmed the row exists and is usable; fetch the
+    // full public profile so the client can refresh its cached user.
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        viewRole: true,
+        verified: true,
+        suspended: true,
+        avatar: true,
+        phone: true,
+        location: true,
+        emergencyContact: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        code: 'USER_NOT_FOUND',
+        message: 'Account no longer exists. Please log in again.',
+      });
+    }
+    if (user.suspended) {
+      return res.status(403).json({
+        code: 'ACCOUNT_SUSPENDED',
+        message: 'This account has been suspended. Contact support.',
+      });
+    }
+    if (!user.verified) {
+      return res.status(403).json({
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email first.',
+      });
+    }
+
+    res.status(200).json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      viewRole: user.viewRole || null,
+      avatar: user.avatar || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      emergencyContact: user.emergencyContact || '',
+      verified: user.verified,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // POST /api/auth/forgot-password — emails a reset link if the account exists.
 // surface it directly (per product requirement — trades enumeration safety
 // for clearer UX).
@@ -507,6 +569,12 @@ const googleAuth = async (req, res, next) => {
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
+      if (existing.suspended) {
+        return res.status(403).json({
+          code: 'ACCOUNT_SUSPENDED',
+          message: 'This account has been suspended. Contact support.',
+        });
+      }
       return res.status(200).json(googleUserPayload(existing));
     }
 
@@ -540,6 +608,12 @@ const googleComplete = async (req, res, next) => {
     // Re-check: the account may have been created between the two calls.
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
+      if (existing.suspended) {
+        return res.status(403).json({
+          code: 'ACCOUNT_SUSPENDED',
+          message: 'This account has been suspended. Contact support.',
+        });
+      }
       return res.status(200).json(googleUserPayload(existing));
     }
 
@@ -563,6 +637,7 @@ const googleComplete = async (req, res, next) => {
 module.exports = {
   registerUser,
   loginUser,
+  getMe,
   verifyOtp,
   resendOtp,
   forgotPassword,

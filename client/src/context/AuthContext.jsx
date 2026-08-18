@@ -13,6 +13,16 @@ const AuthContext = createContext(null);
 
 const STORAGE_KEY = "current_user";
 
+// Server user payload → the compact shape the app keeps in state/localStorage.
+const normalizeUser = (u) => ({
+  id: u.id,
+  name: u.name,
+  email: u.email,
+  role: u.role,
+  viewRole: u.viewRole || null,
+  avatar: u.avatar || "",
+});
+
 /* ── Role → default dashboard path mapping ── */
 const ROLE_DASHBOARDS = {
   seller: "/dashboard/seller",
@@ -34,6 +44,12 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  /* `authReady` flips to true only after the stored session has been re-validated
+     against the server (GET /auth/me → fresh DB row). Until then, ProtectedRoute
+     shows a loader instead of rendering the dashboard, so a deleted user's stale
+     localStorage session can never briefly flash protected content. */
+  const [authReady, setAuthReady] = useState(false);
+
   /* Persist user to localStorage on change */
   useEffect(() => {
     if (currentUser) {
@@ -42,6 +58,51 @@ export function AuthProvider({ children }) {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [currentUser]);
+
+  /* ── Server-side session validation on mount ──
+     A JWT proves someone logged in once; it does NOT prove the account still
+     exists. Every app load (refresh, pasted protected URL, new tab) re-checks
+     the token against the DB. If the account was deleted, suspended or its
+     email unverified → wipe the local session and bounce to /login. */
+  useEffect(() => {
+    let cancelled = false;
+
+    const complete = (user) => {
+      if (cancelled) return;
+      setCurrentUser(user);
+      setAuthReady(true);
+    };
+
+    if (!localStorage.getItem("auth_token")) {
+      // No token → any cached `current_user` is stale; drop it and we're done.
+      complete(null);
+      return;
+    }
+
+    authService
+      .getMe()
+      .then((user) => complete(user ? normalizeUser(user) : null))
+      .catch((err) => {
+        if (cancelled) return;
+        if (err?.status === 401 || err?.status === 403) {
+          // Account gone / suspended / unverified / expired token → dead session.
+          authService.logout();
+          setCurrentUser(null);
+          setAuthReady(true);
+          if (!window.location.pathname.startsWith("/login")) {
+            window.location.assign("/login");
+          }
+        } else {
+          // Network/host error — keep the cached session (state already holds
+          // localStorage's user), but stop blocking on the check.
+          setAuthReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* ── Derived auth state ── */
   const isAuthenticated = !!currentUser;
@@ -179,6 +240,7 @@ export function AuthProvider({ children }) {
     disconnectSocket();
     setCurrentUser(null);
     setError(null);
+    toast.success("Logged out successfully");
   };
 
   /* ── Idle auto-logout ──
@@ -283,6 +345,7 @@ export function AuthProvider({ children }) {
       isAuthenticated,
       isLoading,
       error,
+      authReady,
       setCurrentUser,
       hasRole,
       getDashboardPath,
@@ -294,7 +357,7 @@ export function AuthProvider({ children }) {
       updateProfile,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentUser, isLoading, error],
+    [currentUser, isLoading, error, authReady],
   );
 
   return (

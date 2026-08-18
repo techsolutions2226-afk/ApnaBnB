@@ -38,7 +38,7 @@ export default function AdminShell() {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/login", { replace: true });
   };
 
   /* Path breadcrumb for the topbar title. */

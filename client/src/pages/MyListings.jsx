@@ -139,7 +139,7 @@ const MyListings = () => {
       <div className="ml-page">
         <div style={{ padding: '40px', textAlign: 'center', color: '#d32f2f' }}>
           <p>Error loading listings: {listingsError}</p>
-          <button onClick={refetchListings} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={refetchListings} style={{ marginTop: '10px', padding: '8px 16px', backgroundColor: '#134e2c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
             Retry
           </button>
         </div>

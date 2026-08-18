@@ -219,7 +219,7 @@
 }
 
 .lst-toggle-track--on {
-  background: #222;
+  background: #134e2c;
 }
 
 .lst-toggle-thumb {
@@ -337,12 +337,12 @@
 }
 
 .lst-btn--primary {
-  background: #222;
+  background: #134e2c;
   color: #fff;
 }
 
 .lst-btn--primary:hover {
-  background: #000;
+  background: #0f1d14;
 }
 
 .lst-btn--primary:disabled {
@@ -584,10 +584,10 @@
   border-color: #bdbdbd;
 }
 
-.lst-purpose-card--active {
-  border-color: #00a578;
-  background: #ecfdf5;
-  color: #00856f;
+.lst-purpose-card.lst-purpose-card--active {
+  border-color: #134e2c;
+  background: #e9f2ec;
+  color: #134e2c;
 }
 
 .lst-purpose-icon {
@@ -621,9 +621,9 @@
   border-color: #bdbdbd;
 }
 
-.lst-category-card--active {
-  border-color: #1a8f5a;
-  background: #fff5f7;
+.lst-category-card.lst-category-card--active {
+  border-color: #134e2c;
+  background: #e9f2ec;
 }
 
 .lst-category-icon {
@@ -636,38 +636,58 @@
   color: #222;
 }
 
-/* Subtype chips (House / Flat / Penthouse etc.) */
-.lst-subtype-row {
-  display: flex;
-  flex-wrap: wrap;
+/* Subtype card grid (House / Flat / Penthouse etc.) — 2-column, matching the
+   search bar's dropdown popover. Active state uses the sidebar green. */
+.lst-subtype-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 8px;
+  max-width: 720px;
 }
 
-.lst-subtype-chip {
-  display: inline-flex;
+.lst-subtype-card {
+  display: flex;
   align-items: center;
-  padding: 8px 16px;
-  background: #f5f5f5;
-  border: 1px solid #ebebeb;
-  border-radius: 999px;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px; /* rounded-xl */
+  cursor: pointer;
   font-family: inherit;
   font-size: 14px;
-  color: #444;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  color: #333;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
-.lst-subtype-chip:hover {
-  background: #eaeaea;
-  border-color: #bdbdbd;
+.lst-subtype-card:hover {
+  border-color: #134e2c;
+  background: #eef5f0;
 }
 
-.lst-subtype-chip--active {
-  background: #222;
-  border-color: #222;
-  color: #fff;
-  font-weight: 600;
+.lst-subtype-card.lst-subtype-card--active {
+  border-color: #134e2c;
+  background: #e9f2ec;
+}
+
+.lst-subtype-card-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #134e2c;
+}
+
+.lst-subtype-card-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lst-subtype-card.lst-subtype-card--active .lst-subtype-card-label {
+  color: #0d2c1e;
+  font-weight: 700;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -743,7 +763,7 @@
 }
 
 .lst-amenity-slider-selected {
-  color: #00856f;
+  color: #134e2c;
   font-weight: 600;
   margin-left: 4px;
 }
@@ -781,7 +801,7 @@
 }
 
 .lst-amenity-dot--active {
-  background: #222;
+  background: #134e2c;
   transform: scale(1.25);
 }
 
@@ -840,15 +860,15 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.lst-amenity-chip--selected {
-  background: #ecfdf5;
-  border-color: #00a578;
-  color: #00856f;
+.lst-amenity-chip.lst-amenity-chip--selected {
+  background: #e9f2ec;
+  border-color: #134e2c;
+  color: #134e2c;
   font-weight: 600;
 }
 
-.lst-amenity-chip--selected .lst-amenity-checkmark {
-  background: #00a578;
+.lst-amenity-chip.lst-amenity-chip--selected .lst-amenity-checkmark {
+  background: #134e2c;
   color: #fff;
 }
 
@@ -874,15 +894,15 @@
 }
 
 .lst-banner--success {
-  background: #e6f7f5;
-  color: #00856f;
-  border: 1px solid #b2e8e0;
+  background: #e9f2ec;
+  color: #0d2c1e;
+  border: 1px solid #bcd6c6;
 }
 
 .lst-banner--info {
-  background: #e8f0fe;
-  color: #1a56db;
-  border: 1px solid #c3d9fb;
+  background: #e9f2ec;
+  color: #134e2c;
+  border: 1px solid #bcd6c6;
 }
 
 .lst-banner-icon {
@@ -944,12 +964,12 @@
    deck rather than a long single-column document.
    ══════════════════════════════════════════════════════════════ */
 
-/* Tinted page background — distinct from other (mostly-white) pages */
+/* Tinted green page background — distinct from other (mostly-white) pages */
 .lst-page--create {
   background:
-    radial-gradient(1200px 600px at 0% 0%, #ffe4ec 0%, transparent 50%),
-    radial-gradient(1000px 600px at 100% 0%, #e0f2fe 0%, transparent 55%),
-    linear-gradient(180deg, #fafbff 0%, #f4f6fb 100%);
+    radial-gradient(1200px 600px at 0% 0%, #e9f2ec 0%, transparent 50%),
+    radial-gradient(1000px 600px at 100% 0%, #dcebe2 0%, transparent 55%),
+    linear-gradient(180deg, #fbfdfb 0%, #f2f7f3 100%);
   min-height: calc(100vh - 80px);
   max-width: none;
   padding: 24px 24px 80px;
@@ -966,14 +986,14 @@
   max-width: 880px;
 }
 
-/* Hero header — gradient banner replacing the plain .lst-header */
+/* Hero header — gradient banner in the same green as the dashboard sidebar */
 .lst-page--create .lst-hero {
-  background: linear-gradient(135deg, #1a8f5a 0%, #f5576c 50%, #f093fb 100%);
+  background: linear-gradient(135deg, #134e2c 0%, #0f1d14 100%);
   border-radius: 18px;
   padding: 28px 32px;
   margin-bottom: 24px;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(255, 56, 92, 0.25);
+  box-shadow: 0 8px 24px rgba(19, 78, 44, 0.35);
 }
 
 .lst-page--create .lst-hero-content {
@@ -1034,6 +1054,14 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Green accents for the page chrome (breadcrumb + back link) */
+.lst-page--create .dash-breadcrumb-link,
+.lst-page--create .dash-breadcrumb-sep,
+.lst-page--create .dash-breadcrumb-current,
+.lst-page--create .lst-back-link {
+  color: #134e2c;
+}
+
 /* Each section becomes a floating white card */
 .lst-page--create .lst-form-section {
   background: #fff;
@@ -1070,7 +1098,7 @@
   bottom: 18px;
   width: 4px;
   border-radius: 2px;
-  background: linear-gradient(180deg, #1a8f5a 0%, #f093fb 100%);
+  background: #134e2c;
 }
 
 .lst-page--create .lst-form-section-sub {
@@ -1095,26 +1123,26 @@
 .lst-page--create .lst-select:focus,
 .lst-page--create .lst-textarea:focus {
   background: #fff;
-  border-color: #1a8f5a;
-  box-shadow: 0 0 0 4px rgba(255, 56, 92, 0.1);
+  border-color: #134e2c;
+  box-shadow: 0 0 0 4px rgba(19, 78, 44, 0.12);
   outline: none;
 }
 
-/* Submit button — bigger, gradient, pop */
+/* Submit button — solid sidebar green */
 .lst-page--create .lst-btn--primary {
-  background: linear-gradient(135deg, #1a8f5a 0%, #f5576c 100%);
+  background: #134e2c;
   border: none;
   padding: 14px 32px;
   font-size: 16px;
   font-weight: 700;
   border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(255, 56, 92, 0.35);
+  box-shadow: 0 4px 14px rgba(19, 78, 44, 0.35);
   transition: transform 0.12s, box-shadow 0.12s, filter 0.12s;
 }
 
 .lst-page--create .lst-btn--primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(255, 56, 92, 0.45);
+  box-shadow: 0 6px 20px rgba(19, 78, 44, 0.45);
   filter: brightness(1.05);
 }
 

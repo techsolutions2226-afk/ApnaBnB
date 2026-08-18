@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-toastify";
-import { FiCrosshair, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiCrosshair, FiChevronLeft, FiChevronRight, FiHome, FiGrid, FiLayout, FiChevronsUp, FiChevronsDown, FiSunrise, FiColumns, FiLayers, FiBriefcase, FiTruck, FiFileText, FiFolder, FiShoppingBag, FiMonitor, FiTool, FiBox } from "react-icons/fi";
 import ImageUpload from "../common/ImageUpload";
 import LocationPicker from "../common/LocationPicker";
 import MapView from "../common/MapView";
@@ -29,28 +29,32 @@ const CATEGORIES = [
 ];
 
 // Sub-types per category. Stored on the property as `propertyType` (kebab-case).
+// Icons mirror the search bar's PROPERTY_TABS so the two pickers stay identical.
 const SUBTYPES_BY_CATEGORY = {
   home: [
-    { value: "house", label: "House" },
-    { value: "flat", label: "Flat" },
-    { value: "upper-portion", label: "Upper Portion" },
-    { value: "lower-portion", label: "Lower Portion" },
-    { value: "farm-house", label: "Farm House" },
-    { value: "room", label: "Room" },
-    { value: "penthouse", label: "Penthouse" },
+    { value: "house", label: "House", icon: FiHome },
+    { value: "flat", label: "Flat", icon: FiLayout },
+    { value: "upper-portion", label: "Upper Portion", icon: FiChevronsUp },
+    { value: "lower-portion", label: "Lower Portion", icon: FiChevronsDown },
+    { value: "farm-house", label: "Farm House", icon: FiSunrise },
+    { value: "room", label: "Room", icon: FiColumns },
+    { value: "penthouse", label: "Penthouse", icon: FiLayers },
   ],
   plot: [
-    { value: "residential-plot", label: "Residential Plot" },
-    { value: "commercial-plot", label: "Commercial Plot" },
-    { value: "agricultural-land", label: "Agricultural Land" },
-    { value: "industrial-land", label: "Industrial Land" },
+    { value: "residential-plot", label: "Residential Plot", icon: FiHome },
+    { value: "commercial-plot", label: "Commercial Plot", icon: FiBriefcase },
+    { value: "agricultural-land", label: "Agricultural Land", icon: FiSunrise },
+    { value: "industrial-land", label: "Industrial Land", icon: FiTruck },
+    { value: "plot-form", label: "Plot Form", icon: FiFileText },
+    { value: "plot-file", label: "Plot File", icon: FiFolder },
   ],
   commercial: [
-    { value: "office", label: "Office" },
-    { value: "shop", label: "Shop" },
-    { value: "warehouse", label: "Warehouse" },
-    { value: "factory", label: "Factory" },
-    { value: "building", label: "Building" },
+    { value: "shop", label: "Shop", icon: FiShoppingBag },
+    { value: "office", label: "Office", icon: FiMonitor },
+    { value: "warehouse", label: "Warehouse", icon: FiBox },
+    { value: "factory", label: "Factory", icon: FiTool },
+    { value: "building", label: "Building", icon: FiHome },
+    { value: "other", label: "Other", icon: FiGrid },
   ],
 };
 
@@ -885,16 +889,16 @@ const ListingForm = ({
             justifyContent: "space-between",
             gap: 12,
             padding: "12px 16px",
-            background: "#fff8e1",
-            border: "1px solid #f6c453",
+            background: "#e9f2ec",
+            border: "1px solid #bcd6c6",
             borderRadius: 8,
             marginBottom: 16,
           }}
         >
-          <div style={{ fontSize: 14, color: "#5d4200" }}>
+          <div style={{ fontSize: 14, color: "#134e2c" }}>
             <strong>Draft restored.</strong>{" "}
             {restoredDraft?.savedAt && (
-              <span style={{ color: "#7a6b3d" }}>
+              <span style={{ color: "#3e6b4f" }}>
                 Last edited{" "}
                 {new Date(restoredDraft.savedAt).toLocaleString(undefined, {
                   dateStyle: "medium",
@@ -911,11 +915,11 @@ const ListingForm = ({
             style={{
               padding: "6px 12px",
               background: "#fff",
-              border: "1px solid #d9b75e",
+              border: "1px solid #134e2c",
               borderRadius: 6,
               cursor: "pointer",
               fontSize: 13,
-              color: "#5d4200",
+              color: "#134e2c",
               fontWeight: 500,
               whiteSpace: "nowrap",
             }}
@@ -972,19 +976,26 @@ const ListingForm = ({
           })}
         </div>
 
-        {/* Subtype chips — filtered by chosen category */}
-        <div className="lst-subtype-row">
+        {/* Sub-type 2-column card grid — filtered by chosen category, styled to
+            match the search bar's dropdown popover. */}
+        <div className="lst-subtype-grid">
           {(SUBTYPES_BY_CATEGORY[form.category] || []).map((s) => {
             const active = form.propertyType === s.value;
+            const SIcon = s.icon;
             return (
               <button
                 key={s.value}
                 type="button"
                 onClick={() => handleChange("propertyType", s.value)}
                 onBlur={() => handleBlur("propertyType")}
-                className={`lst-subtype-chip ${active ? "lst-subtype-chip--active" : ""}`}
+                className={`lst-subtype-card ${active ? "lst-subtype-card--active" : ""}`}
               >
-                {s.label}
+                {SIcon && (
+                  <span className="lst-subtype-card-icon">
+                    <SIcon size={16} />
+                  </span>
+                )}
+                <span className="lst-subtype-card-label">{s.label}</span>
               </button>
             );
           })}
@@ -1272,10 +1283,10 @@ const ListingForm = ({
                   alignItems: "center",
                   gap: 8,
                   padding: "10px 16px",
-                  border: "1px solid #222",
+                  border: "1px solid #134e2c",
                   borderRadius: 8,
-                  background: "#fff",
-                  color: "#222",
+                  background: "#134e2c",
+                  color: "#fff",
                   fontWeight: 600,
                   fontSize: 14,
                   cursor: isFetchingLocation ? "wait" : "pointer",
@@ -1362,9 +1373,9 @@ const ListingForm = ({
                   display: "inline-flex",
                   alignItems: "center",
                   padding: "10px 16px",
-                  border: "1px solid #222",
+                  border: "1px solid #134e2c",
                   borderRadius: 8,
-                  background: "#222",
+                  background: "#134e2c",
                   color: "#fff",
                   fontWeight: 600,
                   fontSize: 14,
@@ -1397,10 +1408,10 @@ const ListingForm = ({
                 alignItems: "center",
                 marginTop: 12,
                 padding: "8px 12px",
-                background: "#f0f7ff",
+                background: "#e9f2ec",
                 borderRadius: 8,
                 fontSize: 13,
-                color: "#1a4d8a",
+                color: "#134e2c",
                 fontWeight: 500,
               }}
             >
@@ -1417,7 +1428,7 @@ const ListingForm = ({
                 style={{
                   background: "none",
                   border: "none",
-                  color: "#1976d2",
+                  color: "#134e2c",
                   cursor: "pointer",
                   textDecoration: "underline",
                   fontSize: 13,

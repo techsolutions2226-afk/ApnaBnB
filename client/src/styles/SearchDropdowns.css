@@ -411,7 +411,7 @@
   justify-content: space-between;
   width: 100%;
   padding: 9px 12px;
-  border: none;
+  border: 1px solid transparent;
   background: none;
   border-radius: 8px;
   cursor: pointer;
@@ -425,13 +425,14 @@
 }
 
 .dd-opt--active {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #ecfdf5; /* emerald-50 */
+  color: #0c422c; /* dark green */
+  border-color: #10b981; /* emerald-500 */
   font-weight: 600;
 }
 
 .dd-opt-check {
-  color: #4a934a;
+  color: #10b981; /* emerald-500 */
 }
 
 /* ── Responsive tweaks ── */

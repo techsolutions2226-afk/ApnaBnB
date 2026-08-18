@@ -147,6 +147,58 @@
   cursor: pointer;
 }
 
+/* ── "Change Area" unit trigger — styled like the other list inputs but opens
+   the emerald unit-picker modal instead of a native select ── */
+.lst-unit-trigger {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #222;
+  background: #fff;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lst-unit-trigger-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lst-unit-trigger .abn-s2-chev {
+  color: #717171;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.lst-unit-trigger:hover {
+  border-color: #134e2c;
+}
+
+.lst-unit-trigger:hover .abn-s2-chev {
+  color: #134e2c;
+}
+
+.lst-unit-trigger--error {
+  border-color: #c13515;
+}
+
+.lst-page--create .lst-unit-trigger:hover,
+.lst-page--create .lst-unit-trigger:focus {
+  background: #fff;
+  border-color: #134e2c;
+}
+
 /* ── Row (side-by-side fields) ── */
 .lst-row {
   display: grid;

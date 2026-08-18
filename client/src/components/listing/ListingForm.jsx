@@ -6,10 +6,33 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "react-toastify";
-import { FiCrosshair, FiChevronLeft, FiChevronRight, FiHome, FiGrid, FiLayout, FiChevronsUp, FiChevronsDown, FiSunrise, FiColumns, FiLayers, FiBriefcase, FiTruck, FiFileText, FiFolder, FiShoppingBag, FiMonitor, FiTool, FiBox } from "react-icons/fi";
+import {
+  FiCrosshair,
+  FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCheck,
+  FiHome,
+  FiGrid,
+  FiLayout,
+  FiChevronsUp,
+  FiChevronsDown,
+  FiSunrise,
+  FiColumns,
+  FiLayers,
+  FiBriefcase,
+  FiTruck,
+  FiFileText,
+  FiFolder,
+  FiShoppingBag,
+  FiMonitor,
+  FiTool,
+  FiBox,
+} from "react-icons/fi";
 import ImageUpload from "../common/ImageUpload";
 import LocationPicker from "../common/LocationPicker";
 import MapView from "../common/MapView";
+import Modal from "../common/Modal";
 import { forwardGeocode } from "../../utils/geocode";
 import {
   loadListingDraft,
@@ -81,7 +104,16 @@ const FURNISHED_OPTIONS = [
 
 const LEASE_TERMS = [6, 12, 24, 36];
 
-const SIZE_UNITS = ["Marla", "Kanal", "sq ft"];
+const SIZE_UNITS = [
+  { value: "Sq. Ft.", label: "Square Feet" },
+  { value: "Sq. Yd.", label: "Square Yards" },
+  { value: "Sq. M.", label: "Square Meters" },
+  { value: "Marla", label: "Marla" },
+  { value: "Kanal", label: "Kanal" },
+];
+
+// Legacy size units stored in older records map onto the new option values.
+const normalizeUnit = (unit) => (unit === "sq ft" ? "Sq. Ft." : unit || "Marla");
 
 const CITIES = [
   "Lahore",
@@ -504,7 +536,7 @@ const ListingForm = ({
       propertyType: incomingPropertyType,
       price: initialData.price ? String(initialData.price) : "",
       size: initialData.size ? String(initialData.size) : "",
-      sizeUnit: initialData.sizeUnit || "Marla",
+      sizeUnit: normalizeUnit(initialData.sizeUnit),
       city,
       customCity,
       area,
@@ -553,6 +585,8 @@ const ListingForm = ({
   // etc.). The user pages through groups with ← → arrows. Selections persist
   // across groups via the unchanged form.amenities array.
   const [amenityGroupIdx, setAmenityGroupIdx] = useState(0);
+  // "Change Area" unit picker modal (Square Feet / Yards / Meters / Marla / Kanal).
+  const [unitModalOpen, setUnitModalOpen] = useState(false);
   // Coords resolved from (city, area) via Nominatim. Used to centre the map
   // when the user picks an area, before they drop a pin.
   const [resolvedAreaCenter, setResolvedAreaCenter] = useState(null);
@@ -1117,7 +1151,7 @@ const ListingForm = ({
         <div className="lst-row">
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-size">
-              Size
+              Size {form.sizeUnit ? `(${form.sizeUnit})` : ""}
             </label>
             <input
               id="lst-size"
@@ -1135,22 +1169,21 @@ const ListingForm = ({
           </div>
 
           <div className="lst-field">
-            <label className="lst-label" htmlFor="lst-size-unit">
-              Unit
-            </label>
-            <select
-              id="lst-size-unit"
-              className={fieldClass("lst-select", "sizeUnit")}
-              value={form.sizeUnit}
-              onChange={(e) => handleChange("sizeUnit", e.target.value)}
-              onBlur={() => handleBlur("sizeUnit")}
+            <label className="lst-label">Unit</label>
+            <button
+              type="button"
+              className={`lst-unit-trigger${
+                showError("sizeUnit") ? " lst-unit-trigger--error" : ""
+              }`}
+              onClick={() => setUnitModalOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={unitModalOpen}
             >
-              {SIZE_UNITS.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
+              <span className="lst-unit-trigger-value">
+                {form.sizeUnit || "Marla"}
+              </span>
+              <FiChevronDown className="abn-s2-chev" size={16} />
+            </button>
             {showError("sizeUnit") && (
               <div className="lst-error">{errors.sizeUnit}</div>
             )}
@@ -1739,6 +1772,34 @@ const ListingForm = ({
           {isSubmitting ? "Saving..." : submitLabel}
         </button>
       </div>
+
+      {/* ── "Change Area" unit picker modal ── */}
+      <Modal
+        isOpen={unitModalOpen}
+        onClose={() => setUnitModalOpen(false)}
+        title="Change Area"
+        size="small"
+      >
+        <div className="dd-modal-list">
+          {SIZE_UNITS.map((u) => (
+            <button
+              key={u.value}
+              type="button"
+              className={`dd-opt${form.sizeUnit === u.value ? " dd-opt--active" : ""}`}
+              onClick={() => {
+                handleChange("sizeUnit", u.value);
+                handleBlur("sizeUnit");
+                setUnitModalOpen(false);
+              }}
+            >
+              <span className="dd-opt-label">{u.label}</span>
+              {form.sizeUnit === u.value && (
+                <FiCheck className="dd-opt-check" size={16} />
+              )}
+            </button>
+          ))}
+        </div>
+      </Modal>
     </form>
   );
 };

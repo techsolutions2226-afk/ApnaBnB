@@ -49,7 +49,9 @@ const toUpdatePayload = (output, status) => ({
   bathrooms: output.bathrooms,
   description: output.description,
   amenities: output.amenities,
-  photos: Array.isArray(output.images) ? output.images.map((img) => img.url) : [],
+  // ListingForm already emits `images` as an array of URL strings, so pass it
+  // through as-is (mapping .url again would turn every string into null).
+  photos: Array.isArray(output.images) ? output.images.filter(Boolean) : [],
   location: {
     city: output.city,
     area: output.area,

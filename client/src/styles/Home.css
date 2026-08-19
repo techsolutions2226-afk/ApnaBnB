@@ -149,6 +149,34 @@ body.hide-navbar-search .nav-mobile-pill {
   color: #9a9a9a;
 }
 
+/* Collapsed "Search by Location" trigger button (reuses the field look). */
+.abn-s2-expand-btn {
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.abn-s2-expand-btn:hover {
+  border-color: #2f6f4a;
+}
+.abn-s2-placeholder {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 14px;
+  color: #9a9a9a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.abn-s2-expand-chev {
+  color: #9a9a9a;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.abn-s2-expand-btn:hover .abn-s2-expand-chev {
+  color: #2f6f4a;
+}
+
 .abn-s2-input,
 .abn-s2-select {
   flex: 1;

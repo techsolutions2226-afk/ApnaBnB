@@ -5,6 +5,7 @@ import {
   FiArrowRight,
   FiChevronLeft,
   FiChevronRight,
+  FiChevronDown,
   FiMapPin,
   FiHome,
   FiGrid,
@@ -80,6 +81,9 @@ const Home = () => {
   const [maxPrice, setMaxPrice] = useState("");
   const [currency, setCurrency] = useState("PKR");
   const [openField, setOpenField] = useState(null); // only one dropdown open
+  // Collapsed by default — only City + "Search by Location" are shown. Clicking
+  // "Search by Location" reveals the full advanced search box.
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   /* Fetch active properties for the showcase row (real, dynamic data). */
   const { properties: allProps = [], isLoading: propsLoading } = useProperties();
@@ -163,8 +167,12 @@ const Home = () => {
             </button>
           </div>
 
-          {/* Search bar — two rows: City / Location / Type · Area / Beds / Price / Search */}
-          <form className="abn-search2" onSubmit={preventFormSubmit}>
+          {/* Search bar — starts collapsed (City + "Search by Location"); clicking
+              "Search by Location" reveals the full advanced search box. */}
+          <form
+            className={`abn-search2${searchExpanded ? " abn-search2--open" : ""}`}
+            onSubmit={preventFormSubmit}
+          >
             <div className="abn-s2-row">
               {/* City */}
               <SearchableList
@@ -178,82 +186,102 @@ const Home = () => {
                 onOpenChange={(o) => setOpenField(o ? "city" : null)}
               />
 
-              {/* Location */}
-              <div className="abn-s2-field abn-s2-loc">
-                <FiSearch className="abn-s2-ico abn-s2-ico--muted" size={16} />
-                <input
-                  type="text"
-                  className="abn-s2-input"
-                  placeholder="Search by Location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+              {/* Location — collapsed: a "Search by Location" trigger button;
+                  expanded: a normal editable input. */}
+              {searchExpanded ? (
+                <div className="abn-s2-field abn-s2-loc">
+                  <FiSearch className="abn-s2-ico abn-s2-ico--muted" size={16} />
+                  <input
+                    type="text"
+                    className="abn-s2-input"
+                    placeholder="Search by Location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="abn-s2-field abn-s2-loc abn-s2-expand-btn"
+                  onClick={() => setSearchExpanded(true)}
+                >
+                  <FiSearch className="abn-s2-ico abn-s2-ico--muted" size={16} />
+                  <span className="abn-s2-placeholder">
+                    {location || "Search by Location"}
+                  </span>
+                  <FiChevronDown className="abn-s2-expand-chev" size={16} />
+                </button>
+              )}
+
+              {/* Property type — only when expanded */}
+              {searchExpanded && (
+                <TabbedGrid
+                  tabs={PROPERTY_TABS}
+                  value={propertyType}
+                  activeTab={propertyTab}
+                  onTabChange={setPropertyTab}
+                  onChange={(val, tabId) => {
+                    setPropertyType(val);
+                    setPropertyTab(tabId);
+                  }}
+                  open={openField === "propertyType"}
+                  onOpenChange={(o) => setOpenField(o ? "propertyType" : null)}
                 />
+              )}
+            </div>
+
+            {searchExpanded && (
+              <div className="abn-s2-row">
+                {/* Area */}
+                <RangeInputWithUnit
+                  title="Area"
+                  unit={areaUnit}
+                  changeLabel="Area Unit"
+                  modalTitle="Change Area"
+                  unitOptions={AREA_UNIT_OPTIONS}
+                  min={area}
+                  max={maxArea}
+                  onChange={({ min, max }) => {
+                    setArea(min);
+                    setMaxArea(max);
+                  }}
+                  onUnitChange={setAreaUnit}
+                  open={openField === "area"}
+                  onOpenChange={(o) => setOpenField(o ? "area" : null)}
+                />
+
+                {/* Beds */}
+                <BedCountPanel
+                  value={beds}
+                  onChange={setBeds}
+                  open={openField === "beds"}
+                  onOpenChange={(o) => setOpenField(o ? "beds" : null)}
+                />
+
+                {/* Price */}
+                <RangeInputWithUnit
+                  title="Price"
+                  unit={currency}
+                  changeLabel="Currency"
+                  modalTitle="Change Currency"
+                  unitOptions={CURRENCY_OPTIONS}
+                  min={minPrice}
+                  max={maxPrice}
+                  onChange={({ min, max }) => {
+                    setMinPrice(min);
+                    setMaxPrice(max);
+                  }}
+                  onUnitChange={setCurrency}
+                  open={openField === "price"}
+                  onOpenChange={(o) => setOpenField(o ? "price" : null)}
+                />
+
+                <button type="button" className="abn-s2-btn" onClick={() => submitSearch()}>
+                  Search
+                </button>
               </div>
-
-              {/* Property type */}
-              <TabbedGrid
-                tabs={PROPERTY_TABS}
-                value={propertyType}
-                activeTab={propertyTab}
-                onTabChange={setPropertyTab}
-                onChange={(val, tabId) => {
-                  setPropertyType(val);
-                  setPropertyTab(tabId);
-                }}
-                open={openField === "propertyType"}
-                onOpenChange={(o) => setOpenField(o ? "propertyType" : null)}
-              />
-            </div>
-
-            <div className="abn-s2-row">
-              {/* Area */}
-              <RangeInputWithUnit
-                title="Area"
-                unit={areaUnit}
-                changeLabel="Area Unit"
-                modalTitle="Change Area"
-                unitOptions={AREA_UNIT_OPTIONS}
-                min={area}
-                max={maxArea}
-                onChange={({ min, max }) => {
-                  setArea(min);
-                  setMaxArea(max);
-                }}
-                onUnitChange={setAreaUnit}
-                open={openField === "area"}
-                onOpenChange={(o) => setOpenField(o ? "area" : null)}
-              />
-
-              {/* Beds */}
-              <BedCountPanel
-                value={beds}
-                onChange={setBeds}
-                open={openField === "beds"}
-                onOpenChange={(o) => setOpenField(o ? "beds" : null)}
-              />
-
-              {/* Price */}
-              <RangeInputWithUnit
-                title="Price"
-                unit={currency}
-                changeLabel="Currency"
-                modalTitle="Change Currency"
-                unitOptions={CURRENCY_OPTIONS}
-                min={minPrice}
-                max={maxPrice}
-                onChange={({ min, max }) => {
-                  setMinPrice(min);
-                  setMaxPrice(max);
-                }}
-                onUnitChange={setCurrency}
-                open={openField === "price"}
-                onOpenChange={(o) => setOpenField(o ? "price" : null)}
-              />
-
-              <button type="button" className="abn-s2-btn" onClick={() => submitSearch()}>
-                Search
-              </button>
-            </div>
+            )}
           </form>
 
           {/* Category pills */}

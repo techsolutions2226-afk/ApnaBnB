@@ -115,33 +115,20 @@ const buildRequirementData = (body) => {
 // ── Platform stats ────────────────────────────────────────────────────────
 const getPlatformStats = async (req, res, next) => {
   try {
-    const [
-      totalUsers,
-      totalSuspended,
-      totalProperties,
-      totalActiveProperties,
-      totalListings,
-      totalRequirements,
-      totalMatches,
-      totalConversations,
-      totalMessages,
-      totalReviews,
-      roleGroups,
-      statusGroups,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { suspended: true } }),
-      prisma.property.count(),
-      prisma.property.count({ where: { status: 'active' } }),
-      prisma.listing.count(),
-      prisma.requirement.count(),
-      prisma.match.count(),
-      prisma.conversation.count(),
-      prisma.message.count(),
-      prisma.review.count(),
-      prisma.user.groupBy({ by: ['role'], _count: { _all: true } }),
-      prisma.property.groupBy({ by: ['status'], _count: { _all: true } }),
-    ]);
+    // Counts run sequentially (not Promise.all) so we never burst past
+    // Supabase's PgBouncer session cap (see db/prisma.js). Cheap queries.
+    const totalUsers = await prisma.user.count();
+    const totalSuspended = await prisma.user.count({ where: { suspended: true } });
+    const totalProperties = await prisma.property.count();
+    const totalActiveProperties = await prisma.property.count({ where: { status: 'active' } });
+    const totalListings = await prisma.listing.count();
+    const totalRequirements = await prisma.requirement.count();
+    const totalMatches = await prisma.match.count();
+    const totalConversations = await prisma.conversation.count();
+    const totalMessages = await prisma.message.count();
+    const totalReviews = await prisma.review.count();
+    const roleGroups = await prisma.user.groupBy({ by: ['role'], _count: { _all: true } });
+    const statusGroups = await prisma.property.groupBy({ by: ['status'], _count: { _all: true } });
 
     // Match the previous {_id, count} shape the dashboard consumes.
     const usersByRole = roleGroups.map((g) => ({ _id: g.role, count: g._count._all }));

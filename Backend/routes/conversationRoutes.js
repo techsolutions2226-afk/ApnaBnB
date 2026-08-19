@@ -4,6 +4,8 @@ const {
   findOrCreateDirect,
   getConversations,
   getConversationById,
+  updateConversationPrefs,
+  markConversationRead,
   updateConversation,
   deleteConversation,
   updateMembers,
@@ -20,6 +22,8 @@ router.post('/', verifyToken, createConversation);
 router.get('/', verifyToken, getConversations);
 router.get('/:id', verifyToken, getConversationById);
 router.put('/:id', verifyToken, updateConversation);
+router.put('/:id/prefs', verifyToken, updateConversationPrefs);
+router.put('/:id/read', verifyToken, markConversationRead);
 router.delete('/:id', verifyToken, deleteConversation);
 router.put('/:id/members', verifyToken, updateMembers);
 

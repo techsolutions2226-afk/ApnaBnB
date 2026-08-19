@@ -114,6 +114,9 @@ model User {
   otpAttempts   Int       @default(0)
   otpLastSentAt DateTime?
 
+  // Presence — when the user's last socket disconnected (sets "Last seen").
+  lastSeenAt DateTime?
+
   // Forgot-password token (sha256-hashed). Cleared after a successful reset.
   resetPasswordTokenHash  String?
   resetPasswordExpiresAt  DateTime?
@@ -131,6 +134,7 @@ model User {
   trips         Trip[]
   wishlists     Wishlist[]
   conversations Conversation[] @relation("ConversationParticipants")
+  conversationPrefs ConversationParticipant[]
 }
 
 model Property {
@@ -174,6 +178,11 @@ model Property {
   listings Listing[]
   matches  Match[]
   trips    Trip[]
+
+  // Conversations that carry this property as their subject-matter context,
+  // and chat messages that share this property as a card.
+  conversations Conversation[]
+  chatMessages  Message[]    @relation("MessageProperty")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -273,13 +282,43 @@ model Match {
 
 model Conversation {
   id           String    @id @default(uuid())
-  participants User[]    @relation("ConversationParticipants")
-  archived     Boolean   @default(false)
+  participants User[]    @relation("ConversationParticipants") // membership (implicit m2m)
+  archived     Boolean   @default(false) // admin-facing only; users use ConversationParticipant.archived
   messages     Message[]
   matches      Match[]
 
+  // Subject-matter context: when a chat starts from a property ("Message the
+  // seller") the property is attached here and the header shows it. Match
+  // deal rooms keep their own Match.conversationId link.
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+
+  // Per-user chat prefs + read state (pin/mute/archive/lastReadAt).
+  participantPrefs ConversationParticipant[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Per-user conversation preferences. Membership itself stays in the implicit
+// `_ConversationParticipants` table (so every existing query keeps working);
+// this model only stores per-user UI/read state for each 1:1 chat.
+model ConversationParticipant {
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+
+  pinned   Boolean   @default(false)
+  muted    Boolean   @default(false)
+  archived Boolean   @default(false)
+  lastReadAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([conversationId, userId])
+  @@index([userId])
 }
 
 model Message {
@@ -301,10 +340,46 @@ model Message {
   // (getMessages filters it out), while everyone else still does.
   deletedForMe String[] @default([])
 
+  // Message kind: text | image | video | document | audio | location | property.
+  type String @default("text")
+
+  // Quoted reply → the message this one replies to (null once that message is
+  // hard-deleted; soft-deleted targets stay linked).
+  parent   Message?  @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  parentMessageId String?
+  replies Message[]  @relation("MessageReplies")
+
+  edited    Boolean   @default(false)
+  editedAt  DateTime?
+  forwarded Boolean   @default(false)
+
+  // Soft delete "for everyone" — clients render "This message was deleted".
+  deletedAt DateTime?
+
+  // Receipt timestamps. `read` above is the boolean flavour of readAt (kept
+  // for the existing ✓/✓✓ UI); these drive the "Message info" modal.
+  deliveredAt DateTime?
+  readAt      DateTime?
+
+  // Reactions: { userId: "emoji" }. Add/change/remove by users who are in the
+  // conversation. Stored as JSONB (map), not a separate table.
+  reactions Json   @default("{}")
+  // "Starred/saved" per user.
+  starredBy String[] @default([])
+
+  // Location messages — { lat, lng, label }.
+  location Json?
+  // Property-card messages — a reference id into the Property table (never a
+  // duplicated object); the client renders a live card from it.
+  property   Property? @relation("MessageProperty", fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([conversationId])
+  // Cursor pagination for infinite history: (conversationId, createdAt).
+  @@index([conversationId, createdAt])
 }
 
 model Review {

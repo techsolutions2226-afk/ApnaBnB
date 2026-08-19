@@ -85,6 +85,70 @@ const uploadDocument = async (req, res, next) => {
   }
 };
 
+// Chat attachments — images / documents / voice. All verified by multer MIME
+// + size filters; the same Cloudinary folder scheme is used everywhere.
+const chatUploadResult = (file) => ({
+  url: file.path,
+  public_id: file.filename,
+  name: file.originalname,
+  size: file.size,
+  type: file.mimetype || '',
+});
+
+const uploadChatImage = (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No image file provided' });
+    res.status(200).json({ success: true, message: 'Image uploaded successfully', image: chatUploadResult(req.file) });
+  } catch (error) {
+    console.error('Error uploading chat image:', error);
+    next(error);
+  }
+};
+
+const uploadChatImages = (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No image files provided' });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Images uploaded successfully',
+      images: req.files.map(chatUploadResult),
+    });
+  } catch (error) {
+    console.error('Error uploading chat images:', error);
+    next(error);
+  }
+};
+
+const uploadChatDocument = (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No document file provided' });
+    res.status(200).json({
+      success: true,
+      message: 'Document uploaded successfully',
+      document: { ...chatUploadResult(req.file), type: 'file' },
+    });
+  } catch (error) {
+    console.error('Error uploading chat document:', error);
+    next(error);
+  }
+};
+
+const uploadChatVoice = (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No audio file provided' });
+    res.status(200).json({
+      success: true,
+      message: 'Voice message uploaded successfully',
+      audio: chatUploadResult(req.file),
+    });
+  } catch (error) {
+    console.error('Error uploading chat voice:', error);
+    next(error);
+  }
+};
+
 // Delete image from Cloudinary
 const deleteImage = async (req, res, next) => {
   try {
@@ -148,5 +212,9 @@ module.exports = {
   uploadImage,
   uploadMultipleImages,
   uploadDocument,
+  uploadChatImage,
+  uploadChatImages,
+  uploadChatDocument,
+  uploadChatVoice,
   deleteImage,
 };

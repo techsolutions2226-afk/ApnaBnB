@@ -1,27 +1,48 @@
 const prisma = require('../db/prisma');
-const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
+const { encryptMessage } = require('../utils/messageCrypto');
 const { getIO } = require('../sockets');
 const { withIds } = require('../utils/serializeIds');
 const { filterPersonalInfo } = require('../utils/personalInfo');
+const { messageInclude, serializeMessage } = require('../utils/messageUtils');
+const { presence } = require('../sockets/presence');
 
-const senderSelect = {
-  select: { id: true, name: true, email: true, role: true, avatar: true },
+const MESSAGE_TYPES = ['text', 'image', 'video', 'document', 'audio', 'location', 'property'];
+
+// Emit an event only when the socket layer is live.
+const emit = (event, payload) => {
+  const io = getIO();
+  if (io) io.to(`conv:${payload.conversationId}`).emit(event, payload);
 };
 
-// Return a message with its `content` decrypted to plaintext (the DB stores the
-// AES-256-GCM blob). Spreading a Prisma record preserves the computed `_id`.
-const withPlaintext = (msg) => ({ ...msg, content: decryptMessage(msg.content) });
+const emitToUser = (event, payload) => {
+  const io = getIO();
+  if (io) io.to(`user:${payload.userId}`).emit(event, payload);
+};
+
+const notifyConversationUpdated = (conversationId, messagePayload) => {
+  emit('conversation_updated', { conversationId, lastMessage: messagePayload });
+};
 
 // Send a message via REST (fallback for clients without an active socket).
 const sendMessage = async (req, res, next) => {
-  const { conversationId, content, attachments } = req.body;
-  const hasContent = content && String(content).trim().length > 0;
-  const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
+  const { conversationId, content, attachments, type, parentMessageId, propertyId, location, forwarded } = req.body;
 
-  if (!conversationId || (!hasContent && !hasAttachments)) {
-    return res
-      .status(400)
-      .json({ message: 'Conversation ID and content or attachments are required.' });
+  let kind = type || 'text';
+  if (!MESSAGE_TYPES.includes(kind)) kind = 'text';
+  const atts = Array.isArray(attachments) ? attachments : [];
+  const hasContent = content && String(content).trim().length > 0;
+  const hasAttachments = atts.length > 0;
+  const isLocation = kind === 'location' && !!location;
+  const isProperty = kind === 'property' && !!propertyId;
+  if (!conversationId || (!hasContent && !hasAttachments && !isLocation && !isProperty)) {
+    return res.status(400).json({ message: 'Conversation ID and message payload are required.' });
+  }
+  if (!hasContent && hasAttachments && (kind === 'text' || !type)) {
+    const first = atts[0];
+    if (first.type === 'image') kind = 'image';
+    else if (first.type === 'audio' || first.type === 'voice') kind = 'audio';
+    else if (first.type === 'video') kind = 'video';
+    else kind = 'document';
   }
 
   try {
@@ -29,93 +50,149 @@ const sendMessage = async (req, res, next) => {
       where: { id: conversationId },
       include: { participants: { select: { id: true } } },
     });
-    if (!conversation) {
-      return res.status(404).json({ message: 'Conversation not found.' });
-    }
+    if (!conversation) return res.status(404).json({ message: 'Conversation not found.' });
     if (!conversation.participants.some((p) => p.id === req.user.id)) {
-      return res
-        .status(403)
-        .json({ message: 'You are not authorized to send messages in this conversation.' });
+      return res.status(403).json({ message: 'You are not authorized to send messages in this conversation.' });
     }
 
-    const sanitizedContent = hasContent
-      ? filterPersonalInfo(content)
-      : '';
+    if (parentMessageId) {
+      const parent = await prisma.message.findUnique({
+        where: { id: parentMessageId },
+        select: { id: true, conversationId: true },
+      });
+      if (!parent || parent.conversationId !== conversationId) {
+        return res.status(400).json({ message: 'Reply target is not in this conversation.' });
+      }
+    }
 
-    const message = await prisma.message.create({
+    if (isProperty) {
+      const exists = await prisma.property.findUnique({ where: { id: propertyId }, select: { id: true } });
+      if (!exists) return res.status(404).json({ message: 'Property not found.' });
+    }
+
+    const otherIds = conversation.participants.map((p) => p.id).filter((id) => id !== req.user.id);
+    const deliveredAt = otherIds.some((id) => presence.isOnline(id)) ? new Date() : null;
+    const sanitizedContent = hasContent ? filterPersonalInfo(content) : '';
+
+    const created = await prisma.message.create({
       data: {
         conversationId,
         senderId: req.user.id,
-        content: encryptMessage(sanitizedContent),
-        attachments: hasAttachments ? attachments : [],
+        type: kind,
+        content: hasContent ? encryptMessage(sanitizedContent) : '',
+        attachments: atts,
+        parentMessageId: parentMessageId || null,
+        propertyId: isProperty ? propertyId : null,
+        location: isLocation ? location : null,
+        forwarded: !!forwarded,
+        deliveredAt,
       },
-      include: { sender: senderSelect },
     });
 
-    res.status(201).json(withPlaintext(message));
+    const populated = await prisma.message.findUnique({ where: { id: created.id }, include: messageInclude });
+    const payload = withIds({ ...serializeMessage(populated), delivered: !!deliveredAt });
+
+    // Broadcast exactly like a socket send when the socket layer is live.
+    if (getIO()) {
+      emit('new_message', payload);
+      notifyConversationUpdated(conversationId, payload);
+    }
+
+    res.status(201).json(payload);
   } catch (error) {
     next(error);
   }
 };
 
-// Get all messages in a conversation, oldest → newest (content decrypted).
+// Get messages in a conversation, oldest → newest (content decrypted).
+// Supports cursor pagination via `before` + `limit`; without `before` it keeps
+// the legacy behaviour of returning the full list so older callers still work.
 // Messages the requesting user hid with "delete for me" are excluded.
 const getMessages = async (req, res, next) => {
   const { conversationId } = req.params;
+  const { before, limit } = req.query;
 
   try {
-    const messages = await prisma.message.findMany({
-      where: {
-        conversationId,
-        NOT: { deletedForMe: { has: req.user.id } },
-      },
-      include: { sender: senderSelect },
-      orderBy: { createdAt: 'asc' },
+    const membership = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { id: true } } },
     });
-    res.status(200).json(messages.map(withPlaintext));
+    if (!membership) return res.status(404).json({ message: 'Conversation not found.' });
+    if (!membership.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
+    }
+
+    const where = {
+      conversationId,
+      NOT: { deletedForMe: { has: req.user.id } },
+    };
+    if (before) {
+      where.createdAt = { lt: new Date(before) };
+    }
+
+    const take = limit ? Math.min(parseInt(limit, 10) || 50, 100) : undefined;
+    const got = await prisma.message.findMany({
+      where,
+      include: messageInclude,
+      orderBy: { createdAt: 'desc' },
+      take: take ? take + 1 : undefined,
+    });
+
+    let hasMore = false;
+    if (take) {
+      if (got.length > take) {
+        got.pop();
+        hasMore = true;
+      }
+    }
+
+    const ascending = got.reverse();
+    const plain = ascending.map((m) => serializeMessage(m));
+
+    if (before) {
+      const oldest = plain[0];
+      return res.status(200).json({
+        messages: plain,
+        hasMore,
+        nextBefore: oldest ? oldest.createdAt : null,
+      });
+    }
+    res.status(200).json(plain);
   } catch (error) {
     next(error);
   }
 };
 
-// Edit a message
+// Edit a message (mark as edited so the UI can show the "edited" tag).
 const updateMessage = async (req, res, next) => {
   const { id } = req.params;
   const { content } = req.body;
 
-  if (!content) {
+  if (!content || !String(content).trim()) {
     return res.status(400).json({ message: 'Message content is required.' });
   }
 
   try {
     const message = await prisma.message.findUnique({ where: { id } });
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
-
-    // Only sender can edit their message
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
     if (message.senderId !== req.user.id) {
       return res.status(403).json({ message: 'You can only edit your own messages.' });
     }
+    if (message.deletedAt) {
+      return res.status(400).json({ message: 'Deleted messages cannot be edited.' });
+    }
 
     const sanitizedContent = filterPersonalInfo(content);
+    const now = new Date();
     const updated = await prisma.message.update({
       where: { id },
-      data: { content: encryptMessage(sanitizedContent) },
-      include: { sender: senderSelect },
+      data: { content: encryptMessage(sanitizedContent), edited: true, editedAt: now },
+      include: messageInclude,
     });
 
-    const payload = withIds(withPlaintext(updated));
-
-    // Let the other participant see the edit live.
-    const io = getIO();
-    if (io) {
-      io.to(`conv:${updated.conversationId}`).emit('message_updated', payload);
-      io.to(`conv:${updated.conversationId}`).emit('conversation_updated', {
-        conversationId: updated.conversationId,
-        lastMessage: payload,
-      });
-    }
+    const payload = withIds(serializeMessage(updated));
+    emit('message_updated', payload);
+    notifyConversationUpdated(message.conversationId, payload);
 
     res.status(200).json(payload);
   } catch (error) {
@@ -123,78 +200,73 @@ const updateMessage = async (req, res, next) => {
   }
 };
 
-// Delete a message
+// Delete a message "for everyone" — SOFT delete (additive). The row stays for
+// admin audit; every participant sees "This message was deleted" instead of the
+// content. Sender-only, matching the previous hard-delete authorization.
 const deleteMessage = async (req, res, next) => {
   const { id } = req.params;
 
   try {
     const message = await prisma.message.findUnique({ where: { id } });
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
-
-    // Only sender can delete their message
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
     if (message.senderId !== req.user.id) {
       return res.status(403).json({ message: 'You can only delete your own messages.' });
     }
+    if (message.deletedAt) {
+      return res.status(400).json({ message: 'Message is already deleted.' });
+    }
 
-    await prisma.message.delete({ where: { id } });
+    const deletedAt = new Date();
+    await prisma.message.update({ where: { id }, data: { deletedAt } });
 
-    // Let the other participant see the deletion live.
     const io = getIO();
     if (io) {
       io.to(`conv:${message.conversationId}`).emit('message_deleted', {
         messageId: id,
         conversationId: message.conversationId,
+        deletedAt: deletedAt.toISOString(),
       });
     }
 
-    res.status(200).json({ message: 'Message deleted successfully.' });
+    res.status(200).json({ message: 'Message deleted.', messageId: id, deletedAt: deletedAt.toISOString() });
   } catch (error) {
     next(error);
   }
 };
 
-// Mark a message as read
+// Mark a message as read (sets readAt so the sender's "Message info" works).
 const markMessageAsRead = async (req, res, next) => {
   const { id } = req.params;
 
   try {
     const message = await prisma.message.findUnique({ where: { id } });
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
 
-    // Only participants of the conversation may mark its messages as read.
     const conversation = await prisma.conversation.findUnique({
       where: { id: message.conversationId },
       include: { participants: { select: { id: true } } },
     });
-    if (
-      !conversation ||
-      !conversation.participants.some((p) => p.id === req.user.id)
-    ) {
-      return res
-        .status(403)
-        .json({ message: 'You are not a participant in this conversation.' });
+    if (!conversation || !conversation.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
     }
 
+    const readAt = new Date();
     const updated = await prisma.message.update({
       where: { id },
-      data: { read: true },
-      include: { sender: { select: { id: true, name: true, email: true } } },
+      data: { read: true, readAt },
+      include: messageInclude,
     });
 
-    // Push the ✓✓ to the sender live.
     const io = getIO();
     if (io) {
       io.to(`conv:${message.conversationId}`).emit('message_read', {
         messageId: id,
         conversationId: message.conversationId,
+        readAt: readAt.toISOString(),
       });
     }
 
-    res.status(200).json(withPlaintext(updated));
+    res.status(200).json(withIds(serializeMessage(updated)));
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'Message not found.' });
@@ -212,7 +284,8 @@ const getUnreadCount = async (req, res, next) => {
       where: {
         conversationId,
         read: false,
-        senderId: { not: req.user.id }, // Don't count own messages
+        senderId: { not: req.user.id },
+        conversation: { is: { participants: { some: { id: req.user.id } } } },
       },
     });
 
@@ -231,25 +304,19 @@ const markMultipleAsRead = async (req, res, next) => {
   }
 
   try {
-    // Only mark messages the requesting user can actually see — those living
-    // in a conversation they participate in.
+    const readAt = new Date();
     const result = await prisma.message.updateMany({
       where: {
         id: { in: messageIds },
-        conversation: {
-          is: { participants: { some: { id: req.user.id } } },
-        },
+        conversation: { is: { participants: { some: { id: req.user.id } } } },
       },
-      data: { read: true },
+      data: { read: true, readAt },
     });
 
     if (result.count === 0) {
-      return res
-        .status(403)
-        .json({ message: 'No messages found, or you are not a participant.' });
+      return res.status(403).json({ message: 'No messages found, or you are not a participant.' });
     }
 
-    // Push ✓✓ to the senders live (all ids belong to the same conversation).
     const io = getIO();
     if (io) {
       const sample = await prisma.message.findFirst({
@@ -261,23 +328,19 @@ const markMultipleAsRead = async (req, res, next) => {
           io.to(`conv:${sample.conversationId}`).emit('message_read', {
             messageId: id,
             conversationId: sample.conversationId,
+            readAt: readAt.toISOString(),
           }),
         );
       }
     }
 
-    res.status(200).json({
-      message: `${result.count} messages marked as read.`,
-      modifiedCount: result.count,
-    });
+    res.status(200).json({ message: `${result.count} messages marked as read.`, modifiedCount: result.count });
   } catch (error) {
     next(error);
   }
 };
 
-// "Delete for me" — the requesting user hides the message from their own
-// view only. Works on any message in a conversation they participate in
-// (their own or received). Everyone else still sees it.
+// "Delete for me" — the requesting user hides the message from their own view.
 const hideMessage = async (req, res, next) => {
   const { id } = req.params;
 
@@ -286,32 +349,20 @@ const hideMessage = async (req, res, next) => {
       where: { id },
       select: { id: true, conversationId: true, deletedForMe: true },
     });
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
 
     const conversation = await prisma.conversation.findUnique({
       where: { id: message.conversationId },
       include: { participants: { select: { id: true } } },
     });
-    if (
-      !conversation ||
-      !conversation.participants.some((p) => p.id === req.user.id)
-    ) {
-      return res
-        .status(403)
-        .json({ message: 'You are not part of this conversation.' });
+    if (!conversation || !conversation.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not part of this conversation.' });
     }
 
     if (!message.deletedForMe.includes(req.user.id)) {
-      await prisma.message.update({
-        where: { id },
-        data: { deletedForMe: { push: req.user.id } },
-      });
+      await prisma.message.update({ where: { id }, data: { deletedForMe: { push: req.user.id } } });
     }
 
-    // Sync to the user's OTHER devices/sessions (they stay on this device
-    // via the optimistic local removal; the room push covers the rest).
     const io = getIO();
     if (io) {
       io.to(`user:${req.user.id}`).emit('message_hidden', {
@@ -326,6 +377,180 @@ const hideMessage = async (req, res, next) => {
   }
 };
 
+// ── Reactions ─────────────────────────────────────────────────────────────
+// reactions is a JSON map { userId: "emoji" }. PUT with no/empty emoji removes
+// the caller's reaction; otherwise it sets/changes it.
+const setReaction = async (req, res, next) => {
+  const { id } = req.params;
+  const { emoji } = req.body;
+
+  try {
+    const message = await prisma.message.findUnique({ where: { id } });
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: message.conversationId },
+      include: { participants: { select: { id: true } } },
+    });
+    if (!conversation || !conversation.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
+    }
+    if (message.deletedAt) {
+      return res.status(400).json({ message: 'Deleted messages cannot be reacted to.' });
+    }
+
+    const current = typeof message.reactions === 'object' && message.reactions ? message.reactions : {};
+    const next = { ...current };
+    const cleanEmoji = typeof emoji === 'string' && emoji.trim() ? emoji.trim() : '';
+    if (!cleanEmoji) {
+      delete next[req.user.id];
+    } else {
+      next[req.user.id] = cleanEmoji;
+    }
+
+    const updated = await prisma.message.update({
+      where: { id },
+      data: { reactions: next },
+      include: messageInclude,
+    });
+
+    const payload = withIds(serializeMessage(updated));
+    const io = getIO();
+    if (io) emit('message_reaction', {
+      messageId: id,
+      conversationId: message.conversationId,
+      reactions: next,
+      reactorId: req.user.id,
+    });
+    // Keep the sidebar last-message preview in sync (reactions rarely there,
+    // but harmless) and let everyone get the full m: the _updated event covers
+    // it if this message is being displayed.
+    if (io) emit('message_updated', payload);
+
+    res.status(200).json(payload);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── Star / save ───────────────────────────────────────────────────────────
+const toggleStar = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const message = await prisma.message.findUnique({ where: { id } });
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: message.conversationId },
+      include: { participants: { select: { id: true } } },
+    });
+    if (!conversation || !conversation.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
+    }
+
+    const starred = Array.isArray(message.starredBy) ? message.starredBy : [];
+    const starredBy = starred.includes(req.user.id)
+      ? starred.filter((uid) => uid !== req.user.id)
+      : [...starred, req.user.id];
+
+    const updated = await prisma.message.update({
+      where: { id },
+      data: { starredBy },
+      include: messageInclude,
+    });
+
+    const payload = withIds(serializeMessage(updated));
+    const io = getIO();
+    if (io) emit('message_updated', payload);
+
+    res.status(200).json(payload);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── Report ────────────────────────────────────────────────────────────────
+// Reports are audited via ActivityLog (no fake backend behavior). Any
+// participant can flag a message to admins.
+const reportMessage = async (req, res, next) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const message = await prisma.message.findUnique({
+      where: { id },
+      include: { conversation: { include: { participants: { select: { id: true } } } } },
+    });
+    if (!message) return res.status(404).json({ message: 'Message not found.' });
+    if (!message.conversation.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
+    }
+
+    await prisma.activityLog.create({
+      data: {
+        userId: req.user.id,
+        userRole: req.user.role,
+        userEmail: req.user.email || '',
+        userName: req.user.name || '',
+        action: 'message.report',
+        entityType: 'message',
+        entityId: id,
+        meta: {
+          conversationId: message.conversationId,
+          senderId: message.senderId,
+          reason: (reason || '').toString().slice(0, 500),
+        },
+      },
+    });
+
+    res.status(200).json({ message: 'Message reported to moderators.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── Search inside a conversation ──────────────────────────────────────────
+// Message content is encrypted at rest, so (unlike a normal DB text search)
+// we must decrypt server-side. Scoped to one conversation the user is in.
+const searchMessages = async (req, res, next) => {
+  const { conversationId } = req.params;
+  const q = (req.query.q || '').trim();
+  if (!q) return res.status(400).json({ message: 'Search query is required.' });
+
+  try {
+    const membership = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+      include: { participants: { select: { id: true } } },
+    });
+    if (!membership) return res.status(404).json({ message: 'Conversation not found.' });
+    if (!membership.participants.some((p) => p.id === req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
+    }
+
+    const needle = q.toLowerCase();
+    const rows = await prisma.message.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        NOT: { deletedForMe: { has: req.user.id } },
+      },
+      include: messageInclude,
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+
+    const matches = rows
+      .map(serializeMessage)
+      .filter((m) => (m.content || '').toLowerCase().includes(needle))
+      .slice(0, 60);
+
+    res.status(200).json({ query: q, matches });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   sendMessage,
   getMessages,
@@ -335,4 +560,8 @@ module.exports = {
   getUnreadCount,
   markMultipleAsRead,
   hideMessage,
+  setReaction,
+  toggleStar,
+  reportMessage,
+  searchMessages,
 };

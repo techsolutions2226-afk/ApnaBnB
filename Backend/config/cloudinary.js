@@ -114,4 +114,82 @@ const documentUpload = multer({
   },
 });
 
-module.exports = { cloudinary, upload, profileUpload, documentUpload };
+// ── Chat uploads — everything under the `messages/` folder, with per-kind
+//    subfolders so Cloudinary stays tidy: messages/images, messages/documents,
+//    messages/voice. (Property/listing images keep their own folders.)
+const messageBase = (sub) => `${process.env.CLOUDINARY_MESSAGE_FOLDER || 'messages'}/${sub}`;
+
+const chatImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: messageBase('images'),
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    transformation: [{ quality: 'auto:good', fetch_format: 'auto' }],
+    format: 'auto',
+  },
+});
+
+const chatDocumentStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: { folder: messageBase('documents'), resource_type: 'raw' },
+});
+
+const chatVoiceStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: { folder: messageBase('voice'), resource_type: 'raw' },
+});
+
+// Max 10 images at once — chat galleries can batch-select multiple.
+const chatImageUpload = multer({
+  storage: chatImageStorage,
+  limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type. Only JPG, PNG, WebP, or GIF images are allowed.'), false);
+  },
+});
+
+const chatDocumentUpload = multer({
+  storage: chatDocumentStorage,
+  limits: { fileSize: 20 * 1024 * 1024, files: 10 },
+  fileFilter: (req, file, cb) => {
+    if (DOCUMENT_MIMES.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only PDF, Word, Excel, or text documents are allowed.'), false);
+  },
+});
+
+// Voice messages — MediaRecorder WebM/Opus plus common audio containers.
+const AUDIO_MIMES = [
+  'audio/webm',
+  'audio/ogg',
+  'audio/ogg; codecs=opus',
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/mp4',
+  'audio/m4a',
+  'audio/aac',
+  'audio/x-m4a',
+];
+
+const chatVoiceUpload = multer({
+  storage: chatVoiceStorage,
+  limits: { fileSize: 15 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const mime = (file.mimetype || '').toLowerCase();
+    if (AUDIO_MIMES.includes(mime)) cb(null, true);
+    else cb(new Error('Only audio files (WebM/OGG/MP3/WAV/M4A) are allowed.'), false);
+  },
+});
+
+module.exports = {
+  cloudinary,
+  upload,
+  profileUpload,
+  documentUpload,
+  chatImageUpload,
+  chatDocumentUpload,
+  chatVoiceUpload,
+};

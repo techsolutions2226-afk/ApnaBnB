@@ -312,6 +312,17 @@ const findOrCreateDealRoom = async (a, b) => {
       select: { id: true },
     });
   }
+  // Seed per-user prefs so pin/mute/archive/read state works for both sides.
+  await prisma.conversationParticipant.upsert({
+    where: { conversationId_userId: { conversationId: conv.id, userId: a } },
+    update: {},
+    create: { conversationId: conv.id, userId: a },
+  });
+  await prisma.conversationParticipant.upsert({
+    where: { conversationId_userId: { conversationId: conv.id, userId: b } },
+    update: {},
+    create: { conversationId: conv.id, userId: b },
+  });
   return conv.id;
 };
 

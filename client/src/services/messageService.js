@@ -50,13 +50,39 @@ const messageService = {
     }
   },
 
+  // Paginated — returns { messages, hasMore, nextBefore } when `before` is set,
+  // otherwise falls back to the legacy full array.
+  getMessagesPaged: async (conversationId, { before, limit } = {}) => {
+    try {
+      const response = await apiClient.get(`/messages/${conversationId}`, {
+        params: { before, limit },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch messages' };
+    }
+  },
+
+  // Search within one conversation (server decrypts content).
+  searchMessages: async (conversationId, q) => {
+    try {
+      const response = await apiClient.get(`/messages/${conversationId}/search`, {
+        params: { q },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to search messages' };
+    }
+  },
+
   // REST send — used only as a fallback when socket isn't connected.
-  sendMessage: async (conversationId, content, attachments = []) => {
+  // `payload` supports: content, attachments, type, parentMessageId, propertyId,
+  // location, forwarded.
+  sendMessage: async (conversationId, payload) => {
     try {
       const response = await apiClient.post('/messages', {
         conversationId,
-        content,
-        attachments,
+        ...payload,
       });
       return response.data;
     } catch (error) {
@@ -108,6 +134,66 @@ const messageService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to delete message' };
+    }
+  },
+
+  // Delete a whole conversation for all participants.
+  deleteConversation: async (conversationId) => {
+    try {
+      const response = await apiClient.delete(`/conversations/${conversationId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete conversation' };
+    }
+  },
+
+  // Per-user conversation prefs: { pinned?, muted?, archived? }
+  updatePrefs: async (conversationId, prefs) => {
+    try {
+      const response = await apiClient.put(`/conversations/${conversationId}/prefs`, prefs);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update conversation' };
+    }
+  },
+
+  // Mark the whole conversation read for this user.
+  markConversationRead: async (conversationId) => {
+    try {
+      const response = await apiClient.put(`/conversations/${conversationId}/read`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to mark conversation read' };
+    }
+  },
+
+  // Set/change a reaction (emoji). Pass '' or omit to remove your reaction.
+  setReaction: async (messageId, emoji) => {
+    try {
+      const response = await apiClient.put(`/messages/${messageId}/reaction`, { emoji });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update reaction' };
+    }
+  },
+
+  // Toggle "starred" for this user.
+  toggleStar: async (messageId) => {
+    try {
+      const response = await apiClient.put(`/messages/${messageId}/star`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to star message' };
+    }
+  },
+
+  // Report a message to admins (audited via ActivityLog).
+  reportMessage: async (messageId, reason) => {
+    try {
+      const response = await apiClient.post(`/messages/${messageId}/report`, { reason });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to report message' };
     }
   },
 };

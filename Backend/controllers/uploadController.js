@@ -149,6 +149,20 @@ const uploadChatVoice = (req, res, next) => {
   }
 };
 
+const uploadChatVideo = (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No video file provided' });
+    res.status(200).json({
+      success: true,
+      message: 'Video uploaded successfully',
+      video: chatUploadResult(req.file),
+    });
+  } catch (error) {
+    console.error('Error uploading chat video:', error);
+    next(error);
+  }
+};
+
 // Delete image from Cloudinary
 const deleteImage = async (req, res, next) => {
   try {
@@ -216,5 +230,6 @@ module.exports = {
   uploadChatImages,
   uploadChatDocument,
   uploadChatVoice,
+  uploadChatVideo,
   deleteImage,
 };

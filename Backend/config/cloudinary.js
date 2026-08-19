@@ -184,6 +184,23 @@ const chatVoiceUpload = multer({
   },
 });
 
+// Video clips shared in chat → messages/videos.
+const VIDEO_MIMES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v', 'video/3gpp'];
+
+const chatVideoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: { folder: messageBase('videos'), resource_type: 'video', transformation: [] },
+});
+
+const chatVideoUpload = multer({
+  storage: chatVideoStorage,
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (VIDEO_MIMES.includes((file.mimetype || '').toLowerCase())) cb(null, true);
+    else cb(new Error('Only MP4, WebM, MOV or 3GP video files are allowed.'), false);
+  },
+});
+
 module.exports = {
   cloudinary,
   upload,
@@ -192,4 +209,5 @@ module.exports = {
   chatImageUpload,
   chatDocumentUpload,
   chatVoiceUpload,
+  chatVideoUpload,
 };

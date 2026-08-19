@@ -87,12 +87,15 @@ export const useSendMessage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const send = async (conversationId, content) => {
+  const send = async (conversationId, content, extras = {}) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const data = await messageService.sendMessage(conversationId, content);
+      const data = await messageService.sendMessage(conversationId, {
+        content,
+        ...extras,
+      });
       return data;
     } catch (err) {
       setError(err.message || 'Failed to send message');

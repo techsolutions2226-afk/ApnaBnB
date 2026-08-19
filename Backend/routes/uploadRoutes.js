@@ -7,6 +7,7 @@ const {
   uploadChatImages,
   uploadChatDocument,
   uploadChatVoice,
+  uploadChatVideo,
   deleteImage,
 } = require('../controllers/uploadController');
 const {
@@ -16,6 +17,7 @@ const {
   chatImageUpload,
   chatDocumentUpload,
   chatVoiceUpload,
+  chatVideoUpload,
 } = require('../config/cloudinary');
 const verifyToken = require('../middleware/authMiddleware');
 
@@ -33,6 +35,7 @@ router.post('/chat/image', verifyToken, chatImageUpload.single('image'), uploadC
 router.post('/chat/images', verifyToken, chatImageUpload.array('images', 10), uploadChatImages);
 router.post('/chat/document', verifyToken, chatDocumentUpload.single('document'), uploadChatDocument);
 router.post('/chat/voice', verifyToken, chatVoiceUpload.single('audio'), uploadChatVoice);
+router.post('/chat/video', verifyToken, chatVideoUpload.single('video'), uploadChatVideo);
 
 router.delete('/image/:publicId', verifyToken, deleteImage);
 

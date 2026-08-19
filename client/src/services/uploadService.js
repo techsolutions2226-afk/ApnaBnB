@@ -103,6 +103,62 @@ const uploadService = {
       };
     }
   },
+
+  // ── Chat attachments (messages/images · documents · voice) ──
+  // Multiple images batched in one upload (max 10).
+  uploadChatImages: async (files) => {
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append('images', file));
+      const response = await apiClient.post('/upload/chat/images', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { success: false, message: 'Failed to upload images.' };
+    }
+  },
+
+  uploadChatDocument: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      const response = await apiClient.post('/upload/chat/document', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { success: false, message: 'Failed to upload document.' };
+    }
+  },
+
+  // One voice recording per call (messages/voice).
+  uploadChatVoice: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+      const response = await apiClient.post('/upload/chat/voice', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { success: false, message: 'Failed to upload voice message.' };
+    }
+  },
+
+  // One video clip per call (messages/videos).
+  uploadChatVideo: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+      const response = await apiClient.post('/upload/chat/video', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { success: false, message: 'Failed to upload video.' };
+    }
+  },
 };
 
 export default uploadService;

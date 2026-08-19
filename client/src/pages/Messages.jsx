@@ -1,34 +1,46 @@
-/* /messages — WhatsApp-style 2-pane real-time chat.
+/* /messages — full WhatsApp-style real-time chat (ApnaBnB).
  *
- * Powered by Socket.IO for live send/receive. Falls back to the REST
- * messageService.sendMessage if the socket is offline.
- *
- * Supports:
- *  - Conversation list with last-message preview, time, unread badge
- *  - Chat view with bubbles, date separators, auto-scroll
- *  - Image attachments via Cloudinary
- *  - Browser notifications + sound when a message arrives in a tab/conv
- *    the user isn't currently looking at
- *
- * Query params:
- *  ?with=<otherUserId>   → find-or-create a 1-1 conversation and open it.
- *                           Used by "Message" buttons throughout the app.
- *  ?conversation=<id>    → directly open an existing conversation by id.
+ * Powered by Socket.IO for live send/receive (falls back to REST). Supports:
+ *  - conversation list: avatar, name, online dot, unread badge, last-message
+ *    preview + time, pinned/muted icons; pinned chats sort to the top
+ *  - typed messages: text, image galleries, video, documents, voice (record +
+ *    play), location, property cards
+ *  - replies (with tap-to-jump), forward, copy, star, report, message info
+ *  - reactions (add / change / remove), emoji picker, soft delete-for-everyone
+ *    ("This message was deleted"), delete-for-me, editing ("edited")
+ *  - live typing + presence ("online" / "last seen"), read receipts ✓ / ✓✓ / ✓✓
+ *  - infinite history (loads older upward), new-message pill, in-chat search
+ *  - browser notification + sound (opt-in), responsive two-pane layout
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload, FiChevronDown, FiEdit2, FiTrash2, FiX, FiCheck } from "react-icons/fi";
+import {
+  FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload,
+  FiChevronDown, FiEdit2, FiTrash2, FiX, FiCheck, FiCopy,
+  FiShare2, FiStar, FiInfo, FiFlag, FiMoreVertical, FiSmile, FiImage,
+  FiBell, FiBellOff, FiArchive, FiMail,
+} from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../hooks/useSocket";
+import { useProperties } from "../hooks/useProperties";
 import messageService from "../services/messageService";
 import matchService from "../services/matchService";
 import uploadService from "../services/uploadService";
 import DealRoomPanel from "../components/messages/DealRoomPanel";
+import ImageLightbox from "../components/messages/ImageLightbox";
+import EmojiPicker from "../components/messages/EmojiPicker";
+import AttachmentMenu from "../components/messages/AttachmentMenu";
+import VoiceRecorder from "../components/messages/VoiceRecorder";
+import VoiceMessagePlayer from "../components/messages/VoiceMessagePlayer";
+import PropertyMessageCard from "../components/messages/PropertyMessageCard";
+import MessageReactions from "../components/messages/MessageReactions";
+import QuoteBlock from "../components/messages/QuoteBlock";
+import MessageInfoModal from "../components/messages/MessageInfoModal";
 import "../styles/Messages.css";
+import "../styles/MessagesExtra.css";
 
-/* The id of the "other" party in a match (property owner vs requirement poster). */
 const otherPartyOfMatch = (match, currentUserId) => {
   const ownerId = match?.property?.listedBy?._id || match?.property?.listedBy || null;
   const seekerId = match?.requirement?.requiredBy?._id || match?.requirement?.requiredBy || null;
@@ -37,7 +49,7 @@ const otherPartyOfMatch = (match, currentUserId) => {
   return null;
 };
 
-/* ── Date helpers ─────────────────────────────────────── */
+/* ── Date / time helpers ───────────────────────────────── */
 const startOfDay = (date) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -53,18 +65,12 @@ const formatDay = (date) => {
   return new Date(date).toLocaleDateString(undefined, {
     month: "long",
     day: "numeric",
-    year:
-      target < new Date(`${new Date().getFullYear()}-01-01`).getTime()
-        ? "numeric"
-        : undefined,
+    year: target < new Date(`${new Date().getFullYear()}-01-01`).getTime() ? "numeric" : undefined,
   });
 };
 
 const formatTime = (date) =>
-  new Date(date).toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  new Date(date).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 
 const formatRelativeShort = (date) => {
   if (!date) return "";
@@ -77,13 +83,42 @@ const formatRelativeShort = (date) => {
   if (startOfDay(new Date()) - startOfDay(date) < 7 * 86400000) {
     return new Date(date).toLocaleDateString(undefined, { weekday: "short" });
   }
-  return new Date(date).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
 
-/* ── Tiny ping using Web Audio API (no asset dependency) ── */
+const formatLastSeen = (iso) => {
+  if (!iso) return "last seen recently";
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = startOfDay(d) === startOfDay(now);
+  if (sameDay) return `last seen today at ${formatTime(d)}`;
+  if (startOfDay(d) === startOfDay(now) - 86400000) return "last seen yesterday";
+  return `last seen ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}, ${formatTime(d)}`;
+};
+
+/* ── Message preview helpers (side list + quote excerpts) ── */
+const messagePreview = (m) => {
+  if (!m) return "No messages yet";
+  if (m.deletedAt) return "This message was deleted";
+  switch (m.type) {
+    case "image":
+      return m.content ? `📷 ${m.content}` : "📷 Photo";
+    case "video":
+      return m.content ? `🎬 ${m.content}` : "🎬 Video";
+    case "audio":
+      return "🎙 Voice message";
+    case "document":
+      return `📎 ${m.attachments?.[0]?.name || "Document"}`;
+    case "location":
+      return "📍 Location";
+    case "property":
+      return `🏠 ${m.property?.title || "Property"}`;
+    default:
+      return m.content || "📎 Attachment";
+  }
+};
+
+/* ── Tiny Web Audio ping (no asset dependency) ── */
 const playPing = () => {
   try {
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -99,39 +134,54 @@ const playPing = () => {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
     osc.start();
     osc.stop(ctx.currentTime + 0.28);
-  } catch {
-    /* audio is best-effort */
-  }
+  } catch { /* audio is best-effort */ }
 };
 
-/* ── Helpers ──────────────────────────────────────────── */
+/* ── Linkify (URLs/emails inside text bubbles) ── */
+const Linkify = ({ text }) => {
+  const parts = String(text || "").split(
+    /(\bhttps?:\/\/[^\s]+|www\.[^\s]+|\b[\w.+-]+@[\w-]+\.[\w.]+\b)/g,
+  );
+  return parts.map((p, i) => {
+    if (/^https?:\/\//i.test(p)) {
+      const href = p.replace(/[.,;!?]+$/, "");
+      return (
+        <a key={i} href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+          {p}
+        </a>
+      );
+    }
+    if (/^www\./i.test(p)) {
+      return (
+        <a key={i} href={`https://${p}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+          {p}
+        </a>
+      );
+    }
+    if (/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(p)) {
+      return (
+        <a key={i} href={`mailto:${p}`} onClick={(e) => e.stopPropagation()}>
+          {p}
+        </a>
+      );
+    }
+    return p;
+  });
+};
+
 const getOtherParticipant = (conversation, currentUserId) =>
-  conversation?.participants?.find((p) => (p._id || p) !== currentUserId) || null;
+  conversation?.participants?.find((p) => (p?._id || p?.id || p) !== currentUserId) || null;
 
-const conversationTitle = (conversation, currentUserId) => {
-  const other = getOtherParticipant(conversation, currentUserId);
-  return other?.name || "Unknown user";
-};
+/* Pin icon — Feather has no pushpin, so a small inline one. */
+const PinIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M16 3l5 5-3 1-2 5-5 5-5-1-4 4-1-1 4-4-1-5 5-5 5-2 2-3z" />
+  </svg>
+);
 
-const conversationInitial = (conversation, currentUserId) => {
-  const t = conversationTitle(conversation, currentUserId);
-  return (t || "?").charAt(0).toUpperCase();
-};
-
-const previewText = (lastMessage) => {
-  if (!lastMessage) return "No messages yet";
-  const atts = lastMessage.attachments || [];
-  if (atts.length > 0) {
-    const isFile = atts[0].type === "file";
-    const icon = isFile ? "📎" : "📷";
-    const label = isFile ? "Document" : "Photo";
-    return lastMessage.content ? `${icon} ${lastMessage.content}` : `${icon} ${label}`;
-  }
-  return lastMessage.content || "";
-};
-
-/* ── Component ────────────────────────────────────────── */
+/* ── Component ─────────────────────────────────────────── */
 const Messages = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const socket = useSocket();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -142,6 +192,10 @@ const Messages = () => {
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
 
+  // infinite history
+  const [hasMore, setHasMore] = useState(false);
+  const [olderLoading, setOlderLoading] = useState(false);
+
   const [draft, setDraft] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -150,41 +204,66 @@ const Messages = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [dealMatch, setDealMatch] = useState(null);
 
-  /* ── Edit / delete (WhatsApp-style) ── */
-  const [menuForId, setMenuForId] = useState(null); // msg whose ⌄ menu is open
-  const [editingMessage, setEditingMessage] = useState(null); // msg being edited
+  /* edit / delete / select */
+  const [menuForId, setMenuForId] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
-  /* Pending delete dialog — { ids: [...], multiple: bool }. Delete is offered
-     two ways: "for me" (client-side, hides locally) and "for everyone"
-     (existing backend DELETE /messages/:id). */
   const [deleteRequest, setDeleteRequest] = useState(null);
   const [deleting, setDeleting] = useState(false);
-
-  /* ── Multi-select ("select more") + "delete for me" ── */
   const [selectedIds, setSelectedIds] = useState([]);
-  /* "Delete for me" is DB-backed now (Message.deletedForMe) — the server stops
-     returning hidden messages, so no local persistence is needed. */
 
-  /* ── Typing indicator + read receipts ── */
+  /* typing + presence + read */
   const [otherTyping, setOtherTyping] = useState(false);
+  const [presence, setPresence] = useState({}); // {userId:{online,lastSeenAt}}
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+
+  /* composer extras */
+  const [emojiFor, setEmojiFor] = useState(null); // "composer" | messageId | null
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [replyTarget, setReplyTarget] = useState(null);
+  const [pendingLocation, setPendingLocation] = useState(null);
+  const [pendingProperty, setPendingProperty] = useState(null);
+  const [sharePropsOpen, setSharePropsOpen] = useState(false);
+  const [forwardTarget, setForwardTarget] = useState(null); // message to forward
+  const [forwardOpen, setForwardOpen] = useState(false);
+
+  /* viewer / info */
+  const [lightbox, setLightbox] = useState(null); // {images, index}
+  const [infoFor, setInfoFor] = useState(null);
+
+  /* in-chat search */
+  const [chatSearchOpen, setChatSearchOpen] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
+  const [chatSearchResults, setChatSearchResults] = useState([]);
+  const [highlightMsgId, setHighlightMsgId] = useState(null);
+  const [searchingChat, setSearchingChat] = useState(false);
+
+  /* scroll state */
+  const [atBottom, setAtBottom] = useState(true);
+  const [newMsgPill, setNewMsgPill] = useState(false);
 
   const streamRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef(null); // images
+  const videoInputRef = useRef(null);
   const docInputRef = useRef(null);
   const menuRef = useRef(null);
+  const headerMenuRef = useRef(null);
   const conversationsRef = useRef([]);
   const typingTimeoutRef = useRef(null);
   const typingClearRef = useRef(null);
   const activeIdRef = useRef(null);
-  useEffect(() => {
-    activeIdRef.current = activeId;
-  }, [activeId]);
-  useEffect(() => {
-    conversationsRef.current = conversations;
-  }, [conversations]);
+  const atBottomRef = useRef(true);
+  const newestAtRef = useRef(null);
 
-  /* ── Initial fetch + URL handling ──────────────────── */
+  useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
+  useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
+  useEffect(() => { atBottomRef.current = atBottom; }, [atBottom]);
+  useEffect(() => {
+    newestAtRef.current = messages.length ? messages[messages.length - 1]?.createdAt : null;
+  }, [messages]);
+
+  /* ── initial fetch + URL opening ── */
   useEffect(() => {
     let cancelled = false;
     setLoadingConvs(true);
@@ -195,7 +274,6 @@ const Messages = () => {
       const withUser = searchParams.get("with");
       const draftParam = searchParams.get("draft");
 
-      // Deal room — open the conversation linked to a match and show context.
       if (matchId) {
         try {
           const match = await matchService.getById(matchId);
@@ -236,8 +314,6 @@ const Messages = () => {
           if (!cancelled) {
             setConversations(fresh);
             setActiveId(conv._id);
-            /* Pre-fill the composer with the inquiry message the user typed
-               on the property page, if one was passed via ?draft=. */
             if (draftParam) setDraft(draftParam);
             searchParams.delete("with");
             searchParams.delete("draft");
@@ -266,82 +342,87 @@ const Messages = () => {
         if (!cancelled) setLoadingConvs(false);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
-  /* ── Load messages for active conversation ─────────── */
-  useEffect(() => {
-    if (!activeId) {
-      setMessages([]);
-      return;
-    }
-    let cancelled = false;
-    setLoadingMessages(true);
-    setOtherTyping(false);
-    setMenuForId(null);
-    setEditingMessage(null);
-    setEditDraft("");
-    setSelectedIds([]);
-    setDeleteRequest(null);
-    messageService
-      .getMessages(activeId)
-      .then((data) => {
-        if (cancelled) return;
-        const list = Array.isArray(data) ? data : [];
-        setMessages(list);
-        setConversations((prev) =>
-          prev.map((c) => (c._id === activeId ? { ...c, unreadCount: 0 } : c)),
-        );
+  /* ── load messages (recent first) + mark read ── */
+  const loadMessages = useCallback(
+    async (conversationId) => {
+      setLoadingMessages(true);
+      setOtherTyping(false);
+      setMenuForId(null);
+      setEditingMessage(null);
+      setEditDraft("");
+      setSelectedIds([]);
+      setDeleteRequest(null);
+      setReplyTarget(null);
+      setPendingAttachments([]);
+      setPendingLocation(null);
+      setPendingProperty(null);
+      setChatSearchOpen(false);
+      setChatSearchResults([]);
+      setHighlightMsgId(null);
 
-        /* Mark the other party's unread messages as read (read receipts). */
+      try {
+        const data = await messageService.getMessagesPaged(conversationId, { limit: 40 });
+        const list = Array.isArray(data) ? data : data.messages || [];
+        setMessages(list);
+        setHasMore(Array.isArray(data) ? false : !!data.hasMore);
+        setConversations((prev) =>
+          prev.map((c) => (c._id === conversationId ? { ...c, unreadCount: 0 } : c)),
+        );
+        // read receipts — bulk mark
         const unreadIds = list
-          .filter(
-            (m) =>
-              !m.read && (m.sender?._id || m.sender) !== currentUser?.id,
-          )
+          .filter((m) => !m.read && (m.sender?._id || m.sender?.id || m.sender) !== currentUser?.id)
           .map((m) => m._id);
         if (unreadIds.length > 0) {
-          messageService
-            .markMultipleAsRead(unreadIds)
-            .then(() => {
-              if (cancelled) return;
-              setMessages((prev) =>
-                prev.map((m) =>
-                  unreadIds.includes(m._id) ? { ...m, read: true } : m,
-                ),
-              );
-            })
-            .catch(() => {});
+          messageService.markMultipleAsRead(unreadIds).catch(() => {});
         }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        /* One silent retry — transient Supabase-pooler blips clear in a second;
-           only surface a toast if the retry also fails. */
-        setTimeout(async () => {
-          if (cancelled) return;
-          try {
-            const retryData = await messageService.getMessages(activeId);
-            if (cancelled) return;
-            setMessages(Array.isArray(retryData) ? retryData : []);
-          } catch {
-            if (!cancelled) toast.error(err?.message || "Failed to load messages");
-          }
-        }, 1500);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingMessages(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId]);
+        messageService.markConversationRead(conversationId).catch(() => {});
+      } catch (err) {
+        toast.error(err?.message || "Failed to load messages");
+      } finally {
+        setLoadingMessages(false);
+        if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight;
+      }
+    },
+    [currentUser?.id],
+  );
 
-  /* ── Socket event handlers ─────────────────────────── */
+  useEffect(() => {
+    if (activeId) loadMessages(activeId);
+    else setMessages([]);
+  }, [activeId, loadMessages]);
+
+  /* ── load older messages (preserve scroll) ── */
+  const loadOlder = useCallback(async () => {
+    if (!activeId || olderLoading || !hasMore) return;
+    const oldest = messages[0];
+    if (!oldest) return;
+    setOlderLoading(true);
+    const el = streamRef.current;
+    const prevHeight = el ? el.scrollHeight : 0;
+    try {
+      const data = await messageService.getMessagesPaged(activeId, { before: oldest.createdAt, limit: 40 });
+      const older = data.messages || [];
+      if (older.length) {
+        setMessages((prev) => [...older, ...prev]);
+        setHasMore(!!data.hasMore);
+        requestAnimationFrame(() => {
+          if (el) el.scrollTop = el.scrollHeight - prevHeight;
+        });
+      } else {
+        setHasMore(false);
+      }
+    } catch {
+      /* ignore transient failures on history load */
+    } finally {
+      setOlderLoading(false);
+    }
+  }, [activeId, olderLoading, hasMore, messages]);
+
+  /* ── socket handlers ── */
   useEffect(() => {
     if (!socket) return;
 
@@ -358,21 +439,20 @@ const Messages = () => {
     const onNewMessage = (msg) => {
       if (!msg || !msg.conversationId) return;
       const isActive = msg.conversationId === activeIdRef.current;
+      const fromMe = msg.sender?._id === currentUser?.id || msg.sender?.id === currentUser?.id || msg.sender === currentUser?.id;
 
       if (isActive) {
         setMessages((prev) => {
           if (prev.find((m) => m._id === msg._id)) return prev;
           return [...prev, msg];
         });
-        /* A live message lands while we're watching — stop "typing…" and
-           mark it read so the sender sees ✓✓ right away. */
         setOtherTyping(false);
         clearTimeout(typingClearRef.current);
-        const fromMe =
-          msg.sender?._id === currentUser?.id || msg.sender === currentUser?.id;
         if (!fromMe && msg._id) {
           messageService.markAsRead(msg._id).catch(() => {});
         }
+        // pill if not at bottom
+        if (!atBottomRef.current) setNewMsgPill(true);
       }
 
       setConversations((prev) => {
@@ -380,115 +460,98 @@ const Messages = () => {
         const next = prev.map((c) => {
           if (c._id !== msg.conversationId) return c;
           touched = true;
-          const mine =
-            msg.sender?._id === currentUser?.id || msg.sender === currentUser?.id;
           return {
             ...c,
             lastMessage: msg,
-            unreadCount: isActive || mine ? 0 : (c.unreadCount || 0) + 1,
+            unreadCount: isActive || fromMe ? 0 : (c.unreadCount || 0) + 1,
           };
         });
         if (!touched) {
-          messageService
-            .getConversations()
-            .then((list) => setConversations(list))
-            .catch(() => {});
+          messageService.getConversations().then((l) => setConversations(l)).catch(() => {});
         }
         return next.sort((a, b) => {
-          const ta = a.lastMessage?.createdAt
-            ? new Date(a.lastMessage.createdAt).getTime()
-            : 0;
-          const tb = b.lastMessage?.createdAt
-            ? new Date(b.lastMessage.createdAt).getTime()
-            : 0;
+          if (!!a.prefs?.pinned !== !!b.prefs?.pinned) return a.prefs?.pinned ? -1 : 1;
+          const ta = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : new Date(a.updatedAt).getTime();
+          const tb = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : new Date(b.updatedAt).getTime();
           return tb - ta;
         });
       });
 
-      const fromOther =
-        msg.sender?._id !== currentUser?.id && msg.sender !== currentUser?.id;
-      const shouldNotify = fromOther && (!isActive || document.hidden);
-      if (shouldNotify) {
+      const fromOther = !fromMe;
+      if (fromOther && (!isActive || document.hidden)) {
         playPing();
-        if (
-          typeof window !== "undefined" &&
-          "Notification" in window &&
-          Notification.permission === "granted"
-        ) {
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
           try {
-            const n = new Notification(
-              `New message from ${msg.sender?.name || "Someone"}`,
-              {
-                body:
-                  msg.content?.slice(0, 120) ||
-                  (msg.attachments?.length ? "📷 Photo" : ""),
-                icon: "/favicon.ico",
-                tag: msg.conversationId,
-              },
-            );
+            const n = new Notification(`New message from ${msg.sender?.name || "Someone"}`, {
+              body: msg.content?.slice(0, 120) || messagePreview(msg),
+              icon: "/favicon.ico",
+              tag: msg.conversationId,
+            });
             n.onclick = () => {
               window.focus();
               setActiveId(msg.conversationId);
               n.close();
             };
-          } catch {
-            /* notifications best-effort */
-          }
+          } catch { /* best effort */ }
         }
       }
     };
 
-    /* A message was edited (by us on another device, or by the other party). */
     const onMessageUpdated = (msg) => {
       if (!msg?._id) return;
-      setMessages((prev) =>
-        prev.map((m) => (m._id === msg._id ? { ...m, ...msg } : m)),
-      );
+      setMessages((prev) => prev.map((m) => (m._id === msg._id ? { ...m, ...msg } : m)));
       setConversations((prev) =>
-        prev.map((c) =>
-          c.lastMessage?._id === msg._id ? { ...c, lastMessage: msg } : c,
-        ),
+        prev.map((c) => (c.lastMessage?._id === msg._id ? { ...c, lastMessage: msg } : c)),
       );
     };
 
-    /* A message was deleted — drop it, and refresh the sidebar preview if it
-       was the conversation's last message. */
     const onMessageDeleted = ({ messageId, conversationId }) => {
       if (!messageId) return;
-      setMessages((prev) => prev.filter((m) => m._id !== messageId));
+      // soft delete — replace with placeholder so it stays for everyone
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId ? { ...m, deletedAt: true } : m,
+        ),
+      );
       const conv = conversationsRef.current.find((c) => c._id === conversationId);
       if (conv?.lastMessage?._id === messageId) {
-        messageService
-          .getConversations()
-          .then((list) => setConversations(list))
-          .catch(() => {});
+        messageService.getConversations().then((l) => setConversations(l)).catch(() => {});
       }
     };
 
-    /* The other party is typing (server relays; we only show it for the
-       conversation we're currently looking at). */
     const onTyping = ({ conversationId, userId: from, isTyping }) => {
       if (conversationId !== activeIdRef.current) return;
       if (from === currentUser?.id) return;
       setOtherTyping(!!isTyping);
       clearTimeout(typingClearRef.current);
-      if (isTyping) {
-        typingClearRef.current = setTimeout(() => setOtherTyping(false), 3000);
-      }
+      if (isTyping) typingClearRef.current = setTimeout(() => setOtherTyping(false), 3000);
     };
 
-    /* The recipient read the message — flip our ✓ to ✓✓ live. */
-    const onMessageRead = ({ messageId }) => {
+    const onMessageRead = ({ messageId, readAt }) => {
       if (!messageId) return;
       setMessages((prev) =>
-        prev.map((m) => (m._id === messageId ? { ...m, read: true } : m)),
+        prev.map((m) => (m._id === messageId ? { ...m, read: true, readAt: readAt || m.readAt } : m)),
       );
     };
 
-    /* "Delete for me" done on another device — drop it here too. */
+    const onMessageReaction = ({ messageId, reactions }) => {
+      if (!messageId) return;
+      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, reactions } : m)));
+    };
+
     const onMessageHidden = ({ messageId }) => {
       if (!messageId) return;
       setMessages((prev) => prev.filter((m) => m._id !== messageId));
+    };
+
+    const onPresence = ({ userId, online, lastSeenAt }) => {
+      setPresence((prev) => ({ ...prev, [userId]: { online, lastSeenAt: lastSeenAt || (prev[userId]?.lastSeenAt) } }));
+    };
+
+    const onConversationPrefs = ({ conversationId, prefs }) => {
+      setConversations((prev) =>
+        prev.map((c) => (c._id === conversationId ? { ...c, prefs: { ...(c.prefs || {}), ...prefs } } : c)),
+      );
     };
 
     socket.on("connect", onConnect);
@@ -498,7 +561,10 @@ const Messages = () => {
     socket.on("message_deleted", onMessageDeleted);
     socket.on("typing", onTyping);
     socket.on("message_read", onMessageRead);
+    socket.on("message_reaction", onMessageReaction);
     socket.on("message_hidden", onMessageHidden);
+    socket.on("presence", onPresence);
+    socket.on("conversation_prefs", onConversationPrefs);
 
     if (socket.connected) setConnected(true);
 
@@ -510,46 +576,90 @@ const Messages = () => {
       socket.off("message_deleted", onMessageDeleted);
       socket.off("typing", onTyping);
       socket.off("message_read", onMessageRead);
+      socket.off("message_reaction", onMessageReaction);
       socket.off("message_hidden", onMessageHidden);
+      socket.off("presence", onPresence);
+      socket.off("conversation_prefs", onConversationPrefs);
       clearTimeout(typingClearRef.current);
     };
   }, [socket, currentUser?.id]);
 
-  /* ── Join socket room for active conversation ─────── */
+  /* join active conversation room */
   useEffect(() => {
     if (!socket || !activeId) return;
     socket.emit("join_conversation", { conversationId: activeId });
-    return () => {
-      socket.emit("leave_conversation", { conversationId: activeId });
-    };
+    return () => socket.emit("leave_conversation", { conversationId: activeId });
   }, [socket, activeId]);
 
-  /* ── Auto-scroll on new messages ───────────────────── */
+  /* close outside-click for menus */
   useEffect(() => {
-    if (streamRef.current) {
-      streamRef.current.scrollTop = streamRef.current.scrollHeight;
-    }
-  }, [messages, activeId]);
+    if (!menuForId && !headerMenuOpen && !emojiFor) return;
+    const onDown = (e) => {
+      const inMsg = menuRef.current && menuRef.current.contains(e.target);
+      const inHeader = headerMenuRef.current && headerMenuRef.current.contains(e.target);
+      if (!inMsg && !inHeader) {
+        setMenuForId(null);
+        setHeaderMenuOpen(false);
+        setEmojiFor(null);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuForId, headerMenuOpen, emojiFor]);
 
-  /* ── Request browser notification permission once ── */
+  /* escape key tower */
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "Notification" in window &&
-      Notification.permission === "default"
-    ) {
-      Notification.requestPermission().catch(() => {});
-    }
-  }, []);
+    const onKey = (e) => {
+      if (e.key !== "Escape") return;
+      if (editingMessage) { setEditingMessage(null); setEditDraft(""); return; }
+      if (deleteRequest) { setDeleteRequest(null); return; }
+      if (infoFor) { setInfoFor(null); return; }
+      if (lightbox) { setLightbox(null); return; }
+      if (forwardOpen) { setForwardOpen(false); return; }
+      if (sharePropsOpen) { setSharePropsOpen(false); return; }
+      if (replyTarget) { setReplyTarget(null); return; }
+      if (selectedIds.length > 0) { setSelectedIds([]); return; }
+      if (menuForId) { setMenuForId(null); return; }
+      if (activeId) closeChat();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingMessage, deleteRequest, infoFor, lightbox, forwardOpen, sharePropsOpen, replyTarget, selectedIds, menuForId, activeId]);
 
-  /* ── Derived ───────────────────────────────────────── */
+  /* ── scroll handling ── */
+  const handleScroll = () => {
+    const el = streamRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    setAtBottom(nearBottom);
+    if (nearBottom) setNewMsgPill(false);
+    if (el.scrollTop < 60) loadOlder();
+  };
+
+  const scrollToBottom = (smooth = false) => {
+    const el = streamRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    setNewMsgPill(false);
+  };
+
+  const jumpToMessage = (id) => {
+    if (!id) return;
+    setHighlightMsgId(id);
+    const el = document.querySelector(`[data-mid="${id}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => setHighlightMsgId(null), 1800);
+  };
+
+  /* ── derived ── */
   const filteredConvs = useMemo(() => {
     if (!search.trim()) return conversations;
     const q = search.trim().toLowerCase();
     return conversations.filter((c) => {
-      const name = conversationTitle(c, currentUser?.id).toLowerCase();
-      const last = (c.lastMessage?.content || "").toLowerCase();
-      return name.includes(q) || last.includes(q);
+      const name = (conversationTitle(c, currentUser?.id) || "").toLowerCase();
+      const last = (messagePreview(c.lastMessage) || "").toLowerCase();
+      const prop = (c.property?.title || "").toLowerCase();
+      return name.includes(q) || last.includes(q) || prop.includes(q);
     });
   }, [conversations, search, currentUser?.id]);
 
@@ -558,8 +668,9 @@ const Messages = () => {
     [conversations, activeId],
   );
 
-  /* Multi-select ("select more") is delete-for-me only, so every message can
-     be ticked regardless of who sent it. */
+  const otherUser = useMemo(() => getOtherParticipant(activeConv, currentUser?.id), [activeConv, currentUser?.id]);
+  const otherOnline = otherUser ? !!presence[otherUser._id || otherUser.id]?.online : false;
+
   const allVisibleIds = useMemo(() => messages.map((m) => m._id), [messages]);
 
   const groupedStream = useMemo(() => {
@@ -576,58 +687,83 @@ const Messages = () => {
     return out;
   }, [messages]);
 
-  /* ── Send handler ──────────────────────────────────── */
+  /* ── send ── */
+  const sendPayload = useCallback(
+    async (payload) => {
+      if (!activeId) return;
+      if (socket?.connected) {
+        socket.emit("send_message", payload, (response) => {
+          if (!response?.ok) {
+            toast.error(response?.error || "Failed to send message");
+            setDraft((d) => d || payload.content || "");
+          }
+        });
+      } else {
+        try {
+          const message = await messageService.sendMessage(activeId, payload);
+          setMessages((prev) => [...prev, message]);
+        } catch (err) {
+          toast.error(err?.message || "Failed to send message");
+          setDraft(payload.content || "");
+        }
+      }
+    },
+    [activeId, socket],
+  );
+
+  const clearPending = useCallback(() => {
+    setDraft("");
+    setPendingAttachments([]);
+    setReplyTarget(null);
+    setPendingLocation(null);
+    setPendingProperty(null);
+    clearTimeout(typingTimeoutRef.current);
+    if (socket?.connected && activeIdRef.current) {
+      socket.emit("typing", { conversationId: activeIdRef.current, isTyping: false });
+    }
+  }, [socket]);
+
   const handleSend = useCallback(async () => {
     const trimmed = draft.trim();
     if (!activeId) return;
-    if (!trimmed && pendingAttachments.length === 0) return;
+    const hasPending = pendingAttachments.length > 0 || pendingLocation || pendingProperty;
+    if (!trimmed && !hasPending) return;
 
     const payload = {
       conversationId: activeId,
       content: trimmed,
       attachments: pendingAttachments,
+      parentMessageId: replyTarget?._id || null,
     };
-
-    setDraft("");
-    setPendingAttachments([]);
-    clearTimeout(typingTimeoutRef.current);
-    if (socket?.connected) {
-      socket.emit("typing", { conversationId: activeId, isTyping: false });
+    if (pendingLocation) payload.type = "location";
+    if (pendingProperty) {
+      payload.type = "property";
+      payload.propertyId = pendingProperty._id || pendingProperty.id;
+    }
+    if (pendingAttachments.length > 0 && pendingAttachments.every((a) => a.type === "image") && !payload.type) {
+      payload.type = "image";
     }
 
-    if (socket && socket.connected) {
-      socket.emit("send_message", payload, (response) => {
-        if (!response?.ok) {
-          toast.error(response?.error || "Failed to send message");
-          setDraft(trimmed);
-          setPendingAttachments(payload.attachments);
-        }
-      });
-    } else {
-      try {
-        const message = await messageService.sendMessage(
-          activeId,
-          trimmed,
-          pendingAttachments,
-        );
-        setMessages((prev) => [...prev, message]);
-      } catch (err) {
-        toast.error(err?.message || "Failed to send message");
-        setDraft(trimmed);
-        setPendingAttachments(payload.attachments);
-      }
+    const snapshot = { draft: trimmed, attachments: pendingAttachments, location: pendingLocation, property: pendingProperty, reply: replyTarget };
+    clearPending();
+    await sendPayload(payload);
+    // restore pending if the socket is down (REST path re-adds failures itself)
+    if (!socket?.connected) {
+      setDraft(snapshot.draft);
+      setPendingAttachments(snapshot.attachments);
+      setPendingLocation(snapshot.location);
+      setPendingProperty(snapshot.property);
+      setReplyTarget(snapshot.reply);
     }
-  }, [activeId, draft, pendingAttachments, socket]);
+  }, [activeId, draft, pendingAttachments, pendingLocation, pendingProperty, replyTarget, socket, sendPayload, clearPending]);
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  /* Draft changes → let the other side know we're typing (throttled stop
-     signal after 1.5s of silence). */
   const handleDraftChange = (e) => {
     setDraft(e.target.value);
     if (socket?.connected && activeId) {
@@ -635,94 +771,204 @@ const Messages = () => {
       clearTimeout(typingTimeoutRef.current);
       typingTimeoutRef.current = setTimeout(() => {
         if (socket?.connected && activeIdRef.current) {
-          socket.emit("typing", {
-            conversationId: activeIdRef.current,
-            isTyping: false,
-          });
+          socket.emit("typing", { conversationId: activeIdRef.current, isTyping: false });
         }
       }, 1500);
     }
   };
 
-  /* ── Close chat (back arrow / Escape) ──────────────── */
-  const closeChat = useCallback(() => {
-    setActiveId(null);
-    setMenuForId(null);
-    setEditingMessage(null);
-    setEditDraft("");
-    setSelectedIds([]);
+  const handlePickEmoji = (emoji) => {
+    setDraft((d) => d + emoji);
+    setEmojiFor(null);
+  };
+
+  /* ── attachments ── */
+  const handlePickFile = () => fileInputRef.current?.click();
+  const handlePickVideo = () => videoInputRef.current?.click();
+  const handlePickDoc = () => docInputRef.current?.click();
+
+  const handleImages = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const bad = files.some((f) => f.size > 10 * 1024 * 1024);
+    if (bad) { toast.error("Each image must be 10 MB or smaller"); return; }
+    setUploading(true);
+    try {
+      const result = await uploadService.uploadChatImages(files);
+      const images = result?.images || [];
+      setPendingAttachments((prev) => [
+        ...prev,
+        ...images.map((img) => ({ url: img.url, type: "image", name: img.name, size: img.size })),
+      ]);
+    } catch (err) {
+      toast.error(err?.message || "Image upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleVideo = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) { toast.error("Video must be 50 MB or smaller"); return; }
+    setUploading(true);
+    try {
+      const result = await uploadService.uploadChatVideo(file);
+      const v = result?.video;
+      if (!v?.url) throw new Error("Upload failed");
+      setPendingAttachments((prev) => [...prev, { url: v.url, type: "video", name: v.name, size: v.size }]);
+    } catch (err) {
+      toast.error(err?.message || "Video upload failed");
+    } finally {
+      setUploading(false);
+      if (videoInputRef.current) videoInputRef.current.value = "";
+    }
+  };
+
+  const handleDoc = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error("Document must be 20 MB or smaller"); return; }
+    setUploading(true);
+    try {
+      const result = await uploadService.uploadChatDocument(file);
+      const d = result?.document;
+      if (!d?.url) throw new Error("Upload failed");
+      setPendingAttachments((prev) => [...prev, { url: d.url, type: "file", name: d.name, size: d.size }]);
+    } catch (err) {
+      toast.error(err?.message || "Document upload failed");
+    } finally {
+      setUploading(false);
+      if (docInputRef.current) docInputRef.current.value = "";
+    }
+  };
+
+  const handleVoiceSend = async (file) => {
+    setUploading(true);
+    try {
+      const result = await uploadService.uploadChatVoice(file);
+      const a = result?.audio;
+      if (!a?.url) throw new Error("Upload failed");
+      await sendPayload({
+        conversationId: activeId,
+        content: "",
+        attachments: [{ url: a.url, type: "audio", name: a.name, size: a.size, duration: file.name || undefined }],
+        type: "audio",
+      });
+    } catch (err) {
+      toast.error(err?.message || "Voice upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const shareLocation = () => {
+    if (!navigator.geolocation) { toast.error("Geolocation not supported"); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPendingLocation({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          label: "My location",
+        });
+      },
+      () => toast.error("Could not get your location"),
+      { enableHighAccuracy: true, timeout: 12000 },
+    );
+  };
+
+  /* property share dialog (uses real marketplace data) */
+  const propQuery = useProperties({}, false);
+  const openShareProps = () => {
+    setSharePropsOpen(true);
+    propQuery.refetch();
+  };
+  const pickProperty = (p) => {
+    setPendingProperty(p);
+    setSharePropsOpen(false);
+  };
+
+  /* ── reactions ── */
+  const handleReact = useCallback(async (messageId, emoji) => {
+    try {
+      const updated = await messageService.setReaction(messageId, emoji || "");
+      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, ...updated } : m)));
+    } catch (err) {
+      toast.error(err?.message || "Failed to react");
+    }
   }, []);
 
-  /* Escape key: cancel edit → close delete dialog → exit select mode → close
-     menu → close chat. */
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key !== "Escape") return;
-      if (editingMessage) {
-        setEditingMessage(null);
-        setEditDraft("");
-        return;
-      }
-      if (deleteRequest) {
-        setDeleteRequest(null);
-        return;
-      }
-      if (selectedIds.length > 0) {
-        setSelectedIds([]);
-        return;
-      }
-      if (menuForId) {
-        setMenuForId(null);
-        return;
-      }
-      if (activeId) closeChat();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [editingMessage, deleteRequest, selectedIds, menuForId, activeId, closeChat]);
+  /* ── star / info / report / copy / forward ── */
+  const handleStar = async (m) => {
+    try {
+      const updated = await messageService.toggleStar(m._id);
+      setMessages((prev) => prev.map((x) => (x._id === m._id ? { ...x, ...updated } : x)));
+    } catch (err) {
+      toast.error(err?.message || "Failed to star message");
+    }
+  };
 
-  /* Close the ⌄ message menu when clicking anywhere outside it. */
-  useEffect(() => {
-    if (!menuForId) return;
-    const onDown = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setMenuForId(null);
-      }
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [menuForId]);
+  const handleCopy = (m) => {
+    const text = m.content || "";
+    navigator.clipboard?.writeText(text).catch(() => {});
+    toast.success("Message copied");
+  };
 
-  /* ── Edit message flow ─────────────────────────────── */
+  const handleReport = async (m) => {
+    try {
+      await messageService.reportMessage(m._id, "Reported from chat");
+      toast.success("Message reported to moderators");
+    } catch (err) {
+      toast.error(err?.message || "Failed to report");
+    }
+  };
+
+  const handleForward = async () => {
+    const msg = forwardTarget;
+    if (!msg) return;
+    // copy into any OTHER conversation
+    const targets = conversationsRef.current.filter((c) => c._id !== activeIdRef.current);
+    if (targets.length === 0) {
+      toast.info("No other conversations to forward to");
+      setForwardOpen(false);
+      return;
+    }
+    for (const conv of targets) {
+      const payload = {
+        conversationId: conv._id,
+        content: msg.content || "",
+        attachments: msg.attachments || [],
+        type: msg.type || "text",
+        forwarded: true,
+      };
+      if (msg.propertyId) payload.propertyId = msg.propertyId;
+      await sendPayload(payload);
+    }
+    setForwardOpen(false);
+    setForwardTarget(null);
+    toast.success(`Forwarded to ${targets.length} chat${targets.length > 1 ? "s" : ""}`);
+  };
+
+  /* ── edit / delete ── */
   const startEdit = (m) => {
     setEditingMessage(m);
     setEditDraft(m.content || "");
     setMenuForId(null);
   };
-
   const cancelEdit = () => {
     setEditingMessage(null);
     setEditDraft("");
   };
-
   const handleEditSave = useCallback(async () => {
     const trimmed = editDraft.trim();
     if (!editingMessage || !trimmed || savingEdit) return;
     setSavingEdit(true);
     try {
-      const updated = await messageService.updateMessage(
-        editingMessage._id,
-        trimmed,
-      );
-      setMessages((prev) =>
-        prev.map((m) => (m._id === updated._id ? { ...m, ...updated } : m)),
-      );
+      const updated = await messageService.updateMessage(editingMessage._id, trimmed);
+      setMessages((prev) => prev.map((m) => (m._id === updated._id ? { ...m, ...updated } : m)));
       setConversations((prev) =>
-        prev.map((c) =>
-          c.lastMessage?._id === updated._id
-            ? { ...c, lastMessage: { ...c.lastMessage, ...updated } }
-            : c,
-        ),
+        prev.map((c) => (c.lastMessage?._id === updated._id ? { ...c, lastMessage: updated } : c)),
       );
       cancelEdit();
     } catch (err) {
@@ -732,36 +978,9 @@ const Messages = () => {
     }
   }, [editingMessage, editDraft, savingEdit]);
 
-  const handleEditKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleEditSave();
-    }
-  };
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-  /* ── Multi-select ("select more") ──────────────────── */
-  const toggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  /* "Select all" ticks every visible message — select mode deletes for me
-     only, which works on any message. */
-  const toggleSelectAll = () => {
-    setSelectedIds((prev) => {
-      const all = allVisibleIds;
-      if (all.length === 0) return prev;
-      const hasAll = all.every((id) => prev.includes(id));
-      return hasAll
-        ? prev.filter((id) => !all.includes(id))
-        : [...new Set([...prev, ...all])];
-    });
-  };
-
-  /* ── "Delete for me" — DB-backed (Message.deletedForMe). The server stops
-     returning these messages for THIS user (all devices), while everyone
-     else still sees them. ── */
   const handleDeleteForMe = useCallback(async () => {
     const ids = deleteRequest?.ids || [];
     if (!ids.length || deleting) return;
@@ -778,23 +997,18 @@ const Messages = () => {
     }
   }, [deleteRequest, deleting]);
 
-  /* ── "Delete for everyone" — existing backend DELETE /messages/:id. Only
-     works on your own messages (the server returns 403 otherwise). ── */
   const handleDeleteEveryone = useCallback(async () => {
     const ids = deleteRequest?.ids || [];
     if (!ids.length || deleting) return;
     setDeleting(true);
     try {
       await Promise.all(ids.map((id) => messageService.deleteMessage(id)));
-      setMessages((prev) => prev.filter((m) => !ids.includes(m._id)));
-      const conv = conversationsRef.current.find(
-        (c) => c._id === activeIdRef.current,
+      setMessages((prev) =>
+        prev.map((m) => (ids.includes(m._id) ? { ...m, deletedAt: new Date().toISOString() } : m)),
       );
+      const conv = conversationsRef.current.find((c) => c._id === activeIdRef.current);
       if (conv?.lastMessage && ids.includes(conv.lastMessage._id)) {
-        messageService
-          .getConversations()
-          .then((list) => setConversations(list))
-          .catch(() => {});
+        messageService.getConversations().then((l) => setConversations(l)).catch(() => {});
       }
       setDeleteRequest(null);
       setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
@@ -805,75 +1019,71 @@ const Messages = () => {
     }
   }, [deleteRequest, deleting]);
 
-  /* ── Attach image flow ─────────────────────────────── */
-  const handlePickFile = () => fileInputRef.current?.click();
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Only images are supported for now");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be 5 MB or smaller");
-      return;
-    }
-    setUploading(true);
+  /* ── conversation prefs (pin / mute / archive) ── */
+  const updateConvPref = async (convId, patch) => {
     try {
-      const result = await uploadService.uploadSingle(file);
-      const url = result?.image?.url || result?.url || result?.secure_url;
-      if (!url) throw new Error("Upload succeeded but no URL returned");
-      setPendingAttachments((prev) => [
-        ...prev,
-        { url, type: "image", name: file.name, size: file.size },
-      ]);
+      await messageService.updatePrefs(convId, patch);
+      setConversations((prev) =>
+        prev.map((c) => (c._id === convId ? { ...c, prefs: { ...(c.prefs || {}), ...patch } } : c)),
+      );
+      setHeaderMenuOpen(false);
     } catch (err) {
-      toast.error(err?.message || "Image upload failed");
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.error(err?.message || "Failed to update conversation");
     }
   };
 
-  /* ── Attach document flow (PDF / Word / Excel / text) ── */
-  const handlePickDoc = () => docInputRef.current?.click();
+  const closeChat = useCallback(() => {
+    setActiveId(null);
+    setMenuForId(null);
+    setEditingMessage(null);
+    setEditDraft("");
+    setSelectedIds([]);
+    setReplyTarget(null);
+    setHeaderMenuOpen(false);
+    setChatSearchOpen(false);
+  }, []);
 
-  const handleDocChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Document must be 10 MB or smaller");
-      if (docInputRef.current) docInputRef.current.value = "";
-      return;
-    }
-    setUploading(true);
-    try {
-      const result = await uploadService.uploadDocument(file);
-      const url = result?.document?.url || result?.url;
-      if (!url) throw new Error("Upload succeeded but no URL returned");
-      setPendingAttachments((prev) => [
-        ...prev,
-        { url, type: "file", name: file.name, size: file.size },
-      ]);
-    } catch (err) {
-      toast.error(err?.message || "Document upload failed");
-    } finally {
-      setUploading(false);
-      if (docInputRef.current) docInputRef.current.value = "";
-    }
+  const formatFileSize = (bytes) => {
+    if (!bytes) return "";
+    const mb = bytes / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(1)} MB`;
+    return `${Math.round(bytes / 1024)} KB`;
   };
 
-  /* ── Render ────────────────────────────────────────── */
+  /* in-chat search */
+  const runChatSearch = useCallback(async () => {
+    if (!activeId || !chatSearchQuery.trim()) {
+      setChatSearchResults([]);
+      return;
+    }
+    setSearchingChat(true);
+    try {
+      const data = await messageService.searchMessages(activeId, chatSearchQuery.trim());
+      setChatSearchResults(Array.isArray(data?.matches) ? data.matches : []);
+    } catch {
+      setChatSearchResults([]);
+    } finally {
+      setSearchingChat(false);
+    }
+  }, [activeId, chatSearchQuery]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (chatSearchQuery.trim()) runChatSearch();
+      else setChatSearchResults([]);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [chatSearchQuery, runChatSearch]);
+
+  /* ── render ── */
   return (
     <div className={`msg-shell ${activeId ? "msg-shell--has-active" : ""}`}>
-      {/* ── Left: conversation sidebar ─── */}
+      {/* ══ Left: conversation sidebar ══ */}
       <aside className="msg-sidebar">
         <div className="msg-sidebar-header">
           <h1 className="msg-sidebar-title">Messages</h1>
           <p className="msg-sidebar-sub">
-            {conversations.length} conversation
-            {conversations.length === 1 ? "" : "s"}
+            {conversations.length} conversation{conversations.length === 1 ? "" : "s"}
           </p>
         </div>
         <div className="msg-sidebar-search">
@@ -888,59 +1098,59 @@ const Messages = () => {
 
         <div className="msg-conv-list">
           {loadingConvs ? (
-            <div className="msg-conv-empty">Loading…</div>
+            <div className="msg-conv-empty">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="msg-conv-skel" />
+              ))}
+            </div>
           ) : filteredConvs.length === 0 ? (
             <div className="msg-conv-empty">
-              No conversations yet. Open a match and click{" "}
-              <strong>Message</strong> to start one.
+              {search.trim()
+                ? "No conversations match your search."
+                : "No conversations yet. Open a match and click Message to start one."}
             </div>
           ) : (
             filteredConvs.map((c) => {
               const other = getOtherParticipant(c, currentUser?.id);
               const isActive = c._id === activeId;
               const unread = c.unreadCount || 0;
+              const otherId = other?._id || other?.id || other;
+              const online = otherId ? !!presence[otherId]?.online : false;
+              const pinned = !!c.prefs?.pinned;
+              const muted = !!c.prefs?.muted;
               return (
                 <button
                   key={c._id}
-                  className={`msg-conv-item ${
-                    isActive ? "msg-conv-item--active" : ""
-                  }`}
+                  className={`msg-conv-item ${isActive ? "msg-conv-item--active" : ""} ${pinned ? "msg-conv-item--pinned" : ""}`}
                   onClick={() => setActiveId(c._id)}
                 >
-                  {other?.avatar ? (
-                    <img
-                      src={other.avatar}
-                      alt={other.name}
-                      className="msg-conv-avatar"
-                    />
-                  ) : (
-                    <span className="msg-conv-avatar">
-                      {conversationInitial(c, currentUser?.id)}
-                    </span>
-                  )}
+                  <span className="msg-conv-avatar-wrap">
+                    {other?.avatar ? (
+                      <img src={other.avatar} alt={other.name} className="msg-conv-avatar" />
+                    ) : (
+                      <span className="msg-conv-avatar">{conversationInitial(c, currentUser?.id)}</span>
+                    )}
+                    {online && <span className="msg-online-dot" />}
+                  </span>
                   <div className="msg-conv-meta">
                     <div className="msg-conv-top">
                       <span className="msg-conv-name">
                         {conversationTitle(c, currentUser?.id)}
                       </span>
-                      <span className="msg-conv-time">
-                        {c.lastMessage?.createdAt
-                          ? formatRelativeShort(c.lastMessage.createdAt)
-                          : ""}
+                      <span className="msg-conv-flags">
+                        {pinned && <PinIcon size={12} className="msg-flag-pin" />}
+                        {muted && <FiBellOff size={12} className="msg-flag-mute" />}
+                        <span className="msg-conv-time">
+                          {c.lastMessage?.createdAt ? formatRelativeShort(c.lastMessage.createdAt) : ""}
+                        </span>
                       </span>
                     </div>
                     <div className="msg-conv-bottom">
-                      <span
-                        className={`msg-conv-preview ${
-                          unread > 0 ? "msg-conv-preview--unread" : ""
-                        }`}
-                      >
-                        {previewText(c.lastMessage)}
+                      <span className={`msg-conv-preview ${unread > 0 ? "msg-conv-preview--unread" : ""}`}>
+                        {messagePreview(c.lastMessage)}
                       </span>
                       {unread > 0 && (
-                        <span className="msg-conv-badge">
-                          {unread > 99 ? "99+" : unread}
-                        </span>
+                        <span className="msg-conv-badge">{unread > 99 ? "99+" : unread}</span>
                       )}
                     </div>
                   </div>
@@ -951,14 +1161,10 @@ const Messages = () => {
         </div>
       </aside>
 
-      {/* ── Right: chat pane ─── */}
+      {/* ══ Right: chat pane ══ */}
       <section className="msg-chat">
         {showBanner && (
-          <div
-            className={`msg-conn-banner ${
-              connected ? "msg-conn-banner--ok" : ""
-            }`}
-          >
+          <div className={`msg-conn-banner ${connected ? "msg-conn-banner--ok" : ""}`}>
             {connected ? "Connected" : "Reconnecting…"}
           </div>
         )}
@@ -967,288 +1173,438 @@ const Messages = () => {
           <div className="msg-no-chat">
             <div className="msg-no-chat-icon">💬</div>
             <h3>Select a conversation</h3>
-            <p>
-              Pick someone from the list on the left, or start a new chat by
-              opening a match and clicking <strong>Message</strong>.
-            </p>
+            <p>Pick someone from the list, or start a chat from a match's <strong>Message</strong> button.</p>
           </div>
         ) : (
           <>
             {selectedIds.length > 0 ? (
               <header className="msg-select-bar">
-                <button
-                  type="button"
-                  className="msg-select-close"
-                  onClick={() => setSelectedIds([])}
-                  aria-label="Exit selection"
-                  title="Exit selection (Esc)"
-                >
+                <button type="button" className="msg-select-close" onClick={() => setSelectedIds([])} aria-label="Exit selection" title="Exit selection (Esc)">
                   <FiX size={20} />
                 </button>
-                <span className="msg-select-count">
-                  {selectedIds.length} selected
-                </span>
+                <span className="msg-select-count">{selectedIds.length} selected</span>
                 <div className="msg-select-actions">
-                  <button
-                    type="button"
-                    className="msg-select-btn"
-                    onClick={toggleSelectAll}
-                  >
+                  <button type="button" className="msg-select-btn" onClick={() => {
+                    setSelectedIds(allVisibleIds.every((id) => selectedIds.includes(id)) ? [] : allVisibleIds);
+                  }}>
                     <FiCheck size={15} />
-                    {allVisibleIds.length > 0 &&
-                    allVisibleIds.every((id) => selectedIds.includes(id))
-                      ? "Deselect all"
-                      : "Select all"}
+                    {allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.includes(id)) ? "Deselect all" : "Select all"}
                   </button>
-                  <button
-                    type="button"
-                    className="msg-select-btn msg-select-btn--danger"
-                    onClick={() =>
-                      setDeleteRequest({
-                        ids: [...selectedIds],
-                        multiple: selectedIds.length > 1,
-                        onlyMe: true,
-                      })
-                    }
-                  >
-                    <FiTrash2 size={15} />
-                    Delete
+                  <button type="button" className="msg-select-btn msg-select-btn--danger" onClick={() => setDeleteRequest({ ids: [...selectedIds], multiple: selectedIds.length > 1, onlyMe: true })}>
+                    <FiTrash2 size={15} /> Delete
                   </button>
                 </div>
               </header>
             ) : (
-            <header className="msg-chat-header">
-              <button
-                className="msg-chat-back"
-                onClick={closeChat}
-                aria-label="Back to conversations"
-                title="Back"
-              >
-                <FiArrowLeft size={20} />
-              </button>
-              {(() => {
-                const other = getOtherParticipant(activeConv, currentUser?.id);
-                return other?.avatar ? (
-                  <img
-                    src={other.avatar}
-                    alt={other.name}
-                    className="msg-conv-avatar"
-                  />
+              <header className="msg-chat-header">
+                <button className="msg-chat-back" onClick={closeChat} aria-label="Back to conversations" title="Back">
+                  <FiArrowLeft size={20} />
+                </button>
+                {otherUser?.avatar ? (
+                  <img src={otherUser.avatar} alt={otherUser.name} className="msg-conv-avatar" />
                 ) : (
-                  <span className="msg-conv-avatar">
-                    {conversationInitial(activeConv, currentUser?.id)}
-                  </span>
-                );
-              })()}
-              <div className="msg-chat-header-meta">
-                <div className="msg-chat-header-name">
-                  {conversationTitle(activeConv, currentUser?.id)}
+                  <span className="msg-conv-avatar">{conversationInitial(activeConv, currentUser?.id)}</span>
+                )}
+                <div className="msg-chat-header-meta">
+                  <div className="msg-chat-header-name">
+                    {conversationTitle(activeConv, currentUser?.id)}
+                    {otherOnline && <span className="msg-online-label">Online</span>}
+                  </div>
+                  <div className="msg-chat-header-sub">
+                    {otherTyping ? (
+                      <span className="msg-typing-hint">typing…</span>
+                    ) : otherOnline ? (
+                      "Online"
+                    ) : (
+                      formatLastSeen(otherUser?.lastSeenAt)
+                    )}
+                    {otherUser?.role && <span className="msg-role"> · {otherUser.role}</span>}
+                  </div>
+                  {activeConv.property && (
+                    <button
+                      type="button"
+                      className="msg-header-prop"
+                      onClick={() => navigate(`/property/${activeConv.property._id || activeConv.property.id}`)}
+                      title={activeConv.property.title}
+                    >
+                      🏠 {activeConv.property.title}
+                    </button>
+                  )}
                 </div>
-                <div className="msg-chat-header-role">
-                  {otherTyping
-                    ? <span className="msg-typing-hint">typing…</span>
-                    : getOtherParticipant(activeConv, currentUser?.id)?.role || ""}
+                <div className="msg-header-actions">
+                  <button type="button" className="msg-header-btn" title="Search messages" onClick={() => setChatSearchOpen((o) => !o)}>
+                    <FiSearch size={18} />
+                  </button>
+                  <div ref={headerMenuRef} className="msg-header-menu-wrap">
+                    <button type="button" className="msg-header-btn" title="More options" onClick={() => setHeaderMenuOpen((o) => !o)}>
+                      <FiMoreVertical size={18} />
+                    </button>
+                    {headerMenuOpen && (
+                      <div className="msg-header-menu">
+                        <button type="button" onClick={() => updateConvPref(activeId, { pinned: !activeConv.prefs?.pinned })}>
+                          <PinIcon size={14} /> {activeConv.prefs?.pinned ? "Unpin conversation" : "Pin conversation"}
+                        </button>
+                        <button type="button" onClick={() => updateConvPref(activeId, { muted: !activeConv.prefs?.muted })}>
+                          {activeConv.prefs?.muted ? <FiBell size={14} /> : <FiBellOff size={14} />}
+                          {activeConv.prefs?.muted ? "Unmute notifications" : "Mute notifications"}
+                        </button>
+                        <button type="button" onClick={() => updateConvPref(activeId, { archived: !activeConv.prefs?.archived })}>
+                          <FiArchive size={14} /> {activeConv.prefs?.archived ? "Unarchive conversation" : "Archive conversation"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConversations((prev) => prev.map((c) => (c._id === activeId ? { ...c, unreadCount: c.unreadCount > 0 ? c.unreadCount : 1 } : c)));
+                            setHeaderMenuOpen(false);
+                          }}
+                        >
+                          <FiMail size={14} /> Mark as unread
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if ("Notification" in window && Notification.permission !== "granted") {
+                              Notification.requestPermission().then(() => toast.success("Notifications enabled")).catch(() => {});
+                            } else if ("Notification" in window) {
+                              toast.info("Notifications already enabled");
+                            }
+                            setHeaderMenuOpen(false);
+                          }}
+                        >
+                          <FiBell size={14} /> Enable notifications
+                        </button>
+                        <button
+                          type="button"
+                          className="msg-header-menu--danger"
+                          onClick={() => {
+                            if (!window.confirm("Delete this conversation for everyone? This cannot be undone.")) return;
+                            messageService.deleteConversation(activeId)
+                              .then(() => {
+                                setConversations((prev) => prev.filter((c) => c._id !== activeId));
+                                closeChat();
+                                toast.success("Conversation deleted");
+                              })
+                              .catch((err) => toast.error(err?.message || "Failed to delete conversation"));
+                          }}
+                        >
+                          <FiTrash2 size={14} /> Delete conversation
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </header>
+              </header>
             )}
 
             {dealMatch && dealMatch.conversationId === activeId && (
-              <DealRoomPanel
-                match={dealMatch}
-                currentUser={currentUser}
-                onMatchChange={(patch) =>
-                  setDealMatch((prev) => (prev ? { ...prev, ...patch } : prev))
-                }
-              />
+              <DealRoomPanel match={dealMatch} currentUser={currentUser} onMatchChange={(patch) => setDealMatch((prev) => (prev ? { ...prev, ...patch } : prev))} />
             )}
 
-            <div className="msg-chat-stream" ref={streamRef}>
-              {loadingMessages ? (
-                <div style={{ textAlign: "center", color: "#555" }}>
-                  Loading messages…
+            {chatSearchOpen && (
+              <div className="msg-chat-search">
+                <div className="msg-chat-search-input">
+                  <FiSearch size={15} />
+                  <input
+                    type="text"
+                    placeholder="Search messages…"
+                    value={chatSearchQuery}
+                    onChange={(e) => setChatSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  <button type="button" onClick={() => setChatSearchOpen(false)} aria-label="Close search">
+                    <FiX size={16} />
+                  </button>
                 </div>
-              ) : groupedStream.length === 0 ? (
-                <div
-                  style={{ textAlign: "center", color: "#555", marginTop: 60 }}
-                >
-                  No messages yet. Say hello 👋
+                {chatSearchQuery.trim() && (
+                  <div className="msg-chat-search-results">
+                    {searchingChat ? (
+                      <div className="msg-chat-search-note">Searching…</div>
+                    ) : chatSearchResults.length === 0 ? (
+                      <div className="msg-chat-search-note">No matches found</div>
+                    ) : (
+                      chatSearchResults.map((r) => (
+                        <button key={r._id} type="button" className="msg-search-hit" onClick={() => { setChatSearchOpen(false); jumpToMessage(r._id); }}>
+                          <span className="msg-search-hit-from">{r.sender?.name}</span>
+                          <span className="msg-search-hit-text">{r.content}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div
+              className="msg-chat-stream"
+              ref={streamRef}
+              onScroll={handleScroll}
+            >
+              {loadingMessages ? (
+                <div className="msg-stream-loading">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className={`msg-bubble-skel ${i % 2 ? "msg-bubble-skel--mine" : ""}`} />
+                  ))}
                 </div>
               ) : (
-                groupedStream.map((row) => {
-                  if (row.kind === "day") {
-                    return (
-                      <div key={row.id} className="msg-date-sep">
-                        <span>{formatDay(row.day)}</span>
-                      </div>
-                    );
-                  }
-                  const m = row.msg;
-                  const mine =
-                    (m.sender?._id || m.sender) === currentUser?.id;
-                  const isEdited =
-                    m.updatedAt &&
-                    m.createdAt &&
-                    new Date(m.updatedAt).getTime() - new Date(m.createdAt).getTime() > 1000;
-                  const selecting = selectedIds.length > 0;
-                  const isSelected = selecting && selectedIds.includes(m._id);
-                  const selectable = selecting;
-                  const menuOpen = menuForId === m._id;
-                  return (
-                    <div
-                      key={row.id}
-                      className={`msg-bubble-row ${
-                        mine ? "msg-bubble-row--mine" : ""
-                      }${selecting ? " msg-bubble-row--selecting" : ""}`}
-                    >
-                      {!selecting && (
+                <>
+                  {olderLoading && <div className="msg-history-loading">Loading older messages…</div>}
+                  {groupedStream.length === 0 ? (
+                    <div className="msg-empty-chat">
+                      <span className="msg-empty-chat-emoji">👋</span>
+                      <p>No messages yet. Say hello!</p>
+                    </div>
+                  ) : (
+                    groupedStream.map((row) => {
+                      if (row.kind === "day") {
+                        return (
+                          <div key={row.id} className="msg-date-sep">
+                            <span>{formatDay(row.day)}</span>
+                          </div>
+                        );
+                      }
+                      const m = row.msg;
+                      const mine = (m.sender?._id || m.sender?.id || m.sender) === currentUser?.id;
+                      const selecting = selectedIds.length > 0;
+                      const selectable = selecting;
+                      const isSelected = selecting && selectedIds.includes(m._id);
+                      const menuOpen = menuForId === m._id;
+                      const isHighlight = highlightMsgId === m._id;
+                      const deleted = !!m.deletedAt;
+                      const reactions = m.reactions && typeof m.reactions === "object" ? m.reactions : {};
+                      const myReaction = reactions[currentUser?.id];
+                      const images = (Array.isArray(m.attachments) ? m.attachments : []).filter((a) => a.type === "image" || (!a.type && a.url));
+                      const video = (Array.isArray(m.attachments) ? m.attachments : []).find((a) => a.type === "video");
+                      const audio = (Array.isArray(m.attachments) ? m.attachments : []).find((a) => a.type === "audio");
+                      const doc = (Array.isArray(m.attachments) ? m.attachments : []).find((a) => a.type === "file");
+
+                      return (
                         <div
-                          className="msg-menu-wrap"
-                          ref={menuOpen ? menuRef : null}
+                          key={row.id}
+                          data-mid={m._id}
+                          className={`msg-bubble-row ${mine ? "msg-bubble-row--mine" : ""}${selecting ? " msg-bubble-row--selecting" : ""}${isHighlight ? " msg-bubble-row--highlight" : ""}`}
+                          id={`msg-${m._id}`}
                         >
-                          <button
-                            type="button"
-                            className="msg-menu-trigger"
-                            onClick={() =>
-                              setMenuForId(menuOpen ? null : m._id)
-                            }
-                            aria-label="Message options"
-                            aria-expanded={menuOpen}
-                          >
-                            <FiChevronDown size={15} />
-                          </button>
-                          {menuOpen && (
-                            <div className="msg-menu">
-                              {mine && (
-                                <button
-                                  type="button"
-                                  onClick={() => startEdit(m)}
-                                >
-                                  <FiEdit2 size={14} /> Edit message
-                                </button>
+                          {!selecting && (
+                            <div className="msg-menu-wrap" ref={menuOpen ? menuRef : null}>
+                              <button
+                                type="button"
+                                className="msg-menu-trigger"
+                                onClick={() => setMenuForId(menuOpen ? null : m._id)}
+                                aria-label="Message options"
+                                aria-expanded={menuOpen}
+                              >
+                                <FiChevronDown size={15} />
+                              </button>
+                              {menuOpen && (
+                                <div className="msg-menu">
+                                  <button type="button" onClick={() => { setReplyTarget(m); setMenuForId(null); }}>
+                                    <FiShare2 size={14} /> Reply
+                                  </button>
+                                  {!deleted && m.content && (
+                                    <button type="button" onClick={() => { handleCopy(m); setMenuForId(null); }}>
+                                      <FiCopy size={14} /> Copy
+                                    </button>
+                                  )}
+                                  {mine && !deleted && m.type === "text" && (
+                                    <button type="button" onClick={() => startEdit(m)}>
+                                      <FiEdit2 size={14} /> Edit message
+                                    </button>
+                                  )}
+                                  {!deleted && (
+                                    <button type="button" onClick={() => { setForwardTarget(m); setForwardOpen(true); setMenuForId(null); }}>
+                                      <FiShare2 size={14} /> Forward
+                                    </button>
+                                  )}
+                                  <button type="button" onClick={() => { handleStar(m); setMenuForId(null); }}>
+                                    <FiStar size={14} /> {Array.isArray(m.starredBy) && m.starredBy.includes(currentUser?.id) ? "Remove star" : "Star"}
+                                  </button>
+                                  <button type="button" onClick={() => { setInfoFor(m); setMenuForId(null); }}>
+                                    <FiInfo size={14} /> Message information
+                                  </button>
+                                  {!deleted && (
+                                    <button type="button" onClick={() => { handleReport(m); setMenuForId(null); }}>
+                                      <FiFlag size={14} /> Report
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className={mine ? "msg-menu-danger" : ""}
+                                    onClick={() => {
+                                      setDeleteRequest({ ids: [m._id], multiple: false, onlyMe: !mine });
+                                      setMenuForId(null);
+                                    }}
+                                  >
+                                    <FiTrash2 size={14} /> {mine ? "Delete message" : "Delete for me"}
+                                  </button>
+                                  <button type="button" onClick={() => { setSelectedIds([m._id]); setMenuForId(null); }}>
+                                    <FiCheck size={14} /> Select more
+                                  </button>
+                                </div>
                               )}
-                              <button
-                                type="button"
-                                className={mine ? "msg-menu-danger" : ""}
+                            </div>
+                          )}
+
+                          <div
+                            className={`msg-bubble ${mine ? "msg-bubble--mine" : "msg-bubble--theirs"}${selectable ? " msg-bubble--selectable" : ""}${isSelected ? " msg-bubble--selected" : ""}`}
+                            onClick={selecting ? () => toggleSelect(m._id) : undefined}
+                            role={selecting ? "checkbox" : undefined}
+                            aria-checked={selecting ? isSelected : undefined}
+                          >
+                            {!deleted && m.forwarded && <div className="msg-forward-tag">Forwarded</div>}
+
+                            {!deleted && m.parent && (
+                              <QuoteBlock
+                                senderName={m.parent.sender?.name}
+                                content={m.parent.content}
+                                attachmentKind={m.parent.type}
                                 onClick={() => {
-                                  setDeleteRequest({
-                                    ids: [m._id],
-                                    multiple: false,
-                                    onlyMe: !mine,
-                                  });
-                                  setMenuForId(null);
+                                  if (!selecting) jumpToMessage(m.parent._id);
                                 }}
-                              >
-                                <FiTrash2 size={14} />{" "}
-                                {mine ? "Delete message" : "Delete for me"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedIds([m._id]);
-                                  setMenuForId(null);
-                                }}
-                              >
-                                <FiCheck size={14} /> Select more
-                              </button>
+                              />
+                            )}
+
+                            {deleted ? (
+                              <div className="msg-deleted">This message was deleted</div>
+                            ) : (
+                              <>
+                                {m.type === "image" && images.length > 0 && (
+                                  <div className={`msg-images ${images.length > 1 ? "msg-images--multi" : ""}`}>
+                                    {images.slice(0, 4).map((img, i) => (
+                                      <img
+                                        key={i}
+                                        src={img.url}
+                                        alt={img.name || "photo"}
+                                        className="msg-bubble-image"
+                                        onClick={() => {
+                                          if (selecting) { toggleSelect(m._id); return; }
+                                          setLightbox({ images: images.map((x) => x.url), index: i });
+                                        }}
+                                      />
+                                    ))}
+                                    {images.length > 4 && (
+                                      <div className="msg-images-more" onClick={() => setLightbox({ images: images.map((x) => x.url), index: 4 })}>
+                                        +{images.length - 4}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {m.type === "video" && video && (
+                                  <video controls src={video.url} className="msg-video" />
+                                )}
+                                {m.type === "audio" && audio && <VoiceMessagePlayer src={audio.url} />}
+                                {m.type === "document" && doc && (
+                                  <a href={doc.url} target="_blank" rel="noopener noreferrer" className="msg-bubble-file" onClick={(e) => selecting && e.preventDefault()}>
+                                    <FiFileText size={18} />
+                                    <span className="msg-bubble-file-name">
+                                      {doc.name || "Document"}
+                                      <small>{formatFileSize(doc.size)}</small>
+                                    </span>
+                                    <FiDownload size={15} />
+                                  </a>
+                                )}
+                                {m.type === "location" && (
+                                  <a
+                                    href={`https://www.google.com/maps?q=${m.location?.lat || 0},${m.location?.lng || 0}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="msg-location"
+                                    onClick={(e) => selecting && e.preventDefault()}
+                                  >
+                                    <FiImage size={18} />
+                                    <strong>{m.location?.label || "Location"}</strong>
+                                    <small>{m.location?.lat?.toFixed?.(6)}, {m.location?.lng?.toFixed?.(6)}</small>
+                                  </a>
+                                )}
+                                {m.type === "property" && <PropertyMessageCard property={m.property || null} />}
+                                {m.content && <div className="msg-bubble-text"><Linkify text={m.content} /></div>}
+                              </>
+                            )}
+
+                            {isSelected && (
+                              <span className="msg-bubble-check">
+                                <FiCheck size={14} />
+                              </span>
+                            )}
+
+                            <span className="msg-bubble-time">
+                              {!deleted && m.edited && <span className="msg-bubble-edited">Edited · </span>}
+                              {formatTime(m.createdAt)}
+                              {mine && (
+                                <span className={`msg-tick ${m.read ? "msg-tick--read" : ""}`}>
+                                  {m.read ? "✓✓" : m.deliveredAt || m.delivered ? "✓✓" : "✓"}
+                                </span>
+                              )}
+                              {Array.isArray(m.starredBy) && m.starredBy.includes(currentUser?.id) && (
+                                <FiStar size={11} className="msg-star-ind" />
+                              )}
+                            </span>
+                          </div>
+
+                          {!selecting && !deleted && (
+                            <div className="msg-reactions-row">
+                              <MessageReactions
+                                reactions={reactions}
+                                mine={myReaction}
+                                onReact={(emoji) => handleReact(m._id, emoji)}
+                                onOpenPicker={() => setEmojiFor(emojiFor === m._id ? null : m._id)}
+                                disabled={false}
+                              />
+                              {emojiFor === m._id && (
+                                <EmojiPicker
+                                  onPick={(emoji) => {
+                                    handleReact(m._id, myReaction === emoji ? "" : emoji);
+                                    setEmojiFor(null);
+                                  }}
+                                  onClose={() => setEmojiFor(null)}
+                                  className="emoji-picker--bubble"
+                                />
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
-                      <div
-                        className={`msg-bubble ${
-                          mine ? "msg-bubble--mine" : "msg-bubble--theirs"
-                        }${selectable ? " msg-bubble--selectable" : ""}${
-                          isSelected ? " msg-bubble--selected" : ""
-                        }`}
-                        onClick={selectable ? () => toggleSelect(m._id) : undefined}
-                        role={selectable ? "checkbox" : undefined}
-                        aria-checked={selectable ? isSelected : undefined}
-                      >
-                        {m.attachments?.map((a, i) =>
-                          a.type === "file" ? (
-                            <a
-                              key={i}
-                              href={a.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="msg-bubble-file"
-                              onClick={(e) => selecting && e.preventDefault()}
-                            >
-                              <FiFileText size={18} />
-                              <span className="msg-bubble-file-name">
-                                {a.name || "Document"}
-                              </span>
-                              <FiDownload size={15} />
-                            </a>
-                          ) : (
-                            <img
-                              key={i}
-                              src={a.url}
-                              alt={a.name || "attachment"}
-                              className="msg-bubble-image"
-                              onClick={(e) => {
-                                if (selecting) {
-                                  e.preventDefault();
-                                  if (selectable) toggleSelect(m._id);
-                                } else {
-                                  window.open(a.url, "_blank");
-                                }
-                              }}
-                            />
-                          ),
-                        )}
-                        {isSelected && (
-                          <span className="msg-bubble-check">
-                            <FiCheck size={14} />
-                          </span>
-                        )}
-                        {m.content && <div>{m.content}</div>}
-                        <span className="msg-bubble-time">
-                          {isEdited && (
-                            <span className="msg-bubble-edited">Edited · </span>
-                          )}
-                          {formatTime(m.createdAt)}
-                          {mine && (
-                            <span
-                              className={`msg-tick ${
-                                m.read ? "msg-tick--read" : ""
-                              }`}
-                            >
-                              {m.read ? "✓✓" : "✓"}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
+                      );
+                    })
+                  )}
+                  {newMsgPill && (
+                    <button type="button" className="msg-new-pill" onClick={() => scrollToBottom(true)}>
+                      <FiChevronDown size={16} /> New messages
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
+            {/* pending attachment previews */}
             {pendingAttachments.length > 0 && (
-              <div style={{ padding: "8px 14px 0", background: "#f0f2f5" }}>
+              <div className="msg-attach-strip">
                 {pendingAttachments.map((a, i) => (
                   <div key={i} className="msg-attach-preview">
                     {a.type === "file" ? (
-                      <span className="msg-attach-file">
-                        <FiFileText size={16} /> {a.name}
-                      </span>
+                      <span className="msg-attach-file"><FiFileText size={16} /> {a.name}</span>
+                    ) : a.type === "video" ? (
+                      <video src={a.url} className="msg-attach-thumb" muted />
                     ) : (
                       <img src={a.url} alt={a.name} />
                     )}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPendingAttachments((prev) =>
-                          prev.filter((_, idx) => idx !== i),
-                        )
-                      }
-                    >
-                      ×
-                    </button>
+                    <button type="button" onClick={() => setPendingAttachments((prev) => prev.filter((_, idx) => idx !== i))}>×</button>
                   </div>
                 ))}
+              </div>
+            )}
+            {pendingLocation && (
+              <div className="msg-attach-strip">
+                <div className="msg-attach-preview msg-attach-loc">
+                  📍 {pendingLocation.label}
+                  <button type="button" onClick={() => setPendingLocation(null)}>×</button>
+                </div>
+              </div>
+            )}
+            {pendingProperty && (
+              <div className="msg-attach-strip">
+                <div className="msg-attach-preview msg-attach-prop">
+                  🏠 {pendingProperty.title}
+                  <button type="button" onClick={() => setPendingProperty(null)}>×</button>
+                </div>
               </div>
             )}
 
@@ -1257,160 +1613,121 @@ const Messages = () => {
                 <div className="msg-edit-bar-head">
                   <FiEdit2 size={14} />
                   <span>Edit message</span>
-                </div>
-                <div className="msg-edit-bar-row">
-                  <button
-                    type="button"
-                    className="msg-edit-cancel"
-                    onClick={cancelEdit}
-                    aria-label="Cancel edit"
-                    title="Cancel (Esc)"
-                  >
+                  <button type="button" className="msg-edit-cancel" onClick={cancelEdit} aria-label="Cancel edit" title="Cancel (Esc)">
                     <FiX size={18} />
                   </button>
+                </div>
+                <div className="msg-edit-bar-row">
                   <input
                     className="msg-edit-input"
                     value={editDraft}
                     onChange={(e) => setEditDraft(e.target.value)}
-                    onKeyDown={handleEditKeyDown}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleEditSave(); }
+                    }}
                     placeholder="Edit message…"
                     autoFocus
                   />
-                  <button
-                    type="button"
-                    className="msg-edit-save"
-                    onClick={handleEditSave}
-                    disabled={!editDraft.trim() || savingEdit}
-                    aria-label="Save edit"
-                    title="Save (Enter)"
-                  >
+                  <button type="button" className="msg-edit-save" onClick={handleEditSave} disabled={!editDraft.trim() || savingEdit} aria-label="Save edit" title="Save (Enter)">
                     <FiCheck size={18} />
                   </button>
                 </div>
               </div>
             ) : (
               <div className="msg-composer">
-                <button
-                  className="msg-composer-attach"
-                  onClick={handlePickFile}
-                  disabled={uploading}
-                  title="Attach image"
-                >
-                  <FiPaperclip size={20} />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{ display: "none" }}
-                />
-                <button
-                  className="msg-composer-attach"
-                  onClick={handlePickDoc}
-                  disabled={uploading}
-                  title="Attach document (PDF, Word, Excel)"
-                >
-                  <FiFileText size={20} />
-                </button>
-                <input
-                  ref={docInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf"
-                  onChange={handleDocChange}
-                  style={{ display: "none" }}
-                />
-                <textarea
-                  className="msg-composer-input"
-                  placeholder={
-                    uploading ? "Uploading image…" : "Type a message…"
-                  }
-                  value={draft}
-                  onChange={handleDraftChange}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  disabled={uploading}
-                />
-                <button
-                  className="msg-composer-send"
-                  onClick={handleSend}
-                  disabled={
-                    uploading ||
-                    (!draft.trim() && pendingAttachments.length === 0)
-                  }
-                  title="Send"
-                >
-                  <FiSend size={18} />
-                </button>
+                {replyTarget && (
+                  <div className="msg-reply-preview">
+                    <QuoteBlock senderName={replyTarget.sender?.name} content={replyTarget.content} attachmentKind={replyTarget.type} onClick={() => jumpToMessage(replyTarget._id)} />
+                    <button type="button" className="msg-reply-cancel" onClick={() => setReplyTarget(null)} aria-label="Cancel reply" title="Cancel reply">
+                      <FiX size={16} />
+                    </button>
+                  </div>
+                )}
+                <div className="msg-composer-bar">
+                  <button type="button" className={`msg-composer-emoji ${emojiFor === "composer" ? "is-active" : ""}`} onClick={() => setEmojiFor(emojiFor === "composer" ? null : "composer")} title="Emoji" aria-label="Emoji">
+                    <FiSmile size={20} />
+                  </button>
+                  {emojiFor === "composer" && (
+                    <EmojiPicker onPick={handlePickEmoji} onClose={() => setEmojiFor(null)} className="emoji-picker--composer" />
+                  )}
+                  <button
+                    type="button"
+                    className="msg-composer-attach"
+                    onClick={() => setAttachOpen((o) => !o)}
+                    disabled={uploading}
+                    title="Attach"
+                    aria-label="Attach"
+                  >
+                    <FiPaperclip size={20} />
+                  </button>
+                  {attachOpen && (
+                    <AttachmentMenu
+                      onOpenChange={setAttachOpen}
+                      onClose={() => setAttachOpen(false)}
+                      onPick={(kind) => {
+                        if (kind === "photos") handlePickFile();
+                        if (kind === "videos") handlePickVideo();
+                        if (kind === "documents") handlePickDoc();
+                        if (kind === "location") shareLocation();
+                        if (kind === "property") openShareProps();
+                      }}
+                    />
+                  )}
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImages} style={{ display: "none" }} />
+                  <input ref={videoInputRef} type="file" accept="video/*" onChange={handleVideo} style={{ display: "none" }} />
+                  <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,text/plain" onChange={handleDoc} style={{ display: "none" }} />
+
+                  <textarea
+                    className="msg-composer-input"
+                    placeholder={uploading ? "Uploading…" : "Type a message…"}
+                    value={draft}
+                    onChange={handleDraftChange}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                    disabled={uploading}
+                  />
+
+                  {draft.trim() || pendingAttachments.length > 0 || pendingLocation || pendingProperty ? (
+                    <button type="button" className="msg-composer-send" onClick={handleSend} disabled={uploading} title="Send">
+                      <FiSend size={18} />
+                    </button>
+                  ) : (
+                    <div className="msg-composer-mic">
+                      <VoiceRecorder onSend={handleVoiceSend} uploading={uploading} />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>
         )}
       </section>
 
-      {/* ── Delete confirmation — "for me" or "for everyone" ── */}
+      {/* ── overlays / dialogs ── */}
+      {lightbox && <ImageLightbox images={lightbox.images} index={lightbox.index} onClose={() => setLightbox(null)} />}
+      {infoFor && <MessageInfoModal message={infoFor} onClose={() => setInfoFor(null)} />}
+
       {deleteRequest && (
-        <div
-          className="msg-modal-overlay"
-          onClick={() => !deleting && setDeleteRequest(null)}
-        >
+        <div className="msg-modal-overlay" onClick={() => !deleting && setDeleteRequest(null)}>
           <div className="msg-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>
-              {deleteRequest.ids.length > 1
-                ? `Delete ${deleteRequest.ids.length} messages?`
-                : "Delete message?"}
-            </h3>
+            <h3>{deleteRequest.ids.length > 1 ? `Delete ${deleteRequest.ids.length} messages?` : "Delete message?"}</h3>
             <p>
               {deleteRequest.onlyMe ? (
-                <>
-                  This removes the{" "}
-                  {deleteRequest.ids.length > 1 ? "messages" : "message"} only
-                  from <strong>your</strong> view. The other person can still
-                  see {deleteRequest.ids.length > 1 ? "them" : "it"}.
-                </>
+                <>This removes the {deleteRequest.ids.length > 1 ? "messages" : "message"} only from <strong>your</strong> view. The other person can still see {deleteRequest.ids.length > 1 ? "them" : "it"}.</>
               ) : (
-                <>
-                  <strong>Delete for me</strong> hides it only from your view —
-                  the other person still sees it.{" "}
-                  <strong>Delete for everyone</strong> removes it permanently
-                  from the conversation.
-                </>
+                <><strong>Delete for me</strong> hides it only from your view. <strong>Delete for everyone</strong> replaces it with "This message was deleted" for both sides.</>
               )}
             </p>
             <div className="msg-modal-actions">
-              <button
-                type="button"
-                className="msg-modal-btn"
-                onClick={() => setDeleteRequest(null)}
-                disabled={deleting}
-              >
-                Cancel
-              </button>
+              <button type="button" className="msg-modal-btn" onClick={() => setDeleteRequest(null)} disabled={deleting}>Cancel</button>
               {deleteRequest.onlyMe ? (
-                <button
-                  type="button"
-                  className="msg-modal-btn msg-modal-btn--danger"
-                  onClick={handleDeleteForMe}
-                  disabled={deleting}
-                >
-                  Delete for me
+                <button type="button" className="msg-modal-btn msg-modal-btn--danger" onClick={handleDeleteForMe} disabled={deleting}>
+                  {deleting ? "Deleting…" : "Delete for me"}
                 </button>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className="msg-modal-btn msg-modal-btn--warn"
-                    onClick={handleDeleteForMe}
-                    disabled={deleting}
-                  >
-                    Delete for me
-                  </button>
-                  <button
-                    type="button"
-                    className="msg-modal-btn msg-modal-btn--danger"
-                    onClick={handleDeleteEveryone}
-                    disabled={deleting}
-                  >
+                  <button type="button" className="msg-modal-btn msg-modal-btn--warn" onClick={handleDeleteForMe} disabled={deleting}>Delete for me</button>
+                  <button type="button" className="msg-modal-btn msg-modal-btn--danger" onClick={handleDeleteEveryone} disabled={deleting}>
                     {deleting ? "Deleting…" : "Delete for everyone"}
                   </button>
                 </>
@@ -1419,8 +1736,71 @@ const Messages = () => {
           </div>
         </div>
       )}
+
+      {/* forward dialog */}
+      {forwardOpen && (
+        <div className="msg-modal-overlay" onClick={() => setForwardOpen(false)}>
+          <div className="msg-modal msg-modal--forward" onClick={(e) => e.stopPropagation()}>
+            <h3>Forward message</h3>
+            <p className="msg-forward-target">{forwardTarget?.content || messagePreview(forwardTarget)}</p>
+            <div className="msg-forward-list">
+              {conversations.filter((c) => c._id !== activeId).map((c) => (
+                  <button key={c._id} type="button" className="msg-forward-item" onClick={() => setForwardTarget((t) => ({ ...(t || {}), _fwd: true }))}>
+                    <span className="msg-conv-avatar msg-conv-avatar--sm">{conversationInitial(c, currentUser?.id)}</span>
+                    <span>{conversationTitle(c, currentUser?.id)}</span>
+                  </button>
+                ))}
+            </div>
+            <div className="msg-modal-actions">
+              <button type="button" className="msg-modal-btn" onClick={() => setForwardOpen(false)}>Cancel</button>
+              <button type="button" className="msg-modal-btn msg-modal-btn--primary" onClick={handleForward} disabled={!conversations.some((c) => c._id !== activeId)}>
+                Forward to {conversations.filter((c) => c._id !== activeId).length} chat{conversations.filter((c) => c._id !== activeId).length !== 1 ? "s" : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* property share dialog */}
+      {sharePropsOpen && (
+        <div className="msg-modal-overlay" onClick={() => setSharePropsOpen(false)}>
+          <div className="msg-modal msg-modal--forward" onClick={(e) => e.stopPropagation()}>
+            <h3>Share a property</h3>
+            {propQuery.isLoading ? (
+              <div className="msg-share-note">Loading properties…</div>
+            ) : propQuery.properties.length === 0 ? (
+              <div className="msg-share-note">No properties available to share right now.</div>
+            ) : (
+              <div className="msg-share-list">
+                {propQuery.properties.filter((p) => p.status === "active").slice(0, 20).map((p) => (
+                  <button key={p._id || p.id} type="button" className="msg-share-item" onClick={() => pickProperty(p)}>
+                    {p.photos?.[0] ? <img src={p.photos[0]} alt="" /> : <span className="msg-conv-avatar msg-conv-avatar--sm">🏠</span>}
+                    <span className="msg-share-item-meta">
+                      <strong>{p.title}</strong>
+                      <small>{p.location?.area}, {p.location?.city}</small>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="msg-modal-actions">
+              <button type="button" className="msg-modal-btn" onClick={() => setSharePropsOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+/* small pure helpers used in JSX above */
+const conversationTitle = (conversation, currentUserId) => {
+  const other = getOtherParticipant(conversation, currentUserId);
+  return other?.name || "Unknown user";
+};
+const conversationInitial = (conversation, currentUserId) => {
+  const t = conversationTitle(conversation, currentUserId);
+  return (t || "?").charAt(0).toUpperCase();
 };
 
 export default Messages;

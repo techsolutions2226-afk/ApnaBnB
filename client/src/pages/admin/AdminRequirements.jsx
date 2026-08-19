@@ -6,6 +6,7 @@ import Modal from "../../components/common/Modal";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
+import AdminRequirementEditor from "../../components/admin/AdminRequirementEditor";
 import { formatPrice } from "../../utils/formatters";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import "../../styles/Admin.css";
@@ -23,7 +24,6 @@ const AdminRequirements = () => {
   const [error, setError] = useState(null);
 
   const [editTarget, setEditTarget] = useState(null);
-  const [editFields, setEditFields] = useState({});
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -52,32 +52,13 @@ const AdminRequirements = () => {
 
   const openEdit = (req) => {
     setEditTarget(req);
-    setEditFields({
-      title: req.title,
-      status: req.status,
-      propertyType: req.propertyType,
-      size: req.size || "",
-      bedrooms: req.bedrooms ?? "",
-      bathrooms: req.bathrooms ?? "",
-    });
   };
 
-  const handleSave = async () => {
+  const handleSaveRequirement = async (data) => {
     if (!editTarget) return;
-    if (!editFields.title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
     setSaving(true);
     try {
-      await adminService.updateRequirement(editTarget._id || editTarget.id, {
-        title: editFields.title,
-        status: editFields.status,
-        propertyType: editFields.propertyType,
-        size: editFields.size,
-        bedrooms: editFields.bedrooms === "" ? undefined : Number(editFields.bedrooms),
-        bathrooms: editFields.bathrooms === "" ? undefined : Number(editFields.bathrooms),
-      });
+      await adminService.updateRequirement(editTarget._id || editTarget.id, data);
       toast.success("Requirement updated");
       setEditTarget(null);
       fetchData();
@@ -221,81 +202,14 @@ const AdminRequirements = () => {
         isOpen={!!editTarget}
         onClose={() => setEditTarget(null)}
         title="Edit Requirement"
-        size="small"
+        size="large"
       >
-        <div className="adm-form">
-          <label className="adm-form-label">
-            Title
-            <input
-              className="adm-form-input"
-              value={editFields.title || ""}
-              onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
-            />
-          </label>
-          <label className="adm-form-label">
-            Property type
-            <input
-              className="adm-form-input"
-              value={editFields.propertyType || ""}
-              onChange={(e) => setEditFields({ ...editFields, propertyType: e.target.value })}
-            />
-          </label>
-          <label className="adm-form-label">
-            Size
-            <input
-              className="adm-form-input"
-              value={editFields.size || ""}
-              onChange={(e) => setEditFields({ ...editFields, size: e.target.value })}
-            />
-          </label>
-          <div className="adm-form-row">
-            <label className="adm-form-label">
-              Bedrooms
-              <input
-                className="adm-form-input"
-                type="number"
-                value={editFields.bedrooms ?? ""}
-                onChange={(e) => setEditFields({ ...editFields, bedrooms: e.target.value })}
-              />
-            </label>
-            <label className="adm-form-label">
-              Bathrooms
-              <input
-                className="adm-form-input"
-                type="number"
-                value={editFields.bathrooms ?? ""}
-                onChange={(e) => setEditFields({ ...editFields, bathrooms: e.target.value })}
-              />
-            </label>
-          </div>
-          <label className="adm-form-label">
-            Status
-            <select
-              className="adm-form-input"
-              value={editFields.status || ""}
-              onChange={(e) => setEditFields({ ...editFields, status: e.target.value })}
-            >
-              {REQ_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="adm-form-actions">
-            <button type="button" className="adm-btn" onClick={() => setEditTarget(null)}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="adm-btn adm-btn--primary"
-              disabled={saving}
-              onClick={handleSave}
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
-          </div>
-        </div>
+        <AdminRequirementEditor
+          requirement={editTarget}
+          saving={saving}
+          onClose={() => setEditTarget(null)}
+          onSave={handleSaveRequirement}
+        />
       </Modal>
 
       <ConfirmDialog

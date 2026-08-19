@@ -989,6 +989,123 @@ const getUserActivity = async (req, res, next) => {
   }
 };
 
+// ── Conversations (admin message review) ───────────────────────────────────
+// WhatsApp-style admin view: every conversation, its participants, and the
+// latest decrypted message. Sorted newest-first.
+const getAllConversations = async (req, res, next) => {
+  try {
+    const conversations = await prisma.conversation.findMany({
+      include: {
+        participants: {
+          select: { id: true, name: true, email: true, role: true, avatar: true },
+        },
+        _count: { select: { messages: true } },
+      },
+    });
+
+    const lastByConv = {};
+    await Promise.all(
+      conversations.map(async (c) => {
+        const last = await prisma.message.findFirst({
+          where: { conversationId: c.id },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            sender: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+          },
+        });
+        lastByConv[c.id] = last ? { ...last, content: decryptMessage(last.content) } : null;
+      }),
+    );
+
+    const enriched = conversations.map((c) => ({
+      _id: c.id,
+      id: c.id,
+      participants: c.participants,
+      messageCount: c._count.messages,
+      updatedAt: c.updatedAt,
+      createdAt: c.createdAt,
+      lastMessage: lastByConv[c.id],
+    }));
+
+    enriched.sort((a, b) => {
+      const ta = a.lastMessage?.createdAt
+        ? new Date(a.lastMessage.createdAt).getTime()
+        : new Date(a.updatedAt).getTime();
+      const tb = b.lastMessage?.createdAt
+        ? new Date(b.lastMessage.createdAt).getTime()
+        : new Date(b.updatedAt).getTime();
+      return tb - ta;
+    });
+
+    res.status(200).json(enriched);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Full decrypted message thread for one conversation (admin review, read-only).
+const getConversationThread = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const conversation = await prisma.conversation.findUnique({
+      where: { id },
+      include: {
+        participants: {
+          select: { id: true, name: true, email: true, role: true, avatar: true },
+        },
+      },
+    });
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation not found.' });
+    }
+
+    const messages = await prisma.message.findMany({
+      where: { conversationId: id },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        sender: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+      },
+    });
+
+    const decrypted = messages.map((m) => ({
+      ...m,
+      _id: m.id,
+      content: decryptMessage(m.content),
+    }));
+
+    res.status(200).json({ conversation: { ...conversation, _id: conversation.id }, messages: decrypted });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete a whole conversation (chat) and all its messages (admin).
+const deleteConversation = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const conversation = await prisma.conversation.findUnique({ where: { id } });
+    if (!conversation) {
+      return res.status(404).json({ message: 'Conversation not found.' });
+    }
+
+    // Messages cascade via the FK.
+    await prisma.conversation.delete({ where: { id } });
+
+    logActivity({
+      action: 'admin.conversation.delete',
+      entityType: 'conversation',
+      entityId: id,
+      req,
+    });
+
+    res.status(200).json({ message: 'Conversation deleted successfully.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPlatformStats,
   getAllUsers,
@@ -1014,6 +1131,9 @@ module.exports = {
   deleteMatch,
   getAllMessages,
   deleteMessage,
+  getAllConversations,
+  getConversationThread,
+  deleteConversation,
   getActivityLogs,
   getUserActivity,
 };

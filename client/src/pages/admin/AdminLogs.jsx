@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import adminService from "../../services/adminService";
 import SearchInput from "../../components/common/SearchInput";
 import Pagination from "../../components/common/Pagination";
-import { FiExternalLink } from "react-icons/fi";
 import "../../styles/Admin.css";
 
 const ACTIONS = [
@@ -167,47 +166,77 @@ const AdminLogs = () => {
         ) : logs.length === 0 ? (
           <p className="adm-empty">No activity logged yet.</p>
         ) : (
-          <div className="adm-feed adm-feed--dense">
-            {logs.map((log) => {
-              const st = actionStyle(log.action);
-              return (
-                <div className="adm-feed-item" key={log._id || log.id}>
-                  <div className="adm-feed-main">
-                    <div className="adm-feed-line">
-                      <span className={`adm-log-badge ${st.badge}`}>{st.label}</span>
-                      <span className="adm-feed-action">{log.action}</span>
-                      <span className="adm-feed-entity">{log.entityType}</span>
-                    </div>
-                    {log.userId ? (
-                      <Link
-                        to={`/admin/users/${log.userId}`}
-                        className="adm-feed-actor"
-                        title="View this user"
-                      >
-                        {log.userName || log.userEmail || "Unknown"}
-                        <FiExternalLink size={12} />
-                      </Link>
-                    ) : (
-                      <span className="adm-feed-actor">System</span>
-                    )}
-                    {log.meta && Boolean(Object.keys(log.meta).length) && (
-                      <div className="adm-timeline-meta">
-                        {Object.entries(log.meta).map(([k, v]) => (
-                          <span key={k} className="adm-timeline-kv">
-                            <strong>{k}:</strong>{" "}
-                            {typeof v === "object" ? JSON.stringify(v) : String(v)}
+          <div className="adm-table-wrap">
+            <table className="adm-table">
+              <thead>
+                <tr>
+                  <th>What happened</th>
+                  <th>Entity</th>
+                  <th>Who did</th>
+                  <th>Details</th>
+                  <th>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => {
+                  const st = actionStyle(log.action);
+                  const hasMeta = log.meta && Boolean(Object.keys(log.meta).length);
+                  return (
+                    <tr key={log._id || log.id}>
+                      <td>
+                        <div className="adm-table-title" style={{ gap: 6, display: "inline-flex", alignItems: "center" }}>
+                          <span className={`adm-log-badge ${st.badge}`}>{st.label}</span>
+                          <span className="adm-log-action">{log.action}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="adm-log-entity">{log.entityType}</span>
+                        {log.entityId && (
+                          <div className="adm-table-sub">{log.entityId.slice(0, 12)}…</div>
+                        )}
+                      </td>
+                      <td>
+                        {log.userId ? (
+                          <Link
+                            to={`/admin/users/${log.userId}`}
+                            className="adm-log-actor"
+                            title="View this user"
+                          >
+                            <div className="adm-table-title">{log.userName || "Unknown"}</div>
+                            <div className="adm-table-sub">
+                              {log.userEmail}
+                              {log.userRole ? ` · ${log.userRole}` : ""}
+                            </div>
+                          </Link>
+                        ) : (
+                          <span className="adm-log-actor">System</span>
+                        )}
+                      </td>
+                      <td className="adm-log-detail">
+                        {hasMeta ? (
+                          <span className="adm-timeline-meta">
+                            {Object.entries(log.meta).map(([k, v]) => (
+                              <span key={k} className="adm-timeline-kv">
+                                <strong>{k}:</strong>{" "}
+                                {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                              </span>
+                            ))}
                           </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="adm-feed-time">
-                    {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
-                    {log.ip ? <div className="adm-feed-ip">IP {log.ip}</div> : null}
-                  </div>
-                </div>
-              );
-            })}
+                        ) : (
+                          <span className="adm-muted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="adm-log-when">
+                          {log.createdAt ? new Date(log.createdAt).toLocaleString() : "—"}
+                          {log.ip ? <span className="adm-feed-ip">IP {log.ip}</span> : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

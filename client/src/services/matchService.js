@@ -94,6 +94,17 @@ const matchService = {
       throw error.response?.data || { message: 'Failed to create match' };
     }
   },
+
+  // Delete a match. Allowed for either party of the match (property owner or
+  // requirement poster). Removes it for both sides.
+  remove: async (id) => {
+    try {
+      const response = await apiClient.delete(`/matches/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete match' };
+    }
+  },
 };
 
 export default matchService;

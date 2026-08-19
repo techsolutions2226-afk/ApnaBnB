@@ -2,19 +2,14 @@
    Requires VITE_GOOGLE_MAPS_API_KEY in .env.
    Pass `coordinates: { lat, lng }` to centre + place a marker. */
 
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
-import { GOOGLE_MAPS_LOADER_OPTIONS } from "../../config/mapsLoader";
+import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useGoogleMapsLoader } from "../../hooks/useGoogleMapsLoader";
 
 const FALLBACK_CENTER = { lat: 30.3753, lng: 69.3451 }; // Pakistan
 const FALLBACK_ZOOM = 5;
 
 const MapView = ({ coordinates, zoom = 14, height = 360 }) => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    ...GOOGLE_MAPS_LOADER_OPTIONS,
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const hasCoords =
     coordinates &&

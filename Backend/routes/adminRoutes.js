@@ -24,6 +24,9 @@ const {
   deleteMatch,
   getAllMessages,
   deleteMessage,
+  getAllConversations,
+  getConversationThread,
+  deleteConversation,
   getActivityLogs,
   getUserActivity,
 } = require('../controllers/adminController');
@@ -69,6 +72,11 @@ router.delete('/matches/:id', verifyToken, adminOnly, deleteMatch);
 // Messages
 router.get('/messages', verifyToken, adminOnly, getAllMessages);
 router.delete('/messages/:id', verifyToken, adminOnly, deleteMessage);
+
+// Conversations (WhatsApp-style message review)
+router.get('/conversations', verifyToken, adminOnly, getAllConversations);
+router.get('/conversations/:id/messages', verifyToken, adminOnly, getConversationThread);
+router.delete('/conversations/:id', verifyToken, adminOnly, deleteConversation);
 
 // Activity logs
 router.get('/activity', verifyToken, adminOnly, getActivityLogs);

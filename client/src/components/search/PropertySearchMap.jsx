@@ -4,10 +4,9 @@ import {
   GoogleMap,
   Marker,
   InfoWindow,
-  useJsApiLoader,
   useGoogleMap,
 } from "@react-google-maps/api";
-import { GOOGLE_MAPS_LOADER_OPTIONS } from "../../config/mapsLoader";
+import { useGoogleMapsLoader } from "../../hooks/useGoogleMapsLoader";
 
 const PAKISTAN_CENTER = { lat: 30.3753, lng: 69.3451 };
 const PAKISTAN_ZOOM = 5;
@@ -48,12 +47,7 @@ const FitBounds = ({ points }) => {
 };
 
 const PropertySearchMap = ({ properties = [], height = 600 }) => {
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  const { isLoaded, loadError } = useJsApiLoader({
-    ...GOOGLE_MAPS_LOADER_OPTIONS,
-    googleMapsApiKey: apiKey,
-  });
+  const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const [active, setActive] = useState(null); // property id with open InfoWindow
 

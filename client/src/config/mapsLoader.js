@@ -10,8 +10,17 @@
    disappears on refresh.
 
    Import and spread this constant in every component that loads the map so no
-   future edit can silently drift the options apart again. */
+   future edit can silently drift the options apart again.
+
+   NOTE: keep these options byte-identical to what @react-google-maps/api's
+   useJsApiLoader produced — in particular `authReferrerPolicy: "origin"`
+   (Google then checks only the site origin, so keys restricted to an exact
+   origin keep working from any path). */
 export const GOOGLE_MAPS_LOADER_OPTIONS = {
   id: "google-map-script",
+  version: "weekly",
   libraries: ["maps"],
+  language: "en",
+  region: "US",
+  authReferrerPolicy: "origin",
 };

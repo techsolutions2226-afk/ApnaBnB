@@ -7,6 +7,7 @@ import Modal from "../../components/common/Modal";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
+import AdminPropertyEditor from "../../components/admin/AdminPropertyEditor";
 import { formatPrice } from "../../utils/formatters";
 import {
   FiEdit2,
@@ -113,6 +114,21 @@ const AdminListings = () => {
         });
         toast.success("Property updated");
       }
+      setEditTarget(null);
+      fetchData();
+    } catch (err) {
+      toast.error(err.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveProperty = async (data) => {
+    if (!editTarget) return;
+    setSaving(true);
+    try {
+      await adminService.updateProperty(editTarget._id || editTarget.id, data);
+      toast.success("Property updated");
       setEditTarget(null);
       fetchData();
     } catch (err) {
@@ -356,92 +372,46 @@ const AdminListings = () => {
         isOpen={!!editTarget}
         onClose={() => setEditTarget(null)}
         title={editTarget?.kind === "listing" ? "Edit Listing" : "Edit Property"}
-        size="small"
+        size={editTarget?.kind === "listing" ? "small" : "large"}
       >
-        <div className="adm-form">
-          {editTarget?.kind === "property" && (
-            <>
-              <label className="adm-form-label">
-                Title
-                <input
-                  className="adm-form-input"
-                  value={editFields.title || ""}
-                  onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
-                />
-              </label>
-              <label className="adm-form-label">
-                Price (PKR)
-                <input
-                  className="adm-form-input"
-                  type="number"
-                  value={editFields.price ?? ""}
-                  onChange={(e) => setEditFields({ ...editFields, price: e.target.value })}
-                />
-              </label>
-              <label className="adm-form-label">
-                Property type
-                <input
-                  className="adm-form-input"
-                  value={editFields.propertyType || ""}
-                  onChange={(e) =>
-                    setEditFields({ ...editFields, propertyType: e.target.value })
-                  }
-                />
-              </label>
-              <div className="adm-form-row">
-                <label className="adm-form-label">
-                  Bedrooms
-                  <input
-                    className="adm-form-input"
-                    type="number"
-                    value={editFields.bedrooms ?? ""}
-                    onChange={(e) =>
-                      setEditFields({ ...editFields, bedrooms: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="adm-form-label">
-                  Bathrooms
-                  <input
-                    className="adm-form-input"
-                    type="number"
-                    value={editFields.bathrooms ?? ""}
-                    onChange={(e) =>
-                      setEditFields({ ...editFields, bathrooms: e.target.value })
-                    }
-                  />
-                </label>
-              </div>
-            </>
-          )}
-          <label className="adm-form-label">
-            Status
-            <select
-              className="adm-form-input"
-              value={editFields.status || ""}
-              onChange={(e) => setEditFields({ ...editFields, status: e.target.value })}
-            >
-              {(editTarget?.kind === "listing" ? LISTING_STATUSES : PROPERTY_STATUSES).map((s) => (
-                <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="adm-form-actions">
-            <button type="button" className="adm-btn" onClick={() => setEditTarget(null)}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="adm-btn adm-btn--primary"
-              disabled={saving}
-              onClick={handleSave}
-            >
-              {saving ? "Saving…" : "Save changes"}
-            </button>
+        {editTarget?.kind === "property" ? (
+          <AdminPropertyEditor
+            property={editTarget}
+            saving={saving}
+            onClose={() => setEditTarget(null)}
+            onSave={handleSaveProperty}
+          />
+        ) : (
+          <div className="adm-form">
+            <label className="adm-form-label">
+              Status
+              <select
+                className="adm-form-input"
+                value={editFields.status || ""}
+                onChange={(e) => setEditFields({ ...editFields, status: e.target.value })}
+              >
+                {LISTING_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="adm-form-actions">
+              <button type="button" className="adm-btn" onClick={() => setEditTarget(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="adm-btn adm-btn--primary"
+                disabled={saving}
+                onClick={handleSave}
+              >
+                {saving ? "Saving…" : "Save changes"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </Modal>
 
       <ConfirmDialog

@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight } from "react-icons/fi";
+import { FiArrowRight, FiTrash2 } from "react-icons/fi";
 import { useMyMatches } from "../../hooks/useMatches";
 import useViewRole from "../../hooks/useViewRole";
+import matchService from "../../services/matchService";
+import ConfirmDialog from "../common/ConfirmDialog";
 import SectionHeader from "./SectionHeader";
 
 /* Human-readable relationship labels per match type — same naming the
@@ -49,9 +52,43 @@ const matchTypeClass = (type) => {
  *  Pass `emptyMessage` to customise the empty-state copy per role. */
 const RecentMatches = ({ limit = 5, emptyMessage }) => {
   const { viewRole } = useViewRole();
-  const { matches, isLoading, error } = useMyMatches(viewRole);
+  const { matches, isLoading, error, refetch } = useMyMatches(viewRole);
+
+  // Match queued for deletion (drives the confirm dialog).
+  const [matchToDelete, setMatchToDelete] = useState(null);
+  // Ids removed this session — hidden immediately for a snappy feel, so the
+  // card disappears the instant the delete succeeds without a full reload.
+  const [removedIds, setRemovedIds] = useState(() => new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const title = "Recent Matches";
+
+  const requestDelete = (e, match) => {
+    // The card is a Link — don't navigate when the trash icon is clicked.
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteError(null);
+    setMatchToDelete(match);
+  };
+
+  const confirmDelete = async () => {
+    if (!matchToDelete) return;
+    const id = matchToDelete._id;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await matchService.remove(id);
+      setRemovedIds((prev) => new Set(prev).add(id));
+      setMatchToDelete(null);
+      // Re-sync with the server in the background (keeps counts elsewhere honest).
+      refetch?.();
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete match.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -71,13 +108,14 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
     );
   }
 
-  const visible = (matches || []).slice(0, limit);
+  const all = (matches || []).filter((m) => !removedIds.has(m._id));
+  const visible = all.slice(0, limit);
 
   return (
     <div className="dash-section">
       <SectionHeader
         title={title}
-        to={matches?.length > 0 ? "/matches" : undefined}
+        to={all.length > 0 ? "/matches" : undefined}
         actionIcon={FiArrowRight}
       />
 
@@ -102,7 +140,46 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
               .join(", ");
 
             return (
-              <Link key={match._id} to="/matches" className="rm-card">
+              <Link
+                key={match._id}
+                to="/matches"
+                className="rm-card"
+                style={{ position: "relative" }}
+              >
+                <button
+                  type="button"
+                  className="rm-delete-btn"
+                  title="Delete match"
+                  aria-label="Delete match"
+                  onClick={(e) => requestDelete(e, match)}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    border: "none",
+                    background: "transparent",
+                    color: "#9aa4ae",
+                    cursor: "pointer",
+                    zIndex: 2,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#fdecec";
+                    e.currentTarget.style.color = "#d33";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "#9aa4ae";
+                  }}
+                >
+                  <FiTrash2 size={15} />
+                </button>
+
                 <div className="rm-card-top">
                   <div className="rm-card-main">
                     <div className="rm-card-title">
@@ -110,7 +187,10 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
                     </div>
                     {location && <div className="rm-card-loc">{location}</div>}
                   </div>
-                  <span className={matchTypeClass(match.type)}>
+                  <span
+                    className={matchTypeClass(match.type)}
+                    style={{ marginRight: 32 }}
+                  >
                     {TYPE_LABELS[match.type] || match.type}
                   </span>
                 </div>
@@ -141,6 +221,29 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!matchToDelete}
+        onClose={() => {
+          if (!deleting) {
+            setMatchToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+        onConfirm={confirmDelete}
+        title="Delete this match?"
+        message={
+          deleteError ? (
+            <span style={{ color: "#d33" }}>{deleteError}</span>
+          ) : (
+            "This removes the match for both parties and cannot be undone."
+          )
+        }
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        cancelLabel="Cancel"
+        variant="danger"
+        icon="🗑️"
+      />
     </div>
   );
 };

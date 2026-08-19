@@ -433,18 +433,30 @@ const getMatchContact = async (req, res, next) => {
   }
 };
 
-// Delete match
+// Delete match. Either party of the match (the property owner OR the
+// requirement poster) may delete it — not just the initiator — so the delete
+// action works for every match shown on a user's dashboard.
 const deleteMatch = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const result = await prisma.match.deleteMany({
-      where: { id, initiatorId: req.user.id },
+    const existing = await prisma.match.findUnique({
+      where: { id },
+      include: {
+        property: { select: { listedById: true } },
+        requirement: { select: { requiredById: true } },
+      },
     });
-
-    if (result.count === 0) {
-      return res.status(404).json({ message: 'Match not found or unauthorized.' });
+    if (!existing) {
+      return res.status(404).json({ message: 'Match not found.' });
     }
+
+    const { ownerId, seekerId } = matchParties(existing);
+    if (req.user.id !== ownerId && req.user.id !== seekerId) {
+      return res.status(403).json({ message: 'You are not part of this match.' });
+    }
+
+    await prisma.match.delete({ where: { id } });
 
     res.status(200).json({ message: 'Match deleted successfully.' });
   } catch (error) {

@@ -97,6 +97,22 @@
 .vl-action-bar-left {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+/* Shown in place of the sold/active toggle when the status is set by platform
+   moderation (pending / rejected / rented / featured) and can't be flipped here. */
+.vl-action-note {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #f4f6f8;
+  border: 1px dashed #c7ccd2;
+  color: #667180;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
 }
 
 .vl-action-bar-right {

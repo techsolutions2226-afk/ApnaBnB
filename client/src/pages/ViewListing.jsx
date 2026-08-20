@@ -3,15 +3,11 @@
    Allows navigation to edit page
    ----------------------------------------------- */
 
-import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import {
-  useListing,
-  useUpdateListingStatus,
-  useDeleteListing,
-} from "../hooks/useListings";
+import { useListing, useDeleteListing } from "../hooks/useListings";
+import { useUpdateProperty } from "../hooks/useProperties";
 import { FiMapPin, FiHome, FiDollarSign, FiCalendar, FiEye, FiEdit2, FiArrowLeft, FiMaximize, FiImage, FiCheckCircle, FiXCircle, FiTrash2, FiStar } from "react-icons/fi";
 import StatusBadge from "../components/common/StatusBadge";
 import MapView from "../components/common/MapView";
@@ -23,24 +19,27 @@ const ViewListing = () => {
   const { currentUser, getDashboardPath } = useAuth();
   const navigate = useNavigate();
   const { listing, isLoading, error, refetch } = useListing(id);
-  const { updateStatus, isLoading: isUpdatingStatus } = useUpdateListingStatus();
+  // Status shown here is the property's MODERATION status (what admin sets and
+  // what governs public visibility) — updated via the owner-scoped property
+  // endpoint, so admin moderation and the owner's own "mark sold" stay in sync.
+  const { update: updateProperty, isLoading: isUpdatingStatus } = useUpdateProperty();
   const { remove, isLoading: isDeleting } = useDeleteListing();
-  const [property, setProperty] = useState(null);
 
-  useEffect(() => {
-    if (listing?.property) {
-      setProperty(typeof listing.property === 'object' ? listing.property : null);
-    }
-  }, [listing]);
+  // The listing includes its full property (with the moderation `status`).
+  const property =
+    listing && typeof listing.property === "object" ? listing.property : null;
 
-  const handleToggleStatus = async (l) => {
-    const nextStatus = l.status === "active" ? "sold" : "active";
+  const handleToggleStatus = async () => {
+    const propId = property?._id || property?.id;
+    const current = property?.status || "active";
+    if (!propId) return;
+    const nextStatus = current === "active" ? "sold" : "active";
     try {
-      await updateStatus(l._id, nextStatus);
-      toast.success(`Listing marked as ${nextStatus}`);
+      await updateProperty(propId, { status: nextStatus });
+      toast.success(`Property marked as ${nextStatus}`);
       refetch();
     } catch (err) {
-      toast.error(err.message || "Failed to update listing status");
+      toast.error(err.message || "Failed to update status");
     }
   };
 
@@ -138,6 +137,21 @@ const ViewListing = () => {
     year: "numeric", month: "long", day: "numeric"
   }) : "—";
 
+  // Property moderation status drives the badge. active↔sold is the owner's own
+  // toggle; the other states (pending / rejected / rented / featured) are set by
+  // platform moderation, so the owner can't flip those from here.
+  const propStatus = property?.status || listing.status || "active";
+  const isTogglable = propStatus === "active" || propStatus === "sold";
+  const STATUS_COLORS = {
+    active: { bg: "#e8f5e9", fg: "#2e7d32" },
+    sold: { bg: "#ffebee", fg: "#c62828" },
+    rejected: { bg: "#ffebee", fg: "#c62828" },
+    rented: { bg: "#fff3e0", fg: "#ef6c00" },
+    pending: { bg: "#fff3e0", fg: "#ef6c00" },
+    featured: { bg: "#fff8e1", fg: "#f9a825" },
+  };
+  const statusColor = STATUS_COLORS[propStatus] || STATUS_COLORS.pending;
+
   return (
     <div className="req-page">
       {/* Breadcrumb */}
@@ -157,12 +171,12 @@ const ViewListing = () => {
             {isOwner ? "Your property listing" : "Property listing details"}
           </p>
         </div>
-        <div className="req-view-status" style={{ 
-          backgroundColor: listing.status === 'active' ? '#e8f5e9' : listing.status === 'sold' ? '#ffebee' : '#fff3e0', 
-          color: listing.status === 'active' ? '#2e7d32' : listing.status === 'sold' ? '#c62828' : '#ef6c00',
-          border: `2px solid ${listing.status === 'active' ? '#2e7d32' : listing.status === 'sold' ? '#c62828' : '#ef6c00'}`
+        <div className="req-view-status" style={{
+          backgroundColor: statusColor.bg,
+          color: statusColor.fg,
+          border: `2px solid ${statusColor.fg}`
         }}>
-          <StatusBadge status={listing.status} prefix="dash-badge" />
+          <StatusBadge status={propStatus} prefix="dash-badge" />
         </div>
       </div>
 
@@ -215,14 +229,23 @@ const ViewListing = () => {
               <FiEdit2 />
               Edit Listing
             </Link>
-            <button
-              className={`vl-action-btn ${listing.status === 'active' ? 'vl-action-btn--success' : 'vl-action-btn--warning'}`}
-              onClick={() => handleToggleStatus(listing)}
-              disabled={isUpdatingStatus}
-            >
-              {listing.status === 'active' ? <FiCheckCircle /> : <FiXCircle />}
-              Mark as {listing.status === "active" ? "Sold" : "Active"}
-            </button>
+            {isTogglable ? (
+              <button
+                className={`vl-action-btn ${propStatus === 'active' ? 'vl-action-btn--success' : 'vl-action-btn--warning'}`}
+                onClick={handleToggleStatus}
+                disabled={isUpdatingStatus}
+              >
+                {propStatus === 'active' ? <FiCheckCircle /> : <FiXCircle />}
+                {isUpdatingStatus ? "Updating…" : `Mark as ${propStatus === "active" ? "Sold" : "Active"}`}
+              </button>
+            ) : (
+              <span
+                className="vl-action-note"
+                title="This status is set by platform moderation and can't be changed here."
+              >
+                Status set by moderation
+              </span>
+            )}
           </div>
           <div className="vl-action-bar-right">
             <button

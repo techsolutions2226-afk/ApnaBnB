@@ -8,13 +8,12 @@ import { useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import { useUserListings, useUpdateListingStatus, useDeleteListing } from "../hooks/useListings";
-import { useProperties } from "../hooks/useProperties";
+import { useUserListings, useDeleteListing } from "../hooks/useListings";
+import { useProperties, useUpdateProperty } from "../hooks/useProperties";
 import useViewRole from "../hooks/useViewRole";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
-import FilterTabs from "../components/common/FilterTabs";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { 
   FiEdit2, 
@@ -31,12 +30,21 @@ import {
 import "../styles/Dashboard.css";
 import "../styles/MyListings.css";
 
+/* Filter options — driven by the property MODERATION status (the field admin
+   sets and that controls public visibility), so what you see here matches the
+   admin panel and the public site. */
 const FILTERS = [
   { key: "all", label: "All" },
   { key: "active", label: "Active" },
   { key: "sold", label: "Sold" },
+  { key: "rented", label: "Rented" },
+  { key: "pending", label: "Pending" },
   { key: "featured", label: "Featured" },
+  { key: "rejected", label: "Rejected" },
 ];
+
+// Authoritative status for a listing = its property's moderation status.
+const statusOf = (l) => l?.property?.status || l?.status || "active";
 
 const MyListings = () => {
   const { currentUser, getDashboardPath } = useAuth();
@@ -51,7 +59,7 @@ const MyListings = () => {
   const { properties, isLoading: propsLoading } = useProperties({}, true);
   
   // Hooks for actions
-  const { updateStatus, isLoading: statusLoading } = useUpdateListingStatus();
+  const { update: updateProperty, isLoading: statusLoading } = useUpdateProperty();
   const { remove: deleteListing, isLoading: deleteLoading } = useDeleteListing();
 
   /* ── Load user's listings joined with property data ── */
@@ -70,22 +78,21 @@ const MyListings = () => {
     });
   }, [listings, properties]);
 
-  /* ── Apply filter ── */
+  /* ── Apply filter (by property moderation status) ── */
   const filteredListings = useMemo(() => {
     if (activeFilter === "all") return allListings;
-    if (activeFilter === "featured")
-      return allListings.filter((l) => l.featured && l.status === "active");
-    return allListings.filter((l) => l.status === activeFilter);
+    return allListings.filter((l) => statusOf(l) === activeFilter);
   }, [allListings, activeFilter]);
 
   /* ── Count per filter ── */
-  const counts = useMemo(() => ({
-    all: allListings.length,
-    active: allListings.filter((l) => l.status === "active").length,
-    sold: allListings.filter((l) => l.status === "sold").length,
-    featured: allListings.filter((l) => l.featured && l.status === "active")
-      .length,
-  }), [allListings]);
+  const counts = useMemo(() => {
+    const c = { all: allListings.length };
+    for (const f of FILTERS) {
+      if (f.key === "all") continue;
+      c[f.key] = allListings.filter((l) => statusOf(l) === f.key).length;
+    }
+    return c;
+  }, [allListings]);
 
   /* ── Delete handler ── */
   const handleDelete = useCallback(async () => {
@@ -103,22 +110,27 @@ const MyListings = () => {
     }
   }, [deletingId, allListings, deleteListing, refetchListings]);
 
-  /* ── Status toggle handler ── */
+  /* ── Status toggle handler (updates the property's moderation status) ──
+     active → sold (sale) / rented (rent); sold|rented → active. Admin-only
+     states (pending / rejected / featured) aren't toggled from here. */
   const handleToggleStatus = useCallback(
     async (listing) => {
-      const newStatus = listing.status === "active" ? "sold" : "active";
-       try {
-         await updateStatus(listing._id, newStatus);
-         toast.success(
-           `Listing marked as ${newStatus}`
-         );
-         refetchListings();
-       } catch (err) {
-         toast.error(err.message || "Failed to update listing");
-       }
-     },
-     [updateStatus, refetchListings]
-   );
+      const prop = listing.property;
+      const propId = prop?._id || prop?.id;
+      if (!propId) return;
+      const current = prop?.status || "active";
+      const soldValue = prop?.purpose === "rent" ? "rented" : "sold";
+      const newStatus = current === "active" ? soldValue : "active";
+      try {
+        await updateProperty(propId, { status: newStatus });
+        toast.success(`Marked as ${newStatus}`);
+        refetchListings();
+      } catch (err) {
+        toast.error(err.message || "Failed to update status");
+      }
+    },
+    [updateProperty, refetchListings]
+  );
 
   /* ── The listing being deleted (for modal) ── */
   const deletingListing = deletingId
@@ -173,20 +185,22 @@ const MyListings = () => {
         </Link>
       </div>
 
-      {/* ── Filter Tabs ── */}
+      {/* ── Status filter dropdown ── */}
       <div className="ml-filters-container">
-        <div className="ml-filters">
-          {FILTERS.map((filter) => (
-            <button
-              key={filter.key}
-              className={`ml-filter-btn ${activeFilter === filter.key ? 'ml-filter-btn--active' : ''}`}
-              onClick={() => setActiveFilter(filter.key)}
-            >
-              {filter.label}
-              <span className="ml-filter-count">{counts[filter.key]}</span>
-            </button>
-          ))}
-        </div>
+        <label className="ml-filter-select-wrap">
+          <span className="ml-filter-select-label">Filter by status</span>
+          <select
+            className="ml-filter-select"
+            value={activeFilter}
+            onChange={(e) => setActiveFilter(e.target.value)}
+          >
+            {FILTERS.map((filter) => (
+              <option key={filter.key} value={filter.key}>
+                {filter.label} ({counts[filter.key] ?? 0})
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {/* ── Beautiful Listing Cards ── */}
@@ -194,6 +208,9 @@ const MyListings = () => {
         <div className="ml-cards">
           {filteredListings.map((listing) => {
             const p = listing.property;
+            const st = statusOf(listing);
+            const soldLabel = p?.purpose === "rent" ? "Rented" : "Sold";
+            const canToggle = st === "active" || st === "sold" || st === "rented";
             return (
               <div key={listing._id} className="ml-card">
                 {/* Image Section */}
@@ -213,8 +230,8 @@ const MyListings = () => {
                     </div>
                   )}
                   <div className="ml-card-badges-overlay">
-                    <StatusBadge status={listing.status} prefix="ml-badge" />
-                    {listing.featured && (
+                    <StatusBadge status={st} prefix="ml-badge" />
+                    {listing.featured && st !== "featured" && (
                       <span className="ml-featured-badge">⭐ Featured</span>
                     )}
                   </div>
@@ -285,14 +302,16 @@ const MyListings = () => {
                     >
                       <FiEdit2 /> Edit
                     </Link>
-                    <button
-                      className={`ml-btn ${listing.status === 'active' ? 'ml-btn--success' : 'ml-btn--warning'}`}
-                      onClick={() => handleToggleStatus(listing)}
-                      disabled={statusLoading}
-                    >
-                      {listing.status === "active" ? <FiCheckCircle /> : <FiXCircle />}
-                      {listing.status === "active" ? "Mark Sold" : "Activate"}
-                    </button>
+                    {canToggle && (
+                      <button
+                        className={`ml-btn ${st === 'active' ? 'ml-btn--success' : 'ml-btn--warning'}`}
+                        onClick={() => handleToggleStatus(listing)}
+                        disabled={statusLoading}
+                      >
+                        {st === "active" ? <FiCheckCircle /> : <FiXCircle />}
+                        {st === "active" ? `Mark ${soldLabel}` : "Activate"}
+                      </button>
+                    )}
                     <button
                       className="ml-btn ml-btn--delete"
                       onClick={() => setDeletingId(listing._id)}

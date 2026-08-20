@@ -38,10 +38,24 @@ const PropertyCard = ({
   size,
   sizeUnit,
   availability,
+  status,
+  purpose,
 }) => {
   const actualId = id || _id;
   const { isWishlisted, toggleWishlist } = useWishlist();
   const saved = isWishlisted(actualId);
+
+  // Availability label for cards. A rented-out rental shows "Rented", a sold
+  // sale shows "Sold" (legacy rows where a rental was marked "sold" still read
+  // as "Rented" via the purpose fallback).
+  const statusLabel =
+    status === "rented"
+      ? "Rented"
+      : status === "sold"
+        ? purpose === "rent"
+          ? "Rented"
+          : "Sold"
+        : null;
 
   const src =
     gallery && gallery.length > 0
@@ -81,8 +95,18 @@ const PropertyCard = ({
             )}
           </div>
 
-          {/* ── Top-left "Guest favorite" pill ── */}
-          {isGuestFav && (
+          {/* ── Sold / Rented overlay (unavailable properties) ── */}
+          {statusLabel && (
+            <>
+              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-black/25" />
+              <span className="absolute left-4 top-4 z-10 rounded-full bg-neutral-900/90 px-3 py-1.5 text-xs font-semibold text-white shadow-sm">
+                {statusLabel}
+              </span>
+            </>
+          )}
+
+          {/* ── Top-left "Guest favorite" pill (hidden when Sold/Rented) ── */}
+          {!statusLabel && isGuestFav && (
             <span className="absolute left-4 top-4 z-10 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-black shadow-sm">
               Guest favorite
             </span>

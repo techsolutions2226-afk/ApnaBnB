@@ -109,6 +109,36 @@
   margin-bottom: 32px;
 }
 
+/* Status filter dropdown */
+.ml-filter-select-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ml-filter-select-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+.ml-filter-select {
+  min-width: 220px;
+  padding: 10px 14px;
+  border: 1px solid #d7dee6;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2c34;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ml-filter-select:focus {
+  border-color: #134e2c;
+  box-shadow: 0 0 0 3px rgba(19, 78, 44, 0.12);
+}
+
 .ml-filters {
   display: flex;
   gap: 12px;
@@ -256,6 +286,21 @@
 .ml-badge--pending {
   background: #fef3c7;
   color: #92400e;
+}
+
+.ml-badge--rented {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.ml-badge--featured {
+  background: #fff8e1;
+  color: #a16207;
+}
+
+.ml-badge--rejected {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .ml-featured-badge {

@@ -71,6 +71,17 @@ const AdminPropertyEditor = ({ property, onSave, onClose, saving }) => {
   const [status, setStatus] = useState(property?.status || "active");
   const [pending, setPending] = useState(null);
 
+  // Purpose-aware status options: a rental can't be "sold" and a sale can't be
+  // "rented". The property's current value is always kept selectable so legacy
+  // rows with a mismatched status still display correctly.
+  const purpose = property?.purpose || "sale";
+  const purposeStatuses = PROPERTY_STATUSES.filter((s) =>
+    purpose === "rent" ? s !== "sold" : s !== "rented",
+  );
+  const statusOptions = purposeStatuses.includes(status)
+    ? purposeStatuses
+    : [status, ...purposeStatuses];
+
   const handleSubmit = (output) => {
     // Store the pending update and ask for confirmation.
     setPending(toUpdatePayload(output, status));
@@ -91,7 +102,7 @@ const AdminPropertyEditor = ({ property, onSave, onClose, saving }) => {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            {PROPERTY_STATUSES.map((s) => (
+            {statusOptions.map((s) => (
               <option key={s} value={s}>
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </option>

@@ -378,6 +378,8 @@ const Home = () => {
                   size={p.size}
                   sizeUnit={p.sizeUnit}
                   listedBy={p.listedBy}
+                  status={p.status}
+                  purpose={p.purpose}
                 />
               </div>
             ))}

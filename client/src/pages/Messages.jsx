@@ -207,6 +207,9 @@ const Messages = () => {
 
   /* edit / delete / select */
   const [menuForId, setMenuForId] = useState(null);
+  // Per-message action menu opens "up" or "down" so it's never clipped by the
+  // stream / hidden behind the composer (decided from available space on open).
+  const [menuDir, setMenuDir] = useState("down");
   const [editingMessage, setEditingMessage] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
@@ -1452,14 +1455,23 @@ const Messages = () => {
                               <button
                                 type="button"
                                 className="msg-menu-trigger"
-                                onClick={() => setMenuForId(menuOpen ? null : m._id)}
+                                onClick={(e) => {
+                                  if (menuOpen) { setMenuForId(null); return; }
+                                  // Flip the menu upward when there isn't room
+                                  // below the trigger inside the message stream.
+                                  const btn = e.currentTarget.getBoundingClientRect();
+                                  const stream = streamRef.current?.getBoundingClientRect();
+                                  const spaceBelow = stream ? stream.bottom - btn.bottom : 9999;
+                                  setMenuDir(spaceBelow < 370 ? "up" : "down");
+                                  setMenuForId(m._id);
+                                }}
                                 aria-label="Message options"
                                 aria-expanded={menuOpen}
                               >
                                 <FiChevronDown size={15} />
                               </button>
                               {menuOpen && (
-                                <div className="msg-menu">
+                                <div className={`msg-menu${menuDir === "up" ? " msg-menu--up" : ""}`}>
                                   <button type="button" onClick={() => { setReplyTarget(m); setMenuForId(null); }}>
                                     <FiShare2 size={14} /> Reply
                                   </button>

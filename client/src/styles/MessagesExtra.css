@@ -137,7 +137,7 @@
 .attach-menu-count { margin-left: auto; background: #1a8f5a; color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 1px 7px; }
 
 /* ── Composer extras ── */
-.msg-composer-bar { display: flex; align-items: flex-end; gap: 8px; }
+.msg-composer-bar { display: flex; align-items: flex-end; gap: 8px; width: 100%; }
 .msg-composer-emoji { border: none; background: none; color: #8a93a0; cursor: pointer; padding: 6px; border-radius: 8px; }
 .msg-composer-emoji:hover, .msg-composer-emoji.is-active { color: #1a8f5a; background: #eef4f1; }
 .msg-composer { position: relative; }

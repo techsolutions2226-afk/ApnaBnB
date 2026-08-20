@@ -325,9 +325,12 @@
 }
 
 /* ── Composer (input bar) ───────────────────────────── */
+/* Column layout so the reply preview and the input bar each span the FULL
+   width of the chat panel (the bar's textarea uses flex:1 to fill the row). */
 .msg-composer {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   padding: 10px 14px;
   background: #f0f2f5;
@@ -557,8 +560,13 @@
   position: absolute;
   top: calc(100% + 4px);
   right: 10px;
-  z-index: 12;
+  /* Above the composer / header so the menu is never hidden behind them. */
+  z-index: 60;
   min-width: 180px;
+  /* Safety net: an unusually tall menu scrolls inside itself instead of being
+     clipped, so every item stays reachable. */
+  max-height: min(360px, calc(100vh - 140px));
+  overflow-y: auto;
   background: #fff;
   border: 1px solid #e4e6eb;
   border-radius: 12px;
@@ -567,6 +575,12 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+/* Opens upward — used for messages near the bottom of the stream so the menu
+   rises above the trigger instead of extending down behind the composer. */
+.msg-menu--up {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 .msg-menu button {
   display: flex;
@@ -930,6 +944,60 @@
 .deal-panel-req {
   color: #666;
   margin-top: 2px;
+}
+
+/* Compact clickable summary header + expand caret */
+.deal-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px;
+}
+.deal-panel-head:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.deal-panel-head:focus-visible {
+  outline: 2px solid var(--brand-green, #1e7e34);
+  outline-offset: 2px;
+}
+.deal-panel-head-main {
+  flex: 1;
+  min-width: 0;
+}
+.deal-panel-summary-line {
+  font-size: 13px;
+  color: #333;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.deal-panel-summary-line strong {
+  color: var(--brand-navy, #1a3d5c);
+}
+.deal-panel-summary-loc {
+  color: #6b7280;
+}
+.deal-panel-caret {
+  flex-shrink: 0;
+  color: #6b7280;
+  transition: transform 0.18s ease;
+}
+.deal-panel-caret--open {
+  transform: rotate(180deg);
+}
+
+/* Expandable full-detail region */
+.deal-panel-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px dashed #e2e8e4;
 }
 .deal-panel-contact {
   font-size: 13px;

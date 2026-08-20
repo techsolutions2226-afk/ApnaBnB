@@ -5,7 +5,7 @@
  * closed, and prompts both sides to rate each other after closing.
  */
 import { useEffect, useState } from "react";
-import { FiPhone, FiMail, FiUser, FiLock, FiCheckCircle, FiStar } from "react-icons/fi";
+import { FiPhone, FiMail, FiUser, FiLock, FiCheckCircle, FiStar, FiChevronDown } from "react-icons/fi";
 import { toast } from "react-toastify";
 import matchService from "../../services/matchService";
 import reviewService from "../../services/reviewService";
@@ -31,6 +31,7 @@ const DealRoomPanel = ({ match, currentUser, onMatchChange }) => {
   const [comment, setComment] = useState("");
   const [rating, setRating] = useState(false);
   const [rated, setRated] = useState(false);
+  const [expanded, setExpanded] = useState(false); // collapsed by default — compact summary
 
   const status = match?.status || "pending";
   const revealed = status === "accepted" || status === "closed";
@@ -97,96 +98,119 @@ const DealRoomPanel = ({ match, currentUser, onMatchChange }) => {
 
   return (
     <div className="deal-panel">
-      {/* Context row */}
-      <div className="deal-panel-context">
-        <div className="deal-panel-title-row">
-          <span className="deal-panel-eyebrow">DEAL ROOM</span>
-          <span className="deal-panel-badge" style={{ background: badge.bg, color: badge.color }}>
-            {badge.label}
-          </span>
-          <span className="deal-panel-score">{Math.round(match?.score || 0)}% match</span>
-        </div>
-        <div className="deal-panel-summary">
-          <div className="deal-panel-prop">
-            <strong>{property.title || "Property"}</strong>
-            {property.price ? <> · PKR {formatPrice(property.price)}</> : null}
-            {loc ? <> · {loc}</> : null}
+      {/* Compact summary header — always visible; click to expand full details */}
+      <div
+        className="deal-panel-head"
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        onClick={() => setExpanded((v) => !v)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setExpanded((v) => !v);
+          }
+        }}
+      >
+        <div className="deal-panel-head-main">
+          <div className="deal-panel-title-row">
+            <span className="deal-panel-eyebrow">DEAL ROOM</span>
+            <span className="deal-panel-badge" style={{ background: badge.bg, color: badge.color }}>
+              {badge.label}
+            </span>
+            <span className="deal-panel-score">{Math.round(match?.score || 0)}% match</span>
           </div>
+          <div className="deal-panel-summary-line">
+            <strong>{property.title || "Property"}</strong>
+            {property.price ? <span> · PKR {formatPrice(property.price)}</span> : null}
+            {loc ? <span className="deal-panel-summary-loc"> · {loc}</span> : null}
+          </div>
+        </div>
+        <FiChevronDown
+          className={`deal-panel-caret${expanded ? " deal-panel-caret--open" : ""}`}
+          size={20}
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* Expandable full property + owner/contact details */}
+      {expanded && (
+        <div className="deal-panel-details">
           <div className="deal-panel-req">
             Needs: {requirement.title || requirement.propertyType || "—"}
           </div>
-        </div>
-      </div>
 
-      {/* Contact reveal */}
-      <div className="deal-panel-contact">
-        {revealed ? (
-          contact ? (
-            <>
-              <span className="deal-panel-contact-head">
-                <FiCheckCircle size={14} /> Contact revealed
+          {/* Contact reveal */}
+          <div className="deal-panel-contact">
+            {revealed ? (
+              contact ? (
+                <>
+                  <span className="deal-panel-contact-head">
+                    <FiCheckCircle size={14} /> Contact revealed
+                  </span>
+                  <div className="deal-panel-contact-rows">
+                    <span><FiUser size={13} /> {contact.name || "—"}</span>
+                    {contact.phone && <span><FiPhone size={13} /> {contact.phone}</span>}
+                    {contact.email && <span><FiMail size={13} /> {contact.email}</span>}
+                  </div>
+                </>
+              ) : (
+                <span className="deal-panel-contact-head">Loading contact…</span>
+              )
+            ) : (
+              <span className="deal-panel-locked">
+                <FiLock size={13} /> Contact details unlock once the match is accepted.
               </span>
-              <div className="deal-panel-contact-rows">
-                <span><FiUser size={13} /> {contact.name || "—"}</span>
-                {contact.phone && <span><FiPhone size={13} /> {contact.phone}</span>}
-                {contact.email && <span><FiMail size={13} /> {contact.email}</span>}
-              </div>
-            </>
-          ) : (
-            <span className="deal-panel-contact-head">Loading contact…</span>
-          )
-        ) : (
-          <span className="deal-panel-locked">
-            <FiLock size={13} /> Contact details unlock once the match is accepted.
-          </span>
-        )}
-      </div>
-
-      {/* Actions */}
-      {status === "accepted" && (
-        <div className="deal-panel-actions">
-          <button type="button" className="deal-panel-btn" disabled={closing} onClick={handleClose}>
-            {closing ? "Closing…" : "Mark deal as closed"}
-          </button>
-        </div>
-      )}
-
-      {status === "closed" && !rated && (
-        <div className="deal-panel-rate">
-          <span className="deal-panel-rate-label">Rate your counterpart:</span>
-          <div className="deal-panel-stars" onMouseLeave={() => setHoverStars(0)}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                className="deal-panel-star"
-                onMouseEnter={() => setHoverStars(n)}
-                onClick={() => setStars(n)}
-                aria-label={`${n} star${n > 1 ? "s" : ""}`}
-              >
-                <FiStar
-                  size={20}
-                  fill={(hoverStars || stars) >= n ? "#f5a623" : "none"}
-                  color={(hoverStars || stars) >= n ? "#f5a623" : "#bbb"}
-                />
-              </button>
-            ))}
+            )}
           </div>
-          <input
-            className="deal-panel-comment"
-            placeholder="Add a short comment (optional)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            maxLength={500}
-          />
-          <button type="button" className="deal-panel-btn" disabled={rating} onClick={handleRate}>
-            {rating ? "Submitting…" : "Submit rating"}
-          </button>
-        </div>
-      )}
 
-      {status === "closed" && rated && (
-        <div className="deal-panel-rated"><FiCheckCircle size={14} /> Thanks — your rating is in.</div>
+          {/* Actions */}
+          {status === "accepted" && (
+            <div className="deal-panel-actions">
+              <button type="button" className="deal-panel-btn" disabled={closing} onClick={handleClose}>
+                {closing ? "Closing…" : "Mark deal as closed"}
+              </button>
+            </div>
+          )}
+
+          {status === "closed" && !rated && (
+            <div className="deal-panel-rate">
+              <span className="deal-panel-rate-label">Rate your counterpart:</span>
+              <div className="deal-panel-stars" onMouseLeave={() => setHoverStars(0)}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className="deal-panel-star"
+                    onMouseEnter={() => setHoverStars(n)}
+                    onClick={() => setStars(n)}
+                    aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                  >
+                    <FiStar
+                      size={20}
+                      fill={(hoverStars || stars) >= n ? "#f5a623" : "none"}
+                      color={(hoverStars || stars) >= n ? "#f5a623" : "#bbb"}
+                    />
+                  </button>
+                ))}
+              </div>
+              <input
+                className="deal-panel-comment"
+                placeholder="Add a short comment (optional)"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                maxLength={500}
+              />
+              <button type="button" className="deal-panel-btn" disabled={rating} onClick={handleRate}>
+                {rating ? "Submitting…" : "Submit rating"}
+              </button>
+            </div>
+          )}
+
+          {status === "closed" && rated && (
+            <div className="deal-panel-rated"><FiCheckCircle size={14} /> Thanks — your rating is in.</div>
+          )}
+        </div>
       )}
     </div>
   );

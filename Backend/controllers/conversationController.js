@@ -81,11 +81,19 @@ const getConversations = async (req, res, next) => {
     for (const row of prefRows) prefByConv[row.conversationId] = row;
 
     // Last message per conversation (decrypted). Sequential to respect the
-    // Supabase pooler connection cap.
+    // Supabase pooler connection cap. Honours this user's "clear chat" cutoff
+    // and their per-message "delete for me" so a cleared/hidden last message
+    // doesn't resurface in the list preview.
     const lastByConv = {};
     for (const cid of ids) {
+      const clearedAt = prefByConv[cid]?.clearedAt || null;
+      const where = {
+        conversationId: cid,
+        NOT: { deletedForMe: { has: req.user.id } },
+      };
+      if (clearedAt) where.createdAt = { gt: clearedAt };
       const m = await prisma.message.findFirst({
-        where: { conversationId: cid },
+        where,
         orderBy: { createdAt: 'desc' },
         include: messageInclude,
       });
@@ -321,6 +329,33 @@ const deleteConversation = async (req, res, next) => {
   }
 };
 
+// Clear chat FOR THIS USER only — sets a `clearedAt` cutoff so messages at/before
+// now are hidden from this participant's history. The other party keeps their
+// full copy. Non-destructive (contrast with deleteConversation, which removes
+// the conversation for everyone).
+const clearConversation = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const conversation = await loadForMembership(id);
+    if (!conversation) return res.status(404).json({ message: 'Conversation not found.' });
+    if (!isParticipant(conversation, req.user.id)) {
+      return res.status(403).json({ message: 'You are not a participant in this conversation.' });
+    }
+
+    const clearedAt = new Date();
+    await prisma.conversationParticipant.upsert({
+      where: { conversationId_userId: { conversationId: id, userId: req.user.id } },
+      update: { clearedAt },
+      create: { conversationId: id, userId: req.user.id, clearedAt },
+    });
+
+    res.status(200).json({ conversationId: id, clearedAt: clearedAt.toISOString() });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Add or remove participants (also seeds prefs when adding)
 const updateMembers = async (req, res, next) => {
   const { id } = req.params;
@@ -371,5 +406,6 @@ module.exports = {
   markConversationRead,
   updateConversation,
   deleteConversation,
+  clearConversation,
   updateMembers,
 };

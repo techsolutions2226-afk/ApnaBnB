@@ -75,6 +75,8 @@ const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
+const blockRoutes = require("./routes/blockRoutes");
+app.use("/api/blocks", blockRoutes);
 const reviewRoutes = require("./routes/reviewRoutes");
 app.use("/api/reviews", reviewRoutes);
 const adminRoutes = require("./routes/adminRoutes");

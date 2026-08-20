@@ -34,6 +34,7 @@ const { withIds } = require('../utils/serializeIds');
 const { filterPersonalInfo } = require('../utils/personalInfo');
 const { messageInclude, serializeMessage } = require('../utils/messageUtils');
 const { presence } = require('./presence');
+const { isSendBlocked } = require('../utils/blocking');
 
 const TYPES = ['text', 'image', 'video', 'document', 'audio', 'location', 'property'];
 
@@ -206,6 +207,15 @@ const initSockets = (httpServer) => {
         if (!conversation) return ack && ack({ ok: false, error: 'Conversation not found' });
         if (!conversation.participants.some((p) => p.id === userId)) {
           return ack && ack({ ok: false, error: 'Not a participant' });
+        }
+
+        // Block gate — refuse if either side has blocked the other. Enforced here
+        // AND in the REST send path so neither transport can bypass it.
+        const blockCheckIds = conversation.participants
+          .map((p) => p.id)
+          .filter((id) => id !== userId);
+        if (await isSendBlocked(userId, blockCheckIds)) {
+          return ack && ack({ ok: false, error: 'You can no longer message this user.' });
         }
 
         // Reply target must live in the SAME conversation.

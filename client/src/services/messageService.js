@@ -147,6 +147,17 @@ const messageService = {
     }
   },
 
+  // Clear chat for the current user only (sets a clearedAt cutoff server-side).
+  // The other participant keeps their full history.
+  clearConversation: async (conversationId) => {
+    try {
+      const response = await apiClient.put(`/conversations/${conversationId}/clear`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to clear chat' };
+    }
+  },
+
   // Per-user conversation prefs: { pinned?, muted?, archived? }
   updatePrefs: async (conversationId, prefs) => {
     try {

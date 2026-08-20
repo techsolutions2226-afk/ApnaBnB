@@ -5,6 +5,7 @@ const { withIds } = require('../utils/serializeIds');
 const { filterPersonalInfo } = require('../utils/personalInfo');
 const { messageInclude, serializeMessage } = require('../utils/messageUtils');
 const { presence } = require('../sockets/presence');
+const { isSendBlocked } = require('../utils/blocking');
 
 const MESSAGE_TYPES = ['text', 'image', 'video', 'document', 'audio', 'location', 'property'];
 
@@ -53,6 +54,13 @@ const sendMessage = async (req, res, next) => {
     if (!conversation) return res.status(404).json({ message: 'Conversation not found.' });
     if (!conversation.participants.some((p) => p.id === req.user.id)) {
       return res.status(403).json({ message: 'You are not authorized to send messages in this conversation.' });
+    }
+
+    // Block gate — refuse if either side has blocked the other. Enforced here AND
+    // in the socket send path so neither transport can bypass it.
+    const participantIds = conversation.participants.map((p) => p.id).filter((id) => id !== req.user.id);
+    if (await isSendBlocked(req.user.id, participantIds)) {
+      return res.status(403).json({ message: 'You can no longer message this user.' });
     }
 
     if (parentMessageId) {
@@ -122,12 +130,26 @@ const getMessages = async (req, res, next) => {
       return res.status(403).json({ message: 'You are not a participant in this conversation.' });
     }
 
+    // Honour this user's "clear chat" cutoff — messages at/before clearedAt are
+    // hidden from their history only (the other party keeps the full thread).
+    const pref = await prisma.conversationParticipant.findUnique({
+      where: { conversationId_userId: { conversationId, userId: req.user.id } },
+      select: { clearedAt: true },
+    });
+    const clearedAt = pref?.clearedAt || null;
+
     const where = {
       conversationId,
       NOT: { deletedForMe: { has: req.user.id } },
     };
-    if (before) {
+    // Cursor pagination (`before`) and the clear-chat cutoff both constrain
+    // createdAt — combine them so neither is lost.
+    if (before && clearedAt) {
+      where.createdAt = { lt: new Date(before), gt: clearedAt };
+    } else if (before) {
       where.createdAt = { lt: new Date(before) };
+    } else if (clearedAt) {
+      where.createdAt = { gt: clearedAt };
     }
 
     const take = limit ? Math.min(parseInt(limit, 10) || 50, 100) : undefined;

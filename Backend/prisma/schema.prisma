@@ -135,6 +135,12 @@ model User {
   wishlists     Wishlist[]
   conversations Conversation[] @relation("ConversationParticipants")
   conversationPrefs ConversationParticipant[]
+
+  // Blocking — implicit m2m self-relation. `blocked` are the users THIS user has
+  // blocked; `blockedBy` are users who blocked THIS user. Either direction blocks
+  // messaging between the pair (enforced in the REST + socket send paths).
+  blocked   User[] @relation("UserBlocks")
+  blockedBy User[] @relation("UserBlocks")
 }
 
 model Property {
@@ -313,6 +319,11 @@ model ConversationParticipant {
   muted    Boolean   @default(false)
   archived Boolean   @default(false)
   lastReadAt DateTime?
+
+  // "Clear chat" cutoff — messages created at/before this time are hidden for
+  // THIS user only (the other party keeps their full history). Null = nothing
+  // cleared. Applied as `createdAt > clearedAt` in getMessages / last-message.
+  clearedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

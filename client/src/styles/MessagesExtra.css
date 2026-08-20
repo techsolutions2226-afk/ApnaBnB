@@ -29,10 +29,13 @@
 .msg-header-btn { background: none; border: none; cursor: pointer; color: #5b6472; padding: 6px; border-radius: 8px; display: inline-flex; }
 .msg-header-btn:hover { background: #f0f2f5; color: #1a8f5a; }
 .msg-header-menu-wrap { position: relative; }
-.msg-header-menu { position: absolute; right: 0; top: calc(100% + 6px); width: 230px; background: #fff; border: 1px solid #ebebeb; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.1); padding: 6px; z-index: 20; }
-.msg-header-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: none; background: none; border-radius: 8px; font-size: 13px; color: #333; cursor: pointer; text-align: left; }
+.msg-header-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 216px; max-width: calc(100vw - 24px); background: #fff; border: 1px solid #ececec; border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.14); padding: 6px; z-index: 30; animation: msg-menu-pop .13s ease; }
+@keyframes msg-menu-pop { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.msg-header-menu button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border: none; background: none; border-radius: 9px; font-size: 14px; font-weight: 500; color: #2b2f33; cursor: pointer; text-align: left; font-family: inherit; }
+.msg-header-menu button svg { color: #6b7280; flex-shrink: 0; }
 .msg-header-menu button:hover { background: #f4f6f8; }
-.msg-header-menu button.msg-header-menu--danger { color: #d0342c; }
+.msg-header-menu button.msg-header-menu--danger { color: #e0342c; }
+.msg-header-menu button.msg-header-menu--danger svg { color: #e0342c; }
 .msg-header-menu button.msg-header-menu--danger:hover { background: #fdecea; }
 
 /* ── In-chat search ── */
@@ -203,3 +206,36 @@
   .msg-chat-back { display: inline-flex !important; }
   .emoji-picker--composer { left: 0; }
 }
+
+/* Phones — larger touch targets, no horizontal overflow, edge-to-edge chrome. */
+@media (max-width: 640px) {
+  .msg-sidebar-header { padding: 14px 16px 10px; }
+  .msg-sidebar-title { font-size: 20px; }
+  .msg-chat-header { padding: 10px 12px; gap: 10px; }
+  .msg-chat-header .msg-conv-avatar { width: 38px; height: 38px; }
+  .msg-chat-header-name { font-size: 15px; }
+  .msg-header-actions { gap: 2px; }
+  .msg-header-btn { padding: 9px; }               /* ~40px touch target */
+  .msg-header-prop { max-width: 60vw; }
+
+  /* Dropdown: pin to the right edge, never wider than the screen. */
+  .msg-header-menu { width: 210px; right: 4px; }
+  .msg-header-menu button { padding: 12px; }       /* comfortable tap size */
+
+  .msg-chat-stream { padding: 12px 12px; }
+  .msg-bubble { max-width: 82%; font-size: 15px; }
+  .msg-images, .msg-bubble-image, .msg-video { max-width: min(78vw, 320px); }
+  .msg-images--multi .msg-bubble-image,
+  .msg-images-more { width: 46%; height: 110px; }
+
+  .msg-composer { padding: 8px 10px; gap: 6px; }
+  .msg-composer-input { font-size: 16px; }         /* ≥16px stops iOS zoom-on-focus */
+  .msg-composer-send { width: 46px; height: 46px; }
+  .msg-composer-attach, .msg-composer-emoji { padding: 9px; }
+
+  .msg-modal { max-width: none; }                  /* dialogs fill small screens */
+  .attach-menu, .emoji-picker { max-width: calc(100vw - 24px); }
+}
+
+/* Guard: the chat pane must never cause the page to scroll sideways. */
+.msg-chat, .msg-chat-stream, .msg-chat-header, .msg-composer { max-width: 100%; }

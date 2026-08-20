@@ -20,13 +20,14 @@ import {
   FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload,
   FiChevronDown, FiEdit2, FiTrash2, FiX, FiCheck, FiCopy,
   FiShare2, FiStar, FiInfo, FiFlag, FiMoreVertical, FiSmile, FiImage,
-  FiBell, FiBellOff, FiArchive, FiMail,
+  FiBell, FiBellOff, FiUser, FiSlash,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../hooks/useSocket";
 import { useProperties } from "../hooks/useProperties";
 import messageService from "../services/messageService";
 import matchService from "../services/matchService";
+import blockService from "../services/blockService";
 import uploadService from "../services/uploadService";
 import DealRoomPanel from "../components/messages/DealRoomPanel";
 import ImageLightbox from "../components/messages/ImageLightbox";
@@ -218,6 +219,12 @@ const Messages = () => {
   const [presence, setPresence] = useState({}); // {userId:{online,lastSeenAt}}
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
+  /* blocking + clear-chat confirmations */
+  const [blockedIds, setBlockedIds] = useState(() => new Set()); // ids I've blocked
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [blockBusy, setBlockBusy] = useState(false);
+
   /* composer extras */
   const [emojiFor, setEmojiFor] = useState(null); // "composer" | messageId | null
   const [attachOpen, setAttachOpen] = useState(false);
@@ -262,6 +269,18 @@ const Messages = () => {
   useEffect(() => {
     newestAtRef.current = messages.length ? messages[messages.length - 1]?.createdAt : null;
   }, [messages]);
+
+  /* ── load the set of users I've blocked (drives Block/Unblock in the menu) ── */
+  useEffect(() => {
+    let cancelled = false;
+    blockService
+      .listBlocked()
+      .then((data) => {
+        if (!cancelled) setBlockedIds(new Set(data?.blocked || []));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [currentUser?.id]);
 
   /* ── initial fetch + URL opening ── */
   useEffect(() => {
@@ -611,12 +630,15 @@ const Messages = () => {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== "Escape") return;
+      if (confirmClear) { setConfirmClear(false); return; }
+      if (confirmBlock && !blockBusy) { setConfirmBlock(false); return; }
       if (editingMessage) { setEditingMessage(null); setEditDraft(""); return; }
       if (deleteRequest) { setDeleteRequest(null); return; }
       if (infoFor) { setInfoFor(null); return; }
       if (lightbox) { setLightbox(null); return; }
       if (forwardOpen) { setForwardOpen(false); return; }
       if (sharePropsOpen) { setSharePropsOpen(false); return; }
+      if (headerMenuOpen) { setHeaderMenuOpen(false); return; }
       if (replyTarget) { setReplyTarget(null); return; }
       if (selectedIds.length > 0) { setSelectedIds([]); return; }
       if (menuForId) { setMenuForId(null); return; }
@@ -625,7 +647,7 @@ const Messages = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingMessage, deleteRequest, infoFor, lightbox, forwardOpen, sharePropsOpen, replyTarget, selectedIds, menuForId, activeId]);
+  }, [confirmClear, confirmBlock, blockBusy, editingMessage, deleteRequest, infoFor, lightbox, forwardOpen, sharePropsOpen, headerMenuOpen, replyTarget, selectedIds, menuForId, activeId]);
 
   /* ── scroll handling ── */
   const handleScroll = () => {
@@ -1043,6 +1065,75 @@ const Messages = () => {
     setChatSearchOpen(false);
   }, []);
 
+  /* ── header-menu actions (View Profile / Clear Chat / Report / Block) ── */
+  const otherUserId = otherUser?._id || otherUser?.id || null;
+  const otherIsBlocked = otherUserId ? blockedIds.has(otherUserId) : false;
+
+  const handleViewProfile = () => {
+    setHeaderMenuOpen(false);
+    if (otherUserId) navigate(`/users/${otherUserId}`);
+    else toast.info("Profile unavailable");
+  };
+
+  const handleClearChat = async () => {
+    if (!activeId) return;
+    try {
+      await messageService.clearConversation(activeId);
+      setMessages([]);
+      setConfirmClear(false);
+      setConversations((prev) =>
+        prev.map((c) => (c._id === activeId ? { ...c, lastMessage: null, unreadCount: 0 } : c)),
+      );
+      toast.success("Chat cleared");
+    } catch (err) {
+      toast.error(err?.message || "Failed to clear chat");
+    }
+  };
+
+  const handleReportUser = async () => {
+    setHeaderMenuOpen(false);
+    // Report using the most recent message from the other party (existing
+    // moderation endpoint records it against that message + sender).
+    const target = [...messages].reverse().find(
+      (m) => (m.sender?._id || m.sender?.id || m.sender) === otherUserId,
+    );
+    if (!target) {
+      toast.info("Nothing to report yet");
+      return;
+    }
+    try {
+      await messageService.reportMessage(target._id, "User reported from chat");
+      toast.success("Reported to moderators");
+    } catch (err) {
+      toast.error(err?.message || "Failed to report");
+    }
+  };
+
+  const handleToggleBlock = async () => {
+    if (!otherUserId || blockBusy) return;
+    setBlockBusy(true);
+    try {
+      if (otherIsBlocked) {
+        await blockService.unblock(otherUserId);
+        setBlockedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(otherUserId);
+          return next;
+        });
+        toast.success("User unblocked");
+      } else {
+        await blockService.block(otherUserId);
+        setBlockedIds((prev) => new Set(prev).add(otherUserId));
+        toast.success("User blocked");
+      }
+      setConfirmBlock(false);
+    } catch (err) {
+      toast.error(err?.message || "Failed to update block");
+    } finally {
+      setBlockBusy(false);
+    }
+  };
+
   const formatFileSize = (bytes) => {
     if (!bytes) return "";
     const mb = bytes / (1024 * 1024);
@@ -1218,7 +1309,7 @@ const Messages = () => {
                     ) : (
                       formatLastSeen(otherUser?.lastSeenAt)
                     )}
-                    {otherUser?.role && <span className="msg-role"> · {otherUser.role}</span>}
+                    {otherUser?.role && <span className="msg-role"> • {otherUser.role}</span>}
                   </div>
                   {activeConv.property && (
                     <button
@@ -1240,54 +1331,26 @@ const Messages = () => {
                       <FiMoreVertical size={18} />
                     </button>
                     {headerMenuOpen && (
-                      <div className="msg-header-menu">
-                        <button type="button" onClick={() => updateConvPref(activeId, { pinned: !activeConv.prefs?.pinned })}>
-                          <PinIcon size={14} /> {activeConv.prefs?.pinned ? "Unpin conversation" : "Pin conversation"}
+                      <div className="msg-header-menu" role="menu">
+                        <button type="button" onClick={handleViewProfile}>
+                          <FiUser size={15} /> View Profile
                         </button>
                         <button type="button" onClick={() => updateConvPref(activeId, { muted: !activeConv.prefs?.muted })}>
-                          {activeConv.prefs?.muted ? <FiBell size={14} /> : <FiBellOff size={14} />}
-                          {activeConv.prefs?.muted ? "Unmute notifications" : "Mute notifications"}
+                          {activeConv.prefs?.muted ? <FiBell size={15} /> : <FiBellOff size={15} />}
+                          {activeConv.prefs?.muted ? "Unmute Notifications" : "Mute Notifications"}
                         </button>
-                        <button type="button" onClick={() => updateConvPref(activeId, { archived: !activeConv.prefs?.archived })}>
-                          <FiArchive size={14} /> {activeConv.prefs?.archived ? "Unarchive conversation" : "Archive conversation"}
+                        <button type="button" onClick={() => { setHeaderMenuOpen(false); setConfirmClear(true); }}>
+                          <FiTrash2 size={15} /> Clear Chat
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setConversations((prev) => prev.map((c) => (c._id === activeId ? { ...c, unreadCount: c.unreadCount > 0 ? c.unreadCount : 1 } : c)));
-                            setHeaderMenuOpen(false);
-                          }}
-                        >
-                          <FiMail size={14} /> Mark as unread
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if ("Notification" in window && Notification.permission !== "granted") {
-                              Notification.requestPermission().then(() => toast.success("Notifications enabled")).catch(() => {});
-                            } else if ("Notification" in window) {
-                              toast.info("Notifications already enabled");
-                            }
-                            setHeaderMenuOpen(false);
-                          }}
-                        >
-                          <FiBell size={14} /> Enable notifications
+                        <button type="button" className="msg-header-menu--danger" onClick={handleReportUser}>
+                          <FiFlag size={15} /> Report User
                         </button>
                         <button
                           type="button"
                           className="msg-header-menu--danger"
-                          onClick={() => {
-                            if (!window.confirm("Delete this conversation for everyone? This cannot be undone.")) return;
-                            messageService.deleteConversation(activeId)
-                              .then(() => {
-                                setConversations((prev) => prev.filter((c) => c._id !== activeId));
-                                closeChat();
-                                toast.success("Conversation deleted");
-                              })
-                              .catch((err) => toast.error(err?.message || "Failed to delete conversation"));
-                          }}
+                          onClick={() => { setHeaderMenuOpen(false); setConfirmBlock(true); }}
                         >
-                          <FiTrash2 size={14} /> Delete conversation
+                          <FiSlash size={15} /> {otherIsBlocked ? "Unblock" : "Block"}
                         </button>
                       </div>
                     )}
@@ -1732,6 +1795,40 @@ const Messages = () => {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* clear chat confirm */}
+      {confirmClear && (
+        <div className="msg-modal-overlay" onClick={() => setConfirmClear(false)}>
+          <div className="msg-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Clear this chat?</h3>
+            <p>This removes the messages from <strong>your</strong> view only. The other person keeps their copy of the conversation.</p>
+            <div className="msg-modal-actions">
+              <button type="button" className="msg-modal-btn" onClick={() => setConfirmClear(false)}>Cancel</button>
+              <button type="button" className="msg-modal-btn msg-modal-btn--danger" onClick={handleClearChat}>Clear Chat</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* block / unblock confirm */}
+      {confirmBlock && (
+        <div className="msg-modal-overlay" onClick={() => !blockBusy && setConfirmBlock(false)}>
+          <div className="msg-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>{otherIsBlocked ? "Unblock this user?" : "Block this user?"}</h3>
+            <p>
+              {otherIsBlocked
+                ? "You'll be able to message each other again."
+                : "Neither of you will be able to send messages in this chat until you unblock them."}
+            </p>
+            <div className="msg-modal-actions">
+              <button type="button" className="msg-modal-btn" onClick={() => setConfirmBlock(false)} disabled={blockBusy}>Cancel</button>
+              <button type="button" className="msg-modal-btn msg-modal-btn--danger" onClick={handleToggleBlock} disabled={blockBusy}>
+                {blockBusy ? "Please wait…" : otherIsBlocked ? "Unblock" : "Block"}
+              </button>
             </div>
           </div>
         </div>

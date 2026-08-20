@@ -8,6 +8,7 @@ const {
   markConversationRead,
   updateConversation,
   deleteConversation,
+  clearConversation,
   updateMembers,
 } = require('../controllers/conversationController');
 const verifyToken = require('../middleware/authMiddleware');
@@ -24,6 +25,7 @@ router.get('/:id', verifyToken, getConversationById);
 router.put('/:id', verifyToken, updateConversation);
 router.put('/:id/prefs', verifyToken, updateConversationPrefs);
 router.put('/:id/read', verifyToken, markConversationRead);
+router.put('/:id/clear', verifyToken, clearConversation);
 router.delete('/:id', verifyToken, deleteConversation);
 router.put('/:id/members', verifyToken, updateMembers);
 

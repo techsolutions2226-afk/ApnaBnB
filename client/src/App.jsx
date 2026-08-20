@@ -26,6 +26,7 @@ import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import Wishlists from "./pages/Wishlists";
 import Trips from "./pages/Trips";
+import Legal from "./pages/Legal";
 
 /* ── Dashboard shell (sidebar + role selector) ── */
 import DashboardShell from "./components/dashboard/DashboardShell";
@@ -132,6 +133,7 @@ function App() {
                   <Route path="/rent" element={<SearchResults />} />
                   <Route path="/plans" element={<Plans />} />
                   <Route path="/users/:id" element={<Profile />} />
+                  <Route path="/legal/:slug" element={<Legal />} />
                 </Route>
 
                 {/* ── Admin panel (standalone shell — fixed sidebar, NO

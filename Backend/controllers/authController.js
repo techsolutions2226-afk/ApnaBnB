@@ -55,6 +55,41 @@ const registerUser = async (req, res, next) => {
     return res.status(400).json({ message: 'Please fill all fields.' });
   }
 
+  // ── Authoritative server-side validation (mirrors the client rules). ──
+  const normalizedName = String(name).trim();
+  const normalizedEmail = String(email).trim().toLowerCase();
+
+  // Name: 1–100 chars (full name), letters/marks from any script plus spaces,
+  // apostrophes, periods and hyphens; no digits or stray symbols.
+  if (
+    normalizedName.length < 1 ||
+    normalizedName.length > 100 ||
+    /[0-9]/.test(normalizedName) ||
+    !/^[\p{L}\p{M}][\p{L}\p{M}\s'’.-]*$/u.test(normalizedName)
+  ) {
+    return res.status(400).json({ message: 'Please enter a valid name.' });
+  }
+
+  // Email: reasonable structure + length cap.
+  if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) {
+    return res.status(400).json({ message: 'Please enter a valid email.' });
+  }
+
+  // Password strength: ≥8 chars with lower, upper, digit and a non-space symbol.
+  const pw = String(password);
+  if (
+    pw.length < 8 ||
+    !/[a-z]/.test(pw) ||
+    !/[A-Z]/.test(pw) ||
+    !/[0-9]/.test(pw) ||
+    !/[^A-Za-z0-9\s]/.test(pw)
+  ) {
+    return res.status(400).json({
+      message:
+        'Password must be at least 8 characters and include upper, lower, a number and a special character.',
+    });
+  }
+
   // Mobile number is required at signup. Accept +, spaces, dashes and parens in
   // the raw input but validate on the digits only (10–15 digits covers local
   // 03xxxxxxxxx and +92 international forms).
@@ -65,13 +100,13 @@ const registerUser = async (req, res, next) => {
 
   try {
     const existing = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     });
     if (existing) {
       // If the existing account is already verified, block. If unverified,
       // resend the OTP so a stale signup doesn't permanently lock the email.
       if (existing.verified) {
-        return res.status(400).json({ message: 'User already exists.' });
+        return res.status(400).json({ code: 'EMAIL_IN_USE', message: 'Email already in use.' });
       }
       try {
         await issueOtpFor(existing);
@@ -90,8 +125,8 @@ const registerUser = async (req, res, next) => {
 
     const user = await prisma.user.create({
       data: {
-        name,
-        email: email.toLowerCase(),
+        name: normalizedName,
+        email: normalizedEmail,
         password: await hashPassword(password),
         role,
         phone: String(phone).trim(),
@@ -103,7 +138,7 @@ const registerUser = async (req, res, next) => {
       action: 'auth.register',
       entityType: 'user',
       entityId: user.id,
-      meta: { name, email: user.email, role },
+      meta: { name: normalizedName, email: user.email, role },
       req,
     });
 

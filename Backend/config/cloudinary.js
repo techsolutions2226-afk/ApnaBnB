@@ -17,7 +17,8 @@ cloudinary.config({
 });
 
 const storageParams = {
-  folder: process.env.CLOUDINARY_FOLDER || 'property_images',
+  // apnaBnB/properties — property & listing images.
+  folder: process.env.CLOUDINARY_FOLDER || 'apnaBnB/properties',
   allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
   transformation: [
     { width: 1200, height: 800, crop: 'limit' },
@@ -50,12 +51,11 @@ const upload = multer({
   },
 });
 
-// Profile images — separate Cloudinary folder + square crop tuned for avatars.
-// Defaults to "Profile-Images" (override with CLOUDINARY_PROFILE_FOLDER).
+// Profile images — apnaBnB/profile-images (square crop tuned for avatars).
 const profileStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: process.env.CLOUDINARY_PROFILE_FOLDER || 'Profile-Images',
+    folder: process.env.CLOUDINARY_PROFILE_FOLDER || 'apnaBnB/profile-images',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
     transformation: [
       { width: 400, height: 400, crop: 'fill', gravity: 'face' },
@@ -80,8 +80,7 @@ const profileUpload = multer({
   },
 });
 
-// Deal-room documents — PDFs / Office docs shared inside a chat. Stored as
-// Cloudinary `raw` resources (not images) in a separate folder.
+// Deal-room / chat documents — apnaBnB/messages/documents (raw resources).
 const DOCUMENT_MIMES = [
   'application/pdf',
   'application/msword',
@@ -94,7 +93,7 @@ const DOCUMENT_MIMES = [
 const documentStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: process.env.CLOUDINARY_DOC_FOLDER || 'deal_documents',
+    folder: process.env.CLOUDINARY_DOC_FOLDER || 'apnaBnB/messages/documents',
     resource_type: 'raw',
   },
 });
@@ -114,10 +113,10 @@ const documentUpload = multer({
   },
 });
 
-// ── Chat uploads — everything under the `messages/` folder, with per-kind
-//    subfolders so Cloudinary stays tidy: messages/images, messages/documents,
-//    messages/voice. (Property/listing images keep their own folders.)
-const messageBase = (sub) => `${process.env.CLOUDINARY_MESSAGE_FOLDER || 'messages'}/${sub}`;
+// ── Chat uploads — everything under apnaBnB/messages/ with per-kind
+//    subfolders: images (chat pictures), documents, audio, videos.
+const messageBase = (sub) =>
+  `${process.env.CLOUDINARY_MESSAGE_FOLDER || 'apnaBnB/messages'}/${sub}`;
 
 const chatImageStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
@@ -136,7 +135,7 @@ const chatDocumentStorage = new CloudinaryStorage({
 
 const chatVoiceStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: { folder: messageBase('voice'), resource_type: 'raw' },
+  params: { folder: messageBase('audio'), resource_type: 'raw' },
 });
 
 // Max 10 images at once — chat galleries can batch-select multiple.

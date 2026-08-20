@@ -174,7 +174,7 @@ const deleteImage = async (req, res, next) => {
 
     // Ownership scoping (non-admins only).
     if (req.user?.role !== 'admin') {
-      const folder = (process.env.CLOUDINARY_FOLDER || 'property_images').replace(/\/+$/, '');
+      const folder = (process.env.CLOUDINARY_FOLDER || 'apnaBnB/properties').replace(/\/+$/, '');
       if (!String(publicId).startsWith(`${folder}/`)) {
         return res.status(403).json({ message: 'You can only delete property images.' });
       }

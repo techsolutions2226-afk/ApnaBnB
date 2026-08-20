@@ -162,6 +162,7 @@ export function AuthProvider({ children }) {
         name: userData.name || userData.firstName + " " + userData.lastName,
         email: userData.email,
         password: userData.password,
+        phone: userData.phone,
         role,
       });
 

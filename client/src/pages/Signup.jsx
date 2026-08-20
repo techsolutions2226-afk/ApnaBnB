@@ -37,6 +37,7 @@ const Signup = () => {
     firstName: "",
     lastName: "",
     email: "",
+    phone: "",
     password: "",
     birthdate: "",
     role: "",
@@ -80,6 +81,12 @@ const Signup = () => {
     if (!form.email.trim()) errs.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(form.email))
       errs.email = "Enter a valid email";
+    if (!form.phone.trim()) errs.phone = "Mobile number is required";
+    else {
+      const digits = form.phone.replace(/[^\d]/g, "");
+      if (digits.length < 10 || digits.length > 15)
+        errs.phone = "Enter a valid mobile number";
+    }
     if (!form.password) errs.password = "Password is required";
     else if (!pwChecks.lowercase)
       errs.password = "Password must contain a lowercase letter";
@@ -110,6 +117,7 @@ const Signup = () => {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
+        phone: form.phone,
         password: form.password,
         birthdate: form.birthdate,
         role: form.role,
@@ -279,6 +287,30 @@ const Signup = () => {
               </p>
             </div>
 
+            {/* Mobile number */}
+            <div className="signup-field">
+              <label htmlFor="signup-phone" className="signup-field-label">
+                Mobile number
+              </label>
+              <div
+                className={`signup-input-wrapper ${errors.phone ? "signup-input-wrapper--error" : ""}`}
+              >
+                <input
+                  type="tel"
+                  id="signup-phone"
+                  className="signup-input"
+                  placeholder="03XX XXXXXXX"
+                  value={form.phone}
+                  onChange={update("phone")}
+                  autoComplete="tel"
+                  disabled={isLoading}
+                />
+              </div>
+              <p className="signup-hint">
+                Buyers and sellers use this to reach you once a deal is matched.
+              </p>
+            </div>
+
             {/* Password */}
             <div className="signup-field">
               <label htmlFor="signup-password" className="signup-field-label">
@@ -341,6 +373,7 @@ const Signup = () => {
                   <p className="signup-error">{errors.birthdate}</p>
                 )}
                 {errors.email && <p className="signup-error">{errors.email}</p>}
+                {errors.phone && <p className="signup-error">{errors.phone}</p>}
                 {errors.password && (
                   <p className="signup-error">{errors.password}</p>
                 )}

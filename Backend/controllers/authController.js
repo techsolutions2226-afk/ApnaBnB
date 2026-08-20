@@ -49,10 +49,18 @@ const issueOtpFor = async (user) => {
 // Register User — creates an unverified account and emails an OTP.
 // Does NOT return a JWT; user must verify first.
 const registerUser = async (req, res, next) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, phone } = req.body;
 
   if (!name || !email || !password || !role) {
     return res.status(400).json({ message: 'Please fill all fields.' });
+  }
+
+  // Mobile number is required at signup. Accept +, spaces, dashes and parens in
+  // the raw input but validate on the digits only (10–15 digits covers local
+  // 03xxxxxxxxx and +92 international forms).
+  const phoneDigits = String(phone || '').replace(/[^\d]/g, '');
+  if (!phone || phoneDigits.length < 10 || phoneDigits.length > 15) {
+    return res.status(400).json({ message: 'Please provide a valid mobile number.' });
   }
 
   try {
@@ -86,6 +94,7 @@ const registerUser = async (req, res, next) => {
         email: email.toLowerCase(),
         password: await hashPassword(password),
         role,
+        phone: String(phone).trim(),
         verified: false,
       },
     });

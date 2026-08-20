@@ -14,6 +14,7 @@ import {
   FiTrash2,
   FiExternalLink,
 } from "react-icons/fi";
+import RefreshButton from "../../components/admin/RefreshButton";
 import "../../styles/Admin.css";
 
 const PROPERTY_STATUSES = ["active", "pending", "sold", "rented", "featured", "rejected"];
@@ -167,10 +168,13 @@ const AdminListings = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">Listings</h1>
-        <p className="adm-subtitle">
-          Manage every property and its analytics listing on the platform.
-        </p>
+        <div>
+          <h1 className="adm-title">Listings</h1>
+          <p className="adm-subtitle">
+            Manage every property and its analytics listing on the platform.
+          </p>
+        </div>
+        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
       </div>
 
       {/* Tab switch */}

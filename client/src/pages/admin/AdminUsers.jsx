@@ -7,6 +7,7 @@ import Modal from "../../components/common/Modal";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
+import RefreshButton from "../../components/admin/RefreshButton";
 import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShield, FiXCircle } from "react-icons/fi";
 import "../../styles/Admin.css";
 
@@ -144,8 +145,11 @@ const AdminUsers = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">Users</h1>
-        <p className="adm-subtitle">Manage every account on the platform.</p>
+        <div>
+          <h1 className="adm-title">Users</h1>
+          <p className="adm-subtitle">Manage every account on the platform.</p>
+        </div>
+        <RefreshButton onRefresh={fetchUsers} refreshing={isLoading} />
       </div>
 
       {/* Toolbar */}

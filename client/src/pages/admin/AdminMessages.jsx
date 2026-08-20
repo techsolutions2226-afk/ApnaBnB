@@ -5,6 +5,7 @@ import SearchInput from "../../components/common/SearchInput";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import StatusBadge from "../../components/common/StatusBadge";
 import { FiMail, FiTrash2, FiLock, FiMessageSquare } from "react-icons/fi";
+import RefreshButton from "../../components/admin/RefreshButton";
 import "../../styles/Admin.css";
 
 /* ── AdminMessages — WhatsApp-style conversation review ──
@@ -114,12 +115,15 @@ const AdminMessages = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">Messages</h1>
-        <p className="adm-subtitle">
-          Conversations on the platform. Click a chat to read it —{" "}
-          <FiLock size={11} style={{ verticalAlign: -1 }} /> admin view is
-          read-only (admin cannot send messages).
-        </p>
+        <div>
+          <h1 className="adm-title">Messages</h1>
+          <p className="adm-subtitle">
+            Conversations on the platform. Click a chat to read it —{" "}
+            <FiLock size={11} style={{ verticalAlign: -1 }} /> admin view is
+            read-only (admin cannot send messages).
+          </p>
+        </div>
+        <RefreshButton onRefresh={fetchConversations} refreshing={isLoadingList} />
       </div>
 
       {/* Two-pane chat layout */}

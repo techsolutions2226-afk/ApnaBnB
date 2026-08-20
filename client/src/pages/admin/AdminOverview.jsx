@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import adminService from "../../services/adminService";
+import RefreshButton from "../../components/admin/RefreshButton";
 import {
   FiUsers,
   FiHome,
@@ -18,31 +20,34 @@ const AdminOverview = () => {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    Promise.all([
-      adminService.getStats(),
-      adminService.getActivityLogs({ limit: 8 }),
-    ])
-      .then(([s, a]) => {
-        if (cancelled) return;
-        setStats(s);
-        setRecent(Array.isArray(a?.logs) ? a.logs : []);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.message || "Failed to load admin data");
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+  // Shared loader for the initial mount and the Refresh button. On a manual
+  // refresh a failure is toasted (keeping the loaded page in place); on the
+  // first load it shows the full-page error state.
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    setError(null);
+    try {
+      const [s, a] = await Promise.all([
+        adminService.getStats(),
+        adminService.getActivityLogs({ limit: 8 }),
+      ]);
+      setStats(s);
+      setRecent(Array.isArray(a?.logs) ? a.logs : []);
+    } catch (err) {
+      if (isRefresh) toast.error(err.message || "Failed to refresh");
+      else setError(err.message || "Failed to load admin data");
+    } finally {
+      setRefreshing(false);
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   if (isLoading) {
     return (
@@ -79,10 +84,13 @@ const AdminOverview = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">Platform Overview</h1>
-        <p className="adm-subtitle">
-          A snapshot of everything happening on apnabnb right now.
-        </p>
+        <div>
+          <h1 className="adm-title">Platform Overview</h1>
+          <p className="adm-subtitle">
+            A snapshot of everything happening on apnabnb right now.
+          </p>
+        </div>
+        <RefreshButton onRefresh={() => loadData(true)} refreshing={refreshing} />
       </div>
 
       {/* KPI cards */}

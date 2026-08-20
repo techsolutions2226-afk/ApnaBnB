@@ -6,6 +6,7 @@ import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { FiTrash2, FiExternalLink } from "react-icons/fi";
+import RefreshButton from "../../components/admin/RefreshButton";
 import "../../styles/Admin.css";
 
 const MATCH_TYPES = ["seller-buyer", "dealer-buyer", "dealer-dealer", "seller-dealer"];
@@ -70,11 +71,14 @@ const AdminMatches = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">Matches</h1>
-        <p className="adm-subtitle">
-          Every property↔requirement match on the platform. Read-only analytics —
-          deleting a match never touches the matching engine.
-        </p>
+        <div>
+          <h1 className="adm-title">Matches</h1>
+          <p className="adm-subtitle">
+            Every property↔requirement match on the platform. Read-only analytics —
+            deleting a match never touches the matching engine.
+          </p>
+        </div>
+        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
       </div>
 
       <div className="adm-toolbar">

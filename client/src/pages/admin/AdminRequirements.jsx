@@ -7,6 +7,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
 import AdminRequirementEditor from "../../components/admin/AdminRequirementEditor";
+import RefreshButton from "../../components/admin/RefreshButton";
 import { formatPrice } from "../../utils/formatters";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import "../../styles/Admin.css";
@@ -87,8 +88,11 @@ const AdminRequirements = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">Requirements</h1>
-        <p className="adm-subtitle">Manage all buyer/dealer requirements on the platform.</p>
+        <div>
+          <h1 className="adm-title">Requirements</h1>
+          <p className="adm-subtitle">Manage all buyer/dealer requirements on the platform.</p>
+        </div>
+        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
       </div>
 
       <div className="adm-toolbar">

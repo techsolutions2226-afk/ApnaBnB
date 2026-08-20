@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import adminService from "../../services/adminService";
 import SearchInput from "../../components/common/SearchInput";
 import Pagination from "../../components/common/Pagination";
+import RefreshButton from "../../components/admin/RefreshButton";
 import "../../styles/Admin.css";
 
 const ACTIONS = [
@@ -92,10 +93,13 @@ const AdminLogs = () => {
   return (
     <div className="adm-page">
       <div className="adm-header">
-        <h1 className="adm-title">System Logs</h1>
-        <p className="adm-subtitle">
-          Every action recorded on the platform — who did what, when, and where.
-        </p>
+        <div>
+          <h1 className="adm-title">System Logs</h1>
+          <p className="adm-subtitle">
+            Every action recorded on the platform — who did what, when, and where.
+          </p>
+        </div>
+        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
       </div>
 
       <div className="adm-toolbar adm-toolbar--wrap">

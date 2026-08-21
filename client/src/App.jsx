@@ -62,6 +62,8 @@ import AdminListings from "./pages/admin/AdminListings";
 import AdminRequirements from "./pages/admin/AdminRequirements";
 import AdminMatches from "./pages/admin/AdminMatches";
 import AdminMessages from "./pages/admin/AdminMessages";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminPlans from "./pages/admin/AdminPlans";
 import AdminLogs from "./pages/admin/AdminLogs";
 
 /* ── Subscription Plans (Step 10) ── */
@@ -154,6 +156,8 @@ function App() {
                   <Route path="requirements" element={<AdminRequirements />} />
                   <Route path="matches" element={<AdminMatches />} />
                   <Route path="messages" element={<AdminMessages />} />
+                  <Route path="payments" element={<AdminPayments />} />
+                  <Route path="plans" element={<AdminPlans />} />
                   <Route path="logs" element={<AdminLogs />} />
                 </Route>
 

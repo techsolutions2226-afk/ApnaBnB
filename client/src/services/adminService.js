@@ -263,6 +263,25 @@ const adminService = {
       throw error.response?.data || { message: 'Failed to fetch user activity' };
     }
   },
+
+  // ── Payments (EasyPaisa QR subscriptions) ──
+  getPayments: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/payments', { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch payments' };
+    }
+  },
+
+  updatePaymentStatus: async (paymentId, status) => {
+    try {
+      const response = await apiClient.patch(`/payments/${paymentId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update payment status' };
+    }
+  },
 };
 
 export default adminService;

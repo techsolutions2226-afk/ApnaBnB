@@ -81,6 +81,16 @@ enum TripStatus {
   cancelled
 }
 
+// Manual EasyPaisa QR payments for subscription plans. A payment starts as
+// `approved` the moment the user submits their screenshot (instant activation);
+// admins can flip it to `rejected` from the admin panel, which locks the
+// payer's messaging again (the gate reads the LATEST payment per user).
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+}
+
 // ─────────────────────────── Models ───────────────────────────
 
 model User {
@@ -135,6 +145,7 @@ model User {
   wishlists     Wishlist[]
   conversations Conversation[] @relation("ConversationParticipants")
   conversationPrefs ConversationParticipant[]
+  payments      Payment[]
 
   // Blocking — implicit m2m self-relation. `blocked` are the users THIS user has
   // blocked; `blockedBy` are users who blocked THIS user. Either direction blocks
@@ -453,6 +464,78 @@ model Wishlist {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+}
+
+// ─────────────────────────── Plans (admin-managed) ───────────────────────────
+// Subscription plans are DB rows now, not hardcoded client config. Each plan
+// targets one role (seller | dealer | buyer) so every role can have its own
+// tiers. Admins create/edit them from /admin/plans; the public Plans page
+// reads GET /api/plans. features + limits stay JSONB so the UI keeps its
+// existing shape ({text, included} lists and {maxListings, ...}) without a
+// migration per new perk.
+model Plan {
+  id String @id @default(uuid())
+
+  name     String // display name, e.g. "Pro"
+  slug     String // url-ish key, e.g. "basic" — unique PER ROLE (see @@unique)
+  role     Role // which role this tier is offered to
+
+  monthlyPrice Float
+  yearlyPrice  Float
+  currency     String @default("PKR")
+
+  description String?
+  popular     Boolean @default(false)
+  active      Boolean @default(true)
+
+  // [{ text: "Up to 10 active listings", included: true }, ...]
+  features Json @default("[]")
+  // { maxListings: 10, maxMessagesPerDay: 5, ... }
+  limits Json @default("{}")
+
+  sortOrder Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Same slug may exist for different roles ("basic" for seller AND dealer),
+  // but never duplicated within one role.
+  @@unique([role, slug])
+  @@index([role, active])
+}
+
+// ─────────────────────────── Payments ───────────────────────────
+// One row per manual EasyPaisa QR payment submitted from the Plans page.
+// The subscription gate (GET /api/payments/status) treats the user's LATEST
+// payment as their current subscription: approved = plan active, rejected =
+// locked, pending = awaiting admin review. Admins manage rows in the admin
+// panel; every submit also lands in the ActivityLog via the global audit
+// middleware.
+model Payment {
+  id String @id @default(uuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // Snapshot of the plan at purchase time — the client catalog
+  // (client/src/config/subscriptions.js) is the source for these values and
+  // the controller re-validates them server-side.
+  planId       String // plan-basic | plan-pro | plan-premium
+  planName     String
+  billingCycle String // monthly | yearly
+  amount       Float
+  currency     String @default("PKR")
+  method       String @default("easypaisa")
+
+  status PaymentStatus @default(approved)
+
+  // Cloudinary URL of the uploaded payment screenshot (proof of transfer).
+  proofUrl String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status])
 }
 
 // ─────────────────────────── Audit Log ───────────────────────────

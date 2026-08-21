@@ -10,6 +10,7 @@ import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
 import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import PlanBanner from "../components/dashboard/PlanBanner";
 import {
   FiHome,
   FiEye,
@@ -24,7 +25,6 @@ import {
   FiEye as FiView,
   FiEdit2,
   FiTrash2,
-  FiZap,
 } from "react-icons/fi";
 import { formatLocation } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
@@ -32,7 +32,7 @@ import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
 
 const DealerDashboard = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, subscription } = useAuth();
   const navigate = useNavigate();
   const userId = currentUser?.id;
   const { viewRole } = useViewRole();
@@ -113,16 +113,8 @@ const DealerDashboard = () => {
         <span className="dash-role-badge dash-role-badge--dealer">Dealer</span>
       </div>
 
-      {/* ── Plans CTA ── */}
-      <div className="dash-sub-none">
-        <span className="dash-sub-none-text">
-          No active subscription — upgrade to unlock premium features
-        </span>
-        <Link to="/plans" className="dash-sub-none-link">
-          <FiZap size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-          View Plans
-        </Link>
-      </div>
+      {/* ── Plans CTA — server-driven subscription state ── */}
+      <PlanBanner />
 
       {/* ── Stat Cards ── */}
       <div className="dash-stats">
@@ -293,18 +285,20 @@ const DealerDashboard = () => {
       {/* ── Reviews on My Properties ── */}
       <OwnerReviewsSection userId={userId} />
 
-      {/* ── Plans CTA footer ── */}
-      <div className="dash-section">
-        <div className="dash-sub-none">
-          <span className="dash-sub-none-text">
-            Upgrade to a Pro plan and get featured listings + more leads.
-          </span>
-          <Link to="/plans" className="dash-sub-none-link">
-            <FiCreditCard size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-            View Plans
-          </Link>
+      {/* ── Plans CTA footer (only while unsubscribed) ── */}
+      {!subscription?.active && (
+        <div className="dash-section">
+          <div className="dash-sub-none">
+            <span className="dash-sub-none-text">
+              Upgrade to a Pro plan and get featured listings + more leads.
+            </span>
+            <Link to="/plans" className="dash-sub-none-link">
+              <FiCreditCard size={14} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+              View Plans
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Delete Confirmation Modal ── */}
       <ConfirmDialog

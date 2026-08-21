@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import authService from "../services/authService";
 import userService from "../services/userService";
+import paymentService from "../services/paymentService";
 import { disconnectSocket } from "../api/socket";
+import { getEffectiveRole, roleRequiresPlan } from "../utils/subscription";
 
 /* How long the user can be idle before we log them out automatically.
    Default 30 minutes; override per-deploy with VITE_IDLE_LOGOUT_MINUTES. */
@@ -49,6 +51,47 @@ export function AuthProvider({ children }) {
      shows a loader instead of rendering the dashboard, so a deleted user's stale
      localStorage session can never briefly flash protected content. */
   const [authReady, setAuthReady] = useState(false);
+
+  /* ── Server-driven subscription state ──
+     The messaging/Deal-Room paywall reads THIS, not localStorage. The backend
+     decides from the user's LATEST Payment row: approved = active, rejected/
+     pending/none = locked — so an admin reject takes effect on the user's
+     next app load or refreshSubscription() call. */
+  const EMPTY_SUBSCRIPTION = Object.freeze({
+    loading: false,
+    loaded: false,
+    requiresPlan: false,
+    active: false,
+    plan: null,
+  });
+  const [subscription, setSubscription] = useState(EMPTY_SUBSCRIPTION);
+
+  const refreshSubscription = useCallback(async () => {
+    // Optimistic local fallback while the request is in flight / if it fails:
+    // role decides whether a plan is even needed.
+    const needsPlan = roleRequiresPlan(getEffectiveRole(currentUser));
+    setSubscription((prev) => ({ ...prev, loading: true }));
+    try {
+      const status = await paymentService.getStatus();
+      setSubscription({
+        loading: false,
+        loaded: true,
+        requiresPlan: !!status.requiresPlan,
+        active: !!status.active,
+        plan: status.subscription || null,
+      });
+    } catch {
+      // Fail closed — a paywalled user stays locked until a successful check
+      // (the whole messaging page needs the API anyway).
+      setSubscription({
+        loading: false,
+        loaded: true,
+        requiresPlan: needsPlan,
+        active: !needsPlan,
+        plan: null,
+      });
+    }
+  }, [currentUser]);
 
   /* Persist user to localStorage on change */
   useEffect(() => {
@@ -106,6 +149,17 @@ export function AuthProvider({ children }) {
 
   /* ── Derived auth state ── */
   const isAuthenticated = !!currentUser;
+
+  /* Fetch the subscription gate once the session has been validated, and
+     re-check whenever the signed-in user changes (login / account switch). */
+  useEffect(() => {
+    if (authReady && currentUser) {
+      refreshSubscription();
+    } else if (!currentUser) {
+      setSubscription(EMPTY_SUBSCRIPTION);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, currentUser?.id]);
 
   /** Check if the current user has one of the given roles.
    *  @param  {...string} roles — e.g. hasRole("seller", "dealer")
@@ -240,6 +294,7 @@ export function AuthProvider({ children }) {
     authService.logout();
     disconnectSocket();
     setCurrentUser(null);
+    setSubscription(EMPTY_SUBSCRIPTION);
     setError(null);
     toast.success("Logged out successfully");
   };
@@ -347,6 +402,8 @@ export function AuthProvider({ children }) {
       isLoading,
       error,
       authReady,
+      subscription,
+      refreshSubscription,
       setCurrentUser,
       hasRole,
       getDashboardPath,
@@ -358,7 +415,7 @@ export function AuthProvider({ children }) {
       updateProfile,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentUser, isLoading, error, authReady],
+    [currentUser, isLoading, error, authReady, subscription],
   );
 
   return (

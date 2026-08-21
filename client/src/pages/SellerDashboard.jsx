@@ -11,6 +11,7 @@ import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
 import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import PlanBanner from "../components/dashboard/PlanBanner";
 import {
   FiHome,
   FiEye,
@@ -119,6 +120,9 @@ const SellerDashboard = () => {
         </p>
         <span className="dash-role-badge dash-role-badge--seller">Seller</span>
       </div>
+
+      {/* ── Plan status — server-driven subscription state ── */}
+      <PlanBanner />
 
       {/* ── Stat Cards ── */}
       <div className="dash-stats">

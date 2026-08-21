@@ -5,6 +5,7 @@ import adminService from "../../services/adminService";
 import StatusBadge from "../../components/common/StatusBadge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
+import Modal from "../../components/common/Modal";
 import {
   FiArrowLeft,
   FiCheckCircle,
@@ -16,6 +17,8 @@ import {
   FiHome,
   FiFileText,
   FiLink,
+  FiAward,
+  FiExternalLink,
 } from "react-icons/fi";
 import "../../styles/Admin.css";
 
@@ -30,6 +33,11 @@ const AdminUserDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  // Edit modal state — all editable user fields in one place.
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
 
   const user = data?.user;
   const counts = data?.activity;

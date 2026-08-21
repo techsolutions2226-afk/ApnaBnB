@@ -200,6 +200,26 @@ const chatVideoUpload = multer({
   },
 });
 
+// Payment proof screenshots (EasyPaisa QR flow) → apnaBnB/payment-proofs.
+const paymentProofStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: process.env.CLOUDINARY_PAYMENT_FOLDER || 'apnaBnB/payment-proofs',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 1600, height: 1600, crop: 'limit', quality: 'auto:good' }],
+  },
+});
+
+const paymentProofUpload = multer({
+  storage: paymentProofStorage,
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type. Only JPG, PNG, and WebP images are allowed.'), false);
+  },
+});
+
 module.exports = {
   cloudinary,
   upload,
@@ -209,4 +229,5 @@ module.exports = {
   chatDocumentUpload,
   chatVoiceUpload,
   chatVideoUpload,
+  paymentProofUpload,
 };

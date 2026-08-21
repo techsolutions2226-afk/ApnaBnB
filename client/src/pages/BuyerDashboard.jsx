@@ -10,6 +10,7 @@ import DashStat from "../components/dashboard/DashStat";
 import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import PlanBanner from "../components/dashboard/PlanBanner";
 import {
   FiFileText,
   FiHeart,
@@ -115,6 +116,9 @@ const BuyerDashboard = () => {
         </p>
         <span className="dash-role-badge dash-role-badge--buyer">Buyer</span>
       </div>
+
+      {/* ── Plan status — role-auto, free-plan aware ── */}
+      <PlanBanner />
 
       {/* ── Stat Cards ── */}
       <div className="dash-stats">

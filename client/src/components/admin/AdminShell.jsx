@@ -8,6 +8,8 @@ import {
   FiLink,
   FiMail,
   FiActivity,
+  FiCreditCard,
+  FiTag,
   FiLogOut,
   FiMenu,
   FiX,
@@ -23,6 +25,8 @@ const NAV_ITEMS = [
   { to: "/admin/requirements", label: "Requirements", icon: FiFileText },
   { to: "/admin/matches", label: "Matches", icon: FiLink },
   { to: "/admin/messages", label: "Messages", icon: FiMail },
+  { to: "/admin/payments", label: "Payments", icon: FiCreditCard },
+  { to: "/admin/plans", label: "Plans", icon: FiTag },
   { to: "/admin/logs", label: "System Logs", icon: FiActivity },
 ];
 

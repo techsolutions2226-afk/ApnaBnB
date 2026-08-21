@@ -8,12 +8,21 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
 import RefreshButton from "../../components/admin/RefreshButton";
-import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShield, FiXCircle } from "react-icons/fi";
+import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShield, FiXCircle, FiImage } from "react-icons/fi";
 import "../../styles/Admin.css";
 
 const ROLES = ["seller", "buyer", "dealer"];
 
-const EMPTY_FORM = { name: "", email: "", password: "", role: "buyer" };
+const EMPTY_FORM = {
+  name: "",
+  email: "",
+  password: "",
+  role: "buyer",
+  phone: "",
+  location: "",
+  avatar: "",
+  verified: false,
+};
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -33,6 +42,7 @@ const AdminUsers = () => {
   const [suspendTarget, setSuspendTarget] = useState(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [photoView, setPhotoView] = useState(null); // { name, avatar } for popup
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
@@ -70,7 +80,16 @@ const AdminUsers = () => {
 
   const openEdit = (user) => {
     setEditUser(user);
-    setForm({ name: user.name, email: user.email, role: user.role, password: "" });
+    setForm({
+      name: user.name || "",
+      email: user.email || "",
+      role: user.role || "buyer",
+      password: "",
+      phone: user.phone || "",
+      location: user.location || "",
+      avatar: user.avatar || "",
+      verified: !!user.verified,
+    });
   };
 
   const handleSave = async () => {
@@ -81,7 +100,15 @@ const AdminUsers = () => {
     setSaving(true);
     try {
       if (editUser) {
-        const payload = { name: form.name, email: form.email, role: form.role };
+        const payload = {
+          name: form.name,
+          email: form.email,
+          role: form.role,
+          phone: form.phone,
+          location: form.location,
+          avatar: form.avatar,
+          verified: form.verified,
+        };
         if (form.password) payload.password = form.password;
         await adminService.updateUser(editUser._id || editUser.id, payload);
         toast.success("User updated");
@@ -195,7 +222,7 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table — horizontally scrollable, every column stays legible */}
       <div className="adm-table-wrap">
         {isLoading ? (
           <div className="adm-loading">Loading users…</div>
@@ -204,12 +231,17 @@ const AdminUsers = () => {
         ) : users.length === 0 ? (
           <p className="adm-empty">No users found.</p>
         ) : (
-          <table className="adm-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>User</th>
-                <th>Role</th>
+                <th>Photo</th>
                 <th>Email</th>
+                <th>Role</th>
+                <th>Plan</th>
+                <th>Listings</th>
+                <th>Requirements</th>
+                <th>Phone</th>
                 <th>Verified</th>
                 <th>Suspended</th>
                 <th>Joined</th>
@@ -219,6 +251,8 @@ const AdminUsers = () => {
             <tbody>
               {users.map((user) => {
                 const uid = user._id || user.id;
+                const listings = user._count?.listings ?? 0;
+                const requirements = user._count?.requirements ?? 0;
                 return (
                   <tr key={uid} className={user.suspended ? "adm-row--suspended" : ""}>
                     <td>
@@ -228,13 +262,46 @@ const AdminUsers = () => {
                         </div>
                         <div className="adm-user-info">
                           <span className="adm-user-name">{user.name}</span>
+                          <span className="adm-table-sub">
+                            {user.location || "No location"}
+                          </span>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <StatusBadge status={user.role} prefix="adm-badge" />
+                      {user.avatar ? (
+                        <button
+                          type="button"
+                          className="adm-photo-btn"
+                          title="View profile photo"
+                          onClick={() => setPhotoView(user)}
+                        >
+                          <FiImage size={16} />
+                        </button>
+                      ) : (
+                        <span className="adm-muted">—</span>
+                      )}
                     </td>
                     <td>{user.email}</td>
+                    <td>
+                      <StatusBadge status={user.role} prefix="adm-badge" />
+                    </td>
+                    <td>
+                      {user.plan ? (
+                        <span
+                          className="adm-badge adm-badge--active"
+                          title={`${user.plan.planName} · ${user.plan.billingCycle}`}
+                        >
+                          {user.plan.planName}
+                          {user.plan.billingCycle === "free" ? " (free)" : ""}
+                        </span>
+                      ) : (
+                        <span className="adm-muted">—</span>
+                      )}
+                    </td>
+                    <td>{listings}</td>
+                    <td>{requirements}</td>
+                    <td>{user.phone || <span className="adm-muted">—</span>}</td>
                     <td>
                       {user.verified ? (
                         <span className="adm-verified">
@@ -265,7 +332,7 @@ const AdminUsers = () => {
                         <Link
                           to={`/admin/users/${uid}`}
                           className="adm-action-icon"
-                          title="View profile & activity"
+                          title="View full profile, listings & requirements"
                         >
                           <FiEye size={15} />
                         </Link>
@@ -327,44 +394,76 @@ const AdminUsers = () => {
           setEditUser(null);
         }}
         title={editUser ? "Edit User" : "Add User"}
-        size="small"
       >
         <div className="adm-form">
+          <div className="adm-form-row">
+            <label className="adm-form-label">
+              Name *
+              <input
+                className="adm-form-input"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Full name"
+              />
+            </label>
+            <label className="adm-form-label">
+              Email *
+              <input
+                className="adm-form-input"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="user@example.com"
+              />
+            </label>
+          </div>
+          <div className="adm-form-row">
+            <label className="adm-form-label">
+              Role
+              <select
+                className="adm-form-input"
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="adm-form-label">
+              Phone
+              <input
+                className="adm-form-input"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+92…"
+              />
+            </label>
+          </div>
+          <div className="adm-form-row">
+            <label className="adm-form-label">
+              Location
+              <input
+                className="adm-form-input"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="City, area"
+              />
+            </label>
+            <label className="adm-form-label">
+              Profile picture URL
+              <input
+                className="adm-form-input"
+                value={form.avatar}
+                onChange={(e) => setForm({ ...form, avatar: e.target.value })}
+                placeholder="https://…/avatar.png"
+              />
+            </label>
+          </div>
           <label className="adm-form-label">
-            Name
-            <input
-              className="adm-form-input"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Full name"
-            />
-          </label>
-          <label className="adm-form-label">
-            Email
-            <input
-              className="adm-form-input"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="user@example.com"
-            />
-          </label>
-          <label className="adm-form-label">
-            Role
-            <select
-              className="adm-form-input"
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="adm-form-label">
-            {editUser ? "New password (optional)" : "Password"}
+            {editUser ? "New password (optional)" : "Password *"}
             <input
               className="adm-form-input"
               type="password"
@@ -372,6 +471,14 @@ const AdminUsers = () => {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder={editUser ? "Leave blank to keep current" : "Account password"}
             />
+          </label>
+          <label className="adm-check">
+            <input
+              type="checkbox"
+              checked={form.verified}
+              onChange={(e) => setForm({ ...form, verified: e.target.checked })}
+            />
+            Email verified
           </label>
           <div className="adm-form-actions">
             <button
@@ -427,6 +534,22 @@ const AdminUsers = () => {
           >
             Suspend
           </button>
+        </div>
+      </Modal>
+
+      {/* Profile photo popup */}
+      <Modal
+        isOpen={!!photoView}
+        onClose={() => setPhotoView(null)}
+        title={`Photo — ${photoView?.name || "user"}`}
+        size="small"
+      >
+        <div className="adm-photo-view">
+          {photoView?.avatar ? (
+            <img src={photoView.avatar} alt={photoView.name} />
+          ) : (
+            <p className="adm-empty">This user has no profile photo.</p>
+          )}
         </div>
       </Modal>
 

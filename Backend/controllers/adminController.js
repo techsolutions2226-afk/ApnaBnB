@@ -6,6 +6,46 @@ const { logActivity } = require('../utils/activityLogger');
 // ── Shared selectors ──────────────────────────────────────────────────────
 const userSelect = { omit: { password: true } };
 
+// Everything the admin Users tab shows per row: profile fields, listing/
+// requirement counts and the user's latest APPROVED plan (subscription).
+const adminUserListSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  viewRole: true,
+  verified: true,
+  suspended: true,
+  avatar: true,
+  phone: true,
+  location: true,
+  emergencyContact: true,
+  lastSeenAt: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { listings: true, requirements: true } },
+  payments: {
+    where: { status: 'approved' },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: {
+      planId: true,
+      planName: true,
+      billingCycle: true,
+      amount: true,
+      currency: true,
+      createdAt: true,
+    },
+  },
+};
+
+// Attach the latest approved payment as a flat `plan` field (or null).
+const withPlan = (u) => ({
+  ...u,
+  plan: u.payments && u.payments.length > 0 ? u.payments[0] : null,
+  payments: undefined,
+});
+
 const listedBySelect = {
   select: { id: true, name: true, email: true, role: true, avatar: true },
 };
@@ -44,6 +84,9 @@ const buildUserData = (body) => {
   if (body.role !== undefined) data.role = body.role;
   if (body.phone !== undefined) data.phone = body.phone;
   if (body.location !== undefined) data.location = body.location;
+  if (body.emergencyContact !== undefined) data.emergencyContact = body.emergencyContact;
+  if (body.avatar !== undefined) data.avatar = body.avatar;
+  if (body.verified !== undefined) data.verified = Boolean(body.verified);
   return data;
 };
 
@@ -171,16 +214,17 @@ const getAllUsers = async (req, res, next) => {
     }
 
     const { page, limit, skip, take } = parseAdminPagination(req);
-    const [users, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        ...userSelect,
+        select: adminUserListSelect,
         orderBy: { createdAt: 'desc' },
         skip,
         take,
       }),
       prisma.user.count({ where }),
     ]);
+    const users = rows.map(withPlan);
 
     res.status(200).json({
       users,
@@ -198,14 +242,52 @@ const getUserById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const user = await prisma.user.findUnique({ where: { id }, ...userSelect });
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        ...adminUserListSelect,
+        // Their listings with enough property context to identify each row.
+        // IDs are rendered as clickable links to /listing/:id on the client.
+        listings: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            views: true,
+            inquiries: true,
+            createdAt: true,
+            property: {
+              select: {
+                id: true,
+                title: true,
+                purpose: true,
+                category: true,
+                price: true,
+                photos: true,
+              },
+            },
+          },
+        },
+        requirements: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            purpose: true,
+            propertyType: true,
+            budget: true,
+            location: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const [listings, requirements, matches, activity] = await Promise.all([
-      prisma.property.count({ where: { listedById: id } }),
-      prisma.requirement.count({ where: { requiredById: id } }),
+    const [matchesCount, activity] = await Promise.all([
       prisma.match.count({ where: { initiatorId: id } }),
       prisma.activityLog.findMany({
         where: { userId: id },
@@ -215,8 +297,13 @@ const getUserById = async (req, res, next) => {
     ]);
 
     res.status(200).json({
-      user,
-      activity: { listings, requirements, matches, logs: activity },
+      user: withPlan(user),
+      activity: {
+        listings: user.listings.length,
+        requirements: user.requirements.length,
+        matches: matchesCount,
+        logs: activity,
+      },
     });
   } catch (error) {
     next(error);
@@ -267,12 +354,15 @@ const createUser = async (req, res, next) => {
   }
 };
 
-// Edit user (name/email/role/phone/location)
+// Edit user (name/email/role/phone/location/avatar/verified + optional
+// password reset).
 const updateUser = async (req, res, next) => {
   const { id } = req.params;
 
   try {
     const data = buildUserData(req.body);
+    // Optional password reset — admin types a new password to override it.
+    if (req.body.password) data.password = await bcrypt.hash(String(req.body.password), 10);
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ message: 'Nothing to update.' });
     }

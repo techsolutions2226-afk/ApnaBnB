@@ -885,6 +885,27 @@
   background: #127a45;
 }
 
+/* Active-plan variant — green tinted banner shown when the user's latest
+   payment (server-side) is approved. */
+.dash-sub-plan--active {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #e9f7ef;
+  border: 1px solid #bfe5cf;
+  border-radius: 14px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.dash-sub-plan-text {
+  font-size: 14px;
+  color: #127a45;
+  font-weight: 600;
+}
+
 /* ══════════════════════════════════════
    BREADCRUMB (shared across all internal pages)
    ══════════════════════════════════════ */
@@ -1097,4 +1118,31 @@
   .dash-table .dash-badge {
     white-space: nowrap;
   }
+}
+/* Free-plan variant — shown when the role has an admin-created free plan */
+.dash-sub-plan--free {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #eef4ff;
+  border: 1px solid #c9dcf7;
+  border-radius: 14px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.dash-sub-free-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px !important;
+  border: none;
+  cursor: pointer;
+}
+
+.dash-sub-free-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

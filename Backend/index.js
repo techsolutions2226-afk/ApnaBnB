@@ -88,6 +88,10 @@ const tripRoutes = require("./routes/tripRoutes");
 app.use("/api/trips", tripRoutes);
 const wishlistRoutes = require("./routes/wishlistRoutes");
 app.use("/api/wishlists", wishlistRoutes);
+const paymentRoutes = require("./routes/paymentRoutes");
+app.use("/api/payments", paymentRoutes);
+const planRoutes = require("./routes/planRoutes");
+app.use("/api/plans", planRoutes);
 
 // Global error handler
 app.use(errorHandler);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiCheck,
@@ -10,13 +10,12 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import { subscriptionPlans, getPlanById } from "../config/subscriptions";
 import {
   getEffectiveRole,
   roleRequiresPlan,
-  getSubscription,
-  activateSubscription,
 } from "../utils/subscription";
+import paymentService from "../services/paymentService";
+import planService from "../services/planService";
 import Modal from "../components/common/Modal";
 import Breadcrumb from "../components/common/Breadcrumb";
 import "../styles/Plans.css";
@@ -85,7 +84,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "What payment methods are accepted?",
-    a: "Payment gateway integration is coming soon. Once live, we will support JazzCash, EasyPaisa, bank transfers, and credit/debit cards. For now, plans can be activated by contacting our support team.",
+    a: "For now we accept EasyPaisa — scan the QR code shown after you pick a plan, send the amount, and upload your payment screenshot. Your plan activates instantly. JazzCash, bank transfers, and cards are coming soon.",
   },
   {
     q: "What happens if I cancel?",
@@ -99,7 +98,8 @@ const FAQ_ITEMS = [
 
 /* ─── Component ─── */
 export default function Plans() {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, subscription, refreshSubscription } =
+    useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from"); // where to return after subscribing
@@ -107,17 +107,53 @@ export default function Plans() {
   const [billing, setBilling] = useState("monthly"); /* monthly | yearly */
   const [openFaq, setOpenFaq] = useState(null);
   const [payModal, setPayModal] = useState(null); /* plan being paid for, or null */
+  const [proofFile, setProofFile] = useState(null); /* the actual File for upload */
   const [proofPreview, setProofPreview] = useState(null); /* screenshot preview URL */
   const [proofName, setProofName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [qrError, setQrError] = useState(false);
   const [successPlan, setSuccessPlan] = useState(null);
 
-  /* ── Who pays: sellers & dealers. Buyers are free. ── */
+  /* ── Dynamic plans (admin-managed, one tier set per role) ── */
+  const ROLE_TABS = [
+    { value: "dealer", label: "For Dealers" },
+    { value: "seller", label: "For Sellers" },
+    { value: "buyer", label: "For Buyers" },
+  ];
   const effectiveRole = getEffectiveRole(currentUser);
   const paysForPlan = isAuthenticated && roleRequiresPlan(effectiveRole);
-  const mySub = isAuthenticated ? getSubscription(currentUser?.id) : null;
-  const currentPlan = mySub?.planId ? getPlanById(mySub.planId) : null;
+  const [roleTab, setRoleTab] = useState(
+    ["seller", "buyer", "dealer"].includes(effectiveRole) ? effectiveRole : "dealer",
+  );
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPlansLoading(true);
+    planService
+      .getPlans(roleTab)
+      .then((data) => {
+        if (!cancelled) setPlans(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          toast.error("Could not load plans. Please refresh.");
+          setPlans([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPlansLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [roleTab]);
+
+  // Server-driven subscription state (AuthContext fetched /payments/status).
+  // Payments snapshot planId + planName, so the banner needs no lookup.
+  const mySub = subscription?.plan || null;
+  const currentPlanId = mySub?.planId || null;
 
   /* ── Price formatting ── */
   const formatPrice = (amount) =>
@@ -126,6 +162,25 @@ export default function Plans() {
   const getDisplayPrice = (plan) =>
     billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
 
+  /* A plan is FREE when the admin sets both prices to 0 — one-click
+     activation, no QR / screenshot needed. */
+  const isFreePlan = (p) =>
+    Number(p.monthlyPrice) === 0 && Number(p.yearlyPrice) === 0;
+
+  const activateFreePlan = async (plan) => {
+    setSubmitting(true);
+    try {
+      await paymentService.activateFree(plan.id);
+      await refreshSubscription();
+      toast.success(`${plan.name} plan activated — enjoy!`);
+      if (from) navigate(decodeURIComponent(from), { replace: true });
+    } catch (err) {
+      toast.error(err?.message || "Could not activate the free plan.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   /* ── Handlers ── */
   const handleSelectPlan = (plan) => {
     if (!isAuthenticated) {
@@ -133,11 +188,14 @@ export default function Plans() {
       navigate("/login");
       return;
     }
-    if (!paysForPlan) {
+    if (!paysForPlan && !isFreePlan(plan)) {
       toast.info("Buyers use the platform for free — no plan needed!");
       return;
     }
-    if (currentPlan?.id === plan.id) return;
+    if (currentPlanId === plan.id) return;
+    // Free plans skip the payment modal entirely.
+    if (isFreePlan(plan)) return activateFreePlan(plan);
+    setProofFile(null);
     setProofPreview(null);
     setProofName("");
     setQrError(false);
@@ -156,6 +214,7 @@ export default function Plans() {
       return;
     }
     if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setProofFile(file);
     setProofPreview(URL.createObjectURL(file));
     setProofName(file.name);
   };
@@ -163,37 +222,43 @@ export default function Plans() {
   const closePayModal = () => {
     if (proofPreview) URL.revokeObjectURL(proofPreview);
     setPayModal(null);
+    setProofFile(null);
     setProofPreview(null);
     setProofName("");
   };
 
-  const handleSubmitPayment = () => {
+  const handleSubmitPayment = async () => {
     if (!payModal) return;
-    if (!proofName) {
+    if (!proofFile) {
       toast.error("Upload your EasyPaisa payment screenshot first.");
       return;
     }
     setSubmitting(true);
-    // Demo: mark the plan active locally (no payment gateway). A real backend
-    // would store the screenshot for admin verification before activating.
-    activateSubscription(currentUser.id, {
-      planId: payModal.id,
-      planName: payModal.name,
-      slug: payModal.slug,
-      billing,
-      amount: getDisplayPrice(payModal),
-      currency: payModal.currency,
-      proofName,
-      submittedAt: new Date().toISOString(),
-    });
-    setSubmitting(false);
-    const plan = payModal;
-    closePayModal();
-    toast.success(`${plan.name} plan activated — messaging unlocked!`);
-    if (from) {
-      navigate(decodeURIComponent(from), { replace: true });
-    } else {
-      setSuccessPlan(plan);
+    try {
+      // Multipart submit — the backend re-validates the plan + recomputes the
+      // amount server-side, stores the Cloudinary proof URL and records the
+      // payment as approved (instant activation).
+      const formData = new FormData();
+      formData.append("planId", payModal.id);
+      formData.append("billingCycle", billing);
+      formData.append("proof", proofFile);
+      await paymentService.submit(formData);
+
+      // Re-pull the gate from the server so messaging unlocks everywhere.
+      await refreshSubscription();
+
+      const plan = payModal;
+      closePayModal();
+      toast.success(`${plan.name} plan activated — messaging unlocked!`);
+      if (from) {
+        navigate(decodeURIComponent(from), { replace: true });
+      } else {
+        setSuccessPlan(plan);
+      }
+    } catch (err) {
+      toast.error(err?.message || "Payment submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -216,7 +281,7 @@ export default function Plans() {
       />
 
       {/* ── "Unlock messaging" prompt (shown when bounced here from chat) ── */}
-      {from && paysForPlan && !currentPlan && (
+      {from && paysForPlan && !mySub && (
         <div className="plan-gate-note">
           <FiAward size={18} />
           <span>
@@ -234,21 +299,21 @@ export default function Plans() {
       )}
 
       {/* ── Current Plan Banner (subscribed sellers / dealers) ── */}
-      {paysForPlan && currentPlan && (
+      {paysForPlan && mySub && (
         <div className="plan-current">
           <div className="plan-current-icon">
             <FiAward size={24} />
           </div>
           <div className="plan-current-info">
             <p className="plan-current-title">
-              Your current plan: {currentPlan.name}
+              Your current plan: {mySub.planName}
             </p>
             <p className="plan-current-meta">
-              {mySub?.billing === "yearly" ? "Yearly" : "Monthly"} billing
-              {mySub?.submittedAt ? (
+              {mySub?.billingCycle === "yearly" ? "Yearly" : "Monthly"} billing
+              {mySub?.activatedAt ? (
                 <>
                   {" "}&middot; Activated{" "}
-                  {new Date(mySub.submittedAt).toLocaleDateString("en-US", {
+                  {new Date(mySub.activatedAt).toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
                     year: "numeric",
@@ -273,6 +338,22 @@ export default function Plans() {
           anytime as your needs evolve.
         </p>
 
+        {/* Role tabs — each role has its own tier set (admin-managed) */}
+        <div className="plan-toggle plan-toggle--roles">
+          {ROLE_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              className={`plan-toggle-btn${roleTab === tab.value ? " plan-toggle-btn--active" : ""}`}
+              onClick={() => setRoleTab(tab.value)}
+            >
+              {tab.label}
+              {roleRequiresPlan(tab.value) && isAuthenticated && effectiveRole === tab.value
+                ? " (you)"
+                : ""}
+            </button>
+          ))}
+        </div>
+
         {/* Billing toggle */}
         <div className="plan-toggle">
           <button
@@ -291,10 +372,17 @@ export default function Plans() {
         </div>
       </div>
 
-      {/* ── Pricing Cards ── */}
+      {/* ── Pricing Cards (dynamic, admin-managed) ── */}
       <div className="plan-cards">
-        {subscriptionPlans.map((plan) => {
-          const isCurrent = currentPlan?.id === plan.id;
+        {plansLoading ? (
+          <p className="plan-empty-note">Loading plans…</p>
+        ) : plans.length === 0 ? (
+          <p className="plan-empty-note">
+            No {roleTab} plans available yet — check back soon.
+          </p>
+        ) : (
+          plans.map((plan) => {
+          const isCurrent = currentPlanId === plan.id;
           const isPopular = plan.popular && !isCurrent;
 
           return (
@@ -311,21 +399,29 @@ export default function Plans() {
 
               <h3 className="plan-card-name">{plan.name}</h3>
               <p className="plan-card-desc">
-                {PLAN_DESCRIPTIONS[plan.slug]}
+                {plan.description || PLAN_DESCRIPTIONS[plan.slug] || ""}
               </p>
 
               <div className="plan-card-price">
-                <span className="plan-card-currency">{plan.currency}</span>
-                <span className="plan-card-amount">
-                  {Number(
-                    billing === "yearly"
-                      ? Math.round(plan.yearlyPrice / 12)
-                      : plan.monthlyPrice,
-                  ).toLocaleString()}
-                </span>
+                {isFreePlan(plan) ? (
+                  <>
+                    <span className="plan-card-amount">Free</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="plan-card-currency">{plan.currency}</span>
+                    <span className="plan-card-amount">
+                      {Number(
+                        billing === "yearly"
+                          ? Math.round(plan.yearlyPrice / 12)
+                          : plan.monthlyPrice,
+                      ).toLocaleString()}
+                    </span>
+                  </>
+                )}
               </div>
-              <p className="plan-card-period">/month</p>
-              {billing === "yearly" && (
+              {!isFreePlan(plan) && <p className="plan-card-period">/month</p>}
+              {!isFreePlan(plan) && billing === "yearly" && (
                 <p className="plan-card-yearly-note">
                   Billed as {formatPrice(plan.yearlyPrice)} per year
                 </p>
@@ -344,17 +440,26 @@ export default function Plans() {
               >
                 {isCurrent
                   ? "Current plan"
-                  : currentPlan
-                    ? plan.monthlyPrice > currentPlan.monthlyPrice
-                      ? "Upgrade"
-                      : "Downgrade"
-                    : "Get started"}
+                  : isFreePlan(plan)
+                    ? submitting
+                      ? "Activating…"
+                      : "Activate Free"
+                    : mySub
+                      ? plan.monthlyPrice >
+                        (mySub.billingCycle === "yearly"
+                          ? mySub.amount / 12
+                          : mySub.amount)
+                        ? "Upgrade"
+                        : "Downgrade"
+                      : roleTab === effectiveRole && paysForPlan
+                        ? "Get started"
+                        : "Select"}
               </button>
 
               <hr className="plan-card-divider" />
 
               <ul className="plan-card-features">
-                {plan.features.map((f, i) => (
+                {(plan.features || []).map((f, i) => (
                   <li
                     key={i}
                     className={`plan-card-feature${!f.included ? " plan-card-feature--excluded" : ""}`}
@@ -374,10 +479,15 @@ export default function Plans() {
               </ul>
             </div>
           );
-        })}
+          })
+        )}
       </div>
 
-      {/* ── Feature Comparison Table ── */}
+      {/* ── Feature Comparison Table (dealer legacy tiers only) ── */}
+      {roleTab === "dealer" &&
+        plans.some((p) => p.slug === "basic") &&
+        plans.some((p) => p.slug === "pro") &&
+        plans.some((p) => p.slug === "premium") && (
       <div className="plan-comparison">
         <h2 className="plan-comparison-title">Compare plans in detail</h2>
         <table className="plan-comparison-table">
@@ -416,6 +526,7 @@ export default function Plans() {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* ── FAQ ── */}
       <div className="plan-faq">
@@ -495,16 +606,16 @@ export default function Plans() {
               <li>Upload it here and press <strong>Submit</strong> to unlock messaging.</li>
             </ol>
 
-            {/* EasyPaisa QR — drop your QR at client/public/easypaisa-qr.png */}
+            {/* EasyPaisa QR — served from client/public/easypaisa-qr.jpg */}
             <div className="plan-pay-qr">
               {qrError ? (
                 <div className="plan-pay-qr-fallback">
-                  Add your EasyPaisa QR image at
-                  <code>client/public/easypaisa-qr.png</code>
+                  QR image missing — add it at
+                  <code>client/public/easypaisa-qr.jpg</code>
                 </div>
               ) : (
                 <img
-                  src="/easypaisa-qr.png"
+                  src="/easypaisa-qr.jpg"
                   alt="EasyPaisa payment QR code"
                   onError={() => setQrError(true)}
                 />

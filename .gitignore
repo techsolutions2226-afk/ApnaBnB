@@ -25,3 +25,11 @@ Thumbs.db
 nul.css
 nul.*
 
+# AI / IDE files
+.claude/
+.opencode/
+
+prompts.md
+
+# Graphify analysis output (regenerable)
+graphify-out/

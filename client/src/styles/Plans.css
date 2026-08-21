@@ -715,3 +715,102 @@
     font-size: 20px;
   }
 }
+
+/* ─── Paywall gate notices ─── */
+.plan-gate-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1120px;
+  margin: 0 auto 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #fff7e6;
+  border: 1px solid #ffe1a8;
+  color: #8a5a00;
+  font-size: 14px;
+  font-weight: 600;
+}
+.plan-gate-note--free {
+  background: #e9f7ef;
+  border-color: #b6e2c6;
+  color: #1e7e34;
+}
+
+/* ─── EasyPaisa payment modal ─── */
+.plan-pay-steps {
+  margin: 14px 0;
+  padding-left: 20px;
+  color: #444;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.plan-pay-steps li { margin-bottom: 2px; }
+
+.plan-pay-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: #f7f9fb;
+  border: 1px solid #e6ebf0;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+.plan-pay-qr img {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+}
+.plan-pay-qr-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  color: #8a93a0;
+  font-size: 13px;
+  padding: 30px 12px;
+}
+.plan-pay-qr-fallback code {
+  font-size: 12px;
+  background: #eef2f6;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: #445;
+}
+
+.plan-pay-upload {
+  display: block;
+  border: 2px dashed #cfd8e3;
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.plan-pay-upload:hover {
+  border-color: #1a8f5a;
+  background: #f6fbf8;
+}
+.plan-pay-upload-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #1a8f5a;
+  font-size: 14px;
+  font-weight: 700;
+}
+.plan-pay-proof {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.plan-pay-proof-name {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: #667;
+  text-align: center;
+  word-break: break-all;
+}

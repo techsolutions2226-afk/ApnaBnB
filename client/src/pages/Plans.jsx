@@ -1,19 +1,22 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FiCheck,
   FiX,
   FiChevronDown,
   FiAward,
   FiCheckCircle,
+  FiUploadCloud,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import { subscriptionPlans, getPlanById } from "../config/subscriptions";
 import {
-  subscriptionPlans,
-  getSubscriptionByUserId,
-  getPlanById,
-} from "../config/subscriptions";
+  getEffectiveRole,
+  roleRequiresPlan,
+  getSubscription,
+  activateSubscription,
+} from "../utils/subscription";
 import Modal from "../components/common/Modal";
 import Breadcrumb from "../components/common/Breadcrumb";
 import "../styles/Plans.css";
@@ -98,18 +101,23 @@ const FAQ_ITEMS = [
 export default function Plans() {
   const { currentUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get("from"); // where to return after subscribing
 
   const [billing, setBilling] = useState("monthly"); /* monthly | yearly */
   const [openFaq, setOpenFaq] = useState(null);
-  const [confirmModal, setConfirmModal] = useState(null); /* plan object or null */
+  const [payModal, setPayModal] = useState(null); /* plan being paid for, or null */
+  const [proofPreview, setProofPreview] = useState(null); /* screenshot preview URL */
+  const [proofName, setProofName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [qrError, setQrError] = useState(false);
   const [successPlan, setSuccessPlan] = useState(null);
 
-  /* ── Current subscription for logged-in dealers ── */
-  const isDealer = isAuthenticated && currentUser?.role === "dealer";
-  const activeSub = isDealer
-    ? getSubscriptionByUserId(currentUser.id)
-    : null;
-  const currentPlan = activeSub ? getPlanById(activeSub.planId) : null;
+  /* ── Who pays: sellers & dealers. Buyers are free. ── */
+  const effectiveRole = getEffectiveRole(currentUser);
+  const paysForPlan = isAuthenticated && roleRequiresPlan(effectiveRole);
+  const mySub = isAuthenticated ? getSubscription(currentUser?.id) : null;
+  const currentPlan = mySub?.planId ? getPlanById(mySub.planId) : null;
 
   /* ── Price formatting ── */
   const formatPrice = (amount) =>
@@ -118,9 +126,6 @@ export default function Plans() {
   const getDisplayPrice = (plan) =>
     billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
 
-  const getPerLabel = (plan) =>
-    billing === "yearly" ? "/year" : "/month";
-
   /* ── Handlers ── */
   const handleSelectPlan = (plan) => {
     if (!isAuthenticated) {
@@ -128,20 +133,68 @@ export default function Plans() {
       navigate("/login");
       return;
     }
-    if (currentUser?.role !== "dealer") {
-      toast.error("Subscriptions are for dealers only. Sellers and buyers use the platform for free!");
+    if (!paysForPlan) {
+      toast.info("Buyers use the platform for free — no plan needed!");
       return;
     }
     if (currentPlan?.id === plan.id) return;
-    setConfirmModal(plan);
+    setProofPreview(null);
+    setProofName("");
+    setQrError(false);
+    setPayModal(plan);
   };
 
-  const handleConfirm = () => {
-    if (!confirmModal) return;
-    /* Mock subscription — no real payment */
-    setSuccessPlan(confirmModal);
-    setConfirmModal(null);
-    toast.success(`Subscribed to ${confirmModal.name} plan!`);
+  const handleProofChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image of your payment screenshot.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Screenshot must be 10 MB or smaller.");
+      return;
+    }
+    if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setProofPreview(URL.createObjectURL(file));
+    setProofName(file.name);
+  };
+
+  const closePayModal = () => {
+    if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setPayModal(null);
+    setProofPreview(null);
+    setProofName("");
+  };
+
+  const handleSubmitPayment = () => {
+    if (!payModal) return;
+    if (!proofName) {
+      toast.error("Upload your EasyPaisa payment screenshot first.");
+      return;
+    }
+    setSubmitting(true);
+    // Demo: mark the plan active locally (no payment gateway). A real backend
+    // would store the screenshot for admin verification before activating.
+    activateSubscription(currentUser.id, {
+      planId: payModal.id,
+      planName: payModal.name,
+      slug: payModal.slug,
+      billing,
+      amount: getDisplayPrice(payModal),
+      currency: payModal.currency,
+      proofName,
+      submittedAt: new Date().toISOString(),
+    });
+    setSubmitting(false);
+    const plan = payModal;
+    closePayModal();
+    toast.success(`${plan.name} plan activated — messaging unlocked!`);
+    if (from) {
+      navigate(decodeURIComponent(from), { replace: true });
+    } else {
+      setSuccessPlan(plan);
+    }
   };
 
   const handleCloseSuccess = () => {
@@ -162,8 +215,26 @@ export default function Plans() {
         ]}
       />
 
-      {/* ── Current Plan Banner (dealers only) ── */}
-      {isDealer && currentPlan && (
+      {/* ── "Unlock messaging" prompt (shown when bounced here from chat) ── */}
+      {from && paysForPlan && !currentPlan && (
+        <div className="plan-gate-note">
+          <FiAward size={18} />
+          <span>
+            Choose a plan and complete payment to unlock messaging and the Deal Room.
+          </span>
+        </div>
+      )}
+
+      {/* ── Buyers don't pay ── */}
+      {isAuthenticated && !paysForPlan && (
+        <div className="plan-gate-note plan-gate-note--free">
+          <FiCheckCircle size={18} />
+          <span>You're a buyer — messaging is free, no plan needed.</span>
+        </div>
+      )}
+
+      {/* ── Current Plan Banner (subscribed sellers / dealers) ── */}
+      {paysForPlan && currentPlan && (
         <div className="plan-current">
           <div className="plan-current-icon">
             <FiAward size={24} />
@@ -173,13 +244,17 @@ export default function Plans() {
               Your current plan: {currentPlan.name}
             </p>
             <p className="plan-current-meta">
-              {activeSub.billing === "yearly" ? "Yearly" : "Monthly"} billing
-              &middot; Renews{" "}
-              {new Date(activeSub.endDate).toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {mySub?.billing === "yearly" ? "Yearly" : "Monthly"} billing
+              {mySub?.submittedAt ? (
+                <>
+                  {" "}&middot; Activated{" "}
+                  {new Date(mySub.submittedAt).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </>
+              ) : null}
             </p>
           </div>
           <span className="plan-current-status">
@@ -221,7 +296,6 @@ export default function Plans() {
         {subscriptionPlans.map((plan) => {
           const isCurrent = currentPlan?.id === plan.id;
           const isPopular = plan.popular && !isCurrent;
-          const price = getDisplayPrice(plan);
 
           return (
             <div
@@ -373,8 +447,8 @@ export default function Plans() {
           find better matches, and grow their client base.
         </p>
         {isAuthenticated ? (
-          isDealer ? (
-            <Link to="/dashboard/dealer" className="plan-bottom-cta-btn">
+          paysForPlan ? (
+            <Link to={`/dashboard/${effectiveRole}`} className="plan-bottom-cta-btn">
               Go to Dashboard
             </Link>
           ) : (
@@ -389,23 +463,18 @@ export default function Plans() {
         )}
       </div>
 
-      {/* ── Confirmation Modal ── */}
+      {/* ── EasyPaisa Payment Modal ── */}
       <Modal
-        isOpen={!!confirmModal}
-        onClose={() => setConfirmModal(null)}
-        title="Confirm subscription"
+        isOpen={!!payModal}
+        onClose={closePayModal}
+        title="Pay with EasyPaisa"
       >
-        {confirmModal && (
-          <div>
-            <p className="plan-modal-plan-name">{confirmModal.name} Plan</p>
-            <p className="plan-modal-plan-price">
-              {billing === "yearly" ? "Yearly" : "Monthly"} billing
-            </p>
-
+        {payModal && (
+          <div className="plan-pay">
             <div className="plan-modal-details">
               <div className="plan-modal-row">
                 <span className="plan-modal-label">Plan</span>
-                <span className="plan-modal-value">{confirmModal.name}</span>
+                <span className="plan-modal-value">{payModal.name}</span>
               </div>
               <div className="plan-modal-row">
                 <span className="plan-modal-label">Billing cycle</span>
@@ -415,27 +484,56 @@ export default function Plans() {
               </div>
               <div className="plan-modal-divider" />
               <div className="plan-modal-row plan-modal-total">
-                <span>Total</span>
-                <span>{formatPrice(getDisplayPrice(confirmModal))}</span>
+                <span>Amount to pay</span>
+                <span>{formatPrice(getDisplayPrice(payModal))}</span>
               </div>
             </div>
 
-            <p className="plan-modal-note">
-              <strong>Note:</strong> Payment gateway integration is coming soon.
-              This will simulate plan activation for demonstration purposes.
-            </p>
+            <ol className="plan-pay-steps">
+              <li>Scan the EasyPaisa QR below and pay the amount shown.</li>
+              <li>Take a screenshot of your payment confirmation.</li>
+              <li>Upload it here and press <strong>Submit</strong> to unlock messaging.</li>
+            </ol>
+
+            {/* EasyPaisa QR — drop your QR at client/public/easypaisa-qr.png */}
+            <div className="plan-pay-qr">
+              {qrError ? (
+                <div className="plan-pay-qr-fallback">
+                  Add your EasyPaisa QR image at
+                  <code>client/public/easypaisa-qr.png</code>
+                </div>
+              ) : (
+                <img
+                  src="/easypaisa-qr.png"
+                  alt="EasyPaisa payment QR code"
+                  onError={() => setQrError(true)}
+                />
+              )}
+            </div>
+
+            {/* Screenshot upload */}
+            <label className="plan-pay-upload">
+              <input type="file" accept="image/*" onChange={handleProofChange} hidden />
+              {proofPreview ? (
+                <img className="plan-pay-proof" src={proofPreview} alt="Payment screenshot preview" />
+              ) : (
+                <span className="plan-pay-upload-cta">
+                  <FiUploadCloud size={22} />
+                  Upload payment screenshot
+                </span>
+              )}
+            </label>
+            {proofName && <p className="plan-pay-proof-name">{proofName}</p>}
 
             <div className="plan-modal-actions">
               <button
                 className="plan-modal-confirm"
-                onClick={handleConfirm}
+                onClick={handleSubmitPayment}
+                disabled={submitting || !proofName}
               >
-                Confirm &amp; Activate
+                {submitting ? "Submitting…" : "Submit"}
               </button>
-              <button
-                className="plan-modal-cancel"
-                onClick={() => setConfirmModal(null)}
-              >
+              <button className="plan-modal-cancel" onClick={closePayModal}>
                 Cancel
               </button>
             </div>
@@ -468,12 +566,12 @@ export default function Plans() {
               features. When the payment gateway is integrated, billing will
               be handled automatically.
             </p>
-            {isDealer ? (
+            {paysForPlan ? (
               <button
                 className="plan-success-btn"
                 onClick={() => {
                   handleCloseSuccess();
-                  navigate("/dashboard/dealer");
+                  navigate(`/dashboard/${effectiveRole}`);
                 }}
               >
                 Go to Dashboard

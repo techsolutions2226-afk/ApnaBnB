@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   FiSearch, FiPaperclip, FiFileText, FiSend, FiArrowLeft, FiDownload,
@@ -29,6 +29,7 @@ import messageService from "../services/messageService";
 import matchService from "../services/matchService";
 import blockService from "../services/blockService";
 import uploadService from "../services/uploadService";
+import { isMessagingUnlocked } from "../utils/subscription";
 import DealRoomPanel from "../components/messages/DealRoomPanel";
 import ImageLightbox from "../components/messages/ImageLightbox";
 import EmojiPicker from "../components/messages/EmojiPicker";
@@ -183,9 +184,23 @@ const PinIcon = ({ size = 14 }) => (
 /* ── Component ─────────────────────────────────────────── */
 const Messages = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const socket = useSocket();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Paywall: sellers & dealers need an active plan to use messaging / the Deal
+  // Room (buyers are free). Un-paid users are bounced to the Plans page, keeping
+  // their intended destination so they land back here after subscribing.
+  const messagingUnlocked = isMessagingUnlocked(currentUser);
+  useEffect(() => {
+    if (currentUser && !messagingUnlocked) {
+      const from = encodeURIComponent(location.pathname + location.search);
+      toast.info("Subscribe to a plan to unlock messaging.");
+      navigate(`/plans?from=${from}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, messagingUnlocked]);
 
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -287,6 +302,8 @@ const Messages = () => {
 
   /* ── initial fetch + URL opening ── */
   useEffect(() => {
+    // Skip loading anything for locked users — they're being redirected to /plans.
+    if (currentUser && !messagingUnlocked) return;
     let cancelled = false;
     setLoadingConvs(true);
 
@@ -1170,6 +1187,9 @@ const Messages = () => {
   }, [chatSearchQuery, runChatSearch]);
 
   /* ── render ── */
+  // Locked users are being redirected to /plans — render nothing meanwhile.
+  if (currentUser && !messagingUnlocked) return null;
+
   return (
     <div className={`msg-shell ${activeId ? "msg-shell--has-active" : ""}`}>
       {/* ══ Left: conversation sidebar ══ */}

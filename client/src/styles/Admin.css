@@ -536,6 +536,36 @@
   margin-top: 2px;
 }
 
+/* Reverse-geocoded addresses can be long ("Sadiqabad, Metropolitan
+   Corporation Rawalpindi"), so cap the column and ellipsize rather than
+   letting one row widen the whole table. Full value stays in the title. */
+.adm-user-location {
+  max-width: 220px;
+}
+
+.adm-user-location-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Coordinates, when the user signed up with "use my location". */
+.adm-user-coords {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8a9aaa;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.adm-user-coords:hover {
+  color: #1a8f5a;
+  text-decoration: underline;
+}
+
 .adm-muted {
   color: #a6b4c2;
 }

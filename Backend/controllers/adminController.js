@@ -19,6 +19,8 @@ const adminUserListSelect = {
   avatar: true,
   phone: true,
   location: true,
+  latitude: true,
+  longitude: true,
   emergencyContact: true,
   lastSeenAt: true,
   createdAt: true,

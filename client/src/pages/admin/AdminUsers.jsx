@@ -235,7 +235,7 @@ const AdminUsers = () => {
           <table className="adm-table adm-table--wide">
             <thead>
               <tr>
-                <th>User</th>
+                <th>Full Name</th>
                 <th>Photo</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -243,6 +243,7 @@ const AdminUsers = () => {
                 <th>Listings</th>
                 <th>Requirements</th>
                 <th>Phone</th>
+                <th>Location</th>
                 <th>Verified</th>
                 <th>Suspended</th>
                 <th>Joined</th>
@@ -263,9 +264,6 @@ const AdminUsers = () => {
                         </div>
                         <div className="adm-user-info">
                           <span className="adm-user-name">{user.name}</span>
-                          <span className="adm-table-sub">
-                            {user.location || "No location"}
-                          </span>
                         </div>
                       </div>
                     </td>
@@ -303,6 +301,32 @@ const AdminUsers = () => {
                     <td>{listings}</td>
                     <td>{requirements}</td>
                     <td>{user.phone || <span className="adm-muted">—</span>}</td>
+                    <td>
+                      {user.location || user.latitude != null ? (
+                        <div className="adm-user-location">
+                          {user.location && (
+                            <span className="adm-user-location-text" title={user.location}>
+                              {user.location}
+                            </span>
+                          )}
+                          {/* Coordinates are only captured when the user opted
+                              into "use my location" at signup. */}
+                          {user.latitude != null && user.longitude != null && (
+                            <a
+                              className="adm-user-coords"
+                              href={`https://www.google.com/maps?q=${user.latitude},${user.longitude}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Open in Google Maps"
+                            >
+                              {user.latitude.toFixed(5)}, {user.longitude.toFixed(5)}
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="adm-muted">—</span>
+                      )}
+                    </td>
                     <td>
                       {user.verified ? (
                         <span className="adm-verified">

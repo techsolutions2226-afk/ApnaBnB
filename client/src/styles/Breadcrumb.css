@@ -1,0 +1,44 @@
+/* ===================================================
+   Breadcrumb.css — styles for the shared <Breadcrumb> component.
+
+   These rules previously lived only in Dashboard.css, so any page that used
+   <Breadcrumb> without also importing Dashboard.css (About, Contact, and the
+   hand-rolled trails) rendered an unstyled trail on a hard refresh. The
+   component now imports this file directly and is self-contained.
+
+   Values are identical to the Dashboard.css originals — this is a relocation,
+   not a restyle. Dashboard.css keeps its copy so pages loading both are
+   unaffected.
+   =================================================== */
+
+.dash-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.dash-breadcrumb-link {
+  color: #66788a;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.dash-breadcrumb-link:hover {
+  color: #1a8f5a;
+  text-decoration: underline;
+}
+
+.dash-breadcrumb-sep {
+  color: #b0b0b0;
+  font-weight: 400;
+  user-select: none;
+}
+
+.dash-breadcrumb-current {
+  color: #16324f;
+  font-weight: 600;
+}

@@ -13,6 +13,7 @@ import Breadcrumb from "../components/common/Breadcrumb";
 import contactService from "../services/contactService";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Contact.css";
+import "../styles/Common.css";
 
 /* ─── Contact Us ───
    Content is admin-editable: everything below the form comes from
@@ -107,7 +108,7 @@ const Contact = () => {
       <div className="cnt-page">
         <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
         <div className="cnt-loading">
-          <div className="auth-spinner" />
+          <div className="cm-spinner" />
           <p>Loading contact details…</p>
         </div>
       </div>

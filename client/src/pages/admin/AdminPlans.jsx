@@ -416,7 +416,7 @@ const AdminPlans = () => {
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleDelete}
-        onCancel={() => setDeleting(null)}
+        onClose={() => setDeleting(null)}
       />
     </div>
   );

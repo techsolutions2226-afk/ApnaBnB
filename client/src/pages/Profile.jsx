@@ -15,6 +15,7 @@ import {
   FiShield,
 } from "react-icons/fi";
 import "../styles/Profile.css";
+import "../styles/Common.css";
 
 export default function Profile() {
   const { id } = useParams();
@@ -87,7 +88,7 @@ export default function Profile() {
       <div className="pf-page">
         <div className="pf-container">
           <div style={{ padding: "40px", textAlign: "center" }}>
-            <div className="auth-spinner" style={{ margin: "0 auto 20px" }} />
+            <div className="cm-spinner" style={{ margin: "0 auto 20px" }} />
             <p>Loading profile...</p>
           </div>
         </div>

@@ -359,9 +359,71 @@
   max-width: 100%;
 }
 
-/* Trim the top gap since the shell already provides a top bar. */
-.dash-shell-content .dash-page {
+/* ── Unified tab geometry ──
+   Each routed tab was authored as a standalone page and brought its own
+   container: max-widths of 1080/1120/1400/none and horizontal padding of
+   24/40/48px, so content visibly jumped sideways on every tab change. The
+   shell owns the geometry now — one width, one gutter, one canvas — and the
+   per-page containers below are neutralised.
+
+   This generalises the previous one-off `.dash-shell-content .dash-page`
+   rule. Page-internal layout (cards, grids, headers) is untouched. */
+.dash-shell-content > * {
+  --dash-tab-max: 1180px;
+  --dash-tab-pad: 28px;
+}
+
+.dash-shell-content .dash-page,
+.dash-shell-content .ml-page,
+.dash-shell-content .mtch-page,
+.dash-shell-content .req-page,
+.dash-shell-content .lst-page,
+.dash-shell-content .wl-page,
+.dash-shell-content .tr-page,
+.dash-shell-content .ac-page,
+.dash-shell-content .plan-page {
+  max-width: var(--dash-tab-max);
+  margin: 0 auto;
   padding-top: 20px;
+  padding-right: var(--dash-tab-pad);
+  padding-bottom: 64px;
+  padding-left: var(--dash-tab-pad);
+}
+
+/* Inner wrappers that re-cap the width would re-introduce the drift. */
+.dash-shell-content .ml-page > *,
+.dash-shell-content .wl-container,
+.dash-shell-content .tr-container,
+.dash-shell-content .ac-container {
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* One canvas across every tab — MyListings' gradient and the white/grey
+   page backgrounds used to change the colour underfoot on each switch. */
+.dash-shell-content .ml-page,
+.dash-shell-content .wl-page,
+.dash-shell-content .tr-page,
+.dash-shell-content .ac-page,
+.dash-shell-content .req-page,
+.dash-shell-content .plan-page {
+  background: transparent;
+  min-height: 0;
+}
+
+/* Page titles were 32px on some tabs, 26px on the dashboard home. */
+.dash-shell-content .ml-title,
+.dash-shell-content .wl-title,
+.dash-shell-content .tr-title,
+.dash-shell-content .ac-title,
+.dash-shell-content .mtch-title,
+.dash-shell-content .req-title,
+.dash-shell-content .lst-title {
+  font-size: 26px;
+  letter-spacing: -0.3px;
 }
 
 .dash-shell-scrim {
@@ -370,6 +432,12 @@
 
 /* ── Responsive: sidebar becomes an off-canvas drawer ── */
 @media (max-width: 900px) {
+  /* Shrink the shared gutter once, rather than letting each tab pick its own
+     (they previously ranged 12-20px on mobile). */
+  .dash-shell-content > * {
+    --dash-tab-pad: 16px;
+  }
+
   .dash-shell-main {
     margin-left: 0;
   }
@@ -402,5 +470,20 @@
   }
   .dash-shell-roleselect-label {
     display: none;
+  }
+}
+@media (max-width: 480px) {
+  .dash-shell-content > * {
+    --dash-tab-pad: 12px;
+  }
+
+  .dash-shell-content .ml-title,
+  .dash-shell-content .wl-title,
+  .dash-shell-content .tr-title,
+  .dash-shell-content .ac-title,
+  .dash-shell-content .mtch-title,
+  .dash-shell-content .req-title,
+  .dash-shell-content .lst-title {
+    font-size: 22px;
   }
 }

@@ -31,6 +31,7 @@ import {
 } from "react-icons/fi";
 import "../styles/Dashboard.css";
 import "../styles/MyListings.css";
+import "../styles/Common.css";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -93,7 +94,7 @@ const MyRequirements = () => {
     return (
       <div className="ml-page">
         <div style={{ padding: "40px", textAlign: "center" }}>
-          <div className="auth-spinner" style={{ margin: "0 auto 20px" }} />
+          <div className="cm-spinner" style={{ margin: "0 auto 20px" }} />
           <p>Loading your requirements...</p>
         </div>
       </div>

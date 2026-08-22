@@ -68,9 +68,10 @@ const AdminUsers = () => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleSearch = (e) => {
+  // SearchInput is used with rawEvent={false}, so it hands us the value itself.
+  const handleSearch = (value) => {
     setPage(1);
-    setQuery(e.target.value);
+    setQuery(value);
   };
 
   const openCreate = () => {

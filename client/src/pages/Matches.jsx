@@ -15,6 +15,7 @@ import RefreshButton from "../components/common/RefreshButton";
 import useRefresh from "../hooks/useRefresh";
 import FilterTabs from "../components/common/FilterTabs";
 import "../styles/Match.css";
+import "../styles/Common.css";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
 
 const TYPE_LABELS = {
@@ -116,7 +117,7 @@ const Matches = () => {
           ]}
         />
         <div style={{ padding: 40, textAlign: "center" }}>
-          <div className="auth-spinner" style={{ margin: "0 auto 20px" }} />
+          <div className="cm-spinner" style={{ margin: "0 auto 20px" }} />
           <p>Loading your matches...</p>
         </div>
       </div>

@@ -1403,3 +1403,29 @@
     font-size: 13px;
   }
 }
+
+/* ── Page spinner ──
+   Pages outside the auth flow used to borrow .auth-spinner from Auth.css, which
+   (a) only rendered if Auth.css happened to be loaded by another route and
+   (b) is white-on-transparent — designed for a coloured button, invisible on a
+   light page. This one is self-contained and tinted for light backgrounds. */
+.cm-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid #dfe5ec;
+  border-top-color: #1a8f5a;
+  border-radius: 50%;
+  animation: cmSpin 0.6s linear infinite;
+}
+
+@keyframes cmSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-spinner {
+    animation-duration: 2s;
+  }
+}

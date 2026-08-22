@@ -31,6 +31,7 @@ import {
 } from "react-icons/fi";
 import "../styles/Dashboard.css";
 import "../styles/MyListings.css";
+import "../styles/Common.css";
 
 /* Filter options — driven by the property MODERATION status (the field admin
    sets and that controls public visibility), so what you see here matches the
@@ -146,7 +147,7 @@ const MyListings = () => {
     return (
       <div className="ml-page">
         <div style={{ padding: '40px', textAlign: 'center' }}>
-          <div className="auth-spinner" style={{ margin: '0 auto 20px' }} />
+          <div className="cm-spinner" style={{ margin: '0 auto 20px' }} />
           <p>Loading your listings...</p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 /* ─── Breadcrumb — Shared breadcrumb navigation ───
    Renders a Home → ... → Current breadcrumb trail.
-   Uses the existing `dash-breadcrumb*` CSS classes from Dashboard.css.
+   Self-contained: imports its own Breadcrumb.css so it renders correctly on
+   pages that don't import Dashboard.css (About, Contact, ...).
 
    Props:
      items — array of { label, to? }
@@ -9,12 +10,13 @@
    ─────────────────────────────────────────────── */
 
 import { Link } from "react-router-dom";
+import "../../styles/Breadcrumb.css";
 
 export default function Breadcrumb({ items = [] }) {
   if (items.length === 0) return null;
 
   return (
-    <nav className="dash-breadcrumb">
+    <nav className="dash-breadcrumb" aria-label="Breadcrumb">
       {items.map((item, idx) => {
         const isLast = idx === items.length - 1;
         return (

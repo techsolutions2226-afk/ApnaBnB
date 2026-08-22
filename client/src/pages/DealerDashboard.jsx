@@ -32,6 +32,7 @@ import { formatLocation } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
+import "../styles/Common.css";
 
 const DealerDashboard = () => {
   const { currentUser, subscription } = useAuth();
@@ -78,7 +79,7 @@ const DealerDashboard = () => {
     return (
       <div className="dash-page">
         <div className="dash-loading">
-          <div className="auth-spinner" style={{ margin: "0 auto 20px" }} />
+          <div className="cm-spinner" style={{ margin: "0 auto 20px" }} />
           <p className="dash-loading-text">Loading your dashboard…</p>
         </div>
       </div>
@@ -316,7 +317,7 @@ const DealerDashboard = () => {
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleConfirmDelete}
-        onCancel={() => {
+        onClose={() => {
           setDeleteModalOpen(false);
           setListingToDelete(null);
         }}

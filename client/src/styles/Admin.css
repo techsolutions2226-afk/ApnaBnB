@@ -123,7 +123,7 @@
 /* ── Breakdown grid ── */
 .adm-overview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
   gap: 16px;
   margin-bottom: 16px;
 }
@@ -319,8 +319,11 @@
 .adm-log-badge--activity { background: #fef3c7; color: #a16207; }
 .adm-log-badge--listing { background: #e3f5ec; color: #127a45; }
 
-.adm-log-count {
+.adm-log-count,
+.adm-section-count {
   margin: 6px 2px 10px;
+  font-size: 13px;
+  color: #66788a;
 }
 
 /* ── Toolbar ── */
@@ -463,6 +466,12 @@
   border-radius: 14px;
   overflow-x: auto;
   min-height: 100px;
+}
+
+/* Wide tables (e.g. the 12-column Users grid) need a floor so the parent
+   .adm-table-wrap's overflow-x actually engages instead of crushing columns. */
+.adm-table--wide {
+  min-width: 1100px;
 }
 
 .adm-table {
@@ -1535,4 +1544,15 @@ textarea.adm-form-input {
   max-height: 55vh;
   border-radius: 12px;
   object-fit: contain;
+}
+
+/* ── Touch devices: reveal hover-gated controls ──
+   .adm-chat-item-del and .adm-bubble-actions are opacity:0 until :hover, which
+   never fires on a touchscreen — leaving delete invisible but still tappable.
+   On coarse pointers show them permanently. */
+@media (hover: none), (pointer: coarse) {
+  .adm-chat-item-del,
+  .adm-bubble-actions {
+    opacity: 1;
+  }
 }

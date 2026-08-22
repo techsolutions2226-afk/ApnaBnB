@@ -638,11 +638,30 @@ const googleAuth = async (req, res, next) => {
 // POST /api/auth/google/complete — finish creating a brand-new Google account
 // once the client has chosen their role (Buyer/Seller/Dealer).
 const googleComplete = async (req, res, next) => {
-  const { idToken, role } = req.body;
+  const { idToken, role, phone, location } = req.body;
 
   const VALID_ROLES = ['seller', 'buyer', 'dealer'];
   if (!role || !VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Please select a valid role.' });
+  }
+
+  // Google's ID token carries no phone number or address, so the client
+  // collects them alongside the role. Validate here too — the client form is
+  // a convenience, not a trust boundary.
+  const cleanPhone = String(phone || '').trim();
+  if (!cleanPhone) {
+    return res.status(400).json({ message: 'Phone number is required.' });
+  }
+  if (!/^[+(\d][\d\s()-]{6,19}$/.test(cleanPhone)) {
+    return res.status(400).json({ message: 'Please enter a valid phone number.' });
+  }
+
+  const cleanLocation = String(location || '').trim();
+  if (!cleanLocation) {
+    return res.status(400).json({ message: 'Business address is required.' });
+  }
+  if (cleanLocation.length > 200) {
+    return res.status(400).json({ message: 'Address is too long (max 200 characters).' });
   }
 
   try {
@@ -669,6 +688,8 @@ const googleComplete = async (req, res, next) => {
         role,
         verified: true, // Google has already verified this email
         avatar: String(payload.picture || ''),
+        phone: cleanPhone,
+        location: cleanLocation,
       },
     });
 

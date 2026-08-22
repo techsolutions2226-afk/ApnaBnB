@@ -18,12 +18,8 @@ import { FcGoogle } from "react-icons/fc";
 import { openGooglePopup } from "../../utils/googleAuth";
 import { useAuth } from "../../context/AuthContext";
 import Modal from "./Modal";
+import GoogleSignupDetails from "./GoogleSignupDetails";
 
-const ROLE_OPTIONS = [
-  { value: "buyer", label: "Buyer", icon: "🏠", description: "I'm looking to buy or rent a property" },
-  { value: "seller", label: "Seller", icon: "🔑", description: "I own properties and want to list them" },
-  { value: "dealer", label: "Dealer / Agent", icon: "🤝", description: "I'm a real estate broker connecting buyers and sellers" },
-];
 
 const GoogleAuthButton = ({ className = "" }) => {
   const { googleSignIn, googleComplete, isLoading } = useAuth();
@@ -31,7 +27,6 @@ const GoogleAuthButton = ({ className = "" }) => {
 
   const [busy, setBusy] = useState(false);
   const [pendingRole, setPendingRole] = useState(null); // { idToken, profile }
-  const [role, setRole] = useState("");
 
   const dashboardPathFor = (userRole) =>
     userRole === "admin" ? "/admin" : `/dashboard/${userRole}`;
@@ -54,7 +49,6 @@ const GoogleAuthButton = ({ className = "" }) => {
             const res = await googleSignIn(credential);
             if (res?.requiresRole) {
               setPendingRole({ idToken: credential, profile: res.profile });
-              setRole("");
             } else {
               toast.success("Login successful! Redirecting...");
               navigate(dashboardPathFor(res.role), { replace: true });
@@ -71,10 +65,13 @@ const GoogleAuthButton = ({ className = "" }) => {
     }
   };
 
-  const confirmRole = async () => {
-    if (!pendingRole || !role) return;
+  const completeSignup = async ({ role, phone, location }) => {
+    if (!pendingRole) return;
     try {
-      const user = await googleComplete(pendingRole.idToken, role);
+      const user = await googleComplete(pendingRole.idToken, role, {
+        phone,
+        location,
+      });
       toast.success("Account created! Redirecting...");
       setPendingRole(null);
       navigate(dashboardPathFor(user.role), { replace: true });
@@ -104,69 +101,19 @@ const GoogleAuthButton = ({ className = "" }) => {
         )}
       </button>
 
-      {/* Role picker for brand-new Google accounts */}
+      {/* New Google accounts finish here: role + phone + business address,
+          since the Google token carries none of those. */}
       <Modal
         isOpen={!!pendingRole}
         onClose={() => setPendingRole(null)}
-        title="How will you use the platform?"
+        title="Finish setting up your account"
         size="small"
-        footer={
-          <button
-            type="button"
-            onClick={confirmRole}
-            disabled={!role || isLoading}
-            style={{
-              width: "100%",
-              padding: "12px 20px",
-              border: "none",
-              borderRadius: 8,
-              background: "#134e2c",
-              color: "#fff",
-              fontSize: 15,
-              fontWeight: 700,
-              cursor: !role || isLoading ? "not-allowed" : "pointer",
-              opacity: !role || isLoading ? 0.6 : 1,
-            }}
-          >
-            {isLoading ? "Creating account..." : "Continue"}
-          </button>
-        }
       >
-        {pendingRole?.profile && (
-          <p
-            style={{
-              margin: "0 0 16px",
-              fontSize: 14,
-              color: "#555",
-              lineHeight: 1.5,
-            }}
-          >
-            Welcome to ApnaBnB, {pendingRole.profile.name}. Pick how you want to
-            use the platform to finish setting up your account.
-          </p>
-        )}
-
-        <div className="signup-role-grid">
-          {ROLE_OPTIONS.map((r) => (
-            <button
-              key={r.value}
-              type="button"
-              className={`signup-role-card ${role === r.value ? "signup-role-card--active" : ""}`}
-              onClick={() => setRole(r.value)}
-            >
-              <span className="signup-role-icon">{r.icon}</span>
-              <span className="signup-role-label">{r.label}</span>
-              <span className="signup-role-desc">{r.description}</span>
-              {role === r.value && (
-                <span className="signup-role-check">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <GoogleSignupDetails
+          profile={pendingRole?.profile}
+          submitting={isLoading}
+          onSubmit={completeSignup}
+        />
       </Modal>
     </>
   );

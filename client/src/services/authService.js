@@ -184,11 +184,13 @@ const authService = {
 
   // Finish creating a brand-new Google account after the role is chosen.
   // Same storage behavior as login (token + current_user in localStorage).
-  googleComplete: async (idToken, role) => {
+  googleComplete: async (idToken, role, details = {}) => {
     try {
       const response = await apiClient.post('/auth/google/complete', {
         idToken,
         role,
+        phone: details.phone || '',
+        location: details.location || '',
       });
       if (response.data.token) {
         localStorage.setItem('auth_token', response.data.token);

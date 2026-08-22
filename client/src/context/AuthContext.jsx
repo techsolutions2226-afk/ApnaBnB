@@ -265,11 +265,11 @@ export function AuthProvider({ children }) {
 
   /* Complete account creation for a brand-new Google user after they pick
      a role. Mirrors `login` — stores the token and authenticates. */
-  const googleComplete = async (idToken, role) => {
+  const googleComplete = async (idToken, role, details = {}) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.googleComplete(idToken, role);
+      const response = await authService.googleComplete(idToken, role, details);
       const user = {
         id: response.id,
         name: response.name,
@@ -277,6 +277,8 @@ export function AuthProvider({ children }) {
         role: response.role,
         viewRole: response.viewRole || null,
         avatar: response.avatar || "",
+        phone: response.phone || "",
+        location: response.location || "",
       };
       setCurrentUser(user);
       return user;

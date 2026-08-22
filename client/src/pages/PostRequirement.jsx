@@ -12,7 +12,6 @@ import useViewRole from "../hooks/useViewRole";
 import { toast } from "react-toastify";
 import {
   FiCrosshair,
-  FiSave,
   FiChevronDown,
   FiCheck,
   FiHome,
@@ -329,7 +328,6 @@ const PostRequirement = () => {
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [draftRestored, setDraftRestored] = useState(Boolean(restoredDraft));
   // "Change Area" unit picker modal (Square Feet / Yards / Meters / Marla / Kanal).
   const [unitModalOpen, setUnitModalOpen] = useState(false);
   // Mode-switching pin selector — same UX as the dealer's Create Listing form.
@@ -374,14 +372,6 @@ const PostRequirement = () => {
     }
     saveRequirementDraft(draftKey, form);
   }, [form, draftKey]);
-
-  const discardDraft = useCallback(() => {
-    if (draftKey) clearRequirementDraft(draftKey);
-    setForm(EMPTY_FORM);
-    setErrors({});
-    setTouched({});
-    setDraftRestored(false);
-  }, [draftKey]);
 
   const areaOptions = useMemo(() => {
     if (!form.city || form.city === "Other") return [];
@@ -659,77 +649,7 @@ const PostRequirement = () => {
         </p>
       </div>
 
-      {/* ── Auto-save info banner ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "12px 16px",
-          background: "#e8f4fd",
-          border: "1px solid #b6dcf6",
-          borderRadius: 8,
-          marginBottom: 16,
-          fontSize: 14,
-          color: "#1a4d8a",
-        }}
-      >
-        <FiSave size={18} />
-        <span>
-          <strong>Your progress is saved automatically.</strong> Close the tab
-          and come back anytime — your draft will be waiting for you.
-        </span>
-      </div>
-
       <form className="req-form" onSubmit={handleSubmit} noValidate>
-        {/* ── Restored Draft Banner ── */}
-        {draftRestored && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              padding: "12px 16px",
-              background: "#fff8e1",
-              border: "1px solid #f6c453",
-              borderRadius: 8,
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ fontSize: 14, color: "#5d4200" }}>
-              <strong>Draft restored.</strong>{" "}
-              {restoredDraft?.savedAt && (
-                <span style={{ color: "#7a6b3d" }}>
-                  Last edited{" "}
-                  {new Date(restoredDraft.savedAt).toLocaleString(undefined, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                  .
-                </span>
-              )}{" "}
-              Keep editing — we'll save as you go.
-            </div>
-            <button
-              type="button"
-              onClick={discardDraft}
-              style={{
-                padding: "6px 12px",
-                background: "#fff",
-                border: "1px solid #d9b75e",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontSize: 13,
-                color: "#5d4200",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Discard draft
-            </button>
-          </div>
-        )}
-
         {/* ── Purpose — buy vs rent (same two-option toggle as Create Listing) ── */}
         <div className="req-form-section">
           <h3 className="req-form-section-title">Purpose</h3>

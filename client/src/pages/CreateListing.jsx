@@ -13,7 +13,7 @@ import { useCreateProperty } from "../hooks/useProperties";
 import { useCreateListing } from "../hooks/useListings";
 import propertyService from "../services/propertyService";
 import { clearListingDraft } from "../utils/listingDraft";
-import { FiArrowLeft, FiPlusCircle, FiSave } from "react-icons/fi";
+import { FiArrowLeft, FiPlusCircle } from "react-icons/fi";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
 import ListingForm from "../components/listing/ListingForm";
 import "../styles/Listing.css";
@@ -132,15 +132,8 @@ const CreateListing = () => {
         </div>
       </div>
 
-      {/* ── Auto-save info banner ── */}
-      <div className="lst-banner lst-banner--info">
-        <FiSave className="lst-banner-icon" />
-        <span>
-          <strong>Your progress is saved automatically.</strong> Close the tab
-          and come back anytime — your draft will be waiting for you.
-        </span>
-      </div>
-
+      {/* Drafts still auto-save and restore silently — see listingDraft.js and
+          the clearListingDraft call on successful submit above. */}
       <ListingForm
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}

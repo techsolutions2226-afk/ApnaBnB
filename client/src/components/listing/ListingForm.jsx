@@ -34,11 +34,7 @@ import LocationPicker from "../common/LocationPicker";
 import MapView from "../common/MapView";
 import Modal from "../common/Modal";
 import { forwardGeocode } from "../../utils/geocode";
-import {
-  loadListingDraft,
-  saveListingDraft,
-  clearListingDraft,
-} from "../../utils/listingDraft";
+import { loadListingDraft, saveListingDraft } from "../../utils/listingDraft";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/Listing.css";
 
@@ -580,7 +576,6 @@ const ListingForm = ({
   );
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [draftRestored, setDraftRestored] = useState(Boolean(restoredDraft));
   // Index of the currently visible amenity group (Main Features / Business…
   // etc.). The user pages through groups with ← → arrows. Selections persist
   // across groups via the unchanged form.amenities array.
@@ -649,14 +644,6 @@ const ListingForm = ({
       return next;
     });
   }, [form.city, form.area]);
-
-  const discardDraft = useCallback(() => {
-    if (draftKey) clearListingDraft(draftKey);
-    setForm({ ...EMPTY_FORM });
-    setErrors({});
-    setTouched({});
-    setDraftRestored(false);
-  }, [draftKey]);
 
   /* ── Available areas based on selected city ── */
   // No predefined areas for "Other" — we render a free-text input instead.
@@ -919,55 +906,6 @@ const ListingForm = ({
 
   return (
     <form className="lst-form" onSubmit={handleSubmit} noValidate>
-      {/* ── Restored Draft Banner ── */}
-      {draftRestored && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            padding: "12px 16px",
-            background: "#e9f2ec",
-            border: "1px solid #bcd6c6",
-            borderRadius: 8,
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ fontSize: 14, color: "#134e2c" }}>
-            <strong>Draft restored.</strong>{" "}
-            {restoredDraft?.savedAt && (
-              <span style={{ color: "#3e6b4f" }}>
-                Last edited{" "}
-                {new Date(restoredDraft.savedAt).toLocaleString(undefined, {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
-                .
-              </span>
-            )}{" "}
-            Keep editing — we'll save as you go.
-          </div>
-          <button
-            type="button"
-            onClick={discardDraft}
-            style={{
-              padding: "6px 12px",
-              background: "#fff",
-              border: "1px solid #134e2c",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontSize: 13,
-              color: "#134e2c",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Discard draft
-          </button>
-        </div>
-      )}
-
       {/* ── 1. Select Purpose ── */}
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">1. Purpose</h3>

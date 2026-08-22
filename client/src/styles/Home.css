@@ -355,47 +355,17 @@ body.hide-navbar-search .nav-mobile-pill {
   margin: 0;
 }
 
-.abn-popular-nav {
-  display: flex;
-  gap: 8px;
-}
-
-.abn-popular-arrow {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid #ddd;
-  background: #fff;
-  color: #222;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.abn-popular-arrow:hover {
-  border-color: #134e2c;
-  background: #f4f1e8;
-}
-
+/* Five per row, wrapping onto the next line — no horizontal scrolling and
+   no arrow controls. minmax(0, 1fr) keeps the columns equal and stops long
+   titles from widening a track. */
 .abn-popular-row {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 300px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 20px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
   padding-bottom: 8px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.abn-popular-row::-webkit-scrollbar {
-  display: none;
 }
 
 .abn-popular-cell {
-  scroll-snap-align: start;
   min-width: 0;
 }
 
@@ -457,7 +427,30 @@ body.hide-navbar-search .nav-mobile-pill {
   .abn-hero {
     min-height: 420px;
   }
+}
+
+/* ── Popular homes grid: 5 per row, stepping down with the viewport ── */
+@media (max-width: 1280px) {
   .abn-popular-row {
-    grid-auto-columns: 240px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .abn-popular-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .abn-popular-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 440px) {
+  .abn-popular-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -1,10 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiSearch,
   FiArrowRight,
-  FiChevronLeft,
-  FiChevronRight,
   FiChevronDown,
   FiMapPin,
   FiHome,
@@ -88,7 +86,7 @@ const Home = () => {
   /* Fetch active properties for the showcase row (real, dynamic data). */
   const { properties: allProps = [], isLoading: propsLoading } = useProperties();
   const featuredProps = useMemo(
-    () => (Array.isArray(allProps) ? allProps.slice(0, 8) : []),
+    () => (Array.isArray(allProps) ? allProps : []),
     [allProps],
   );
 
@@ -131,12 +129,6 @@ const Home = () => {
     e.preventDefault();
   };
 
-  /* Horizontal scroll for the "Popular homes" row. */
-  const rowRef = useRef(null);
-  const scrollRow = (dir) => {
-    if (!rowRef.current) return;
-    rowRef.current.scrollBy({ left: dir * 320, behavior: "smooth" });
-  };
 
   return (
     <div className="abn-home">
@@ -332,29 +324,12 @@ const Home = () => {
           <h2 className="abn-popular-title">
             Popular homes in Islamabad <FiArrowRight size={20} />
           </h2>
-          <div className="abn-popular-nav">
-            <button
-              type="button"
-              className="abn-popular-arrow"
-              aria-label="Scroll left"
-              onClick={() => scrollRow(-1)}
-            >
-              <FiChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              className="abn-popular-arrow"
-              aria-label="Scroll right"
-              onClick={() => scrollRow(1)}
-            >
-              <FiChevronRight size={18} />
-            </button>
-          </div>
         </div>
 
         {propsLoading ? (
           <div className="abn-popular-row">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {/* 10 keeps both rows of the 5-up grid full while loading. */}
+            {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="abn-popular-skel" />
             ))}
           </div>
@@ -363,7 +338,7 @@ const Home = () => {
             No properties yet — be the first to list one.
           </p>
         ) : (
-          <div className="abn-popular-row" ref={rowRef}>
+          <div className="abn-popular-row">
             {featuredProps.map((p) => (
               <div className="abn-popular-cell" key={p._id || p.id}>
                 <PropertyCard

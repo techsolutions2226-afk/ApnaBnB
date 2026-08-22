@@ -40,6 +40,8 @@ import PropertyMessageCard from "../components/messages/PropertyMessageCard";
 import MessageReactions from "../components/messages/MessageReactions";
 import QuoteBlock from "../components/messages/QuoteBlock";
 import MessageInfoModal from "../components/messages/MessageInfoModal";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import "../styles/Messages.css";
 import "../styles/MessagesExtra.css";
 
@@ -222,6 +224,11 @@ const Messages = () => {
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loadingConvs, setLoadingConvs] = useState(true);
+
+  // Refresh just this tab — re-pulls the conversation list, no browser reload.
+  const { refresh: refreshConvs, refreshing: refreshingConvs } = useRefresh(
+    async () => setConversations(await messageService.getConversations()),
+  );
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   // infinite history
@@ -1215,7 +1222,10 @@ const Messages = () => {
       {/* ══ Left: conversation sidebar ══ */}
       <aside className="msg-sidebar">
         <div className="msg-sidebar-header">
-          <h1 className="msg-sidebar-title">Messages</h1>
+          <div className="msg-sidebar-header-row">
+            <h1 className="msg-sidebar-title">Messages</h1>
+            <RefreshButton onRefresh={refreshConvs} refreshing={refreshingConvs} />
+          </div>
           <p className="msg-sidebar-sub">
             {conversations.length} conversation{conversations.length === 1 ? "" : "s"}
           </p>

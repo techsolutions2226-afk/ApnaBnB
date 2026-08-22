@@ -10,6 +10,8 @@ import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
 import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import PlanBanner from "../components/dashboard/PlanBanner";
 import {
   FiHome,
@@ -45,7 +47,10 @@ const DealerDashboard = () => {
 
   // Live aggregate metrics from GET /users/me/stats — scoped to the role
   // the user is ACTING AS so counts match what that role sees.
-  const { stats } = useUserStats(viewRole);
+  const { stats, refetch: refetchStats } = useUserStats(viewRole);
+
+  // Refresh just this tab — re-runs every fetch behind it, no browser reload.
+  const { refresh, refreshing } = useRefresh(refetchListings, refetchStats);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -103,14 +108,17 @@ const DealerDashboard = () => {
       />
 
       {/* ── Header ── */}
-      <div className="dash-header">
-        <h1 className="dash-greeting">
-          Welcome back, {currentUser?.name || "Dealer"}
-        </h1>
-        <p className="dash-subtitle">
-          Manage your deals, connect buyers with sellers, and grow your business
-        </p>
-        <span className="dash-role-badge dash-role-badge--dealer">Dealer</span>
+      <div className="dash-header-row">
+        <div className="dash-header">
+          <h1 className="dash-greeting">
+            Welcome back, {currentUser?.name || "Dealer"}
+          </h1>
+          <p className="dash-subtitle">
+            Manage your deals, connect buyers with sellers, and grow your business
+          </p>
+          <span className="dash-role-badge dash-role-badge--dealer">Dealer</span>
+        </div>
+        <RefreshButton onRefresh={refresh} refreshing={refreshing} />
       </div>
 
       {/* ── Plans CTA — server-driven subscription state ── */}

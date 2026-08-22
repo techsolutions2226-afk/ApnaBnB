@@ -14,7 +14,7 @@ import {
   FiTrash2,
   FiExternalLink,
 } from "react-icons/fi";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import "../../styles/Admin.css";
 
 const PROPERTY_STATUSES = ["active", "pending", "sold", "rented", "featured", "rejected"];

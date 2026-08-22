@@ -1005,3 +1005,16 @@
     padding: 0.75rem 1rem;
   }
 }
+
+/* Wraps the board heading + the tab's Refresh button on one line. */
+.req-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+.req-header-row > .req-header {
+  flex: 1 1 auto;
+  min-width: 0;
+}

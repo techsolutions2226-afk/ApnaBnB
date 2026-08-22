@@ -624,3 +624,11 @@
     min-width: 60px;
   }
 }
+
+/* Refresh button + primary action share the header's right-hand side. */
+.ml-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}

@@ -18,9 +18,9 @@ import { useAuth } from "../context/AuthContext";
 
 export const useDashboardData = () => {
   const { isAuthenticated } = useAuth();
-  const { conversations } = useConversations();
-  const { allSavedIds } = useWishlist();
-  const { getUpcoming } = useBooking();
+  const { conversations, refetch: refetchConversations } = useConversations();
+  const { allSavedIds, refresh: refreshWishlist } = useWishlist();
+  const { getUpcoming, refresh: refreshTrips } = useBooking();
 
   const unreadMessages = useMemo(() => {
     if (!isAuthenticated || !Array.isArray(conversations)) return 0;
@@ -39,7 +39,16 @@ export const useDashboardData = () => {
 
   const upcomingTrips = upcomingList.length;
 
-  return { unreadMessages, savedProperties, upcomingTrips, upcomingList };
+  /* Re-pulls all three sources behind these counts, so a dashboard's Refresh
+     button updates the stat cards as well as the lists. */
+  const refetch = () =>
+    Promise.all(
+      [refetchConversations, refreshWishlist, refreshTrips]
+        .filter(Boolean)
+        .map((fn) => fn()),
+    );
+
+  return { unreadMessages, savedProperties, upcomingTrips, upcomingList, refetch };
 };
 
 export default useDashboardData;

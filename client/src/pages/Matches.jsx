@@ -11,6 +11,8 @@ import useViewRole from "../hooks/useViewRole";
 import matchService from "../services/matchService";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import FilterTabs from "../components/common/FilterTabs";
 import "../styles/Match.css";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
@@ -58,6 +60,9 @@ const Matches = () => {
     const { getDashboardPath } = useAuth();
   const { viewRole } = useViewRole();
   const { matches, isLoading, error, refetch } = useMyMatches(viewRole);
+
+  // Refresh just this tab — no browser reload.
+  const { refresh, refreshing } = useRefresh(refetch);
   const [activeFilter, setActiveFilter] = useState("all");
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState(null);
@@ -161,9 +166,12 @@ const Matches = () => {
             { label: "Matches" },
           ]}
         />
-        <div className="mtch-header">
-          <h1 className="mtch-title">Matches</h1>
-          <p className="mtch-subtitle">Your property matches will appear here.</p>
+        <div className="mtch-header-row">
+          <div className="mtch-header">
+            <h1 className="mtch-title">Matches</h1>
+            <p className="mtch-subtitle">Your property matches will appear here.</p>
+          </div>
+          <RefreshButton onRefresh={refresh} refreshing={refreshing} />
         </div>
         <div className="mtch-empty">
           <div className="mtch-empty-icon">🔗</div>
@@ -190,11 +198,14 @@ const Matches = () => {
         ]}
       />
 
-      <div className="mtch-header">
-        <h1 className="mtch-title">Matches</h1>
-        <p className="mtch-subtitle">
-          Properties and requirements matched for you, ranked by score.
-        </p>
+      <div className="mtch-header-row">
+        <div className="mtch-header">
+          <h1 className="mtch-title">Matches</h1>
+          <p className="mtch-subtitle">
+            Properties and requirements matched for you, ranked by score.
+          </p>
+        </div>
+        <RefreshButton onRefresh={refresh} refreshing={refreshing} />
       </div>
 
       {/* Stats */}

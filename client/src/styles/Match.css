@@ -575,3 +575,17 @@
     justify-content: center;
   }
 }
+
+/* Wraps the Matches heading + the tab's Refresh button on one line. */
+.mtch-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.mtch-header-row > .mtch-header {
+  flex: 1 1 auto;
+  min-width: 0;
+}

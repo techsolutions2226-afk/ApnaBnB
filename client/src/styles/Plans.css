@@ -827,3 +827,12 @@
 .plan-toggle--roles {
   margin-bottom: 14px;
 }
+
+/* Wraps the hero heading + the tab's Refresh button on one line. */
+.plan-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

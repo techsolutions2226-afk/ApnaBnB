@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import { FiPlusSquare, FiEdit2, FiTrash2, FiStar } from "react-icons/fi";
 import planService from "../../services/planService";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import Modal from "../../components/common/Modal";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import StatusBadge from "../../components/common/StatusBadge";

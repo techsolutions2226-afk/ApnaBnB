@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useBooking } from "../context/BookingContext";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import { useProperties } from "../hooks/useProperties";
 import { toast } from "react-toastify";
 import EmptyState from "../components/common/EmptyState";
@@ -112,9 +114,18 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
 
 export default function Trips() {
   const { currentUser } = useAuth();
-  const { trips, cancelTrip, getUpcoming, getCompleted, getCancelled } =
-    useBooking();
-  const { properties = [] } = useProperties();
+  const {
+    trips,
+    cancelTrip,
+    getUpcoming,
+    getCompleted,
+    getCancelled,
+    refresh: refreshTrips,
+  } = useBooking();
+  const { properties = [], refetch: refetchProperties } = useProperties();
+
+  // Refresh just this tab — no browser reload.
+  const { refresh, refreshing } = useRefresh(refreshTrips, refetchProperties);
   const navigate = useNavigate();
 
   const propertyMap = useMemo(() => {
@@ -176,7 +187,10 @@ export default function Trips() {
   return (
     <div className="tr-page">
       <div className="tr-container">
-        <h1 className="tr-title">Trips</h1>
+        <div className="tr-header-row">
+          <h1 className="tr-title">Trips</h1>
+          <RefreshButton onRefresh={refresh} refreshing={refreshing} />
+        </div>
 
         {/* Tabs */}
         <div className="tr-tabs">

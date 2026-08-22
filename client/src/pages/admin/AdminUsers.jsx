@@ -7,7 +7,7 @@ import Modal from "../../components/common/Modal";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShield, FiXCircle, FiImage } from "react-icons/fi";
 import "../../styles/Admin.css";
 

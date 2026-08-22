@@ -14,6 +14,8 @@ import {
 import useViewRole from "../hooks/useViewRole";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import StatusBadge from "../components/common/StatusBadge";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import {
@@ -49,6 +51,9 @@ const MyRequirements = () => {
     error: reqError,
     refetch: refetchReqs,
   } = useUserRequirements(currentUser?.id, viewRole);
+
+  // Refresh just this tab — no browser reload.
+  const { refresh, refreshing } = useRefresh(refetchReqs);
 
   const { remove: deleteRequirement, isLoading: deleteLoading } =
     useDeleteRequirement();
@@ -138,10 +143,13 @@ const MyRequirements = () => {
             <span className="ml-count">{(requirements || []).length}</span> total
           </p>
         </div>
-        <Link to="/requirements/new" className="ml-new-btn">
-          <FiPlus />
-          Post New Requirement
-        </Link>
+        <div className="ml-header-actions">
+          <RefreshButton onRefresh={refresh} refreshing={refreshing} />
+          <Link to="/requirements/new" className="ml-new-btn">
+            <FiPlus />
+            Post New Requirement
+          </Link>
+        </div>
       </div>
 
       {/* ── Filter Tabs ── */}

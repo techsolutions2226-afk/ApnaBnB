@@ -10,6 +10,8 @@ import DashStat from "../components/dashboard/DashStat";
 import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import PlanBanner from "../components/dashboard/PlanBanner";
 import {
   FiFileText,
@@ -41,10 +43,27 @@ const BuyerDashboard = () => {
   const { remove: deleteRequirement, isLoading: isDeleting } = useDeleteRequirement();
 
   // Live aggregate data (unread messages, wishlist, upcoming trips)
-  const { unreadMessages, savedProperties, upcomingTrips, upcomingList } = useDashboardData();
+  const {
+    unreadMessages,
+    savedProperties,
+    upcomingTrips,
+    upcomingList,
+    refetch: refetchDashboardData,
+  } = useDashboardData();
 
   // All matches for the role the user is ACTING AS (buyer side only)
-  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches(viewRole);
+  const {
+    matches: myMatches,
+    isLoading: matchesLoading,
+    refetch: refetchMatches,
+  } = useMyMatches(viewRole);
+
+  // Refresh just this tab — re-runs every fetch behind it, no browser reload.
+  const { refresh, refreshing } = useRefresh(
+    refetchReqs,
+    refetchMatches,
+    refetchDashboardData,
+  );
   const matchCount = myMatches?.length || 0;
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -107,14 +126,17 @@ const BuyerDashboard = () => {
       />
 
       {/* ── Header ── */}
-      <div className="dash-header">
-        <h1 className="dash-greeting">
-          Welcome back, {currentUser?.name || "Buyer"}
-        </h1>
-        <p className="dash-subtitle">
-          Track your property search and find your perfect home
-        </p>
-        <span className="dash-role-badge dash-role-badge--buyer">Buyer</span>
+      <div className="dash-header-row">
+        <div className="dash-header">
+          <h1 className="dash-greeting">
+            Welcome back, {currentUser?.name || "Buyer"}
+          </h1>
+          <p className="dash-subtitle">
+            Track your property search and find your perfect home
+          </p>
+          <span className="dash-role-badge dash-role-badge--buyer">Buyer</span>
+        </div>
+        <RefreshButton onRefresh={refresh} refreshing={refreshing} />
       </div>
 
       {/* ── Plan status — role-auto, free-plan aware ── */}

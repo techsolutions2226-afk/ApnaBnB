@@ -7,7 +7,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
 import AdminRequirementEditor from "../../components/admin/AdminRequirementEditor";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import { formatPrice } from "../../utils/formatters";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import "../../styles/Admin.css";

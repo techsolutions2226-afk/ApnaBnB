@@ -5,7 +5,7 @@ import SearchInput from "../../components/common/SearchInput";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import StatusBadge from "../../components/common/StatusBadge";
 import { FiMail, FiTrash2, FiLock, FiMessageSquare } from "react-icons/fi";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import "../../styles/Admin.css";
 
 /* ── AdminMessages — WhatsApp-style conversation review ──

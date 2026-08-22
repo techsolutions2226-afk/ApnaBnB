@@ -458,3 +458,12 @@
     text-align: center;
   }
 }
+
+/* Wraps the Trips heading + the tab's Refresh button on one line. */
+.tr-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}

@@ -11,6 +11,8 @@ import SectionHeader from "../components/dashboard/SectionHeader";
 import RecentMatches from "../components/dashboard/RecentMatches";
 import OwnerReviewsSection from "../components/dashboard/OwnerReviewsSection";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import PlanBanner from "../components/dashboard/PlanBanner";
 import {
   FiHome,
@@ -42,12 +44,23 @@ const SellerDashboard = () => {
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
 
   // Live aggregate data (unread messages, wishlist, trips)
-  const { unreadMessages } = useDashboardData();
+  const { unreadMessages, refetch: refetchDashboardData } = useDashboardData();
 
   // Recent matches for the role the user is ACTING AS (seller side only)
   // (+ count for the stat card)
-  const { matches: myMatches, isLoading: matchesLoading } = useMyMatches(viewRole);
+  const {
+    matches: myMatches,
+    isLoading: matchesLoading,
+    refetch: refetchMatches,
+  } = useMyMatches(viewRole);
   const matchCount = myMatches?.length || 0;
+
+  // Refresh just this tab — re-runs every fetch behind it, no browser reload.
+  const { refresh, refreshing } = useRefresh(
+    refetchListings,
+    refetchMatches,
+    refetchDashboardData,
+  );
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -111,14 +124,17 @@ const SellerDashboard = () => {
       />
 
       {/* ── Header ── */}
-      <div className="dash-header">
-        <h1 className="dash-greeting">
-          Welcome back, {currentUser?.name || "Seller"}
-        </h1>
-        <p className="dash-subtitle">
-          Here's what's happening with your properties
-        </p>
-        <span className="dash-role-badge dash-role-badge--seller">Seller</span>
+      <div className="dash-header-row">
+        <div className="dash-header">
+          <h1 className="dash-greeting">
+            Welcome back, {currentUser?.name || "Seller"}
+          </h1>
+          <p className="dash-subtitle">
+            Here's what's happening with your properties
+          </p>
+          <span className="dash-role-badge dash-role-badge--seller">Seller</span>
+        </div>
+        <RefreshButton onRefresh={refresh} refreshing={refreshing} />
       </div>
 
       {/* ── Plan status — server-driven subscription state ── */}

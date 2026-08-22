@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useWishlist } from "../context/WishlistContext";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import { useProperties } from "../hooks/useProperties";
 import { toast } from "react-toastify";
 import EmptyState from "../components/common/EmptyState";
@@ -16,8 +18,13 @@ const ALL_TAB = "__all__";
 
 export default function Wishlists() {
   const { currentUser } = useAuth();
-  const { lists, createList, deleteList, allSavedIds } = useWishlist();
-  const { properties = [], isLoading } = useProperties();
+  const { lists, createList, deleteList, allSavedIds, refresh: refreshWishlist } =
+    useWishlist();
+  const { properties = [], isLoading, refetch: refetchProperties } =
+    useProperties();
+
+  // Refresh just this tab — no browser reload.
+  const { refresh, refreshing } = useRefresh(refreshWishlist, refetchProperties);
   const navigate = useNavigate();
 
   /* Index properties by id (handles _id from API + legacy id) */
@@ -97,10 +104,13 @@ export default function Wishlists() {
               {totalSaved} saved propert{totalSaved !== 1 ? "ies" : "y"}
             </p>
           </div>
-          <button className="wl-create-btn" onClick={() => setShowCreate(true)}>
-            <FiPlus size={18} />
-            New wishlist
-          </button>
+          <div className="wl-header-actions">
+            <RefreshButton onRefresh={refresh} refreshing={refreshing} />
+            <button className="wl-create-btn" onClick={() => setShowCreate(true)}>
+              <FiPlus size={18} />
+              New wishlist
+            </button>
+          </div>
         </div>
 
         {/* ── Folder Tabs ── */}

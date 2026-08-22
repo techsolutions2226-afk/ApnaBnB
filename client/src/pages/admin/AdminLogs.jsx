@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import adminService from "../../services/adminService";
 import SearchInput from "../../components/common/SearchInput";
 import Pagination from "../../components/common/Pagination";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import "../../styles/Admin.css";
 
 const ACTIONS = [

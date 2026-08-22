@@ -1,0 +1,51 @@
+/* Shared "Refresh" button — used by the admin panel and every dashboard tab.
+   Lives in its own stylesheet (imported by the component) so it renders
+   identically on pages that don't load Admin.css. */
+
+.refresh-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #d7dee6;
+  border-radius: 8px;
+  background: #fff;
+  color: #16324f;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #f2f6fa;
+  border-color: #b9c6d3;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.refresh-btn-spin {
+  animation: refresh-btn-rotate 0.8s linear infinite;
+}
+
+@keyframes refresh-btn-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Small phones: drop the label so the icon alone sits beside the tab title
+   instead of wrapping the header. */
+@media (max-width: 480px) {
+  .refresh-btn {
+    padding: 8px 10px;
+  }
+  .refresh-btn-label {
+    display: none;
+  }
+}

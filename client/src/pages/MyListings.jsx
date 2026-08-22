@@ -13,6 +13,8 @@ import { useProperties, useUpdateProperty } from "../hooks/useProperties";
 import useViewRole from "../hooks/useViewRole";
 import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import StatusBadge from "../components/common/StatusBadge";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import { 
@@ -54,6 +56,9 @@ const MyListings = () => {
 
   // Fetch user's listings (scoped to the role they're acting as)
   const { listings, isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useUserListings(currentUser?.id, viewRole);
+
+  // Refresh just this tab — no browser reload.
+  const { refresh, refreshing } = useRefresh(refetchListings);
   
   // Fetch all properties for mapping
   const { properties, isLoading: propsLoading } = useProperties({}, true);
@@ -178,11 +183,14 @@ const MyListings = () => {
           <p className="ml-subtitle">
             Manage your property listings — <span className="ml-count">{allListings.length}</span> total
           </p>
-        </div>        
-        <Link to="/listing/new" className="ml-new-btn">
-          <FiPlus />
-          Create New Listing
-        </Link>
+        </div>
+        <div className="ml-header-actions">
+          <RefreshButton onRefresh={refresh} refreshing={refreshing} />
+          <Link to="/listing/new" className="ml-new-btn">
+            <FiPlus />
+            Create New Listing
+          </Link>
+        </div>
       </div>
 
       {/* ── Status filter dropdown ── */}

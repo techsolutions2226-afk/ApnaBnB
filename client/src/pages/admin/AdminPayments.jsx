@@ -10,7 +10,7 @@ import {
 } from "react-icons/fi";
 import adminService from "../../services/adminService";
 import Pagination from "../../components/common/Pagination";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import Modal from "../../components/common/Modal";
 import StatusBadge from "../../components/common/StatusBadge";
 import "../../styles/Admin.css";

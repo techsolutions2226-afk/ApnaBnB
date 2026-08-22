@@ -26,6 +26,23 @@
   gap: 4px;
 }
 
+/* Wraps the header block + the tab's Refresh button on one line. The button
+   stays pinned right on desktop and drops under the title on narrow screens. */
+.dash-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  /* nowrap keeps the button pinned top-right on mobile instead of letting it
+     drop onto its own line; the title column shrinks via min-width:0 below. */
+  flex-wrap: nowrap;
+}
+
+.dash-header-row > .dash-header {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .dash-greeting {
   font-size: 26px;
   font-weight: 800;

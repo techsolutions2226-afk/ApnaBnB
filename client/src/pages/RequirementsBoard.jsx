@@ -8,6 +8,8 @@ import { useAuth } from "../context/AuthContext";
 import { useRequirements } from "../hooks/useRequirements";
 import { timeAgo } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
+import RefreshButton from "../components/common/RefreshButton";
+import useRefresh from "../hooks/useRefresh";
 import FilterTabs from "../components/common/FilterTabs";
 import SearchInput from "../components/common/SearchInput";
 import Skeleton from "../components/common/Skeleton";
@@ -49,7 +51,10 @@ const RequirementsBoard = () => {
   const [search, setSearch] = useState("");
 
   /* ── Load requirements from API ── */
-  const { requirements = [], isLoading, error } = useRequirements();
+  const { requirements = [], isLoading, error, refetch } = useRequirements();
+
+  // Refresh just this tab — no browser reload.
+  const { refresh, refreshing } = useRefresh(refetch);
 
   /* ── Stats (computed from real data) ── */
   const stats = useMemo(
@@ -127,11 +132,14 @@ const RequirementsBoard = () => {
       />
 
       {/* ── Header ── */}
-      <div className="req-header">
-        <h1 className="req-title">Requirements Board</h1>
-        <p className="req-subtitle">
-          Browse property requirements from buyers and dealers — find people looking for properties like yours.
-        </p>
+      <div className="req-header-row">
+        <div className="req-header">
+          <h1 className="req-title">Requirements Board</h1>
+          <p className="req-subtitle">
+            Browse property requirements from buyers and dealers — find people looking for properties like yours.
+          </p>
+        </div>
+        <RefreshButton onRefresh={refresh} refreshing={refreshing} />
       </div>
 
       {/* ── Stats Bar ── */}

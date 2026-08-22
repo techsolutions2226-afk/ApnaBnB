@@ -6,7 +6,7 @@ import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { FiTrash2, FiExternalLink } from "react-icons/fi";
-import RefreshButton from "../../components/admin/RefreshButton";
+import RefreshButton from "../../components/common/RefreshButton";
 import "../../styles/Admin.css";
 
 const MATCH_TYPES = ["seller-buyer", "dealer-buyer", "dealer-dealer", "seller-dealer"];

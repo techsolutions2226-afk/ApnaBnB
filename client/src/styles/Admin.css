@@ -55,38 +55,8 @@
 }
 
 /* Refresh button (top-right of every admin tab header). */
-.adm-refresh-btn {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border: 1px solid #d7dee6;
-  border-radius: 8px;
-  background: #fff;
-  color: #16324f;
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-}
-.adm-refresh-btn:hover:not(:disabled) {
-  background: #f2f6fa;
-  border-color: #b9c6d3;
-}
-.adm-refresh-btn:disabled {
-  opacity: 0.65;
-  cursor: default;
-}
-.adm-refresh-spin {
-  animation: adm-refresh-rotate 0.8s linear infinite;
-}
-@keyframes adm-refresh-rotate {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* The Refresh button moved to components/common/RefreshButton.jsx, which ships
+   its own stylesheet so it also works on pages that don't load Admin.css. */
 
 .adm-title {
   font-size: 24px;

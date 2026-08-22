@@ -18,6 +18,7 @@ import paymentService from "../services/paymentService";
 import planService from "../services/planService";
 import Modal from "../components/common/Modal";
 import Breadcrumb from "../components/common/Breadcrumb";
+import RefreshButton from "../components/common/RefreshButton";
 import "../styles/Plans.css";
 import "../styles/Dashboard.css"; /* for breadcrumb classes */
 
@@ -127,6 +128,8 @@ export default function Plans() {
   );
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
+  // Bumped by the Refresh button to re-run the plans fetch below.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -148,7 +151,7 @@ export default function Plans() {
     return () => {
       cancelled = true;
     };
-  }, [roleTab]);
+  }, [roleTab, reloadKey]);
 
   // Server-driven subscription state (AuthContext fetched /payments/status).
   // Payments snapshot planId + planName, so the banner needs no lookup.
@@ -330,9 +333,16 @@ export default function Plans() {
 
       {/* ── Hero ── */}
       <div className="plan-hero">
-        <h1 className="plan-hero-title">
-          Choose the right plan for your business
-        </h1>
+        <div className="plan-hero-head">
+          <h1 className="plan-hero-title">
+            Choose the right plan for your business
+          </h1>
+          {/* Refresh just this tab — re-runs the plans fetch, no browser reload. */}
+          <RefreshButton
+            onRefresh={() => setReloadKey((k) => k + 1)}
+            refreshing={plansLoading}
+          />
+        </div>
         <p className="plan-hero-subtitle">
           Unlock powerful tools to grow your real estate business. Upgrade
           anytime as your needs evolve.

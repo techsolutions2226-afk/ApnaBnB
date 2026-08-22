@@ -226,8 +226,13 @@
 /* Hamburger (mobile only) */
 .dash-shell-hamburger {
   display: none;
+  /* The button only ever renders as a flex box (inline-flex below 900px), so
+     the three bars need an explicit column direction — in the default `row`
+     they sit side by side and read as one line, not a hamburger. */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   width: 40px;
   height: 38px;
   border-radius: 9px;
@@ -241,9 +246,10 @@
   display: block;
   height: 2px;
   width: 18px;
-  margin: 2.5px auto;
   background: #16324f;
   border-radius: 2px;
+  /* Stop the bars being squashed along the column's main axis. */
+  flex-shrink: 0;
 }
 
 /* ── Role selector ── */

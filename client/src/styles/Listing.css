@@ -857,13 +857,54 @@
   transform: scale(1.25);
 }
 
+/* Mobile: the arrows previously ate 50px of gutter on each side, crushing the
+   card into the middle. Instead the card spans the section's full width — so it
+   reads as centred and balanced — and the arrows move inside its horizontal
+   padding, still vertically centred on the panel. */
 @media (max-width: 600px) {
   .lst-amenity-slider {
-    padding: 0 50px;
+    padding: 0;
+  }
+  .lst-amenity-slide {
+    padding: 16px 38px;
   }
   .lst-amenity-arrow {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
+  }
+  .lst-amenity-arrow--left {
+    left: 4px;
+  }
+  .lst-amenity-arrow--right {
+    right: 4px;
+  }
+  /* The chevron is rendered at size 24 for desktop; scale it down with the
+     button so it stays centred instead of filling the whole circle. */
+  .lst-amenity-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Very small phones (~320px): tighten the gutters, chip padding and label size
+   another step so two columns still fit without breaking words mid-way. */
+@media (max-width: 380px) {
+  .lst-amenity-slide {
+    padding: 14px 28px;
+  }
+  .lst-amenity-arrow {
+    width: 24px;
+    height: 24px;
+  }
+  .lst-amenity-arrow--left {
+    left: 2px;
+  }
+  .lst-amenity-arrow--right {
+    right: 2px;
+  }
+  .lst-amenity-arrow svg {
+    width: 16px;
+    height: 16px;
   }
 }
 
@@ -874,7 +915,7 @@
 }
 
 .lst-amenity-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
@@ -886,6 +927,16 @@
   font-size: 13.5px;
   color: #333;
   user-select: none;
+  /* Grid items default to min-width:auto, which lets a long label push the
+     chip past its column. Cap it so the label wraps inside the border. */
+  min-width: 0;
+}
+
+/* The label must be allowed to shrink and wrap — without min-width:0 a flex
+   child refuses to go below its content width and spills over the border. */
+.lst-amenity-chip-text {
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .lst-amenity-chip:hover {
@@ -924,12 +975,115 @@
   color: #fff;
 }
 
+/* Mobile: keep Purpose (2 cards) and Category (3 cards) in a single row.
+   Cards compress via tighter padding + smaller icons/labels instead of
+   stacking, per the mobile layout spec. */
 @media (max-width: 600px) {
-  .lst-category-row {
-    grid-template-columns: 1fr;
-  }
   .lst-purpose-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: none;
+  }
+  .lst-purpose-card {
+    padding: 14px 8px;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .lst-purpose-icon {
+    font-size: 18px;
+  }
+  .lst-category-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-width: none;
+  }
+  .lst-category-card {
+    padding: 12px 6px;
+    gap: 4px;
+  }
+  .lst-category-icon {
+    font-size: 22px;
+  }
+  .lst-category-label {
+    font-size: 12.5px;
+  }
+}
+
+/* Mobile: keep paired fields (Size+Unit, City+Area, Beds+Baths) side-by-side
+   in one row. min-width:0 stops a long <select> option or the unit trigger
+   from forcing its column wider than half and overflowing the section. */
+@media (max-width: 768px) {
+  .lst-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .lst-row > .lst-field {
+    min-width: 0;
+  }
+}
+
+/* Location row: the custom "Other" area input is a direct grid child so it can
+   drop onto its own line. Row-gap (not the field's margin) controls the space
+   above it, so the fields inside drop their margin and the row carries it. */
+.lst-row--location {
+  row-gap: 8px;
+  margin-bottom: 20px;
+}
+
+.lst-row--location > .lst-field {
+  margin-bottom: 0;
+}
+
+/* Desktop/tablet: sits under the Area column, exactly where it used to render
+   when it lived inside the Area field. */
+.lst-custom-area {
+  grid-column: 2 / 3;
+}
+
+/* Mobile: full width on its own line, below City + Area. */
+@media (max-width: 768px) {
+  .lst-custom-area {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Mobile: exactly two amenity feature chips per row. min-height keeps every
+   chip the same size whether its label runs to one line or two, so the grid
+   stays even instead of ragged. */
+@media (max-width: 600px) {
+  .lst-amenity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .lst-amenity-chip {
+    padding: 8px 9px;
+    gap: 6px;
+    font-size: 12.5px;
+    min-height: 46px;
+  }
+  .lst-amenity-checkmark {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+  }
+}
+
+/* Very small phones (~320px). Must come AFTER the 600px block above: same
+   specificity, so source order decides which one wins. */
+@media (max-width: 380px) {
+  .lst-amenity-grid {
+    gap: 6px;
+  }
+  .lst-amenity-chip {
+    padding: 7px;
+    gap: 4px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+  .lst-amenity-checkmark {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
   }
 }
 
@@ -1232,7 +1386,8 @@
     font-size: 24px;
   }
 
-  .lst-row,
+  /* .lst-row intentionally excluded — paired fields stay side-by-side on
+     mobile (see the .lst-row rule above). Only the 3-up row stacks. */
   .lst-row-3 {
     grid-template-columns: 1fr;
   }

@@ -765,10 +765,6 @@ const ListingForm = ({
     }));
   }, []);
 
-  const handleToggleFeatured = useCallback(() => {
-    setForm((prev) => ({ ...prev, featured: !prev.featured }));
-  }, []);
-
   // Strip any non-digit chars (commas, spaces, letters) and store only digits
   // so the underlying value stays a clean integer. No upper cap on amount.
   const handlePriceChange = useCallback(
@@ -1208,7 +1204,7 @@ const ListingForm = ({
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Location</h3>
 
-        <div className="lst-row">
+        <div className="lst-row lst-row--location">
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-city">
               City
@@ -1280,7 +1276,19 @@ const ListingForm = ({
                 ))}
               </select>
             )}
-            {form.city !== "Other" && form.area === "Other" && (
+            {showError("area") && (
+              <div className="lst-error">{errors.area}</div>
+            )}
+            {form.city === "Other" && showError("customArea") && (
+              <div className="lst-error">{errors.customArea}</div>
+            )}
+          </div>
+
+          {/* Picking "Other" as the area reveals a free-text input. It is a
+              direct child of the row so it can span the full width below
+              City + Area on mobile instead of being boxed into half a column. */}
+          {form.city !== "Other" && form.area === "Other" && (
+            <div className="lst-field lst-custom-area">
               <input
                 type="text"
                 className={fieldClass("lst-input", "customArea")}
@@ -1288,16 +1296,12 @@ const ListingForm = ({
                 value={form.customArea}
                 onChange={(e) => handleChange("customArea", e.target.value)}
                 onBlur={() => handleBlur("customArea")}
-                style={{ marginTop: 8 }}
               />
-            )}
-            {showError("area") && (
-              <div className="lst-error">{errors.area}</div>
-            )}
-            {showError("customArea") && (
-              <div className="lst-error">{errors.customArea}</div>
-            )}
-          </div>
+              {showError("customArea") && (
+                <div className="lst-error">{errors.customArea}</div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Map pin — three input modes */}
@@ -1634,7 +1638,7 @@ const ListingForm = ({
                         <span className="lst-amenity-checkmark">
                           {selected ? "✓" : "+"}
                         </span>
-                        <span>{amenity}</span>
+                        <span className="lst-amenity-chip-text">{amenity}</span>
                       </label>
                     );
                   })}
@@ -1739,39 +1743,6 @@ const ListingForm = ({
             label="Property Images"
             helperText="Drag & drop images here or click to browse (Max 10)"
           />
-        </div>
-      </div>
-
-      {/* ── Listing Options ── */}
-      <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Listing Options</h3>
-
-        <div className="lst-field">
-          <div
-            className="lst-toggle"
-            onClick={handleToggleFeatured}
-            role="switch"
-            aria-checked={form.featured}
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleToggleFeatured();
-              }
-            }}
-          >
-            <div
-              className={`lst-toggle-track${form.featured ? " lst-toggle-track--on" : ""}`}
-            >
-              <div className="lst-toggle-thumb" />
-            </div>
-            <div>
-              <div className="lst-toggle-label">Featured Listing</div>
-              <div className="lst-toggle-desc">
-                Featured listings appear at the top of search results
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

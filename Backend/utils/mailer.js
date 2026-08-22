@@ -194,9 +194,183 @@ const sendListingCreatedEmail = async (to, recipientName, details, listingUrl) =
     html: buildListingCreatedHtml(recipientName, details, listingUrl),
   });
 
+/* A property going live reads the same as a listing going live, so it reuses
+   the template above rather than duplicating it. */
+const sendPropertyCreatedEmail = async (to, recipientName, details, propertyUrl) =>
+  sendMail({
+    to,
+    subject: `Your property "${details?.title || 'property'}" is live on ApnaBnB`,
+    text: `Hi${recipientName ? ` ${recipientName}` : ''}, your property "${details?.title || 'property'}" is now live on ApnaBnB.${propertyUrl ? ` View it here: ${propertyUrl}` : ''}`,
+    html: buildListingCreatedHtml(recipientName, details, propertyUrl),
+  });
+
+/* ─── Requirement-created confirmation ─── */
+const formatBudget = (budget) => {
+  const min = budget?.min;
+  const max = budget?.max;
+  const has = (v) => v !== null && v !== undefined && !isNaN(Number(v));
+  if (has(min) && has(max)) return `${formatPrice(min)} – ${formatPrice(max)}`;
+  if (has(max)) return `Up to ${formatPrice(max)}`;
+  if (has(min)) return `From ${formatPrice(min)}`;
+  return '—';
+};
+
+const buildRequirementCreatedHtml = (recipientName, details, requirementUrl) => {
+  const {
+    title = 'your requirement',
+    propertyType = '',
+    city = '',
+    area = '',
+    budget,
+    bedrooms,
+    bathrooms,
+    size,
+    urgency,
+  } = details || {};
+  const location = [area, city].filter(Boolean).join(', ') || '—';
+  const rooms = [
+    bedrooms ? `${bedrooms} Bed` : null,
+    bathrooms ? `${bathrooms} Bath` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return `
+  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
+    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h2 style="color: #00856f; margin: 0 0 8px;">Requirement posted ✅</h2>
+      <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
+        ${recipientName ? `Hi ${recipientName},` : 'Hi,'} your requirement is now live on ApnaBnB. We'll start matching it against listings straight away.
+      </p>
+
+      <div style="background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 20px; margin: 0 0 24px;">
+        <h3 style="color: #222; margin: 0 0 8px; font-size: 18px;">${title}</h3>
+        <p style="color: #717171; margin: 0 0 16px; font-size: 14px;">
+          ${propertyType ? `${propertyType.charAt(0).toUpperCase() + propertyType.slice(1)} · ` : ''}${location}
+        </p>
+        <table style="width: 100%; font-size: 14px; color: #333; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 4px 0; color: #888;">Budget</td>
+            <td style="padding: 4px 0; text-align: right; font-weight: 600;">${formatBudget(budget)}</td>
+          </tr>
+          ${
+            size
+              ? `<tr><td style="padding: 4px 0; color: #888;">Size</td><td style="padding: 4px 0; text-align: right;">${size}</td></tr>`
+              : ''
+          }
+          ${
+            rooms
+              ? `<tr><td style="padding: 4px 0; color: #888;">Rooms</td><td style="padding: 4px 0; text-align: right;">${rooms}</td></tr>`
+              : ''
+          }
+          ${
+            urgency
+              ? `<tr><td style="padding: 4px 0; color: #888;">Urgency</td><td style="padding: 4px 0; text-align: right;">${urgency}</td></tr>`
+              : ''
+          }
+        </table>
+      </div>
+
+      ${
+        requirementUrl
+          ? `<div style="text-align: center; margin: 28px 0;">
+              <a href="${requirementUrl}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">View your requirement</a>
+            </div>`
+          : ''
+      }
+
+      <p style="color: #555; font-size: 13px; line-height: 1.5; margin: 24px 0 0;">
+        We'll email you as soon as a property matches what you're looking for.
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
+      <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
+    </div>
+  </div>
+  `;
+};
+
+const sendRequirementCreatedEmail = async (to, recipientName, details, requirementUrl) =>
+  sendMail({
+    to,
+    subject: `Your requirement "${details?.title || 'requirement'}" is live on ApnaBnB`,
+    text: `Hi${recipientName ? ` ${recipientName}` : ''}, your requirement "${details?.title || 'requirement'}" is now live on ApnaBnB.${requirementUrl ? ` View it here: ${requirementUrl}` : ''}`,
+    html: buildRequirementCreatedHtml(recipientName, details, requirementUrl),
+  });
+
+/* ─── Match notification ───
+   Renders one match or a digest of many. `items` is a list of
+   { title, subtitle, rows: [{ label, value }], score } — the caller shapes the
+   domain data so this stays direction-agnostic (supply side vs demand side). */
+const buildMatchesHtml = (recipientName, { heading, intro, items = [], ctaUrl, ctaLabel }) => {
+  const cards = items
+    .map(
+      ({ title, subtitle, rows = [], score }) => `
+      <div style="background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 18px; margin: 0 0 12px;">
+        <div style="display: flex; justify-content: space-between;">
+          <h3 style="color: #222; margin: 0 0 4px; font-size: 16px;">${title || '—'}</h3>
+        </div>
+        ${subtitle ? `<p style="color: #717171; margin: 0 0 12px; font-size: 13px;">${subtitle}</p>` : ''}
+        <table style="width: 100%; font-size: 14px; color: #333; border-collapse: collapse;">
+          ${rows
+            .map(
+              ({ label, value }) =>
+                `<tr><td style="padding: 3px 0; color: #888;">${label}</td><td style="padding: 3px 0; text-align: right; font-weight: 600;">${value}</td></tr>`,
+            )
+            .join('')}
+          ${
+            score !== null && score !== undefined
+              ? `<tr><td style="padding: 3px 0; color: #888;">Match score</td><td style="padding: 3px 0; text-align: right; font-weight: 700; color: #00856f;">${Math.round(score)}%</td></tr>`
+              : ''
+          }
+        </table>
+      </div>`,
+    )
+    .join('');
+
+  return `
+  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
+    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h2 style="color: #00856f; margin: 0 0 8px;">${heading}</h2>
+      <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
+        ${recipientName ? `Hi ${recipientName},` : 'Hi,'} ${intro}
+      </p>
+
+      ${cards}
+
+      ${
+        ctaUrl
+          ? `<div style="text-align: center; margin: 28px 0;">
+              <a href="${ctaUrl}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">${ctaLabel || 'View matches'}</a>
+            </div>`
+          : ''
+      }
+
+      <p style="color: #555; font-size: 13px; line-height: 1.5; margin: 24px 0 0;">
+        Open the match in ApnaBnB to see contact details and start a conversation.
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
+      <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
+    </div>
+  </div>
+  `;
+};
+
+const sendMatchesEmail = async (to, recipientName, payload) =>
+  sendMail({
+    to,
+    subject: payload.subject,
+    text: payload.text,
+    html: buildMatchesHtml(recipientName, payload),
+  });
+
 module.exports = {
   sendMail,
   sendOtpEmail,
   sendResetEmail,
   sendListingCreatedEmail,
+  sendPropertyCreatedEmail,
+  sendRequirementCreatedEmail,
+  sendMatchesEmail,
+  formatPrice,
+  formatBudget,
 };

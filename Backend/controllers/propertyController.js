@@ -8,6 +8,12 @@ const {
   isMatchCandidate,
   normalizeSupply,
 } = require('../utils/matchScore');
+const { sendPropertyCreatedEmail } = require('../utils/mailer');
+const {
+  notifyPropertyMatches,
+  notifyInBackground,
+  appUrl,
+} = require('../utils/matchNotifier');
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 const num = (v) =>
@@ -59,7 +65,9 @@ const listedBySelect = {
 // Auto-generate matches for a newly-created property.
 // Pre-filters requirements by city + propertyType (+ active), then refines with
 // isMatchCandidate (area/price/purpose) and derives match type from roles.
-const generateMatchesForProperty = async (property, userId) => {
+// `notify` is opt-in so bulk callers (demo-seed) never blast emails; the real
+// user-facing paths (createProperty, manual regenerate) pass it explicitly.
+const generateMatchesForProperty = async (property, userId, { notify = false } = {}) => {
   try {
     const propertyOwner = await prisma.user.findUnique({
       where: { id: property.listedById },
@@ -114,16 +122,20 @@ const generateMatchesForProperty = async (property, userId) => {
             status: 'pending',
           },
         });
-        return { match, score };
+        return { match, score, requirement };
       }),
     );
+    const pairs = [];
     for (const entry of produced) {
       if (!entry) continue;
       matches.push(entry.match);
       aiEntries.push({ matchId: entry.match.id, ruleScore: entry.score });
+      pairs.push({ match: entry.match, requirement: entry.requirement });
     }
     // Kick off AI semantic scoring in the background (non-blocking).
     enrichMatchesWithAI(aiEntries);
+    // Email both sides about the newly created matches (never blocks).
+    if (notify) notifyInBackground(notifyPropertyMatches, property, pairs);
     return matches;
   } catch (error) {
     console.error('Error generating matches:', error);
@@ -174,8 +186,33 @@ const createProperty = async (req, res, next) => {
 
     const property = await prisma.property.create({ data });
 
-    // Generate automatic matches
-    await generateMatchesForProperty(property, req.user.id);
+    // Fire-and-forget confirmation email to whoever listed it.
+    notifyInBackground(async () => {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { name: true, email: true },
+      });
+      if (!user?.email) return;
+      await sendPropertyCreatedEmail(
+        user.email,
+        user.name,
+        {
+          title: property.title,
+          propertyType: property.propertyType,
+          city: property.location?.city,
+          area: property.location?.area,
+          price: property.price,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          size: property.size,
+          sizeUnit: property.sizeUnit,
+        },
+        appUrl(`/property/${property.id}`),
+      );
+    });
+
+    // Generate automatic matches (emails both sides about anything new)
+    await generateMatchesForProperty(property, req.user.id, { notify: true });
 
     res.status(201).json(property);
   } catch (error) {

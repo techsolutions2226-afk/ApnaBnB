@@ -39,7 +39,7 @@ router.post('/generate/property/:propertyId', verifyToken, async (req, res, next
       return res.status(404).json({ message: 'Property not found' });
     }
     
-    const matches = await generateMatchesForProperty(property, req.user.id);
+    const matches = await generateMatchesForProperty(property, req.user.id, { notify: true });
     res.status(200).json({ 
       message: `Generated ${matches.length} matches`,
       matches 
@@ -56,7 +56,7 @@ router.post('/generate/requirement/:requirementId', verifyToken, async (req, res
       return res.status(404).json({ message: 'Requirement not found' });
     }
     
-    const matches = await generateMatchesForRequirement(requirement, req.user.id);
+    const matches = await generateMatchesForRequirement(requirement, req.user.id, { notify: true });
     res.status(200).json({ 
       message: `Generated ${matches.length} matches`,
       matches 

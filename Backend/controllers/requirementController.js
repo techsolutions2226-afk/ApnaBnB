@@ -7,6 +7,12 @@ const {
   isMatchCandidate,
   normalizeDemand,
 } = require('../utils/matchScore');
+const { sendRequirementCreatedEmail } = require('../utils/mailer');
+const {
+  notifyRequirementMatches,
+  notifyInBackground,
+  appUrl,
+} = require('../utils/matchNotifier');
 
 const num = (v) =>
   v === undefined || v === null || v === '' ? undefined : Number(v);
@@ -27,7 +33,9 @@ const requiredBySelect = {
 
 // Auto-generate matches for a newly-created requirement.
 // Same strict criteria as the property side — see propertyController for notes.
-const generateMatchesForRequirement = async (requirement, userId) => {
+// `notify` is opt-in so bulk callers never blast emails; the real user-facing
+// paths (createRequirement, manual regenerate) pass it explicitly.
+const generateMatchesForRequirement = async (requirement, userId, { notify = false } = {}) => {
   try {
     const requirementOwner = await prisma.user.findUnique({
       where: { id: requirement.requiredById },
@@ -82,16 +90,20 @@ const generateMatchesForRequirement = async (requirement, userId) => {
             status: 'pending',
           },
         });
-        return { match, score };
+        return { match, score, property };
       }),
     );
+    const pairs = [];
     for (const entry of produced) {
       if (!entry) continue;
       matches.push(entry.match);
       aiEntries.push({ matchId: entry.match.id, ruleScore: entry.score });
+      pairs.push({ match: entry.match, property: entry.property });
     }
     // Kick off AI semantic scoring in the background (non-blocking).
     enrichMatchesWithAI(aiEntries);
+    // Email both sides about the newly created matches (never blocks).
+    if (notify) notifyInBackground(notifyRequirementMatches, requirement, pairs);
     return matches;
   } catch (error) {
     console.error('Error generating matches:', error);
@@ -132,8 +144,33 @@ const createRequirement = async (req, res, next) => {
       },
     });
 
-    // Generate automatic matches
-    await generateMatchesForRequirement(requirement, req.user.id);
+    // Fire-and-forget confirmation email to whoever posted it.
+    notifyInBackground(async () => {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { name: true, email: true },
+      });
+      if (!user?.email) return;
+      await sendRequirementCreatedEmail(
+        user.email,
+        user.name,
+        {
+          title: requirement.title,
+          propertyType: requirement.propertyType,
+          city: requirement.location?.city,
+          area: requirement.location?.area,
+          budget: requirement.budget,
+          bedrooms: requirement.bedrooms,
+          bathrooms: requirement.bathrooms,
+          size: requirement.size,
+          urgency: requirement.urgency,
+        },
+        appUrl(`/requirements/${requirement.id}`),
+      );
+    });
+
+    // Generate automatic matches (emails both sides about anything new)
+    await generateMatchesForRequirement(requirement, req.user.id, { notify: true });
 
     res.status(201).json(requirement);
   } catch (error) {

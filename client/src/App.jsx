@@ -17,8 +17,8 @@ import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import Experiences from "./pages/Experiences";
-import Services from "./pages/Services";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import SearchResults from "./pages/SearchResults";
 import Account from "./pages/Account";
 import PersonalInfo from "./pages/PersonalInfo";
@@ -64,6 +64,7 @@ import AdminMatches from "./pages/admin/AdminMatches";
 import AdminMessages from "./pages/admin/AdminMessages";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPlans from "./pages/admin/AdminPlans";
+import AdminContact from "./pages/admin/AdminContact";
 import AdminLogs from "./pages/admin/AdminLogs";
 
 /* ── Subscription Plans (Step 10) ── */
@@ -126,8 +127,8 @@ function App() {
                 <Route element={<Layout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/property/:id" element={<PropertyDetail />} />
-                  <Route path="/experiences" element={<Experiences />} />
-                  <Route path="/services" element={<Services />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
                   <Route path="/search" element={<SearchResults />} />
                   {/* Clean URLs for the For Sale / For Rent landing cards.
                       SearchResults reads `purpose` from the URL pathname. */}
@@ -158,6 +159,7 @@ function App() {
                   <Route path="messages" element={<AdminMessages />} />
                   <Route path="payments" element={<AdminPayments />} />
                   <Route path="plans" element={<AdminPlans />} />
+                  <Route path="contact" element={<AdminContact />} />
                   <Route path="logs" element={<AdminLogs />} />
                 </Route>
 

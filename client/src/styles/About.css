@@ -1,0 +1,386 @@
+/* ===================================================
+   About.css — About Us page
+   Prefix: abt-*  ·  brand palette: green #134e2c / #1a8f5a,
+   navy #16324f, cream #faf6ed (matches Dashboard + Listing pages)
+   =================================================== */
+
+.abt-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px 72px;
+}
+
+/* ── Hero ── */
+.abt-hero {
+  /* background: linear-gradient(135deg, #0f3d24 0%, #134e2c 55%, #1a8f5a 100%); */
+ background: rgb(56, 56, 56);
+  border-radius: 20px;
+  padding: 56px 44px;
+  margin-bottom: 48px;
+  color: #fff;
+}
+
+.abt-hero-inner {
+  max-width: 720px;
+}
+
+.abt-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #a7e0c1;
+  margin-bottom: 14px;
+}
+
+.abt-hero-title {
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  margin: 0 0 16px;
+}
+
+.abt-hero-lead {
+  font-size: 17px;
+  line-height: 1.65;
+  color: #dbf0e4;
+  margin: 0 0 28px;
+}
+
+.abt-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.abt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.abt-btn--primary {
+  background: #fff;
+  color: #134e2c;
+}
+
+.abt-btn--primary:hover {
+  background: #e9f2ec;
+}
+
+.abt-btn--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+
+.abt-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Sections ── */
+.abt-section {
+  margin-bottom: 52px;
+}
+
+.abt-section--alt {
+  background: #f7faf8;
+  border: 1px solid #e6efe9;
+  border-radius: 18px;
+  padding: 36px 32px;
+}
+
+.abt-section-title {
+  font-size: 27px;
+  font-weight: 800;
+  color: #16324f;
+  letter-spacing: -0.3px;
+  margin: 0 0 8px;
+}
+
+.abt-section-sub {
+  font-size: 15px;
+  color: #66788a;
+  margin: 0 0 26px;
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+/* ── Roles ── */
+.abt-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.abt-role-card {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-top: 3px solid var(--abt-accent, #1a8f5a);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.abt-role-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  color: var(--abt-accent, #1a8f5a);
+  background: color-mix(in srgb, var(--abt-accent, #1a8f5a) 14%, #fff);
+}
+
+.abt-role-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #16324f;
+  margin: 0 0 8px;
+}
+
+.abt-role-body {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #55697c;
+  margin: 0;
+}
+
+/* ── Steps ── */
+.abt-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.abt-step {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 14px;
+  padding: 20px 22px;
+}
+
+.abt-step-num {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a8f5a;
+  background: #e9f2ec;
+  border-radius: 10px;
+  padding: 8px 12px;
+  letter-spacing: 0.5px;
+}
+
+.abt-step-title {
+  font-size: 16.5px;
+  font-weight: 700;
+  color: #16324f;
+  margin: 2px 0 6px;
+}
+
+.abt-step-body {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #55697c;
+  margin: 0;
+}
+
+/* ── Features ── */
+.abt-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.abt-feature {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.abt-feature-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #e9f2ec;
+  color: #134e2c;
+}
+
+.abt-feature-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #16324f;
+  margin: 0 0 5px;
+}
+
+.abt-feature-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #66788a;
+  margin: 0;
+}
+
+/* ── Values ── */
+.abt-value-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.abt-value {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.abt-value-tick {
+  flex-shrink: 0;
+  color: #1a8f5a;
+  margin-top: 3px;
+}
+
+.abt-value-title {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #16324f;
+  margin: 0 0 5px;
+}
+
+.abt-value-body {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #55697c;
+  margin: 0;
+}
+
+/* ── Cities ── */
+.abt-city-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.abt-city {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #16324f;
+}
+
+.abt-city svg {
+  color: #1a8f5a;
+}
+
+/* ── CTA ── */
+.abt-cta {
+  background: #16324f;
+  border-radius: 20px;
+  padding: 44px 40px;
+  color: #fff;
+  text-align: center;
+}
+
+.abt-cta-title {
+  font-size: 27px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  letter-spacing: -0.3px;
+}
+
+.abt-cta-sub {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #c3d2e0;
+  margin: 0 0 24px;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.abt-cta .abt-hero-actions {
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .abt-page {
+    padding: 12px 16px 56px;
+  }
+
+  .abt-hero {
+    padding: 36px 24px;
+    border-radius: 16px;
+  }
+
+  .abt-hero-title {
+    font-size: 29px;
+  }
+
+  .abt-hero-lead {
+    font-size: 15.5px;
+  }
+
+  .abt-section-title {
+    font-size: 22px;
+  }
+
+  .abt-section--alt {
+    padding: 26px 20px;
+  }
+
+  .abt-cta {
+    padding: 32px 22px;
+  }
+
+  .abt-cta-title {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .abt-hero-title {
+    font-size: 25px;
+  }
+
+  .abt-btn {
+    flex: 1 1 100%;
+  }
+
+  .abt-step {
+    gap: 12px;
+    padding: 16px;
+  }
+}

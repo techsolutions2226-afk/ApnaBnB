@@ -41,10 +41,12 @@ const getTransporter = () => {
   return cachedTransporter;
 };
 
-const sendMail = async ({ to, subject, html, text }) => {
+const sendMail = async ({ to, subject, html, text, replyTo }) => {
   const transporter = getTransporter();
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-  return transporter.sendMail({ from, to, subject, html, text });
+  // replyTo is optional — the contact form uses it so replying reaches the
+  // visitor rather than our own SMTP mailbox.
+  return transporter.sendMail({ from, to, subject, html, text, ...(replyTo ? { replyTo } : {}) });
 };
 
 const buildOtpHtml = (otp, recipientName) => `
@@ -363,6 +365,44 @@ const sendMatchesEmail = async (to, recipientName, payload) =>
     html: buildMatchesHtml(recipientName, payload),
   });
 
+/* ─── Contact-form enquiry ───
+   Sent TO the address the admin configured on the Contact page. replyTo is the
+   visitor so the team can just hit reply. Escaped because this is the one
+   template whose content comes from an untrusted public form. */
+const escapeHtml = (s) =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const sendContactMessageEmail = async (to, { name, email, subject, message }) =>
+  sendMail({
+    to,
+    replyTo: email,
+    subject: subject
+      ? `[ApnaBnB contact] ${subject}`
+      : `[ApnaBnB contact] New message from ${name}`,
+    text: `From: ${name} <${email}>\n${subject ? `Subject: ${subject}\n` : ''}\n${message}`,
+    html: `
+  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
+    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h2 style="color: #00856f; margin: 0 0 8px;">New contact enquiry</h2>
+      <table style="width: 100%; font-size: 14px; color: #333; border-collapse: collapse; margin: 0 0 20px;">
+        <tr><td style="padding: 4px 0; color: #888;">Name</td><td style="padding: 4px 0; text-align: right; font-weight: 600;">${escapeHtml(name)}</td></tr>
+        <tr><td style="padding: 4px 0; color: #888;">Email</td><td style="padding: 4px 0; text-align: right; font-weight: 600;">${escapeHtml(email)}</td></tr>
+        ${subject ? `<tr><td style="padding: 4px 0; color: #888;">Subject</td><td style="padding: 4px 0; text-align: right;">${escapeHtml(subject)}</td></tr>` : ''}
+      </table>
+      <div style="background: #fafafa; border: 1px solid #ebebeb; border-radius: 10px; padding: 18px; white-space: pre-wrap; font-size: 14px; color: #333;">${escapeHtml(message)}</div>
+      <p style="color: #888; font-size: 13px; margin: 20px 0 0;">Reply directly to this email to respond to ${escapeHtml(name)}.</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
+      <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
+    </div>
+  </div>
+  `,
+  });
+
 module.exports = {
   sendMail,
   sendOtpEmail,
@@ -371,6 +411,7 @@ module.exports = {
   sendPropertyCreatedEmail,
   sendRequirementCreatedEmail,
   sendMatchesEmail,
+  sendContactMessageEmail,
   formatPrice,
   formatBudget,
 };

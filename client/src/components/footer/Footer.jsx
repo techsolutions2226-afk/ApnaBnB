@@ -15,13 +15,15 @@ import Logo from "../common/Logo";
 import "../../styles/Footer.css";
 
 /* ─── Links data ─── */
+/* `to` turns the entry into a real route link; the rest stay inert until
+   those pages exist. */
 const company = [
-  "About Us",
-  "Contact Us",
-  "Jobs",
-  "Help & Support",
-  "Advertise On ApnaBnB",
-  "Terms Of Use",
+  { label: "About Us", to: "/about" },
+  { label: "Contact Us", to: "/contact" },
+  { label: "Jobs" },
+  { label: "Help & Support" },
+  { label: "Advertise On ApnaBnB" },
+  { label: "Terms Of Use" },
 ];
 
 const connect = [
@@ -71,11 +73,17 @@ const Footer = () => {
           <div className="footer-col">
             <h3 className="footer-col-title">Company</h3>
             <div className="footer-col-links">
-              {company.map((item) => (
-                <a key={item} href="#" className="footer-link">
-                  {item}
-                </a>
-              ))}
+              {company.map((item) =>
+                item.to ? (
+                  <Link key={item.label} to={item.to} className="footer-link">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a key={item.label} href="#" className="footer-link">
+                    {item.label}
+                  </a>
+                ),
+              )}
             </div>
           </div>
 

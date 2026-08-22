@@ -1,0 +1,435 @@
+/* ===================================================
+   Contact.css — Contact Us page (content is admin-editable)
+   Prefix: cnt-*  ·  brand palette shared with About/Dashboard
+   =================================================== */
+
+.cnt-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 24px 72px;
+}
+
+.cnt-loading {
+  padding: 60px 0;
+  text-align: center;
+  color: #66788a;
+}
+
+.cnt-loading .auth-spinner {
+  margin: 0 auto 16px;
+}
+
+/* ── Hero ── */
+.cnt-hero {
+  background: linear-gradient(135deg, #0f3d24 0%, #134e2c 60%, #1a8f5a 100%);
+  border-radius: 20px;
+  padding: 48px 40px;
+  margin-bottom: 32px;
+  color: #fff;
+}
+
+.cnt-hero-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 12px;
+}
+
+.cnt-hero-sub {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #dbf0e4;
+  margin: 0;
+  max-width: 700px;
+}
+
+/* ── Layout ── */
+.cnt-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── Detail cards ── */
+.cnt-details {
+  display: grid;
+  gap: 12px;
+}
+
+.cnt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 14px;
+  padding: 18px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cnt-card--link {
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.cnt-card--link:hover {
+  border-color: #cfe3d8;
+  box-shadow: 0 4px 14px rgba(22, 50, 79, 0.08);
+  transform: translateY(-1px);
+}
+
+.cnt-card--block {
+  display: block;
+}
+
+.cnt-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.cnt-card-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: #e9f2ec;
+  color: #134e2c;
+}
+
+.cnt-card-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #8a9aaa;
+  margin-bottom: 3px;
+}
+
+.cnt-card-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #16324f;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+.cnt-hours {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.cnt-hours li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: #55697c;
+}
+
+.cnt-hours strong {
+  color: #16324f;
+  white-space: nowrap;
+}
+
+.cnt-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cnt-social {
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16324f;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.cnt-social:hover {
+  border-color: #1a8f5a;
+  color: #1a8f5a;
+}
+
+/* ── Form ── */
+.cnt-form-wrap {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 18px;
+  padding: 32px;
+}
+
+.cnt-form-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #16324f;
+  margin: 0 0 8px;
+}
+
+.cnt-form-note {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #66788a;
+  margin: 0 0 22px;
+}
+
+.cnt-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cnt-field {
+  margin-bottom: 18px;
+  min-width: 0;
+}
+
+.cnt-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #16324f;
+  margin-bottom: 6px;
+}
+
+.cnt-input,
+.cnt-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: #222;
+  background: #fff;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cnt-textarea {
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+
+.cnt-input:focus,
+.cnt-textarea:focus {
+  border-color: #134e2c;
+  box-shadow: 0 0 0 2px rgba(19, 78, 44, 0.12);
+}
+
+.cnt-input--error {
+  border-color: #c13515;
+}
+
+.cnt-error {
+  font-size: 13px;
+  color: #c13515;
+  margin-top: 4px;
+}
+
+.cnt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 26px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.cnt-btn--primary {
+  background: #134e2c;
+  color: #fff;
+}
+
+.cnt-btn--primary:hover:not(:disabled) {
+  background: #0f3d24;
+  box-shadow: 0 4px 14px rgba(19, 78, 44, 0.25);
+}
+
+.cnt-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.cnt-btn--ghost {
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  color: #16324f;
+}
+
+.cnt-btn--ghost:hover {
+  border-color: #1a8f5a;
+  color: #1a8f5a;
+}
+
+/* ── Sent / disabled states ── */
+.cnt-sent,
+.cnt-form-off {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.cnt-sent-tick {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: #e9f2ec;
+  color: #134e2c;
+  font-size: 28px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Map ── */
+.cnt-map {
+  margin-top: 32px;
+  border: 1px solid #e8edf2;
+  border-radius: 18px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.cnt-map iframe {
+  width: 100%;
+  height: 380px;
+  border: 0;
+}
+
+/* ── FAQs ── */
+.cnt-faq-section {
+  margin-top: 48px;
+}
+
+.cnt-faq-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: #16324f;
+  margin: 0 0 20px;
+  letter-spacing: -0.3px;
+}
+
+.cnt-faqs {
+  display: grid;
+  gap: 10px;
+}
+
+.cnt-faq {
+  background: #fff;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cnt-faq--open {
+  border-color: #cfe3d8;
+}
+
+.cnt-faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #16324f;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cnt-faq-chev {
+  flex-shrink: 0;
+  color: #8a9aaa;
+  transition: transform 0.18s;
+}
+
+.cnt-faq--open .cnt-faq-chev {
+  transform: rotate(180deg);
+}
+
+.cnt-faq-a {
+  padding: 0 20px 18px;
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #55697c;
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+
+@media (max-width: 900px) {
+  .cnt-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .cnt-page {
+    padding: 12px 16px 56px;
+  }
+
+  .cnt-hero {
+    padding: 32px 22px;
+    border-radius: 16px;
+  }
+
+  .cnt-hero-title {
+    font-size: 27px;
+  }
+
+  .cnt-hero-sub {
+    font-size: 15px;
+  }
+
+  .cnt-form-wrap {
+    padding: 24px 20px;
+  }
+
+  .cnt-faq-heading {
+    font-size: 22px;
+  }
+
+  .cnt-map iframe {
+    height: 280px;
+  }
+}
+
+@media (max-width: 560px) {
+  /* Name + email stack rather than squeezing two inputs onto a phone. */
+  .cnt-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .cnt-btn {
+    width: 100%;
+  }
+}

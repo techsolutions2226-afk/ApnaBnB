@@ -92,6 +92,8 @@ const paymentRoutes = require("./routes/paymentRoutes");
 app.use("/api/payments", paymentRoutes);
 const planRoutes = require("./routes/planRoutes");
 app.use("/api/plans", planRoutes);
+const contactRoutes = require("./routes/contactRoutes");
+app.use("/api/contact", contactRoutes);
 
 // Global error handler
 app.use(errorHandler);

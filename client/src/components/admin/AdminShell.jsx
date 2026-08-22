@@ -12,6 +12,7 @@ import {
   FiTag,
   FiLogOut,
   FiMenu,
+  FiPhone,
   FiX,
   FiChevronRight,
 } from "react-icons/fi";
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { to: "/admin/messages", label: "Messages", icon: FiMail },
   { to: "/admin/payments", label: "Payments", icon: FiCreditCard },
   { to: "/admin/plans", label: "Plans", icon: FiTag },
+  { to: "/admin/contact", label: "Contact Page", icon: FiPhone },
   { to: "/admin/logs", label: "System Logs", icon: FiActivity },
 ];
 

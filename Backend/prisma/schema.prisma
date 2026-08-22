@@ -560,3 +560,42 @@ model ActivityLog {
   @@index([entityType, entityId])
   @@index([createdAt])
 }
+
+// ─────────────────────────── Contact page (admin-editable) ───────────────────
+// Single row (id is pinned to "singleton") holding everything the public
+// Contact Us page renders. Admins edit it from /admin/contact; the page reads
+// GET /api/contact. Repeating groups stay JSONB — same convention as Plan's
+// features/limits — so adding an office or an FAQ needs no migration.
+model ContactPage {
+  id String @id @default("singleton")
+
+  // Hero
+  heading    String @default("Get in touch")
+  subheading String @default("")
+
+  // Primary contact details
+  email    String @default("")
+  phone    String @default("")
+  whatsapp String @default("")
+  address  String @default("")
+  city     String @default("")
+
+  // Optional Google Maps embed src for the location panel
+  mapEmbedUrl String @default("")
+
+  // Shown beside the form, e.g. "We usually reply within one business day."
+  responseNote String @default("")
+
+  // [{ day: "Monday - Friday", time: "9:00 AM - 6:00 PM" }, ...]
+  officeHours Json @default("[]")
+  // [{ label: "Facebook", url: "https://..." }, ...]
+  socials Json @default("[]")
+  // [{ question: "...", answer: "..." }, ...]
+  faqs Json @default("[]")
+
+  // When false the public page hides the message form (details still show).
+  formEnabled Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -28,6 +28,8 @@ const authService = {
           avatar: response.data.avatar || '',
           phone: response.data.phone || '',
           location: response.data.location || '',
+          latitude: response.data.latitude ?? null,
+          longitude: response.data.longitude ?? null,
           emergencyContact: response.data.emergencyContact || '',
         };
         localStorage.setItem('current_user', JSON.stringify(user));
@@ -97,6 +99,8 @@ const authService = {
           avatar: response.data.avatar || '',
           phone: response.data.phone || '',
           location: response.data.location || '',
+          latitude: response.data.latitude ?? null,
+          longitude: response.data.longitude ?? null,
           emergencyContact: response.data.emergencyContact || '',
         };
         localStorage.setItem('current_user', JSON.stringify(user));
@@ -172,6 +176,8 @@ const authService = {
           avatar: response.data.avatar || '',
           phone: response.data.phone || '',
           location: response.data.location || '',
+          latitude: response.data.latitude ?? null,
+          longitude: response.data.longitude ?? null,
           emergencyContact: response.data.emergencyContact || '',
         };
         localStorage.setItem('current_user', JSON.stringify(user));
@@ -191,6 +197,8 @@ const authService = {
         role,
         phone: details.phone || '',
         location: details.location || '',
+        latitude: details.latitude ?? null,
+        longitude: details.longitude ?? null,
       });
       if (response.data.token) {
         localStorage.setItem('auth_token', response.data.token);
@@ -203,6 +211,8 @@ const authService = {
           avatar: response.data.avatar || '',
           phone: response.data.phone || '',
           location: response.data.location || '',
+          latitude: response.data.latitude ?? null,
+          longitude: response.data.longitude ?? null,
           emergencyContact: response.data.emergencyContact || '',
         };
         localStorage.setItem('current_user', JSON.stringify(user));

@@ -594,6 +594,8 @@ const googleUserPayload = (user) => ({
   avatar: user.avatar || '',
   phone: user.phone || '',
   location: user.location || '',
+  latitude: user.latitude ?? null,
+  longitude: user.longitude ?? null,
   emergencyContact: user.emergencyContact || '',
   verified: true,
   token: generateToken(user.id, user.role),
@@ -638,7 +640,7 @@ const googleAuth = async (req, res, next) => {
 // POST /api/auth/google/complete — finish creating a brand-new Google account
 // once the client has chosen their role (Buyer/Seller/Dealer).
 const googleComplete = async (req, res, next) => {
-  const { idToken, role, phone, location } = req.body;
+  const { idToken, role, phone, location, latitude, longitude } = req.body;
 
   const VALID_ROLES = ['seller', 'buyer', 'dealer'];
   if (!role || !VALID_ROLES.includes(role)) {
@@ -663,6 +665,15 @@ const googleComplete = async (req, res, next) => {
   if (cleanLocation.length > 200) {
     return res.status(400).json({ message: 'Address is too long (max 200 characters).' });
   }
+
+  // Coordinates are optional — only present when the user used "detect my
+  // location". Store them only if both are valid, so we never persist half a
+  // point or a NaN that came in from a malformed client payload.
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  const hasCoords =
+    Number.isFinite(lat) && Number.isFinite(lng) &&
+    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 
   try {
     const payload = await verifyGoogleIdToken(idToken);
@@ -690,6 +701,8 @@ const googleComplete = async (req, res, next) => {
         avatar: String(payload.picture || ''),
         phone: cleanPhone,
         location: cleanLocation,
+        latitude: hasCoords ? lat : null,
+        longitude: hasCoords ? lng : null,
       },
     });
 

@@ -3,21 +3,20 @@
    no address — so we collect those here, in the same step where the user picks
    their role, rather than leaving the fields empty in the database.
 
-   The address offers the same three options as the Create Listing page:
-     • "detect"  — browser geolocation, reverse-geocoded to a readable area
-     • "select"  — City + Area dropdowns (shared CITIES / AREAS_BY_CITY)
-     • "manual"  — free-text, for anything the lists don't cover
+   The address offers two options:
+     • "detect"  — browser geolocation; stores the reverse-geocoded address
+                   AND the raw latitude/longitude
+     • "manual"  — free-text, for anything geolocation can't resolve
 
    Props:
      profile   — { name, email, avatar } from the Google token (display only)
      submitting — disables the form while the account is being created
-     onSubmit  — ({ role, phone, location }) => void
+     onSubmit  — ({ role, phone, location, latitude, longitude }) => void
    ─────────────────────────────────────────────── */
 
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { FiCrosshair, FiList, FiEdit3 } from "react-icons/fi";
-import { CITIES, AREAS_BY_CITY } from "../../config/locations";
+import { FiCrosshair, FiEdit3 } from "react-icons/fi";
 import { reverseGeocode } from "../../utils/geocode";
 import "../../styles/GoogleSignupDetails.css";
 
@@ -29,7 +28,6 @@ const ROLE_OPTIONS = [
 
 const MODES = [
   { key: "detect", label: "Use my location", icon: FiCrosshair },
-  { key: "select", label: "Pick city & area", icon: FiList },
   { key: "manual", label: "Type address", icon: FiEdit3 },
 ];
 
@@ -39,25 +37,20 @@ const PHONE_RE = /^[+(\d][\d\s()-]{6,19}$/;
 const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
   const [role, setRole] = useState("");
   const [phone, setPhone] = useState("");
-  const [mode, setMode] = useState("select");
+  const [mode, setMode] = useState("detect");
 
-  const [city, setCity] = useState("");
-  const [area, setArea] = useState("");
   const [manual, setManual] = useState("");
   const [detected, setDetected] = useState("");
+  const [coords, setCoords] = useState(null); // { lat, lng } from geolocation
   const [detecting, setDetecting] = useState(false);
 
   const [errors, setErrors] = useState({});
 
-  const areas = useMemo(() => AREAS_BY_CITY[city] || [], [city]);
-
   /* The single address string that gets stored on the user record. */
-  const composedLocation = useMemo(() => {
-    if (mode === "detect") return detected.trim();
-    if (mode === "manual") return manual.trim();
-    if (!city) return "";
-    return area && area !== "Other" ? `${area}, ${city}` : city;
-  }, [mode, detected, manual, city, area]);
+  const composedLocation = useMemo(
+    () => (mode === "detect" ? detected.trim() : manual.trim()),
+    [mode, detected, manual],
+  );
 
   const handleDetect = useCallback(() => {
     if (!("geolocation" in navigator)) {
@@ -67,20 +60,21 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
     setDetecting(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCoords(point);
         try {
-          const addr = await reverseGeocode(coords);
+          const addr = await reverseGeocode(point);
           const label =
             [addr.area, addr.city].filter(Boolean).join(", ") ||
             addr.displayName ||
-            `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+            `${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`;
           setDetected(label);
           setErrors((prev) => ({ ...prev, location: undefined }));
           toast.success("Location detected");
         } catch {
           // Reverse geocoding is best-effort; keep the coordinates so the
           // signup can still complete rather than failing the whole step.
-          setDetected(`${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`);
+          setDetected(`${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`);
           toast.info("Saved your coordinates — you can edit this later.");
         } finally {
           setDetecting(false);
@@ -110,10 +104,8 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
     if (!composedLocation) {
       next.location =
         mode === "detect"
-          ? "Detect your location, or switch to picking a city."
-          : mode === "manual"
-            ? "Enter your business address."
-            : "Select your city.";
+          ? "Detect your location, or switch to typing your address."
+          : "Enter your business address.";
     }
     return next;
   };
@@ -123,7 +115,13 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length) return;
-    onSubmit({ role, phone: phone.trim(), location: composedLocation });
+    onSubmit({
+      role,
+      phone: phone.trim(),
+      location: composedLocation,
+      latitude: mode === "detect" ? coords?.lat ?? null : null,
+      longitude: mode === "detect" ? coords?.lng ?? null : null,
+    });
   };
 
   return (
@@ -223,47 +221,16 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
               <FiCrosshair size={14} />
               {detecting ? "Detecting…" : "Detect my location"}
             </button>
-            {detected && <p className="gsd-detected">{detected}</p>}
-          </div>
-        )}
-
-        {mode === "select" && (
-          <div className="gsd-row">
-            <div>
-              <label className="gsd-sublabel" htmlFor="gsd-city">City</label>
-              <select
-                id="gsd-city"
-                className={`gsd-input ${errors.location ? "gsd-input--error" : ""}`}
-                value={city}
-                onChange={(e) => {
-                  setCity(e.target.value);
-                  setArea("");
-                  setErrors((prev) => ({ ...prev, location: undefined }));
-                }}
-              >
-                <option value="">Select city</option>
-                {CITIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="gsd-sublabel" htmlFor="gsd-area">Area</label>
-              <select
-                id="gsd-area"
-                className="gsd-input"
-                value={area}
-                disabled={!areas.length}
-                onChange={(e) => setArea(e.target.value)}
-              >
-                <option value="">
-                  {areas.length ? "Select area" : "Select a city first"}
-                </option>
-                {areas.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
-            </div>
+            {detected && (
+              <>
+                <p className="gsd-detected">{detected}</p>
+                {coords && (
+                  <p className="gsd-coords">
+                    {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+                  </p>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -282,9 +249,6 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
         )}
 
         {errors.location && <p className="gsd-error">{errors.location}</p>}
-        {composedLocation && !errors.location && mode !== "detect" && (
-          <p className="gsd-preview">Saving as: {composedLocation}</p>
-        )}
       </div>
 
       <button type="submit" className="gsd-submit" disabled={submitting}>

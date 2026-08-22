@@ -42,14 +42,6 @@
   margin-bottom: 6px;
 }
 
-.gsd-sublabel {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #66788a;
-  margin-bottom: 4px;
-}
-
 .gsd-input {
   width: 100%;
   padding: 12px 14px;
@@ -82,12 +74,6 @@
   margin: 5px 0 0;
   font-size: 13px;
   color: #c13515;
-}
-
-.gsd-preview {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: #66788a;
 }
 
 /* ── Address mode switcher ── */
@@ -158,15 +144,13 @@
   color: #134e2c;
 }
 
-/* ── City + area row ── */
-.gsd-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.gsd-row > * {
-  min-width: 0;
+/* Raw coordinates under the resolved address, so the user can see exactly
+   what was captured. */
+.gsd-coords {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: #66788a;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Submit ── */
@@ -194,12 +178,6 @@
 }
 
 @media (max-width: 480px) {
-  /* Two selects at ~150px each get cramped on a phone. */
-  .gsd-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
   .gsd-mode {
     flex: 1 1 auto;
     justify-content: center;

@@ -65,12 +65,14 @@ const GoogleAuthButton = ({ className = "" }) => {
     }
   };
 
-  const completeSignup = async ({ role, phone, location }) => {
+  const completeSignup = async ({ role, phone, location, latitude, longitude }) => {
     if (!pendingRole) return;
     try {
       const user = await googleComplete(pendingRole.idToken, role, {
         phone,
         location,
+        latitude,
+        longitude,
       });
       toast.success("Account created! Redirecting...");
       setPendingRole(null);

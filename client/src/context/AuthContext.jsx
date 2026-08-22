@@ -279,6 +279,8 @@ export function AuthProvider({ children }) {
         avatar: response.avatar || "",
         phone: response.phone || "",
         location: response.location || "",
+        latitude: response.latitude ?? null,
+        longitude: response.longitude ?? null,
       };
       setCurrentUser(user);
       return user;

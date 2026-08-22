@@ -112,6 +112,12 @@ model User {
   location         String @default("")
   emergencyContact String @default("")
 
+  // Coordinates captured when the user opts into "use my current location"
+  // at signup. Null when they typed an address instead, or declined the
+  // browser permission prompt.
+  latitude  Float?
+  longitude Float?
+
   // The role the user is currently ACTING AS in their dashboard ("Viewing as"
   // selector): seller | buyer | dealer. Null until first pick — clients fall
   // back to `role`. Persisted so the chosen hat follows the user across

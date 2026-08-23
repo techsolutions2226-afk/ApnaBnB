@@ -36,6 +36,12 @@ const getTransporter = () => {
       user: SMTP_USER,
       pass: SMTP_PASS.replace(/\s+/g, ''),
     },
+    // Without these, a host that silently drops outbound SMTP (several PaaS
+    // free tiers do) leaves the connection hanging forever, and every request
+    // waiting on a mail send hangs with it. Fail fast instead.
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS) || 10000,
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS) || 10000,
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT_MS) || 15000,
   });
 
   return cachedTransporter;

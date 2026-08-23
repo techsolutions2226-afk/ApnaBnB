@@ -443,10 +443,31 @@ const forgotPassword = async (req, res, next) => {
     try {
       await sendResetEmail(user.email, resetUrl, user.name);
     } catch (mailErr) {
-      console.error('Failed to send reset email:', mailErr.message);
-      return res
-        .status(500)
-        .json({ message: 'Could not send reset email. Please try again.' });
+      // Log the real cause server-side. Connection/greeting timeouts here
+      // almost always mean the host blocks outbound SMTP (common on PaaS free
+      // tiers) rather than anything wrong with the credentials.
+      console.error('Failed to send reset email:', mailErr.code || '', mailErr.message);
+      // The token we just wrote is unusable if the mail never arrives — clear
+      // it so the cooldown doesn't lock the user out of retrying.
+      await prisma.user
+        .update({
+          where: { id: user.id },
+          data: {
+            resetPasswordTokenHash: null,
+            resetPasswordExpiresAt: null,
+            resetPasswordLastSentAt: null,
+          },
+        })
+        .catch(() => {});
+      const timedOut = /ETIMEDOUT|ECONNECTION|ESOCKET|Greeting never received/i.test(
+        `${mailErr.code || ''} ${mailErr.message || ''}`
+      );
+      return res.status(502).json({
+        code: timedOut ? 'MAIL_UNREACHABLE' : 'MAIL_FAILED',
+        message: timedOut
+          ? 'Our email service is unreachable right now. Please try again shortly.'
+          : 'Could not send reset email. Please try again.',
+      });
     }
 
     res

@@ -16,6 +16,12 @@ const AuthContext = createContext(null);
 const STORAGE_KEY = "current_user";
 
 // Server user payload → the compact shape the app keeps in state/localStorage.
+/* The single definition of the user object the app renders from.
+   Every profile field the API returns must be listed here: this runs on
+   session restore, so anything omitted is silently wiped from currentUser on
+   page load even though authService kept it in localStorage. That is what
+   made Create Listing stop prefilling the phone and Personal info show it as
+   "Not provided". */
 const normalizeUser = (u) => ({
   id: u.id,
   name: u.name,
@@ -23,6 +29,11 @@ const normalizeUser = (u) => ({
   role: u.role,
   viewRole: u.viewRole || null,
   avatar: u.avatar || "",
+  phone: u.phone || "",
+  location: u.location || "",
+  emergencyContact: u.emergencyContact || "",
+  latitude: u.latitude ?? null,
+  longitude: u.longitude ?? null,
 });
 
 /* ── Role → default dashboard path mapping ── */
@@ -187,14 +198,7 @@ export function AuthProvider({ children }) {
       if (response.twoFactorRequired) {
         return response;
       }
-      const user = {
-        id: response.id,
-        name: response.name,
-        email: response.email,
-        role: response.role,
-        viewRole: response.viewRole || null,
-        avatar: response.avatar || "",
-      };
+      const user = normalizeUser(response);
       setCurrentUser(user);
       return user;
     } catch (err) {
@@ -212,14 +216,7 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await authService.verifyTwoFactor(challengeToken, code);
-      const user = {
-        id: response.id,
-        name: response.name,
-        email: response.email,
-        role: response.role,
-        viewRole: response.viewRole || null,
-        avatar: response.avatar || "",
-      };
+      const user = normalizeUser(response);
       setCurrentUser(user);
       return { ...response, user };
     } catch (err) {
@@ -273,15 +270,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await authService.googleLogin(idToken);
       if (response.token) {
-        const user = {
-          id: response.id,
-          name: response.name,
-          email: response.email,
-          role: response.role,
-          viewRole: response.viewRole || null,
-          avatar: response.avatar || "",
-        };
-        setCurrentUser(user);
+        setCurrentUser(normalizeUser(response));
       }
       return response;
     } catch (err) {
@@ -300,18 +289,7 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await authService.googleComplete(idToken, role, details);
-      const user = {
-        id: response.id,
-        name: response.name,
-        email: response.email,
-        role: response.role,
-        viewRole: response.viewRole || null,
-        avatar: response.avatar || "",
-        phone: response.phone || "",
-        location: response.location || "",
-        latitude: response.latitude ?? null,
-        longitude: response.longitude ?? null,
-      };
+      const user = normalizeUser(response);
       setCurrentUser(user);
       return user;
     } catch (err) {

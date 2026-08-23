@@ -12,6 +12,8 @@ import {
   FiStar,
   FiCalendar,
   FiMessageSquare,
+  FiPhone,
+  FiMapPin,
   FiShield,
 } from "react-icons/fi";
 import "../styles/Profile.css";
@@ -195,6 +197,22 @@ export default function Profile() {
               <p className="pf-detail">
                 <FiMessageSquare size={16} /> {user.role || "user"} on the platform
               </p>
+
+              {/* Contact details are shown to the owner only. This page is
+                  public at /users/:id, so publishing a phone number to every
+                  visitor would be a disclosure the user never agreed to. */}
+              {isOwnProfile && user.phone && (
+                <p className="pf-detail">
+                  <FiPhone size={16} /> {user.phone}
+                  <span className="pf-detail-private">only visible to you</span>
+                </p>
+              )}
+              {isOwnProfile && user.location && (
+                <p className="pf-detail">
+                  <FiMapPin size={16} /> {user.location}
+                  <span className="pf-detail-private">only visible to you</span>
+                </p>
+              )}
             </div>
 
             {isOwnProfile && (

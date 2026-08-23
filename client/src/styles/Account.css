@@ -748,6 +748,25 @@
     gap: 12px;
   }
 
+  /* A notif row whose control is a full-width button (Generate new, Request)
+     rather than a toggle. The button will not shrink, so side-by-side crushes
+     the text column until it wraps one word per line and the button rides over
+     it. Toggle rows are left alone: a 48px switch still fits beside its label. */
+  .ac-notif-row:has(.ac-btn-outline),
+  .ac-notif-row:has(.ac-btn-danger) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  /* Fallback for browsers without :has() — keeps the button from squeezing the
+     label even where the rule above does not apply. */
+  .ac-notif-row .ac-btn-outline,
+  .ac-notif-row .ac-btn-danger {
+    width: 100%;
+    justify-content: center;
+  }
+
   .ac-select {
     width: 100%;
     min-width: 0;

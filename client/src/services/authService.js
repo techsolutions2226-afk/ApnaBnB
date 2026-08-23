@@ -17,6 +17,11 @@ const authService = {
   login: async (email, password) => {
     try {
       const response = await apiClient.post('/auth/login', { email, password });
+      // 2FA on: the password was right but no session exists yet. Store
+      // nothing — the challenge is completed by verifyTwoFactor below.
+      if (response.data.twoFactorRequired) {
+        return response.data;
+      }
       if (response.data.token) {
         localStorage.setItem('auth_token', response.data.token);
         const user = {
@@ -37,6 +42,37 @@ const authService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Login failed' };
+    }
+  },
+
+  /* Second step of login. Same persistence as login(), so the rest of the
+     app cannot tell whether a session came through 2FA or not. */
+  verifyTwoFactor: async (challengeToken, code) => {
+    try {
+      const response = await apiClient.post('/auth/verify-2fa', {
+        challengeToken,
+        code,
+      });
+      if (response.data.token) {
+        localStorage.setItem('auth_token', response.data.token);
+        const user = {
+          id: response.data.id,
+          name: response.data.name,
+          email: response.data.email,
+          role: response.data.role,
+          viewRole: response.data.viewRole || null,
+          avatar: response.data.avatar || '',
+          phone: response.data.phone || '',
+          location: response.data.location || '',
+          latitude: response.data.latitude ?? null,
+          longitude: response.data.longitude ?? null,
+          emergencyContact: response.data.emergencyContact || '',
+        };
+        localStorage.setItem('current_user', JSON.stringify(user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Verification failed' };
     }
   },
 

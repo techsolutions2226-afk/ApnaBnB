@@ -40,7 +40,24 @@ const Login = () => {
     }
 
     try {
-      const user = await login(email, password);
+      const result = await login(email, password);
+
+      // 2FA is on: the password was accepted but there is no session yet.
+      // Carry the challenge to the code screen in router state rather than
+      // the URL, so it never lands in history or a shared link.
+      if (result?.twoFactorRequired) {
+        navigate("/login/verify", {
+          replace: true,
+          state: {
+            challengeToken: result.challengeToken,
+            method: result.method,
+            maskedEmail: result.maskedEmail,
+          },
+        });
+        return;
+      }
+
+      const user = result;
       toast.success("Login successful! Redirecting...");
       /* Navigate to role-based dashboard */
       const dashboardPath =
@@ -55,6 +72,8 @@ const Login = () => {
         toast.error("Email not found");
       } else if (code === "WRONG_PASSWORD") {
         toast.error("Wrong password");
+      } else if (code === "ACCOUNT_DEACTIVATED") {
+        toast.error("This account is deactivated. Contact support to reactivate it.");
       } else if (code === "EMAIL_NOT_VERIFIED") {
         toast.info("Please verify your email to continue.");
         const targetEmail = err?.email || email;

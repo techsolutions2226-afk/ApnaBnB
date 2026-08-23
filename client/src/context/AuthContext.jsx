@@ -182,6 +182,11 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const response = await authService.login(email, password);
+      // A challenge is not a session: hand it back untouched so the caller
+      // can route to the code screen. currentUser stays null.
+      if (response.twoFactorRequired) {
+        return response;
+      }
       const user = {
         id: response.id,
         name: response.name,
@@ -194,6 +199,31 @@ export function AuthProvider({ children }) {
       return user;
     } catch (err) {
       const errorMessage = err.message || "Login failed";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* Completes a 2FA challenge and establishes the session. */
+  const verifyTwoFactor = async (challengeToken, code) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.verifyTwoFactor(challengeToken, code);
+      const user = {
+        id: response.id,
+        name: response.name,
+        email: response.email,
+        role: response.role,
+        viewRole: response.viewRole || null,
+        avatar: response.avatar || "",
+      };
+      setCurrentUser(user);
+      return { ...response, user };
+    } catch (err) {
+      const errorMessage = err.message || "Verification failed";
       setError(errorMessage);
       throw err;
     } finally {
@@ -412,6 +442,7 @@ export function AuthProvider({ children }) {
       hasRole,
       getDashboardPath,
       login,
+      verifyTwoFactor,
       signup,
       googleSignIn,
       googleComplete,

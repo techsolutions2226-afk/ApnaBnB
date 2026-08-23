@@ -502,10 +502,70 @@ const sendContactMessageEmail = async (to, { name, email, subject, message }) =>
   `,
   });
 
+/* --- Two-factor sign-in code --- */
+const buildTwoFactorHtml = (code, recipientName) => `
+  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
+    <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h2 style="color: #222; margin: 0 0 8px;">Your sign-in code</h2>
+      <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
+        ${recipientName ? `Hi ${recipientName},` : 'Hi,'} use this code to finish signing in. It expires in 5 minutes.
+      </p>
+      <div style="text-align: center; margin: 28px 0;">
+        <span style="display: inline-block; font-size: 32px; letter-spacing: 8px; font-weight: 700; color: #222; background: #f2f2f2; padding: 16px 24px; border-radius: 10px;">
+          ${code}
+        </span>
+      </div>
+      <p style="color: #c13515; font-size: 13px; line-height: 1.5; margin: 0;">
+        If you did not try to sign in, someone else may know your password &mdash;
+        change it as soon as you can.
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
+      <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB &middot; Real Estate Marketplace</p>
+    </div>
+  </div>
+`;
+
+const sendTwoFactorCodeEmail = async (to, code, recipientName = '') =>
+  sendMail({
+    to,
+    subject: 'Your ApnaBnB sign-in code',
+    text: `Your ApnaBnB sign-in code is ${code}. It expires in 5 minutes. If you did not try to sign in, change your password.`,
+    html: buildTwoFactorHtml(code, recipientName),
+  });
+
+/* --- Security notifications ---
+   Sent after the fact, so the account owner learns about a change they did
+   not make. Never blocks the action that triggered it. */
+const buildSecurityAlertHtml = (headline, detail, recipientName) => `
+  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
+    <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <h2 style="color: #222; margin: 0 0 8px;">${headline}</h2>
+      <p style="color: #555; line-height: 1.5; margin: 0 0 16px;">
+        ${recipientName ? `Hi ${recipientName},` : 'Hi,'} ${detail}
+      </p>
+      <p style="color: #c13515; font-size: 13px; line-height: 1.5; margin: 0;">
+        If this wasn't you, reset your password immediately and contact support.
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
+      <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB &middot; Real Estate Marketplace</p>
+    </div>
+  </div>
+`;
+
+const sendSecurityAlertEmail = async (to, headline, detail, recipientName = '') =>
+  sendMail({
+    to,
+    subject: `ApnaBnB security: ${headline}`,
+    text: `${headline}. ${detail} If this wasn't you, reset your password immediately.`,
+    html: buildSecurityAlertHtml(headline, detail, recipientName),
+  });
+
 module.exports = {
   sendMail,
   sendOtpEmail,
   sendResetEmail,
+  sendTwoFactorCodeEmail,
+  sendSecurityAlertEmail,
   sendListingCreatedEmail,
   sendPropertyCreatedEmail,
   sendRequirementCreatedEmail,

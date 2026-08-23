@@ -28,6 +28,8 @@
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^8.0.7",
     "nodemon": "^3.1.9",
+    "otplib": "^13.5.0",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {

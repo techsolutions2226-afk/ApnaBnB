@@ -3,6 +3,7 @@ const {
   registerUser,
   loginUser,
   verifyOtp,
+  verifyTwoFactor,
   resendOtp,
   forgotPassword,
   verifyResetToken,
@@ -18,6 +19,9 @@ const router = express.Router();
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.post('/verify-otp', verifyOtp);
+// Second step of login when 2FA is on. Public: the caller has no JWT yet —
+// the challenge token issued by /login is what authorises this call.
+router.post('/verify-2fa', verifyTwoFactor);
 router.post('/resend-otp', resendOtp);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-reset-token', verifyResetToken);

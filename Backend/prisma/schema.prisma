@@ -106,7 +106,7 @@ model User {
   // the two states never blur together.
   suspended Boolean @default(false)
 
-  avatar   String  @default("")
+  avatar String @default("")
 
   phone            String @default("")
   location         String @default("")
@@ -138,20 +138,52 @@ model User {
   resetPasswordExpiresAt  DateTime?
   resetPasswordLastSentAt DateTime?
 
+  // ── Two-factor authentication ──
+  // Off by default. `twoFactorMethod` is 'email' or 'totp' and is only
+  // meaningful while twoFactorEnabled is true.
+  twoFactorEnabled Boolean @default(false)
+  twoFactorMethod  String?
+
+  // TOTP shared secret (authenticator apps). Held as base32. Written at
+  // setup-confirm time, never sent to the client again after that.
+  twoFactorSecret String?
+
+  // Bcrypt hashes of single-use recovery codes, so a lost phone is not a
+  // lost account. Each entry is burned on use.
+  twoFactorRecoveryCodes String[] @default([])
+
+  // A short-lived challenge issued after the password step passes but before
+  // the second factor is supplied. The JWT is only minted once this clears.
+  twoFactorChallengeHash      String?
+  twoFactorChallengeExpiresAt DateTime?
+  twoFactorChallengeAttempts  Int       @default(0)
+  // For method='email': the hashed 6-digit code we mailed for this challenge.
+  twoFactorCodeHash           String?
+  twoFactorCodeExpiresAt      DateTime?
+  twoFactorCodeLastSentAt     DateTime?
+
+  // Email me when a sign-in happens from a device I have not used before.
+  loginAlertsEnabled Boolean @default(true)
+
+  // Reversible self-deactivation. Distinct from admin `suspended`: the user
+  // did this to themselves and support can undo it.
+  deactivated   Boolean   @default(false)
+  deactivatedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  properties    Property[]
-  listings      Listing[]
-  requirements  Requirement[]
-  matches       Match[]        @relation("MatchInitiator")
-  messages      Message[]
-  reviews       Review[]
-  trips         Trip[]
-  wishlists     Wishlist[]
-  conversations Conversation[] @relation("ConversationParticipants")
+  properties        Property[]
+  listings          Listing[]
+  requirements      Requirement[]
+  matches           Match[]                   @relation("MatchInitiator")
+  messages          Message[]
+  reviews           Review[]
+  trips             Trip[]
+  wishlists         Wishlist[]
+  conversations     Conversation[]            @relation("ConversationParticipants")
   conversationPrefs ConversationParticipant[]
-  payments      Payment[]
+  payments          Payment[]
 
   // Blocking — implicit m2m self-relation. `blocked` are the users THIS user has
   // blocked; `blockedBy` are users who blocked THIS user. Either direction blocks
@@ -205,7 +237,7 @@ model Property {
   // Conversations that carry this property as their subject-matter context,
   // and chat messages that share this property as a card.
   conversations Conversation[]
-  chatMessages  Message[]    @relation("MessageProperty")
+  chatMessages  Message[]      @relation("MessageProperty")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -332,9 +364,9 @@ model ConversationParticipant {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
 
-  pinned   Boolean   @default(false)
-  muted    Boolean   @default(false)
-  archived Boolean   @default(false)
+  pinned     Boolean   @default(false)
+  muted      Boolean   @default(false)
+  archived   Boolean   @default(false)
   lastReadAt DateTime?
 
   // "Clear chat" cutoff — messages created at/before this time are hidden for
@@ -373,9 +405,9 @@ model Message {
 
   // Quoted reply → the message this one replies to (null once that message is
   // hard-deleted; soft-deleted targets stay linked).
-  parent   Message?  @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  parent          Message?  @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   parentMessageId String?
-  replies Message[]  @relation("MessageReplies")
+  replies         Message[] @relation("MessageReplies")
 
   edited    Boolean   @default(false)
   editedAt  DateTime?
@@ -391,12 +423,12 @@ model Message {
 
   // Reactions: { userId: "emoji" }. Add/change/remove by users who are in the
   // conversation. Stored as JSONB (map), not a separate table.
-  reactions Json   @default("{}")
+  reactions Json     @default("{}")
   // "Starred/saved" per user.
   starredBy String[] @default([])
 
   // Location messages — { lat, lng, label }.
-  location Json?
+  location   Json?
   // Property-card messages — a reference id into the Property table (never a
   // duplicated object); the client renders a live card from it.
   property   Property? @relation("MessageProperty", fields: [propertyId], references: [id], onDelete: SetNull)
@@ -441,7 +473,7 @@ model Trip {
   checkIn    String // YYYY-MM-DD
   checkOut   String // YYYY-MM-DD
   nights     Int
-  guests     Json   @default("{\"adults\":1,\"children\":0,\"infants\":0}")
+  guests     Json       @default("{\"adults\":1,\"children\":0,\"infants\":0}")
   totalPrice Float
   serviceFee Float      @default(0)
   status     TripStatus @default(upcoming)
@@ -482,9 +514,9 @@ model Wishlist {
 model Plan {
   id String @id @default(uuid())
 
-  name     String // display name, e.g. "Pro"
-  slug     String // url-ish key, e.g. "basic" — unique PER ROLE (see @@unique)
-  role     Role // which role this tier is offered to
+  name String // display name, e.g. "Pro"
+  slug String // url-ish key, e.g. "basic" — unique PER ROLE (see @@unique)
+  role Role // which role this tier is offered to
 
   monthlyPrice Float
   yearlyPrice  Float
@@ -497,9 +529,9 @@ model Plan {
   // [{ text: "Up to 10 active listings", included: true }, ...]
   features Json @default("[]")
   // { maxListings: 10, maxMessagesPerDay: 5, ... }
-  limits Json @default("{}")
+  limits   Json @default("{}")
 
-  sortOrder Int     @default(0)
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -549,17 +581,17 @@ model Payment {
 // "Activity Logs" view: who did what, to which entity, when, and from where.
 // Kept append-only — nothing deletes these rows except a full reset.
 model ActivityLog {
-  id        String   @id @default(uuid())
-  userId    String?  // who acted (null for system/anonymous events)
-  userRole  String?  // snapshot of the actor's role at the time
-  userEmail String?  // snapshot of the actor's email (survives later renames)
-  userName  String?  // snapshot of the actor's name
-  action    String   // e.g. auth.login, property.create, match.accepted
-  entityType String  // property | listing | requirement | match | message | review | trip | wishlist | user | conversation | auth
-  entityId  String?
-  meta      Json?    // extra context (status before/after, ids, labels)
-  ip        String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  userId     String? // who acted (null for system/anonymous events)
+  userRole   String? // snapshot of the actor's role at the time
+  userEmail  String? // snapshot of the actor's email (survives later renames)
+  userName   String? // snapshot of the actor's name
+  action     String // e.g. auth.login, property.create, match.accepted
+  entityType String // property | listing | requirement | match | message | review | trip | wishlist | user | conversation | auth
+  entityId   String?
+  meta       Json? // extra context (status before/after, ids, labels)
+  ip         String?
+  createdAt  DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([action])
@@ -595,9 +627,9 @@ model ContactPage {
   // [{ day: "Monday - Friday", time: "9:00 AM - 6:00 PM" }, ...]
   officeHours Json @default("[]")
   // [{ label: "Facebook", url: "https://..." }, ...]
-  socials Json @default("[]")
+  socials     Json @default("[]")
   // [{ question: "...", answer: "..." }, ...]
-  faqs Json @default("[]")
+  faqs        Json @default("[]")
 
   // When false the public page hides the message form (details still show).
   formEnabled Boolean @default(true)

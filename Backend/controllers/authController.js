@@ -2,7 +2,22 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../db/prisma');
-const { sendOtpEmail, sendResetEmail } = require('../utils/mailer');
+const {
+  sendOtpEmail,
+  sendResetEmail,
+  sendTwoFactorCodeEmail,
+  sendSecurityAlertEmail,
+} = require('../utils/mailer');
+const {
+  createChallengeToken,
+  hashChallengeToken,
+  verifyTotp,
+  generateEmailCode,
+  findRecoveryCodeIndex,
+  CHALLENGE_TTL_MS,
+  EMAIL_CODE_TTL_MS,
+  MAX_CHALLENGE_ATTEMPTS,
+} = require('../utils/twoFactor');
 const { logActivity } = require('../utils/activityLogger');
 
 const OTP_TTL_MS = 5 * 60 * 1000;      // 5 minutes
@@ -308,6 +323,45 @@ const loginUser = async (req, res, next) => {
         message: 'This account has been suspended. Contact support.',
       });
     }
+    // Self-deactivation is reversible and distinct from an admin suspension,
+    // so it gets its own code and its own message.
+    if (user.deactivated) {
+      return res.status(403).json({
+        code: 'ACCOUNT_DEACTIVATED',
+        message: 'This account is deactivated. Contact support to reactivate it.',
+      });
+    }
+
+    // The password was right, but it is only the FIRST factor. Issue a
+    // short-lived challenge and stop here — no JWT is minted until the
+    // second step passes.
+    if (user.twoFactorEnabled) {
+      const challenge = await issueTwoFactorChallenge(user);
+      if (!challenge.ok) {
+        return res.status(502).json({
+          code: 'MAIL_FAILED',
+          message: 'We could not send your sign-in code. Please try again shortly.',
+        });
+      }
+      return res.status(200).json({
+        twoFactorRequired: true,
+        method: user.twoFactorMethod,
+        challengeToken: challenge.token,
+        // Enough to say "we emailed a code to j****@gmail.com" without
+        // disclosing the full address to whoever is at the keyboard.
+        maskedEmail: maskEmail(user.email),
+      });
+    }
+
+    if (user.loginAlertsEnabled) {
+      sendSecurityAlertEmail(
+        user.email,
+        'New sign-in to your account',
+        'Your account was just signed in to.',
+        user.name,
+      ).catch(() => {});
+    }
+
     res.status(200).json({
       id: user.id,
       name: user.name,
@@ -319,6 +373,181 @@ const loginUser = async (req, res, next) => {
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
       token: generateToken(user.id, user.role),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* Masks an address for display during the 2FA step: the person typing may
+   not be the account owner, so we confirm WHERE the code went without
+   revealing the full address. */
+const maskEmail = (email) => {
+  const [local = '', domain = ''] = String(email).split('@');
+  const head = local.slice(0, 1);
+  return `${head}${'*'.repeat(Math.max(local.length - 1, 1))}@${domain}`;
+};
+
+/* Starts the second step. Returns the RAW challenge token for the client;
+   only its sha256 is stored, so a leaked row cannot be replayed. */
+const issueTwoFactorChallenge = async (user) => {
+  const token = createChallengeToken();
+  const data = {
+    twoFactorChallengeHash: hashChallengeToken(token),
+    twoFactorChallengeExpiresAt: new Date(Date.now() + CHALLENGE_TTL_MS),
+    twoFactorChallengeAttempts: 0,
+  };
+
+  // TOTP codes come from the user's own app, so there is nothing to send.
+  let emailCode = null;
+  if (user.twoFactorMethod === 'email') {
+    emailCode = generateEmailCode();
+    data.twoFactorCodeHash = await hashOtp(emailCode);
+    data.twoFactorCodeExpiresAt = new Date(Date.now() + EMAIL_CODE_TTL_MS);
+    data.twoFactorCodeLastSentAt = new Date();
+  }
+
+  await prisma.user.update({ where: { id: user.id }, data });
+
+  if (emailCode) {
+    try {
+      await sendTwoFactorCodeEmail(user.email, emailCode, user.name);
+    } catch {
+      // Clear the challenge rather than leaving the user stuck at a code
+      // screen waiting for mail that never arrives.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          twoFactorChallengeHash: null,
+          twoFactorChallengeExpiresAt: null,
+          twoFactorCodeHash: null,
+          twoFactorCodeExpiresAt: null,
+        },
+      });
+      return { ok: false };
+    }
+  }
+
+  return { ok: true, token };
+};
+
+const clearChallenge = {
+  twoFactorChallengeHash: null,
+  twoFactorChallengeExpiresAt: null,
+  twoFactorChallengeAttempts: 0,
+  twoFactorCodeHash: null,
+  twoFactorCodeExpiresAt: null,
+};
+
+/* POST /api/auth/verify-2fa — the second step of login.
+   Accepts either a live 2FA code or one single-use recovery code. */
+const verifyTwoFactor = async (req, res, next) => {
+  const { challengeToken, code } = req.body;
+  if (!challengeToken || !code) {
+    return res.status(400).json({ message: 'Challenge token and code are required.' });
+  }
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: { twoFactorChallengeHash: hashChallengeToken(challengeToken) },
+    });
+
+    if (
+      !user ||
+      !user.twoFactorChallengeExpiresAt ||
+      user.twoFactorChallengeExpiresAt < new Date()
+    ) {
+      return res.status(400).json({
+        code: 'CHALLENGE_EXPIRED',
+        message: 'That sign-in attempt expired. Please log in again.',
+      });
+    }
+
+    // Burn the challenge outright once someone has guessed too many times, so
+    // an attacker cannot keep hammering a single live challenge.
+    if (user.twoFactorChallengeAttempts >= MAX_CHALLENGE_ATTEMPTS) {
+      await prisma.user.update({ where: { id: user.id }, data: clearChallenge });
+      return res.status(429).json({
+        code: 'TOO_MANY_ATTEMPTS',
+        message: 'Too many incorrect codes. Please log in again.',
+      });
+    }
+
+    const submitted = String(code).trim();
+    let passed = false;
+    let usedRecoveryCode = false;
+
+    if (/^\d{6}$/.test(submitted)) {
+      if (user.twoFactorMethod === 'totp') {
+        passed = await verifyTotp(user.twoFactorSecret, submitted);
+      } else {
+        const live =
+          user.twoFactorCodeHash && user.twoFactorCodeExpiresAt > new Date();
+        passed = !!live && (await compareOtp(submitted, user.twoFactorCodeHash));
+      }
+    } else {
+      // Not six digits — the only other thing it can be is a recovery code.
+      const idx = await findRecoveryCodeIndex(submitted, user.twoFactorRecoveryCodes);
+      if (idx >= 0) {
+        passed = true;
+        usedRecoveryCode = true;
+        // Single use: burn exactly the one that matched.
+        const remaining = user.twoFactorRecoveryCodes.filter((_, i) => i !== idx);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { twoFactorRecoveryCodes: remaining },
+        });
+      }
+    }
+
+    if (!passed) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { twoFactorChallengeAttempts: { increment: 1 } },
+      });
+      const left = MAX_CHALLENGE_ATTEMPTS - (user.twoFactorChallengeAttempts + 1);
+      return res.status(400).json({
+        code: 'INVALID_CODE',
+        message:
+          left > 0
+            ? `That code is not correct. ${left} attempt${left === 1 ? '' : 's'} left.`
+            : 'That code is not correct.',
+      });
+    }
+
+    await prisma.user.update({ where: { id: user.id }, data: clearChallenge });
+
+    if (usedRecoveryCode) {
+      sendSecurityAlertEmail(
+        user.email,
+        'A recovery code was used',
+        'One of your recovery codes was just used to sign in. It cannot be used again.',
+        user.name,
+      ).catch(() => {});
+    } else if (user.loginAlertsEnabled) {
+      sendSecurityAlertEmail(
+        user.email,
+        'New sign-in to your account',
+        'Your account was just signed in to.',
+        user.name,
+      ).catch(() => {});
+    }
+
+    res.status(200).json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      viewRole: user.viewRole || null,
+      avatar: user.avatar || '',
+      phone: user.phone || '',
+      location: user.location || '',
+      emergencyContact: user.emergencyContact || '',
+      token: generateToken(user.id, user.role),
+      usedRecoveryCode,
+      recoveryCodesRemaining: usedRecoveryCode
+        ? user.twoFactorRecoveryCodes.length - 1
+        : user.twoFactorRecoveryCodes.length,
     });
   } catch (error) {
     next(error);
@@ -734,6 +963,7 @@ const googleComplete = async (req, res, next) => {
 };
 
 module.exports = {
+  verifyTwoFactor,
   registerUser,
   loginUser,
   getMe,

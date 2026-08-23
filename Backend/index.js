@@ -81,6 +81,8 @@ const reviewRoutes = require("./routes/reviewRoutes");
 app.use("/api/reviews", reviewRoutes);
 const aiRoutes = require("./routes/aiRoutes");
 app.use("/api/ai", aiRoutes);
+const securityRoutes = require("./routes/securityRoutes");
+app.use("/api/security", securityRoutes);
 const adminRoutes = require("./routes/adminRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 app.use("/api/admin", adminRoutes);

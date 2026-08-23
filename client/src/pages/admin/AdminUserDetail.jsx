@@ -10,6 +10,8 @@ import {
   FiArrowLeft,
   FiCheckCircle,
   FiShieldOff,
+  FiUserCheck,
+  FiUserX,
   FiShield,
   FiTrash2,
   FiEdit2,
@@ -72,6 +74,18 @@ const AdminUserDetail = () => {
       load();
     } catch (err) {
       toast.error(err.message || "Failed to verify user");
+    }
+  };
+
+  /* Lifts a SELF-deactivation. Separate from doVerify, which lifts an admin
+     suspension — clearing one must never silently clear the other. */
+  const doReactivate = async () => {
+    try {
+      await adminService.reactivateUser(id);
+      toast.success("Account reactivated");
+      load();
+    } catch (err) {
+      toast.error(err.message || "Failed to reactivate account");
     }
   };
 
@@ -141,7 +155,18 @@ const AdminUserDetail = () => {
           <div className="adm-profile-name-row">
             <h2 className="adm-profile-name">{user?.name}</h2>
             <StatusBadge status={user?.role} prefix="adm-badge" />
-            {user?.suspended ? (
+            {user?.deactivated ? (
+              <span
+                className="adm-deactivated-tag"
+                title={
+                  user?.deactivatedAt
+                    ? `Deactivated by the user on ${new Date(user.deactivatedAt).toLocaleString()}`
+                    : "Deactivated by the user"
+                }
+              >
+                <FiUserX size={13} /> Deactivated by user
+              </span>
+            ) : user?.suspended ? (
               <span className="adm-suspended-tag">
                 <FiShieldOff size={13} /> Suspended
               </span>
@@ -166,13 +191,20 @@ const AdminUserDetail = () => {
           </p>
         </div>
         <div className="adm-profile-actions">
+          {user?.deactivated && (
+            <button type="button" className="adm-btn adm-btn--primary" onClick={doReactivate}>
+              <FiUserCheck size={15} /> Reactivate account
+            </button>
+          )}
           {!user?.suspended ? (
             <button type="button" className="adm-btn adm-btn--outline" onClick={doSuspend}>
               <FiShield size={15} /> Suspend
             </button>
           ) : (
+            /* This lifts an ADMIN suspension. Self-deactivation is separate,
+               and handled by the button above. */
             <button type="button" className="adm-btn adm-btn--primary" onClick={doVerify}>
-              <FiCheckCircle size={15} /> Reactivate
+              <FiCheckCircle size={15} /> Un-suspend
             </button>
           )}
           <button

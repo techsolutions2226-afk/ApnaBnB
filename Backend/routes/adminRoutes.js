@@ -9,6 +9,8 @@ const {
   manageUser,
   verifyUser,
   suspendUser,
+  reactivateUser,
+  unsuspendUser,
   getAllProperties,
   updateProperty,
   deleteProperty,
@@ -47,6 +49,10 @@ router.delete('/users/:id', verifyToken, adminOnly, deleteUser);
 router.put('/users/:id/manage', verifyToken, adminOnly, manageUser);
 router.put('/users/:id/verify', verifyToken, adminOnly, verifyUser);
 router.put('/users/:id/suspend', verifyToken, adminOnly, suspendUser);
+// Lifts a SELF-deactivation only; admin suspension is handled separately.
+router.put('/users/:id/reactivate', verifyToken, adminOnly, reactivateUser);
+// Lifts an ADMIN suspension only; self-deactivation is handled above.
+router.put('/users/:id/unsuspend', verifyToken, adminOnly, unsuspendUser);
 
 // Property management
 router.get('/properties', verifyToken, adminOnly, getAllProperties);

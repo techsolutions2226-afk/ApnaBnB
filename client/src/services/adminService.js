@@ -75,6 +75,28 @@ const adminService = {
     }
   },
 
+  // Lifts a self-deactivation (the user turned their own account off from
+  // Account -> Login & security). Does not touch admin suspension.
+  // Lifts an admin suspension. Separate from reactivateUser, which lifts a
+  // self-deactivation — an account can be in both states at once.
+  unsuspendUser: async (userId) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${userId}/unsuspend`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to lift suspension' };
+    }
+  },
+
+  reactivateUser: async (userId) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${userId}/reactivate`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to reactivate user' };
+    }
+  },
+
   // ── Properties ──
   getProperties: async (filters = {}) => {
     try {

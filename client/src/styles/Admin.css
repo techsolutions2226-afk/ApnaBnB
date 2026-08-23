@@ -605,6 +605,7 @@
 .adm-unverified,
 .adm-suspended-tag,
 .adm-active-tag,
+.adm-deactivated-tag,
 .adm-unread-tag {
   display: inline-flex;
   align-items: center;
@@ -650,6 +651,13 @@
 .adm-active-tag {
   color: #127a45;
   background: #e3f5ec;
+}
+
+/* Self-deactivation. Amber, not red: the user chose this, it is reversible,
+   and it must not read as an admin sanction the way `suspended` does. */
+.adm-deactivated-tag {
+  color: #92610a;
+  background: #fdf3e0;
 }
 
 .adm-unread-tag {
@@ -1584,5 +1592,469 @@ textarea.adm-form-input {
   .adm-chat-item-del,
   .adm-bubble-actions {
     opacity: 1;
+  }
+}
+
+/* ── Row selection: checkboxes + bulk action bar ── */
+
+/* The checkbox column is fixed and narrow so it never steals width from the
+   data columns, and never wraps. */
+.adm-th-check,
+.adm-td-check {
+  width: 44px;
+  padding-right: 0 !important;
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+.adm-row-check {
+  width: 16px;
+  height: 16px;
+  accent-color: #1a8f5a;
+  cursor: pointer;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.adm-row-check:focus-visible {
+  outline: 2px solid #1a8f5a;
+  outline-offset: 2px;
+}
+
+/* Selected rows are tinted so the selection survives a glance away from the
+   checkbox column on a wide, horizontally-scrolled table. */
+.adm-row--selected td {
+  background: #eef8f2;
+}
+
+.adm-table tbody tr.adm-row--selected:hover td {
+  background: #e6f4ec;
+}
+
+/* Selection outranks the suspended tint — while picking rows, what is
+   selected matters more than what is suspended. */
+.adm-row--suspended.adm-row--selected td {
+  background: #eef8f2;
+}
+
+.adm-bulkbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #cfe3d8;
+  border-radius: 12px;
+  background: #f2f9f5;
+}
+
+.adm-bulkbar-count {
+  font-size: 13.5px;
+  color: #134e2c;
+}
+
+.adm-bulkbar-count strong {
+  font-weight: 700;
+}
+
+.adm-bulkbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.adm-bulkbar-btn {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+.adm-bulkbar-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  height: 34px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #55697c;
+  cursor: pointer;
+}
+
+.adm-bulkbar-clear:hover {
+  color: #16324f;
+}
+
+.adm-bulkbar-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .adm-bulkbar-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+
+/* Row tint for a self-deactivated account — lighter than the suspended tint,
+   matching its lower severity. Selection still outranks both. */
+.adm-row--deactivated td {
+  background: #fffcf5;
+}
+
+.adm-table tbody tr.adm-row--deactivated:hover td {
+  background: #fdf8ee;
+}
+
+.adm-row--deactivated.adm-row--selected td {
+  background: #eef8f2;
+}
+
+/* Affirmative action icon (reactivate), so it doesn't read as destructive. */
+.adm-action-icon--ok {
+  border-color: #cfe3d8;
+  color: #127a45;
+}
+
+.adm-action-icon--ok:hover {
+  border-color: #127a45;
+  color: #0f6338;
+  background: #e9f6ef;
+}
+
+
+/* ===============================================
+   Wide Users table: sticky identity column, column
+   picker, truncated cells
+   =============================================== */
+
+/* The scroll container. `position: relative` is what the sticky cells
+   position against. */
+.adm-table-wrap--sticky {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* `fixed` is what makes truncation work at all. Under the default `auto`
+   layout the browser widens a column to fit its longest value, so an ellipsis
+   never triggers — the column just grows and the table sprawls. Fixed layout
+   holds each column to its declared width and lets the cell clamp instead. */
+.adm-table--dense {
+  table-layout: fixed;
+}
+
+.adm-table--dense th,
+.adm-table--dense td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+/* Clip stray long tokens (URLs, uuids) so they cannot bleed past their column.
+   Deliberately NOT applied to .adm-sticky-col: `overflow` on a sticky element
+   cancels its stickiness, and the frozen columns would scroll away. Their
+   width is already pinned by table-layout: fixed, so they don't need it. */
+.adm-table--dense th:not(.adm-sticky-col),
+.adm-table--dense td:not(.adm-sticky-col) {
+  overflow: hidden;
+}
+
+/* Default share for a data column. The sticky columns and the actions column
+   override this below. */
+.adm-table--dense th:not(.adm-sticky-col):not(.adm-th-actions),
+.adm-table--dense td:not(.adm-sticky-col):not(.adm-th-actions) {
+  width: 150px;
+}
+
+.adm-table--dense .adm-th-actions {
+  width: 190px;
+}
+
+/* Sticky columns. Each needs an opaque background of its own — the default
+   transparent cell would let scrolled content show straight through it. */
+.adm-sticky-col {
+  position: sticky;
+  background: #fff;
+  z-index: 2;
+}
+
+.adm-table--dense thead .adm-sticky-col {
+  /* Above the body's sticky cells, so the header wins where they overlap. */
+  z-index: 3;
+  background: #f9fbfc;
+}
+
+/* The name column's `left` must equal the checkbox column's RENDERED width.
+   Under `border-collapse: collapse` a cell's rendered width includes the
+   shared border, so any hardcoded value lands short by that border and lets a
+   hairline of scrolled content show through the frozen edge — and raising the
+   constant just moves the rendered width with it.
+
+   So the offset is measured from the live DOM and written to this property by
+   AdminUsers (see useStickyOffset). The fallback keeps the layout sane before
+   the first measurement lands. */
+.adm-table--dense {
+  --adm-check-col: 46px;
+}
+
+.adm-sticky-check {
+  box-sizing: border-box;
+  left: 0;
+  width: 44px;
+  min-width: 44px;
+}
+
+.adm-sticky-name {
+  box-sizing: border-box;
+  left: var(--adm-check-col);
+  width: 190px;
+  min-width: 190px;
+  /* A hairline that reads as the edge of the frozen region. */
+  box-shadow: 1px 0 0 #eef2f6;
+}
+
+/* Row tints must repaint the sticky cells too, or a selected/suspended row
+   shows a white gap where the frozen columns are. */
+.adm-row--selected .adm-sticky-col { background: #eef8f2; }
+.adm-row--suspended .adm-sticky-col { background: #fef8f8; }
+.adm-row--deactivated .adm-sticky-col { background: #fffcf5; }
+.adm-row--suspended.adm-row--selected .adm-sticky-col,
+.adm-row--deactivated.adm-row--selected .adm-sticky-col { background: #eef8f2; }
+.adm-table tbody tr:hover .adm-sticky-col { background: #f7faf9; }
+.adm-table tbody tr.adm-row--selected:hover .adm-sticky-col { background: #e6f4ec; }
+
+/* ── Truncated cells ── */
+.adm-trunc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.adm-trunc-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-trunc-text--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* Hidden until the row is hovered, so 30 columns of icons don't shout. It
+   stays keyboard-reachable via :focus-visible. */
+.adm-trunc-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #e8edf2;
+  border-radius: 6px;
+  background: #fff;
+  color: #66788a;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+}
+
+tr:hover .adm-trunc-btn,
+.adm-trunc-btn:focus-visible {
+  opacity: 1;
+}
+
+.adm-trunc-btn:hover {
+  border-color: #1a8f5a;
+  color: #1a8f5a;
+}
+
+/* Touch devices have no hover, so the control must be permanently visible. */
+@media (hover: none) {
+  .adm-trunc-btn { opacity: 1; }
+}
+
+.adm-cellvalue {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  background: #f9fbfc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #16324f;
+  /* Long ids and URLs must wrap rather than widen the modal. */
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* ── Column picker ── */
+.adm-colpick {
+  position: relative;
+}
+
+.adm-colpick-count {
+  margin-left: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #eef2f6;
+  font-size: 11px;
+  font-weight: 700;
+  color: #66788a;
+}
+
+.adm-colpick-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  width: 300px;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(16, 40, 64, 0.14);
+}
+
+.adm-colpick-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f6;
+  font-size: 13px;
+  font-weight: 700;
+  color: #16324f;
+}
+
+.adm-colpick-reset {
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a8f5a;
+  cursor: pointer;
+}
+
+.adm-colpick-body {
+  overflow-y: auto;
+  padding: 6px 0 10px;
+}
+
+.adm-colpick-group {
+  padding: 4px 0;
+}
+
+.adm-colpick-grouphead {
+  display: block;
+  width: 100%;
+  padding: 8px 14px 4px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  text-align: left;
+  color: #8a9aaa;
+  cursor: pointer;
+}
+
+.adm-colpick-grouphead:hover {
+  color: #1a8f5a;
+}
+
+.adm-colpick-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #33465a;
+  cursor: pointer;
+}
+
+.adm-colpick-item:hover {
+  background: #f7faf9;
+}
+
+.adm-colpick-item input {
+  width: 15px;
+  height: 15px;
+  accent-color: #1a8f5a;
+  cursor: pointer;
+}
+
+.adm-colpick-item--locked {
+  cursor: default;
+  color: #8a9aaa;
+}
+
+.adm-colpick-item--locked input {
+  cursor: not-allowed;
+}
+
+.adm-colpick-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8a9aaa;
+}
+
+/* ── Small status tags for credential columns ── */
+.adm-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.adm-tag--set   { background: #e3f5ec; color: #127a45; }
+.adm-tag--live  { background: #fff4e0; color: #92610a; }
+.adm-tag--stale { background: #f0f3f6; color: #8a9aaa; }
+.adm-tag--off   { background: #f0f3f6; color: #8a9aaa; }
+
+/* Both blocked states at once — stack rather than truncate. */
+.adm-state-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.adm-th-num,
+.adm-td-num {
+  text-align: right;
+}
+
+/* Below this the frozen columns would eat most of a phone screen, so let
+   the table scroll normally instead. */
+@media (max-width: 700px) {
+  .adm-sticky-col {
+    position: static;
+    box-shadow: none;
   }
 }

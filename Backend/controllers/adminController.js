@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const prisma = require('../db/prisma');
 const { decryptMessage } = require('../utils/messageCrypto');
 const { logActivity } = require('../utils/activityLogger');
+const { sendSecurityAlertEmail } = require('../utils/mailer');
 
 // ── Shared selectors ──────────────────────────────────────────────────────
 const userSelect = { omit: { password: true } };
@@ -16,6 +17,10 @@ const adminUserListSelect = {
   viewRole: true,
   verified: true,
   suspended: true,
+  // Self-deactivation, distinct from an admin suspension: the USER did this
+  // to themselves, and an admin can reverse it.
+  deactivated: true,
+  deactivatedAt: true,
   avatar: true,
   phone: true,
   location: true,
@@ -25,6 +30,25 @@ const adminUserListSelect = {
   lastSeenAt: true,
   createdAt: true,
   updatedAt: true,
+
+  // Two-factor state. `twoFactorSecret` and `twoFactorRecoveryCodes` are
+  // NEVER selected — see withSecretStatus below for why.
+  twoFactorEnabled: true,
+  twoFactorMethod: true,
+  loginAlertsEnabled: true,
+
+  // Expiry/attempt metadata only. The matching *Hash columns hold live
+  // credentials and are deliberately absent from this select.
+  otpExpiresAt: true,
+  otpAttempts: true,
+  otpLastSentAt: true,
+  resetPasswordExpiresAt: true,
+  resetPasswordLastSentAt: true,
+  twoFactorChallengeExpiresAt: true,
+  twoFactorChallengeAttempts: true,
+  twoFactorCodeExpiresAt: true,
+  twoFactorCodeLastSentAt: true,
+
   _count: { select: { listings: true, requirements: true } },
   payments: {
     where: { status: 'approved' },
@@ -46,6 +70,46 @@ const withPlan = (u) => ({
   ...u,
   plan: u.payments && u.payments.length > 0 ? u.payments[0] : null,
   payments: undefined,
+});
+
+/* Turns credential columns into a STATUS the admin table can render, without
+   ever putting the credential itself on the wire.
+
+   These seven columns are the account-takeover set:
+     password, twoFactorSecret, twoFactorRecoveryCodes,
+     otpHash, resetPasswordTokenHash, twoFactorChallengeHash, twoFactorCodeHash
+
+   `twoFactorSecret` is the sharpest: it is the TOTP seed, so anyone holding
+   it can generate valid second-factor codes forever. Shipping it to the
+   browser would defeat the very 2FA this panel administers. The others are
+   crackable offline or directly replayable.
+
+   So the admin sees "is it set / when does it expire", never the value. The
+   raw columns are not even selected from the database, so there is nothing to
+   leak through a stray log line or a network trace. */
+const liveAt = (expiresAt) => {
+  if (!expiresAt) return null;
+  return new Date(expiresAt) > new Date() ? 'active' : 'expired';
+};
+
+const withSecretStatus = (u) => ({
+  ...u,
+
+  // Always present; the column exists to confirm a password is set at all.
+  passwordStatus: 'set',
+
+  twoFactorSecretStatus:
+    u.twoFactorEnabled && u.twoFactorMethod === 'totp' ? 'set' : null,
+
+  // Pending email-verification OTP.
+  otpStatus: liveAt(u.otpExpiresAt),
+
+  // In-flight forgot-password link.
+  resetTokenStatus: liveAt(u.resetPasswordExpiresAt),
+
+  // A half-finished 2FA login (password accepted, code not yet entered).
+  twoFactorChallengeStatus: liveAt(u.twoFactorChallengeExpiresAt),
+  twoFactorCodeStatus: liveAt(u.twoFactorCodeExpiresAt),
 });
 
 const listedBySelect = {
@@ -202,12 +266,13 @@ const getPlatformStats = async (req, res, next) => {
 // Get all users (paged + searchable by name/email)
 const getAllUsers = async (req, res, next) => {
   try {
-    const { role, verified, suspended, q } = req.query;
+    const { role, verified, suspended, deactivated, q } = req.query;
     const where = {};
 
     if (role) where.role = role;
     if (verified !== undefined) where.verified = verified === 'true';
     if (suspended !== undefined) where.suspended = suspended === 'true';
+    if (deactivated !== undefined) where.deactivated = deactivated === 'true';
     if (q) {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
@@ -226,7 +291,7 @@ const getAllUsers = async (req, res, next) => {
       }),
       prisma.user.count({ where }),
     ]);
-    const users = rows.map(withPlan);
+    const users = rows.map((row) => withSecretStatus(withPlan(row)));
 
     res.status(200).json({
       users,
@@ -497,6 +562,108 @@ const suspendUser = async (req, res, next) => {
     });
 
     res.status(200).json({ message: 'User suspended successfully.', user });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    next(error);
+  }
+};
+
+/* Reactivate an account the USER deactivated from Login & security.
+
+   Deliberately separate from verifyUser/unsuspend: an admin suspension and a
+   self-deactivation are different states with different causes, and clearing
+   one must never silently clear the other. This only lifts `deactivated`. */
+const reactivateUser = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true, deactivated: true },
+    });
+    if (!existing) return res.status(404).json({ message: 'User not found.' });
+    if (!existing.deactivated) {
+      return res.status(400).json({
+        code: 'NOT_DEACTIVATED',
+        message: 'This account is not deactivated.',
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { deactivated: false, deactivatedAt: null },
+      ...userSelect,
+    });
+
+    // Tell the account owner their access is back. Never blocks the action.
+    sendSecurityAlertEmail(
+      user.email,
+      'Your account was reactivated',
+      'An administrator has reactivated your account. You can sign in again.',
+      user.name,
+    ).catch(() => {});
+
+    logActivity({
+      action: 'admin.user.reactivate',
+      entityType: 'user',
+      entityId: user.id,
+      meta: { email: user.email },
+      req,
+    });
+
+    res.status(200).json({ message: 'User reactivated successfully.', user });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    next(error);
+  }
+};
+
+/* Lifts an ADMIN suspension, and nothing else.
+
+   Distinct from verifyUser (which also sets `verified`) and from
+   reactivateUser (which lifts a self-deactivation). Keeping the three
+   separate means an admin action can never silently clear a state it was
+   not aimed at. */
+const unsuspendUser = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, suspended: true },
+    });
+    if (!existing) return res.status(404).json({ message: 'User not found.' });
+    if (!existing.suspended) {
+      return res.status(400).json({
+        code: 'NOT_SUSPENDED',
+        message: 'This account is not suspended.',
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { suspended: false },
+      ...userSelect,
+    });
+
+    sendSecurityAlertEmail(
+      user.email,
+      'Your account suspension was lifted',
+      'An administrator has lifted the suspension on your account. You can sign in again.',
+      user.name,
+    ).catch(() => {});
+
+    logActivity({
+      action: 'admin.user.unsuspend',
+      entityType: 'user',
+      entityId: user.id,
+      meta: { email: user.email },
+      req,
+    });
+
+    res.status(200).json({ message: 'Suspension lifted.', user });
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
@@ -1195,6 +1362,8 @@ module.exports = {
   manageUser,
   verifyUser,
   suspendUser,
+  reactivateUser,
+  unsuspendUser,
   getAllProperties,
   updateProperty,
   deleteProperty,

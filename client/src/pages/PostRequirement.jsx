@@ -41,6 +41,8 @@ import {
   saveRequirementDraft,
   clearRequirementDraft,
 } from "../utils/requirementDraft";
+import AiDescriptionBadge from "../components/common/AiDescriptionBadge";
+import { useAiDescription } from "../hooks/useAiDescription";
 import "../styles/Requirement.css";
 import "../styles/Listing.css"; /* category/subtype/unit-picker styles shared with Create Listing */
 import "../styles/SearchDropdowns.css"; /* unit-picker modal option styles */
@@ -449,6 +451,36 @@ const PostRequirement = () => {
   }, [effectiveArea, hardcodedAreaCenter, resolvedAreaCenter]);
 
   /* ── Handlers ── */
+  /* ── AI notes writer ── (same behaviour as Create Listing) */
+  const formRef = useRef(form);
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  const getAiFields = useCallback(() => {
+    const f = formRef.current;
+    return {
+      title: f.title,
+      purpose: f.purpose,
+      category: f.category,
+      propertyType: f.propertyType,
+      city: f.city === "Other" ? f.customCity : f.city,
+      area: f.area === "Other" ? f.customArea : f.area,
+      budgetMin: f.budgetMin ? Number(f.budgetMin) : undefined,
+      budgetMax: f.budgetMax ? Number(f.budgetMax) : undefined,
+      size: f.size ? `${f.size} ${f.sizeUnit || ""}`.trim() : undefined,
+      bedrooms: f.bedrooms ? Number(f.bedrooms) : undefined,
+      bathrooms: f.bathrooms ? Number(f.bathrooms) : undefined,
+      urgency: f.urgency,
+    };
+  }, []);
+
+  const ai = useAiDescription({
+    kind: "requirement",
+    getFields: getAiFields,
+    onText: (text) => setForm((prev) => ({ ...prev, notes: text })),
+  });
+
   const handleChange = useCallback((field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
@@ -1173,16 +1205,26 @@ const PostRequirement = () => {
               Notes
               <span className="req-label-hint">(optional — preferences, must-haves, etc.)</span>
             </label>
+            <AiDescriptionBadge
+              loading={ai.loading}
+              isAi={ai.isAi}
+              error={ai.error}
+              onRegenerate={ai.regenerate}
+            />
             <textarea
               id="req-notes"
               className="req-textarea"
               placeholder={
                 isDealer
-                  ? "e.g. Client is relocating. Need co-brokering partner. Standard commission split."
-                  : "e.g. Close to schools and parks. Prefer corner plot. Must have verified documentation."
+                  ? "Click here and AI will draft this from the details above — or write your own."
+                  : "Click here and AI will draft this from the details above — or write your own."
               }
               value={form.notes}
-              onChange={(e) => handleChange("notes", e.target.value)}
+              onFocus={() => ai.handleFocus(form.notes)}
+              onChange={(e) => {
+                ai.markEdited();
+                handleChange("notes", e.target.value);
+              }}
             />
           </div>
         </div>

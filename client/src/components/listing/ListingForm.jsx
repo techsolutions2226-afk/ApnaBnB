@@ -38,6 +38,8 @@ import { loadListingDraft, saveListingDraft } from "../../utils/listingDraft";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/Listing.css";
 import { CITIES, AREAS_BY_CITY } from "../../config/locations";
+import AiDescriptionBadge from "../common/AiDescriptionBadge";
+import { useAiDescription } from "../../hooks/useAiDescription";
 
 
 /* ── Static Options ── */
@@ -655,6 +657,45 @@ const ListingForm = ({
   const handleBlur = useCallback((field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   }, []);
+
+  /* ── AI description writer ──
+     Reads whatever the form holds right now; the server prunes empties and
+     declines politely if there isn't enough to work from. Auto-generation is
+     suppressed in edit mode so an existing description is never replaced. */
+  const formRef = useRef(form);
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  const getAiFields = useCallback(() => {
+    const f = formRef.current;
+    const resolvedCity = f.city === "Other" ? f.customCity : f.city;
+    const resolvedArea = f.area === "Other" ? f.customArea : f.area;
+    return {
+      title: f.title,
+      purpose: f.purpose,
+      category: f.category,
+      propertyType: f.propertyType,
+      city: resolvedCity,
+      area: resolvedArea,
+      price: f.price ? Number(f.price) : undefined,
+      size: f.size ? Number(f.size) : undefined,
+      sizeUnit: f.sizeUnit,
+      bedrooms: f.bedrooms ? Number(f.bedrooms) : undefined,
+      bathrooms: f.bathrooms ? Number(f.bathrooms) : undefined,
+      amenities: f.amenities,
+      furnished: f.furnished,
+      securityDeposit: f.securityDeposit ? Number(f.securityDeposit) : undefined,
+      leaseTerm: f.leaseTerm ? Number(f.leaseTerm) : undefined,
+    };
+  }, []);
+
+  const ai = useAiDescription({
+    kind: "listing",
+    getFields: getAiFields,
+    onText: (text) => setForm((prev) => ({ ...prev, description: text })),
+    enabled: !initialData,
+  });
 
   const handleAmenityToggle = useCallback((amenity) => {
     setForm((prev) => ({
@@ -1395,24 +1436,6 @@ const ListingForm = ({
           </div>
         )}
 
-        {/* Description */}
-        <div className="lst-field">
-          <label className="lst-label" htmlFor="lst-desc">
-            Description
-          </label>
-          <textarea
-            id="lst-desc"
-            className={fieldClass("lst-textarea", "description")}
-            placeholder="Describe your property — highlight key features, nearby landmarks, and what makes it special."
-            value={form.description}
-            onChange={(e) => handleChange("description", e.target.value)}
-            onBlur={() => handleBlur("description")}
-          />
-          {showError("description") && (
-            <div className="lst-error">{errors.description}</div>
-          )}
-        </div>
-
       </div>
 
       {/* ── Features & Amenities (grouped, zameen-style) ── */}
@@ -1594,6 +1617,38 @@ const ListingForm = ({
             label="Property Images"
             helperText="Drag & drop images here or click to browse (Max 10)"
           />
+        </div>
+      </div>
+
+      {/* ── Description (last, so the AI writer has the full form to work from) ── */}
+      <div className="lst-form-section">
+        <h3 className="lst-form-section-title">Description</h3>
+
+        <div className="lst-field">
+          <label className="lst-label" htmlFor="lst-desc">
+            Description
+          </label>
+          <AiDescriptionBadge
+            loading={ai.loading}
+            isAi={ai.isAi}
+            error={ai.error}
+            onRegenerate={ai.regenerate}
+          />
+          <textarea
+            id="lst-desc"
+            className={fieldClass("lst-textarea", "description")}
+            placeholder="Click here and AI will draft this from the details above — or write your own."
+            value={form.description}
+            onFocus={() => ai.handleFocus(form.description)}
+            onChange={(e) => {
+              ai.markEdited();
+              handleChange("description", e.target.value);
+            }}
+            onBlur={() => handleBlur("description")}
+          />
+          {showError("description") && (
+            <div className="lst-error">{errors.description}</div>
+          )}
         </div>
       </div>
 

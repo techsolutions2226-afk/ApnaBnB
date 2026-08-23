@@ -1,13 +1,31 @@
-/* SMTP helper — wraps nodemailer with our env config.
+/* Mail helper — one sendMail() that every email in the app funnels through.
  *
- * Required env vars:
+ * Two transports, chosen by MAIL_PROVIDER:
+ *
+ *   MAIL_PROVIDER=brevo  → Brevo's HTTP API over port 443
+ *   unset / "smtp"       → nodemailer over SMTP (the default, used locally)
+ *
+ * Why the HTTP option exists: several PaaS free tiers (Render's among them)
+ * block outbound SMTP to stop spam. The connection is dropped silently rather
+ * than refused, so a send hangs until it times out and takes the HTTP request
+ * waiting on it down too. Port 443 is never blocked — the API itself depends
+ * on it — so an HTTP mail provider works where SMTP cannot.
+ *
+ * SMTP env vars:
  *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
  *   SMTP_SECURE — "true" for port 465 (SSL), "false" for 587 (STARTTLS)
+ * Brevo env vars:
+ *   BREVO_API_KEY, plus SMTP_FROM for the sender identity
  *
  * The Gmail App Password may be pasted with spaces; we strip them so the
  * transport doesn't reject the credentials.
  */
 const nodemailer = require('nodemailer');
+
+const MAIL_TIMEOUT_MS = Number(process.env.MAIL_HTTP_TIMEOUT_MS) || 15000;
+const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
+
+const provider = () => String(process.env.MAIL_PROVIDER || 'smtp').toLowerCase();
 
 let cachedTransporter = null;
 
@@ -47,13 +65,88 @@ const getTransporter = () => {
   return cachedTransporter;
 };
 
-const sendMail = async ({ to, subject, html, text, replyTo }) => {
+/* Split `"ApnaBnB Verification <a@b.com>"` into Brevo's { name, email } shape.
+   A bare address (no angle brackets) is handled too. */
+const parseAddress = (raw) => {
+  const value = String(raw || '').trim();
+  const match = value.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (match) {
+    return { name: match[1].replace(/^["']|["']$/g, '').trim() || undefined, email: match[2].trim() };
+  }
+  return { email: value.replace(/^["']|["']$/g, '').trim() };
+};
+
+/* Brevo accepts a comma-separated string or an array of addresses; normalise
+   either into the array of { email } objects the API expects. */
+const toRecipients = (to) => {
+  const list = Array.isArray(to) ? to : String(to || '').split(',');
+  return list.map((entry) => parseAddress(entry)).filter((r) => r.email);
+};
+
+const sendViaBrevo = async ({ to, subject, html, text, replyTo }) => {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    throw new Error('BREVO_API_KEY is not set — cannot send mail via Brevo.');
+  }
+
+  const sender = parseAddress(process.env.SMTP_FROM || process.env.SMTP_USER);
+  if (!sender.email) {
+    throw new Error('SMTP_FROM (or SMTP_USER) must hold the sender address.');
+  }
+
+  const body = {
+    sender,
+    to: toRecipients(to),
+    subject,
+    ...(html ? { htmlContent: html } : {}),
+    ...(text ? { textContent: text } : {}),
+    ...(replyTo ? { replyTo: parseAddress(replyTo) } : {}),
+  };
+
+  let res;
+  try {
+    res = await fetch(BREVO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(MAIL_TIMEOUT_MS),
+    });
+  } catch (error) {
+    // Normalise fetch/abort failures so callers see one consistent shape.
+    const err = new Error(`Brevo request failed: ${error.message}`);
+    err.code = error.name === 'TimeoutError' ? 'ETIMEDOUT' : 'ECONNECTION';
+    throw err;
+  }
+
+  if (!res.ok) {
+    // Surface Brevo's own message (bad key, unverified sender, quota) rather
+    // than a bare status code — those are the failures worth reading.
+    const detail = await res.text().catch(() => '');
+    const err = new Error(`Brevo HTTP ${res.status}: ${detail.slice(0, 300)}`);
+    err.code = res.status === 401 ? 'EAUTH' : 'EMESSAGE';
+    throw err;
+  }
+
+  const data = await res.json().catch(() => ({}));
+  // Mirror nodemailer's result shape so nothing downstream has to branch.
+  return { messageId: data.messageId || null, accepted: body.to.map((r) => r.email), provider: 'brevo' };
+};
+
+const sendViaSmtp = async ({ to, subject, html, text, replyTo }) => {
   const transporter = getTransporter();
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
   // replyTo is optional — the contact form uses it so replying reaches the
   // visitor rather than our own SMTP mailbox.
   return transporter.sendMail({ from, to, subject, html, text, ...(replyTo ? { replyTo } : {}) });
 };
+
+/* Every email in the app goes through here, so the transport is chosen once. */
+const sendMail = async (message) =>
+  provider() === 'brevo' ? sendViaBrevo(message) : sendViaSmtp(message);
 
 const buildOtpHtml = (otp, recipientName) => `
   <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
@@ -420,4 +513,7 @@ module.exports = {
   sendContactMessageEmail,
   formatPrice,
   formatBudget,
+  // Exported for tests.
+  parseAddress,
+  toRecipients,
 };

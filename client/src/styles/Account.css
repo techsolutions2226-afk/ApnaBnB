@@ -389,3 +389,532 @@
     gap: 16px;
   }
 }
+
+
+/* ===============================================
+   Shared section chrome for the account subpages
+   (Login & security, Payments, Privacy, Preferences)
+   =============================================== */
+
+/* A standing reminder that a page is a shell, not a working feature.
+   Deliberately plain so it reads as a system note, not a warning. */
+.ac-preview-note {
+  max-width: 640px;
+  margin: 0 0 28px;
+  padding: 12px 14px;
+  border: 1px solid #e4e4e4;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #717171;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.ac-sec-body {
+  max-width: 640px;
+}
+
+.ac-sec-block {
+  margin-bottom: 40px;
+}
+
+.ac-sec-block:last-child {
+  margin-bottom: 0;
+}
+
+.ac-sec-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 4px;
+}
+
+.ac-sec-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.ac-sec-heading-row .ac-sec-heading {
+  margin-bottom: 0;
+}
+
+/* The first field row in a block already sits under a heading, so its
+   top border would double up with the heading's spacing. */
+.ac-field-row--flush:first-child {
+  border-top: none;
+}
+
+/* ── Password / inline forms ── */
+.ac-sec-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ac-sec-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #717171;
+}
+
+.ac-sec-hint {
+  font-size: 12.5px;
+  color: #8a8a8a;
+}
+
+.ac-sec-hint--block {
+  display: block;
+  margin-top: 16px;
+}
+
+.ac-sec-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ac-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* ── Buttons ── */
+.ac-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid #222;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.ac-btn-outline:hover:not(:disabled) {
+  background: #f7f7f7;
+}
+
+.ac-btn-ghost {
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: #222;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ac-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid #c13515;
+  border-radius: 8px;
+  background: #fff;
+  color: #c13515;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.ac-btn-danger:hover:not(:disabled) {
+  background: #fdf2f0;
+}
+
+/* Every inert control on these pages routes through here, so the "not wired
+   up yet" state looks deliberate rather than broken. */
+.ac-btn-outline:disabled,
+.ac-btn-danger:disabled,
+.ac-field-save-btn:disabled,
+.ac-field-edit-btn:disabled,
+.ac-field-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Chips ── */
+.ac-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ac-chip--ok {
+  background: #e9f2ec;
+  color: #134e2c;
+}
+
+.ac-chip--muted {
+  background: #f0f0f0;
+  color: #717171;
+}
+
+.ac-chip--inline {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── Device / payment rows ── */
+.ac-device-list,
+.ac-pay-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.ac-device-row,
+.ac-pay-row,
+.ac-coupon-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ac-device-row:last-child,
+.ac-pay-row:last-child {
+  border-bottom: none;
+}
+
+.ac-coupon-row {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.ac-device-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f7f7f7;
+  color: #222;
+  flex-shrink: 0;
+}
+
+.ac-device-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Destructive rows ── */
+.ac-danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+}
+
+/* ── Tabs ── */
+.ac-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #ebebeb;
+  margin-bottom: 28px;
+  overflow-x: auto;
+}
+
+.ac-tab {
+  padding: 12px 4px;
+  margin-right: 24px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: #717171;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.ac-tab:hover {
+  color: #222;
+}
+
+.ac-tab--active {
+  color: #222;
+  font-weight: 600;
+  border-bottom-color: #222;
+}
+
+/* ── Preference rows ── */
+.ac-pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ac-pref-row:first-child {
+  border-top: 1px solid #ebebeb;
+}
+
+.ac-select {
+  min-width: 220px;
+  max-width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.ac-select:focus {
+  border-color: #222;
+}
+
+/* ── Transaction table ── */
+.ac-table-wrap {
+  margin-top: 16px;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.ac-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ac-table th {
+  text-align: left;
+  padding: 12px 16px;
+  background: #fafafa;
+  color: #717171;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.ac-table td {
+  padding: 14px 16px;
+  color: #222;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.ac-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .ac-danger-row,
+  .ac-pref-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .ac-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ac-sec-heading-row {
+    align-items: flex-start;
+  }
+
+  .ac-inline-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ac-device-row,
+  .ac-pay-row {
+    flex-wrap: wrap;
+  }
+
+  .ac-btn-outline,
+  .ac-btn-danger {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* ===============================================
+   Login & security — 2FA setup, recovery codes
+   =============================================== */
+
+.ac-2fa-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ac-2fa-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ac-2fa-option:hover {
+  border-color: #222;
+  background: #fafafa;
+}
+
+.ac-2fa-option .ac-device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Setup modal ── */
+.ac-setup {
+  display: flex;
+  flex-direction: column;
+}
+
+.ac-setup-steps {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.ac-setup-qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.ac-setup-secret {
+  display: block;
+  padding: 12px;
+  margin: 8px 0 0;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  background: #fafafa;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #222;
+  text-align: center;
+  /* A 32-char base32 secret must wrap rather than widen the modal. */
+  word-break: break-all;
+}
+
+/* ── Recovery codes ── */
+.ac-recovery-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border: 1px solid #f2d5cd;
+  border-radius: 10px;
+  background: #fdf2f0;
+  color: #c13515;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.ac-recovery-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ac-recovery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 16px;
+  list-style: none;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.ac-recovery-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: #222;
+  text-align: center;
+  padding: 6px 4px;
+  background: #fff;
+  border-radius: 6px;
+}
+
+@media (max-width: 480px) {
+  .ac-recovery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ac-setup-qr {
+    width: 168px;
+    height: 168px;
+  }
+
+  .ac-2fa-option {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+/* Explanatory line at the top of a confirm modal. */
+.ac-modal-note {
+  margin: 0 0 18px;
+  color: #717171;
+  font-size: 14px;
+  line-height: 1.6;
+}

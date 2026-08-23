@@ -15,6 +15,7 @@ import PropertyDetail from "./pages/PropertyDetail";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import VerifyEmail from "./pages/VerifyEmail";
+import VerifyTwoFactor from "./pages/VerifyTwoFactor";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import About from "./pages/About";
@@ -23,6 +24,10 @@ import SearchResults from "./pages/SearchResults";
 import Account from "./pages/Account";
 import PersonalInfo from "./pages/PersonalInfo";
 import Notifications from "./pages/Notifications";
+import LoginSecurity from "./pages/LoginSecurity";
+import PaymentsPayouts from "./pages/PaymentsPayouts";
+import PrivacySharing from "./pages/PrivacySharing";
+import GlobalPreferences from "./pages/GlobalPreferences";
 import Profile from "./pages/Profile";
 import Wishlists from "./pages/Wishlists";
 import Trips from "./pages/Trips";
@@ -121,6 +126,10 @@ function App() {
                   <Route path="/account" element={<Account />} />
                   <Route path="/account/personal-info" element={<PersonalInfo />} />
                   <Route path="/account/notifications" element={<Notifications />} />
+                  <Route path="/account/login-security" element={<LoginSecurity />} />
+                  <Route path="/account/payments" element={<PaymentsPayouts />} />
+                  <Route path="/account/privacy" element={<PrivacySharing />} />
+                  <Route path="/account/preferences" element={<GlobalPreferences />} />
                 </Route>
 
                 {/* ── Public routes with layout (navbar + footer) ── */}
@@ -167,6 +176,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/login/verify" element={<VerifyTwoFactor />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
             </Routes>

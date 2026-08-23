@@ -8,6 +8,9 @@ import Pagination from "../../components/common/Pagination";
 import StatusBadge from "../../components/common/StatusBadge";
 import AdminRequirementEditor from "../../components/admin/AdminRequirementEditor";
 import RefreshButton from "../../components/common/RefreshButton";
+import SelectCheckbox from "../../components/admin/SelectCheckbox";
+import BulkActionBar from "../../components/admin/BulkActionBar";
+import useRowSelection from "../../hooks/useRowSelection";
 import { formatPrice } from "../../utils/formatters";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import "../../styles/Admin.css";
@@ -27,6 +30,10 @@ const AdminRequirements = () => {
   const [editTarget, setEditTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const selection = useRowSelection(requirements);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -83,6 +90,33 @@ const AdminRequirements = () => {
     }
   };
 
+  /* Sequential deletes — see the note in AdminUsers. Failures are counted, not
+     thrown, so one bad row cannot abandon the rest of the batch. */
+  const bulkDelete = async () => {
+    const ids = selection.selected;
+    if (!ids.length) return;
+    setBulkBusy(true);
+    let ok = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await adminService.deleteRequirement(id);
+        ok += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkBusy(false);
+    setBulkDeleteOpen(false);
+    selection.clear();
+
+    if (ok) toast.success(`${ok} ${ok === 1 ? "requirement" : "requirements"} deleted`);
+    if (failed) toast.error(`Could not delete ${failed} of ${ids.length}`);
+
+    if (page > 1 && ok >= requirements.length) setPage(page - 1);
+    else fetchData();
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / 15));
 
   return (
@@ -122,6 +156,14 @@ const AdminRequirements = () => {
         </select>
       </div>
 
+      <BulkActionBar
+        count={selection.count}
+        noun="requirement"
+        busy={bulkBusy}
+        onClear={selection.clear}
+        onDelete={() => setBulkDeleteOpen(true)}
+      />
+
       <div className="adm-table-wrap">
         {isLoading ? (
           <div className="adm-loading">Loading…</div>
@@ -133,6 +175,14 @@ const AdminRequirements = () => {
           <table className="adm-table">
             <thead>
               <tr>
+                <th className="adm-th-check">
+                  <SelectCheckbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={selection.toggleAll}
+                    label="Select all requirements on this page"
+                  />
+                </th>
                 <th>Requirement</th>
                 <th>Posted By</th>
                 <th>City</th>
@@ -146,7 +196,14 @@ const AdminRequirements = () => {
               {requirements.map((req) => {
                 const rid = req._id || req.id;
                 return (
-                  <tr key={rid}>
+                  <tr key={rid} className={selection.isSelected(rid) ? "adm-row--selected" : ""}>
+                    <td className="adm-td-check">
+                      <SelectCheckbox
+                        checked={selection.isSelected(rid)}
+                        onChange={() => selection.toggle(rid)}
+                        label={`Select ${req.title || "requirement"}`}
+                      />
+                    </td>
                     <td>
                       <div className="adm-table-title">{req.title}</div>
                       <div className="adm-table-sub">
@@ -223,6 +280,19 @@ const AdminRequirements = () => {
         title={`Delete requirement?`}
         message="This permanently removes the requirement and its related matches."
         confirmLabel="Delete"
+        variant="danger"
+        icon={<FiTrash2 size={22} />}
+      />
+
+      {/* Bulk delete confirm */}
+      <ConfirmDialog
+        isOpen={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={bulkDelete}
+        isLoading={bulkBusy}
+        title={`Delete ${selection.count} ${selection.count === 1 ? "requirement" : "requirements"}?`}
+        message="This permanently removes every selected requirement and its related matches."
+        confirmLabel={`Delete ${selection.count}`}
         variant="danger"
         icon={<FiTrash2 size={22} />}
       />

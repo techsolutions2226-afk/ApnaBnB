@@ -15,6 +15,9 @@ import {
   FiExternalLink,
 } from "react-icons/fi";
 import RefreshButton from "../../components/common/RefreshButton";
+import SelectCheckbox from "../../components/admin/SelectCheckbox";
+import BulkActionBar from "../../components/admin/BulkActionBar";
+import useRowSelection from "../../hooks/useRowSelection";
 import "../../styles/Admin.css";
 
 const PROPERTY_STATUSES = ["active", "pending", "sold", "rented", "featured", "rejected"];
@@ -39,6 +42,15 @@ const AdminListings = () => {
   const [editFields, setEditFields] = useState({});
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  /* One selection for whichever table is on screen. Switching tabs swaps the
+     rows array, and useRowSelection drops the selection when the row ids
+     change — so a property can never end up selected while the Listings tab
+     is showing, which would delete the wrong kind of record. */
+  const rows = tab === "properties" ? properties : listings;
+  const selection = useRowSelection(rows);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -162,7 +174,41 @@ const AdminListings = () => {
     setPage(1);
   };
 
+  /* Deletes route by the active tab, so the bar always calls the endpoint
+     matching the rows the admin is actually looking at. Sequential, and
+     failures are counted rather than thrown. */
+  const bulkDelete = async () => {
+    const ids = selection.selected;
+    if (!ids.length) return;
+    const isProps = tab === "properties";
+    setBulkBusy(true);
+    let ok = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        if (isProps) await adminService.deleteProperty(id);
+        else await adminService.deleteListing(id);
+        ok += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkBusy(false);
+    setBulkDeleteOpen(false);
+    selection.clear();
+
+    const noun = isProps ? "property" : "listing";
+    const plural = isProps ? "properties" : "listings";
+    if (ok) toast.success(`${ok} ${ok === 1 ? noun : plural} deleted`);
+    if (failed) toast.error(`Could not delete ${failed} of ${ids.length}`);
+
+    if (page > 1 && ok >= rows.length) setPage(page - 1);
+    else fetchData();
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / 15));
+  const selNoun = tab === "properties" ? "property" : "listing";
+  const selPlural = tab === "properties" ? "properties" : "listings";
   const statusOptions = tab === "properties" ? PROPERTY_STATUSES : LISTING_STATUSES;
 
   return (
@@ -223,6 +269,14 @@ const AdminListings = () => {
         </select>
       </div>
 
+      <BulkActionBar
+        count={selection.count}
+        noun={selNoun}
+        busy={bulkBusy}
+        onClear={selection.clear}
+        onDelete={() => setBulkDeleteOpen(true)}
+      />
+
       <div className="adm-table-wrap">
         {isLoading ? (
           <div className="adm-loading">Loading…</div>
@@ -235,6 +289,14 @@ const AdminListings = () => {
             <table className="adm-table">
               <thead>
                 <tr>
+                  <th className="adm-th-check">
+                    <SelectCheckbox
+                      checked={selection.allSelected}
+                      indeterminate={selection.someSelected}
+                      onChange={selection.toggleAll}
+                      label="Select all properties on this page"
+                    />
+                  </th>
                   <th>Property</th>
                   <th>Owner</th>
                   <th>Purpose</th>
@@ -248,7 +310,14 @@ const AdminListings = () => {
                 {properties.map((p) => {
                   const pid = p._id || p.id;
                   return (
-                    <tr key={pid}>
+                    <tr key={pid} className={selection.isSelected(pid) ? "adm-row--selected" : ""}>
+                      <td className="adm-td-check">
+                        <SelectCheckbox
+                          checked={selection.isSelected(pid)}
+                          onChange={() => selection.toggle(pid)}
+                          label={`Select ${p.title || "property"}`}
+                        />
+                      </td>
                       <td>
                         <div className="adm-table-title">{p.title}</div>
                         <div className="adm-table-sub">
@@ -310,6 +379,14 @@ const AdminListings = () => {
           <table className="adm-table">
             <thead>
               <tr>
+                <th className="adm-th-check">
+                  <SelectCheckbox
+                    checked={selection.allSelected}
+                    indeterminate={selection.someSelected}
+                    onChange={selection.toggleAll}
+                    label="Select all listings on this page"
+                  />
+                </th>
                 <th>Property</th>
                 <th>Owner</th>
                 <th>Status</th>
@@ -323,7 +400,14 @@ const AdminListings = () => {
               {listings.map((l) => {
                 const lid = l._id || l.id;
                 return (
-                  <tr key={lid}>
+                  <tr key={lid} className={selection.isSelected(lid) ? "adm-row--selected" : ""}>
+                    <td className="adm-td-check">
+                      <SelectCheckbox
+                        checked={selection.isSelected(lid)}
+                        onChange={() => selection.toggle(lid)}
+                        label={`Select ${l.property?.title || "listing"}`}
+                      />
+                    </td>
                     <td>
                       <div className="adm-table-title">
                         {l.property?.title || "—"}
@@ -429,6 +513,23 @@ const AdminListings = () => {
             : "This permanently deletes the property, its listing, matches and trips."
         }
         confirmLabel="Delete"
+        variant="danger"
+        icon={<FiTrash2 size={22} />}
+      />
+
+      {/* Bulk delete confirm */}
+      <ConfirmDialog
+        isOpen={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        onConfirm={bulkDelete}
+        isLoading={bulkBusy}
+        title={`Delete ${selection.count} ${selection.count === 1 ? selNoun : selPlural}?`}
+        message={
+          tab === "properties"
+            ? "This permanently deletes every selected property, its listing, matches and trips."
+            : "This removes every selected listing record. The properties themselves are kept."
+        }
+        confirmLabel={`Delete ${selection.count}`}
         variant="danger"
         icon={<FiTrash2 size={22} />}
       />

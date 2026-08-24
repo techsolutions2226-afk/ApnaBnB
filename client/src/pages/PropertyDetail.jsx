@@ -4,7 +4,6 @@ import { useProperty } from "../hooks/useProperties";
 import { useWishlist } from "../context/WishlistContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
-import propertyService from "../services/propertyService";
 import Modal from "../components/common/Modal";
 import PropertyReviews from "../components/property/detail/PropertyReviews";
 import PropertyGallery from "../components/property/detail/PropertyGallery";
@@ -76,12 +75,10 @@ const capitalize = (s) =>
 const PropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, subscription } = useAuth();
   const { property, isLoading, error } = useProperty(id);
   const { isWishlisted, toggleWishlist } = useWishlist();
 
-  const [contact, setContact] = useState(null); // revealed owner details
-  const [contactLoading, setContactLoading] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [amenitiesModalOpen, setAmenitiesModalOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -210,33 +207,29 @@ const PropertyDetail = () => {
       .catch(() => toast.error("Failed to copy link"));
   };
 
-  /* ── Owner contact reveal (paid) ──
-     Chat is shelved, so reaching the owner now means seeing their phone/email.
-     The server decides who may: the lister always, anyone else only with an
-     approved plan. A 402 sends the user to /plans, which returns them here
-     after payment via the existing ?from= flow. */
-  const handleGetContact = async () => {
+  /* ── Owner contact (paid) ──
+     Routes rather than revealing inline: with a plan the viewer gets the full
+     owner profile; without one they go straight to /plans and see nothing.
+     `subscription.plan` is only set when a payment is approved, so it is the
+     right signal for every role — `subscription.active` is true for buyers even
+     when they have never paid. The server re-checks on the profile route. */
+  const isOwnListing = listedBy?._id && listedBy._id === currentUser?.id;
+  const hasPlan = !!subscription?.plan;
+
+  const handleGetContact = () => {
     if (!isAuthenticated) {
-      toast.info("Please log in to see the owner's contact details.");
+      toast.info("Please log in to see the owner's details.");
       navigate("/login");
       return;
     }
     if (!listedBy?._id) return;
 
-    setContactLoading(true);
-    try {
-      const info = await propertyService.getContact(id);
-      setContact(info);
-    } catch (err) {
-      if (err?.code === "PLAN_REQUIRED") {
-        toast.info("Choose a plan to see the owner's contact details.");
-        navigate(`/plans?from=contact&property=${id}`);
-        return;
-      }
-      toast.error(err?.message || "Could not load contact details.");
-    } finally {
-      setContactLoading(false);
+    if (isOwnListing || hasPlan) {
+      navigate(`/users/${listedBy._id}`);
+      return;
     }
+    toast.info("Choose a plan to see the owner's contact details.");
+    navigate(`/plans?from=contact&property=${id}`);
   };
 
 
@@ -315,14 +308,15 @@ const PropertyDetail = () => {
             ))}
             <div className="pd-sticky-nav-price">
               <span>{formatPrice(price, { prefix: true })}</span>
-              <button
-                type="button"
-                className="pd-sticky-nav-cta"
-                onClick={handleGetContact}
-                disabled={contactLoading}
-              >
-                Contact
-              </button>
+              {!isOwnListing && (
+                <button
+                  type="button"
+                  className="pd-sticky-nav-cta"
+                  onClick={handleGetContact}
+                >
+                  Contact
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -466,40 +460,16 @@ const PropertyDetail = () => {
                   </div>
                 )}
               </div>
-              {listedBy?._id &&
-                listedBy._id !== currentUser?.id &&
-                (contact ? (
-                  /* Revealed — the server already confirmed this user may see it. */
-                  <div className="pd-contact-revealed">
-                    {contact.phone && (
-                      <a className="pd-contact-row" href={`tel:${contact.phone}`}>
-                        <FiPhone size={15} />
-                        <span>{contact.phone}</span>
-                      </a>
-                    )}
-                    {contact.email && (
-                      <a className="pd-contact-row" href={`mailto:${contact.email}`}>
-                        <FiMail size={15} />
-                        <span>{contact.email}</span>
-                      </a>
-                    )}
-                    {!contact.phone && !contact.email && (
-                      <p className="pd-contact-empty">
-                        This owner hasn&apos;t added contact details yet.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="pd-msg-btn"
-                    onClick={handleGetContact}
-                    disabled={contactLoading}
-                  >
-                    <FiPhone size={16} />
-                    {contactLoading ? "Loading…" : "Get contact info"}
-                  </button>
-                ))}
+              {listedBy?._id && listedBy._id !== currentUser?.id && (
+                <button
+                  type="button"
+                  className="pd-msg-btn"
+                  onClick={handleGetContact}
+                >
+                  <FiPhone size={16} />
+                  Get contact info
+                </button>
+              )}
             </section>
 
             {/* Overview */}
@@ -624,7 +594,6 @@ const PropertyDetail = () => {
             <InquiryCard
               property={property}
               onMessage={handleGetContact}
-              contact={contact}
             />
           </aside>
         </div>
@@ -637,14 +606,15 @@ const PropertyDetail = () => {
             {formatPrice(price, { prefix: true })}
           </span>
         </div>
-        <button
-          type="button"
-          className="pd-mobile-cta-btn"
-          onClick={handleGetContact}
-          disabled={contactLoading}
-        >
-          {contactLoading ? "Loading…" : "Get contact info"}
-        </button>
+        {!isOwnListing && (
+          <button
+            type="button"
+            className="pd-mobile-cta-btn"
+            onClick={handleGetContact}
+          >
+            Get contact info
+          </button>
+        )}
       </div>
 
       {/* Share modal */}

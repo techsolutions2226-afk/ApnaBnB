@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import reviewService from "../services/reviewService";
@@ -7,6 +7,7 @@ import listingService from "../services/listingService";
 import Avatar from "../components/common/Avatar";
 import ReviewCard from "../components/common/ReviewCard";
 import { FiHome } from "react-icons/fi";
+import { toast } from "react-toastify";
 import {
   FiCheck,
   FiStar,
@@ -15,15 +16,25 @@ import {
   FiPhone,
   FiMapPin,
   FiShield,
+  FiMail,
+  FiLock,
+  FiBriefcase,
+  FiEye,
+  FiClock,
+  FiUnlock,
 } from "react-icons/fi";
 import "../styles/Profile.css";
 import "../styles/Common.css";
 
 export default function Profile() {
   const { id } = useParams();
-  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+  const { currentUser, isAuthenticated, subscription } = useAuth();
 
   const isOwnProfile = currentUser?.id === id;
+  /* `subscription.plan` is only set once a payment is approved, so it holds for
+     every role — `subscription.active` is true for buyers who never paid. */
+  const hasPlan = !!subscription?.plan;
 
   const [user, setUser] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -31,6 +42,10 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showAvatarFull, setShowAvatarFull] = useState(false);
+  /* The paid half of the profile: contact details, coverage and counts. Null
+     until the gated endpoint succeeds — the public payload carries none of it,
+     so there is nothing to hide in the DOM. */
+  const [full, setFull] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +89,35 @@ export default function Profile() {
       cancelled = true;
     };
   }, [id, isOwnProfile, currentUser]);
+
+  /* Contact details come from a separate, gated endpoint. A 402 simply leaves
+     `full` null and the locked card renders — no redirect, since the visitor
+     may have landed here directly and the public half is still worth showing. */
+  useEffect(() => {
+    if (!id || !isAuthenticated) return;
+    if (!isOwnProfile && !hasPlan) return;
+    let cancelled = false;
+    userService
+      .getProfile(id)
+      .then((data) => {
+        if (!cancelled) setFull(data);
+      })
+      .catch(() => {
+        /* 402 or transient failure — the locked card is the correct fallback. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isAuthenticated, isOwnProfile, hasPlan]);
+
+  const unlock = () => {
+    if (!isAuthenticated) {
+      toast.info("Please log in to see contact details.");
+      navigate("/login");
+      return;
+    }
+    navigate(`/plans?from=contact&user=${id}`);
+  };
 
   // Close the full-screen avatar on Esc.
   useEffect(() => {
@@ -195,25 +239,123 @@ export default function Profile() {
                 </p>
               )}
               <p className="pf-detail">
-                <FiMessageSquare size={16} /> {user.role || "user"} on the platform
+                <FiBriefcase size={16} />
+                <span className="pf-role-chip">{user.role || "user"}</span>
+                on the platform
               </p>
-
-              {/* Contact details are shown to the owner only. This page is
-                  public at /users/:id, so publishing a phone number to every
-                  visitor would be a disclosure the user never agreed to. */}
-              {isOwnProfile && user.phone && (
+              {full?.viewRole && full.viewRole !== full.role && (
                 <p className="pf-detail">
-                  <FiPhone size={16} /> {user.phone}
-                  <span className="pf-detail-private">only visible to you</span>
+                  <FiEye size={16} /> Currently acting as{" "}
+                  <span className="pf-role-chip">{full.viewRole}</span>
                 </p>
               )}
-              {isOwnProfile && user.location && (
+              {full?.lastSeenAt && (
                 <p className="pf-detail">
-                  <FiMapPin size={16} /> {user.location}
-                  <span className="pf-detail-private">only visible to you</span>
+                  <FiClock size={16} /> Last active{" "}
+                  {new Date(full.lastSeenAt).toLocaleDateString()}
                 </p>
               )}
             </div>
+
+            {/* ── Contact card — the paid reveal ── */}
+            <section
+              className={`pf-contact-card ${full ? "" : "pf-contact-card--locked"}`}
+            >
+              {full ? (
+                <>
+                  <h3 className="pf-contact-title">
+                    <FiShield size={17} /> Contact {firstName}
+                    {isOwnProfile && (
+                      <span className="pf-detail-private">your own details</span>
+                    )}
+                  </h3>
+                  <div className="pf-contact-grid">
+                    {full.phone && (
+                      <a className="pf-contact-row" href={`tel:${full.phone}`}>
+                        <span className="pf-contact-icon">
+                          <FiPhone size={16} />
+                        </span>
+                        <span>
+                          <span className="pf-contact-label">Phone</span>
+                          <span className="pf-contact-value">{full.phone}</span>
+                        </span>
+                      </a>
+                    )}
+                    {full.email && (
+                      <a className="pf-contact-row" href={`mailto:${full.email}`}>
+                        <span className="pf-contact-icon">
+                          <FiMail size={16} />
+                        </span>
+                        <span>
+                          <span className="pf-contact-label">Email</span>
+                          <span className="pf-contact-value">{full.email}</span>
+                        </span>
+                      </a>
+                    )}
+                    {full.location && (
+                      <div className="pf-contact-row pf-contact-row--static">
+                        <span className="pf-contact-icon">
+                          <FiMapPin size={16} />
+                        </span>
+                        <span>
+                          <span className="pf-contact-label">Based in</span>
+                          <span className="pf-contact-value">{full.location}</span>
+                        </span>
+                      </div>
+                    )}
+                    {full.latitude != null && full.longitude != null && (
+                      <a
+                        className="pf-contact-row"
+                        href={`https://www.google.com/maps/search/?api=1&query=${full.latitude},${full.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className="pf-contact-icon">
+                          <FiMapPin size={16} />
+                        </span>
+                        <span>
+                          <span className="pf-contact-label">Map</span>
+                          <span className="pf-contact-value">
+                            {full.latitude.toFixed(4)}, {full.longitude.toFixed(4)}
+                          </span>
+                        </span>
+                      </a>
+                    )}
+                  </div>
+                  {!full.phone && !full.email && (
+                    <p className="pf-contact-empty">
+                      This member hasn&apos;t added contact details yet.
+                    </p>
+                  )}
+                  {full._count && (
+                    <div className="pf-stat-row">
+                      <span>
+                        <strong>{full._count.properties}</strong> properties
+                      </span>
+                      <span>
+                        <strong>{full._count.listings}</strong> listings
+                      </span>
+                      <span>
+                        <strong>{full._count.requirements}</strong> requirements
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h3 className="pf-contact-title">
+                    <FiLock size={17} /> Contact details are locked
+                  </h3>
+                  <p className="pf-contact-locked-text">
+                    Phone, email and location are shown to members on an active
+                    plan. Nothing about {firstName} is shared until you have one.
+                  </p>
+                  <button type="button" className="pf-unlock-btn" onClick={unlock}>
+                    <FiUnlock size={15} /> Choose a plan to unlock
+                  </button>
+                </>
+              )}
+            </section>
 
             {isOwnProfile && (
               <Link to="/account/personal-info" className="pf-edit-link">

@@ -266,3 +266,156 @@
     padding: 24px 16px;
   }
 }
+
+/* ══════════════════════════════════════
+   OWNER CONTACT — the paid reveal
+   ══════════════════════════════════════ */
+
+.pf-role-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  margin: 0 2px;
+  border-radius: 999px;
+  background: #e9f2ec;
+  color: #134e2c;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.pf-contact-card {
+  margin: 20px 0 28px;
+  padding: 22px;
+  border: 1px solid #e8edf2;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.pf-contact-card--locked {
+  border-style: dashed;
+  border-color: #d7dee6;
+  background: #fafbfc;
+}
+
+.pf-contact-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #16324f;
+}
+
+.pf-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 10px;
+}
+
+.pf-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e8edf2;
+  border-radius: 10px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+a.pf-contact-row:hover {
+  border-color: #1a8f5a;
+  box-shadow: 0 2px 10px rgba(22, 50, 79, 0.07);
+}
+
+.pf-contact-row--static {
+  cursor: default;
+}
+
+.pf-contact-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #e9f2ec;
+  color: #134e2c;
+}
+
+.pf-contact-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8a9aaa;
+}
+
+.pf-contact-value {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #16324f;
+  overflow-wrap: anywhere;
+}
+
+.pf-contact-empty,
+.pf-contact-locked-text {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #66788a;
+}
+
+.pf-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #eef2f6;
+  font-size: 13.5px;
+  color: #66788a;
+}
+
+.pf-stat-row strong {
+  color: #16324f;
+  font-size: 15px;
+}
+
+.pf-unlock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #134e2c;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pf-unlock-btn:hover {
+  background: #0f3d24;
+}
+
+@media (max-width: 640px) {
+  .pf-contact-card {
+    padding: 18px 16px;
+  }
+
+  .pf-unlock-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

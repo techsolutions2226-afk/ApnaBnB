@@ -1,5 +1,6 @@
 const prisma = require('../db/prisma');
 const { involvedWhere, roleInvolvedWhere } = require('./matchController');
+const { hasApprovedPayment } = require('../utils/subscription');
 
 // Public read-only profile lookup. Excludes password and email; we only expose
 // fields the client renders on the public Profile page.
@@ -9,14 +10,15 @@ const getPublicUser = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
+      // Deliberately NO phone / location / email: this route is unauthenticated,
+      // so anything selected here is world-readable. Contact details are a paid
+      // reveal and come only from getUserProfile below.
       select: {
         id: true,
         name: true,
         role: true,
         verified: true,
         avatar: true,
-        phone: true,
-        location: true,
         createdAt: true,
       },
     });
@@ -26,6 +28,75 @@ const getPublicUser = async (req, res, next) => {
     }
 
     res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/users/:id/profile — the full owner profile behind the paid gate.
+// Returns everything a member may see about a lister: identity, contact
+// details, where they operate, and their active listings. Open to the user
+// themselves and to anyone holding an approved plan; everyone else gets 402
+// so the client can route them to /plans.
+const getUserProfile = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const isSelf = req.user.id === id;
+    if (!isSelf && !(await hasApprovedPayment(req.user.id))) {
+      return res.status(402).json({
+        code: 'PLAN_REQUIRED',
+        message: 'Choose a plan to see full owner details.',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        viewRole: true,
+        verified: true,
+        avatar: true,
+        email: true,
+        phone: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        createdAt: true,
+        lastSeenAt: true,
+        _count: { select: { properties: true, listings: true, requirements: true } },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Their other listings, so the viewer can judge the lister at a glance.
+    const properties = await prisma.property.findMany({
+      where: { listedById: id, status: 'active' },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        purpose: true,
+        category: true,
+        photos: true,
+        location: true,
+        bedrooms: true,
+        bathrooms: true,
+        size: true,
+        sizeUnit: true,
+        propertyType: true,
+        createdAt: true,
+      },
+    });
+
+    res.status(200).json({ ...user, properties });
   } catch (error) {
     next(error);
   }
@@ -116,4 +187,5 @@ const getUserStats = async (req, res, next) => {
   }
 };
 
-module.exports = { getPublicUser, updateMe, getUserStats };
+module.exports = {
+  getUserProfile, getPublicUser, updateMe, getUserStats };

@@ -1,8 +1,12 @@
 import { AiFillStar } from "react-icons/ai";
-import { FiShield, FiPhone, FiMail } from "react-icons/fi";
+import { FiShield, FiPhone } from "react-icons/fi";
 import { formatPrice } from "../../utils/formatters";
 
-const InquiryCard = ({ property, onMessage, contact }) => {
+/* Sidebar card on a property page: price, rating, and the call-to-action that
+   leads to the lister. Contact details are never rendered here — the button
+   hands off to PropertyDetail, which routes to the owner profile or to /plans
+   depending on whether the viewer holds one. */
+const InquiryCard = ({ property, onMessage }) => {
   const { price, rating, reviews, listedBy, purpose } = property || {};
 
   const handleSubmit = (e) => {
@@ -16,9 +20,7 @@ const InquiryCard = ({ property, onMessage, contact }) => {
         <span className="rv-card-amount">
           {formatPrice(price || 0, { prefix: true })}
         </span>
-        {purpose === "rent" && (
-          <span className="rv-card-per"> / month</span>
-        )}
+        {purpose === "rent" && <span className="rv-card-per"> / month</span>}
       </div>
 
       {(rating > 0 || reviews > 0) && (
@@ -32,43 +34,21 @@ const InquiryCard = ({ property, onMessage, contact }) => {
         </div>
       )}
 
-      {contact ? (
-        <div className="rv-card-contact">
-          {contact.phone && (
-            <a className="rv-card-contact-row" href={`tel:${contact.phone}`}>
-              <FiPhone size={15} />
-              <span>{contact.phone}</span>
-            </a>
-          )}
-          {contact.email && (
-            <a className="rv-card-contact-row" href={`mailto:${contact.email}`}>
-              <FiMail size={15} />
-              <span>{contact.email}</span>
-            </a>
-          )}
-          {!contact.phone && !contact.email && (
-            <p className="rv-card-note">
-              This owner hasn&apos;t added contact details yet.
-            </p>
-          )}
-        </div>
-      ) : (
-        <>
-          <button type="button" className="rv-card-btn" onClick={handleSubmit}>
-            <FiPhone size={17} />
-            Get contact info
-          </button>
+      <button type="button" className="rv-card-btn" onClick={handleSubmit}>
+        <FiPhone size={17} />
+        Get contact info
+      </button>
 
-          <p className="rv-card-note">
-            Contact details are available with an active plan.
-          </p>
-        </>
-      )}
+      <p className="rv-card-note">
+        Phone and email are shown to members on an active plan.
+      </p>
 
       {listedBy && (
         <div className="rv-card-verified">
           <FiShield size={14} />
-          {listedBy.role === "dealer" ? "Verified agent listing" : "Verified owner listing"}
+          {listedBy.role === "dealer"
+            ? "Verified agent listing"
+            : "Verified owner listing"}
         </div>
       )}
     </div>

@@ -16,6 +16,7 @@ import useRefresh from "../hooks/useRefresh";
 import FilterTabs from "../components/common/FilterTabs";
 import "../styles/Match.css";
 import "../styles/Common.css";
+import { MESSAGING_ENABLED } from "../config/features";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
 
 const TYPE_LABELS = {
@@ -74,6 +75,13 @@ const Matches = () => {
     try {
       await matchService.updateStatus(match._id, status);
       if (status === "accepted") {
+        // Chat is shelved, so there's no deal room to open — just confirm and
+        // refresh in place. Restores itself with the flag (config/features.js).
+        if (!MESSAGING_ENABLED) {
+          toast.success("Match accepted.");
+          refetch();
+          return;
+        }
         toast.success("Match accepted — opening your deal room.");
         navigate(`/messages?match=${match._id}`);
         return;
@@ -496,7 +504,11 @@ const Matches = () => {
                         disabled={busyId === match._id}
                         onClick={() => handleStatus(match, "accepted")}
                       >
-                        {busyId === match._id ? "Working…" : "Accept & open deal room"}
+                        {busyId === match._id
+                          ? "Working…"
+                          : MESSAGING_ENABLED
+                            ? "Accept & open deal room"
+                            : "Accept match"}
                       </button>
                       <button
                         type="button"
@@ -508,7 +520,7 @@ const Matches = () => {
                       </button>
                     </>
                   )}
-                  {match.status === "accepted" && (
+                  {match.status === "accepted" && MESSAGING_ENABLED && (
                     <button
                       type="button"
                       className="mtch-btn mtch-btn--primary"

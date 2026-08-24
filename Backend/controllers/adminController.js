@@ -3,6 +3,7 @@ const prisma = require('../db/prisma');
 const { decryptMessage } = require('../utils/messageCrypto');
 const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
+const { MESSAGING_ENABLED } = require('../config/features');
 
 // ── Shared selectors ──────────────────────────────────────────────────────
 const userSelect = { omit: { password: true } };
@@ -233,8 +234,10 @@ const getPlatformStats = async (req, res, next) => {
     const totalListings = await prisma.listing.count();
     const totalRequirements = await prisma.requirement.count();
     const totalMatches = await prisma.match.count();
-    const totalConversations = await prisma.conversation.count();
-    const totalMessages = await prisma.message.count();
+    // Chat is shelved — don't report totals that can no longer move.
+    // The tables still hold their data; see config/features.js.
+    const totalConversations = MESSAGING_ENABLED ? await prisma.conversation.count() : 0;
+    const totalMessages = MESSAGING_ENABLED ? await prisma.message.count() : 0;
     const totalReviews = await prisma.review.count();
     const roleGroups = await prisma.user.groupBy({ by: ['role'], _count: { _all: true } });
     const statusGroups = await prisma.property.groupBy({ by: ['status'], _count: { _all: true } });

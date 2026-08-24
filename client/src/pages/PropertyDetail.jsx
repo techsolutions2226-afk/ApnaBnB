@@ -4,6 +4,8 @@ import { useProperty } from "../hooks/useProperties";
 import { useWishlist } from "../context/WishlistContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import propertyService from "../services/propertyService";
+import { MESSAGING_ENABLED } from "../config/features";
 import Modal from "../components/common/Modal";
 import PropertyReviews from "../components/property/detail/PropertyReviews";
 import PropertyGallery from "../components/property/detail/PropertyGallery";
@@ -19,6 +21,7 @@ import {
   FiMonitor,
   FiCopy,
   FiMail,
+  FiPhone,
   FiMessageSquare,
   FiHome,
   FiMapPin,
@@ -78,6 +81,8 @@ const PropertyDetail = () => {
   const { property, isLoading, error } = useProperty(id);
   const { isWishlisted, toggleWishlist } = useWishlist();
 
+  const [contact, setContact] = useState(null); // revealed owner details
+  const [contactLoading, setContactLoading] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [amenitiesModalOpen, setAmenitiesModalOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
@@ -206,7 +211,37 @@ const PropertyDetail = () => {
       .catch(() => toast.error("Failed to copy link"));
   };
 
+  /* ── Owner contact reveal (paid) ──
+     Chat is shelved, so reaching the owner now means seeing their phone/email.
+     The server decides who may: the lister always, anyone else only with an
+     approved plan. A 402 sends the user to /plans, which returns them here
+     after payment via the existing ?from= flow. */
+  const handleGetContact = async () => {
+    if (!isAuthenticated) {
+      toast.info("Please log in to see the owner's contact details.");
+      navigate("/login");
+      return;
+    }
+    if (!listedBy?._id) return;
+
+    setContactLoading(true);
+    try {
+      const info = await propertyService.getContact(id);
+      setContact(info);
+    } catch (err) {
+      if (err?.code === "PLAN_REQUIRED") {
+        toast.info("Choose a plan to see the owner's contact details.");
+        navigate(`/plans?from=contact&property=${id}`);
+        return;
+      }
+      toast.error(err?.message || "Could not load contact details.");
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
   const handleMessageOwner = (message) => {
+    if (!MESSAGING_ENABLED) return handleGetContact();
     if (!listedBy?._id) {
       navigate("/messages");
       return;
@@ -455,16 +490,49 @@ const PropertyDetail = () => {
                   </div>
                 )}
               </div>
-              {listedBy?._id && listedBy._id !== currentUser?.id && (
-                <button
-                  type="button"
-                  className="pd-msg-btn"
-                  onClick={handleMessageOwner}
-                >
-                  <FiMessageSquare size={16} />
-                  Message on platform
-                </button>
-              )}
+              {listedBy?._id &&
+                listedBy._id !== currentUser?.id &&
+                (MESSAGING_ENABLED ? (
+                  <button
+                    type="button"
+                    className="pd-msg-btn"
+                    onClick={handleMessageOwner}
+                  >
+                    <FiMessageSquare size={16} />
+                    Message on platform
+                  </button>
+                ) : contact ? (
+                  /* Revealed — the server already confirmed this user may see it. */
+                  <div className="pd-contact-revealed">
+                    {contact.phone && (
+                      <a className="pd-contact-row" href={`tel:${contact.phone}`}>
+                        <FiPhone size={15} />
+                        <span>{contact.phone}</span>
+                      </a>
+                    )}
+                    {contact.email && (
+                      <a className="pd-contact-row" href={`mailto:${contact.email}`}>
+                        <FiMail size={15} />
+                        <span>{contact.email}</span>
+                      </a>
+                    )}
+                    {!contact.phone && !contact.email && (
+                      <p className="pd-contact-empty">
+                        This owner hasn&apos;t added contact details yet.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="pd-msg-btn"
+                    onClick={handleGetContact}
+                    disabled={contactLoading}
+                  >
+                    <FiPhone size={16} />
+                    {contactLoading ? "Loading…" : "Get contact info"}
+                  </button>
+                ))}
             </section>
 
             {/* Overview */}

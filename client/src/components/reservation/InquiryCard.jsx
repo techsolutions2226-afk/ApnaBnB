@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { AiFillStar } from "react-icons/ai";
-import { FiShield, FiMessageSquare } from "react-icons/fi";
+import { FiShield, FiMessageSquare, FiPhone } from "react-icons/fi";
 import { formatPrice } from "../../utils/formatters";
+import { MESSAGING_ENABLED } from "../../config/features";
 
 const InquiryCard = ({ property, onMessage }) => {
   const { price, rating, reviews, listedBy, purpose } = property || {};
@@ -34,28 +35,46 @@ const InquiryCard = ({ property, onMessage }) => {
         </div>
       )}
 
-      <form className="rv-card-form" onSubmit={handleSubmit}>
-        <label className="rv-card-label" htmlFor="pd-inquiry-msg">
-          Send inquiry
-        </label>
-        <textarea
-          id="pd-inquiry-msg"
-          className="rv-card-textarea"
-          rows={4}
-          placeholder="Share your budget, timeline, and any questions..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
+      {MESSAGING_ENABLED ? (
+        <>
+          <form className="rv-card-form" onSubmit={handleSubmit}>
+            <label className="rv-card-label" htmlFor="pd-inquiry-msg">
+              Send inquiry
+            </label>
+            <textarea
+              id="pd-inquiry-msg"
+              className="rv-card-textarea"
+              rows={4}
+              placeholder="Share your budget, timeline, and any questions..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
 
-        <button type="submit" className="rv-card-btn">
-          <FiMessageSquare size={17} />
-          Message on platform
-        </button>
-      </form>
+            <button type="submit" className="rv-card-btn">
+              <FiMessageSquare size={17} />
+              Message on platform
+            </button>
+          </form>
 
-      <p className="rv-card-note">
-        Contact details stay hidden until a deal is confirmed.
-      </p>
+          <p className="rv-card-note">
+            Contact details stay hidden until a deal is confirmed.
+          </p>
+        </>
+      ) : (
+        /* Chat is shelved: the inquiry form had nowhere to send to, so the card
+           now leads to the paid contact reveal instead. The old note promised
+           the opposite of what happens here, so it is replaced too. */
+        <>
+          <button type="button" className="rv-card-btn" onClick={handleSubmit}>
+            <FiPhone size={17} />
+            Get contact info
+          </button>
+
+          <p className="rv-card-note">
+            Contact details are available with an active plan.
+          </p>
+        </>
+      )}
 
       {listedBy && (
         <div className="rv-card-verified">

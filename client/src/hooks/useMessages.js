@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import messageService from '../services/messageService';
+import { MESSAGING_ENABLED } from '../config/features';
 
 export const useConversations = () => {
   const [conversations, setConversations] = useState([]);
@@ -7,6 +8,15 @@ export const useConversations = () => {
   const [error, setError] = useState(null);
 
   const fetchConversations = async () => {
+    // Chat is shelved: the API isn't mounted, so skip the call rather than
+    // letting every dashboard mount fire a 404. useDashboardData still calls
+    // this hook (hooks can't be called conditionally) and just reads an empty
+    // list. See config/features.js.
+    if (!MESSAGING_ENABLED) {
+      setConversations([]);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 

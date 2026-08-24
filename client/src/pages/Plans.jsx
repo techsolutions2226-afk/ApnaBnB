@@ -19,6 +19,7 @@ import planService from "../services/planService";
 import Modal from "../components/common/Modal";
 import Breadcrumb from "../components/common/Breadcrumb";
 import RefreshButton from "../components/common/RefreshButton";
+import { MESSAGING_ENABLED } from "../config/features";
 import "../styles/Plans.css";
 import "../styles/Dashboard.css"; /* for breadcrumb classes */
 
@@ -104,6 +105,8 @@ export default function Plans() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from"); // where to return after subscribing
+  // Contact reveal is billed to every role, unlike the messaging tier.
+  const fromContact = from === "contact";
 
   const [billing, setBilling] = useState("monthly"); /* monthly | yearly */
   const [openFaq, setOpenFaq] = useState(null);
@@ -283,18 +286,22 @@ export default function Plans() {
         ]}
       />
 
-      {/* ── "Unlock messaging" prompt (shown when bounced here from chat) ── */}
-      {from && paysForPlan && !mySub && (
+      {/* ── Unlock prompt (shown when bounced here from a gated feature) ──
+             Contact reveal is billed to EVERY role, so the buyers-are-free note
+             below must not appear for it. */}
+      {from && !mySub && (paysForPlan || fromContact) && (
         <div className="plan-gate-note">
           <FiAward size={18} />
           <span>
-            Choose a plan and complete payment to unlock messaging and the Deal Room.
+            {fromContact
+              ? "Choose a plan and complete payment to see owner contact details."
+              : "Choose a plan and complete payment to unlock messaging and the Deal Room."}
           </span>
         </div>
       )}
 
-      {/* ── Buyers don't pay ── */}
-      {isAuthenticated && !paysForPlan && (
+      {/* ── Buyers don't pay (only true for the messaging tier) ── */}
+      {isAuthenticated && !paysForPlan && !fromContact && MESSAGING_ENABLED && (
         <div className="plan-gate-note plan-gate-note--free">
           <FiCheckCircle size={18} />
           <span>You're a buyer — messaging is free, no plan needed.</span>

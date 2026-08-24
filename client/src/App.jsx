@@ -74,6 +74,7 @@ import AdminLogs from "./pages/admin/AdminLogs";
 
 /* ── Subscription Plans (Step 10) ── */
 import Plans from "./pages/Plans";
+import { MESSAGING_ENABLED } from "./config/features";
 
 function App() {
   return (
@@ -115,10 +116,13 @@ function App() {
                   <Route path="/requirements/:id" element={<ViewRequirement />} />
                   <Route path="/requirements" element={<RequirementsBoard />} />
 
-                  {/* Matches, Messages, Wishlists, Trips (all authenticated
+                  {/* Matches, Wishlists, Trips (all authenticated
                       — auth enforced by the shell's outer ProtectedRoute) */}
                   <Route path="/matches" element={<Matches />} />
-                  <Route path="/messages" element={<Messages />} />
+                  {/* Chat is shelved — see config/features.js */}
+                  {MESSAGING_ENABLED && (
+                    <Route path="/messages" element={<Messages />} />
+                  )}
                   <Route path="/wishlists" element={<Wishlists />} />
                   <Route path="/trips" element={<Trips />} />
 
@@ -165,7 +169,9 @@ function App() {
                   <Route path="listings" element={<AdminListings />} />
                   <Route path="requirements" element={<AdminRequirements />} />
                   <Route path="matches" element={<AdminMatches />} />
-                  <Route path="messages" element={<AdminMessages />} />
+                  {MESSAGING_ENABLED && (
+                    <Route path="messages" element={<AdminMessages />} />
+                  )}
                   <Route path="payments" element={<AdminPayments />} />
                   <Route path="plans" element={<AdminPlans />} />
                   <Route path="contact" element={<AdminContact />} />

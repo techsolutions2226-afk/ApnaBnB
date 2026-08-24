@@ -9,6 +9,7 @@ const {
   normalizeSupply,
 } = require('../utils/matchScore');
 const { sendPropertyCreatedEmail } = require('../utils/mailer');
+const { hasApprovedPayment } = require('../utils/subscription');
 const {
   notifyPropertyMatches,
   notifyInBackground,
@@ -58,8 +59,12 @@ const buildPropertyData = (body, { partial = false } = {}) => {
   return data;
 };
 
+// Deliberately NO email/phone here: contact details are a paid reveal and are
+// served only by getPropertyContact below. Returning them on every property
+// fetch would make that gate cosmetic — the data would already be in the
+// browser's Network tab.
 const listedBySelect = {
-  select: { id: true, name: true, email: true, role: true, avatar: true },
+  select: { id: true, name: true, role: true, avatar: true },
 };
 
 // Auto-generate matches for a newly-created property.
@@ -375,6 +380,45 @@ const searchProperties = async (req, res, next) => {
   }
 };
 
+// GET /api/properties/:id/contact — the paid reveal.
+// Returns the lister's phone/email only to the owner themselves or to a user
+// holding an approved plan. Everyone else gets 402 so the client can route
+// them to /plans. This is the real gate: the contact details are on no other
+// endpoint, so hiding the button alone would not be enough.
+const getPropertyContact = async (req, res, next) => {
+  try {
+    const property = await prisma.property.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        listedById: true,
+        listedBy: {
+          select: { id: true, name: true, role: true, phone: true, email: true },
+        },
+      },
+    });
+
+    if (!property || !property.listedBy) {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
+
+    const isOwner = property.listedById === req.user.id;
+    const unlocked = isOwner || (await hasApprovedPayment(req.user.id));
+
+    if (!unlocked) {
+      return res.status(402).json({
+        code: 'PLAN_REQUIRED',
+        message: "Choose a plan to see the owner's contact details.",
+      });
+    }
+
+    const { name, role, phone, email } = property.listedBy;
+    res.status(200).json({ name, role, phone: phone || '', email: email || '' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProperty,
   getProperties,
@@ -382,5 +426,6 @@ module.exports = {
   searchProperties,
   updateProperty,
   deleteProperty,
+  getPropertyContact,
   generateMatchesForProperty,
 };

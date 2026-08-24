@@ -30,6 +30,7 @@ import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
 import "../styles/Common.css";
+import { MESSAGING_ENABLED } from "../config/features";
 
 const BuyerDashboard = () => {
   const { currentUser } = useAuth();
@@ -173,13 +174,16 @@ const BuyerDashboard = () => {
           accent="#7c3aed"
           to="/matches"
         />
-        <DashStat
-          icon={FiMessageSquare}
-          value={unreadMessages}
-          label="Unread Messages"
-          accent="#0284c7"
-          to="/messages"
-        />
+        {/* Unread-messages tile returns with the flag (config/features.js). */}
+        {MESSAGING_ENABLED && (
+          <DashStat
+            icon={FiMessageSquare}
+            value={unreadMessages}
+            label="Unread Messages"
+            accent="#0284c7"
+            to="/messages"
+          />
+        )}
       </div>
 
       {/* ── Quick Actions ── */}
@@ -204,12 +208,14 @@ const BuyerDashboard = () => {
             </span>
             My Wishlists
           </Link>
-          <Link to="/messages" className="dash-quick dash-quick--alt">
-            <span className="dash-quick-icon">
-              <FiMessageSquare size={17} />
-            </span>
-            Messages
-          </Link>
+          {MESSAGING_ENABLED && (
+            <Link to="/messages" className="dash-quick dash-quick--alt">
+              <span className="dash-quick-icon">
+                <FiMessageSquare size={17} />
+              </span>
+              Messages
+            </Link>
+          )}
         </div>
       </div>
 

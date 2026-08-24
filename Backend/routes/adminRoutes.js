@@ -34,6 +34,7 @@ const {
 } = require('../controllers/adminController');
 const verifyToken = require('../middleware/authMiddleware');
 const adminOnly = require('../middleware/adminMiddleware');
+const { MESSAGING_ENABLED } = require('../config/features');
 
 const router = express.Router();
 
@@ -75,14 +76,16 @@ router.delete('/requirements/:id', verifyToken, adminOnly, deleteRequirement);
 router.get('/matches', verifyToken, adminOnly, getAllMatches);
 router.delete('/matches/:id', verifyToken, adminOnly, deleteMatch);
 
-// Messages
-router.get('/messages', verifyToken, adminOnly, getAllMessages);
-router.delete('/messages/:id', verifyToken, adminOnly, deleteMessage);
+// Messages + conversations (WhatsApp-style message review).
+// Mounted only while chat is enabled — see config/features.js.
+if (MESSAGING_ENABLED) {
+  router.get('/messages', verifyToken, adminOnly, getAllMessages);
+  router.delete('/messages/:id', verifyToken, adminOnly, deleteMessage);
 
-// Conversations (WhatsApp-style message review)
-router.get('/conversations', verifyToken, adminOnly, getAllConversations);
-router.get('/conversations/:id/messages', verifyToken, adminOnly, getConversationThread);
-router.delete('/conversations/:id', verifyToken, adminOnly, deleteConversation);
+  router.get('/conversations', verifyToken, adminOnly, getAllConversations);
+  router.get('/conversations/:id/messages', verifyToken, adminOnly, getConversationThread);
+  router.delete('/conversations/:id', verifyToken, adminOnly, deleteConversation);
+}
 
 // Activity logs
 router.get('/activity', verifyToken, adminOnly, getActivityLogs);

@@ -22,6 +22,7 @@ import {
   FiHome,
   FiBriefcase,
 } from "react-icons/fi";
+import { MESSAGING_ENABLED } from "../../config/features";
 
 export const ROLES = ["seller", "buyer", "dealer"];
 
@@ -37,7 +38,7 @@ const MATCHES = { to: "/matches", label: "Matches", icon: FiGitMerge };
 const MESSAGES = { to: "/messages", label: "Messages", icon: FiMessageSquare };
 const NOTIFS = { to: "/account/notifications", label: "Notifications", icon: FiBell };
 
-export const NAV_BY_ROLE = {
+const NAV_BY_ROLE_ALL = {
   seller: [
     DASH,
     { to: "/listing/new", label: "Create Listing", icon: FiPlusSquare },
@@ -69,3 +70,16 @@ export const NAV_BY_ROLE = {
     NOTIFS,
   ],
 };
+
+/* Chat is shelved (see config/features.js). Filtering here rather than editing
+   each role's array keeps the MESSAGES entry intact for the day it returns —
+   re-enabling is a flag flip, not a re-edit. */
+export const NAV_BY_ROLE = MESSAGING_ENABLED
+  ? NAV_BY_ROLE_ALL
+  : Object.fromEntries(
+      Object.entries(NAV_BY_ROLE_ALL).map(([role, items]) => [
+        role,
+        items.filter((item) => item.to !== "/messages"),
+      ]),
+    );
+

@@ -33,6 +33,7 @@ import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
 import "../styles/Common.css";
+import { MESSAGING_ENABLED } from "../config/features";
 
 const DealerDashboard = () => {
   const { currentUser, subscription } = useAuth();
@@ -153,13 +154,16 @@ const DealerDashboard = () => {
           accent="#7c3aed"
           to="/matches"
         />
-        <DashStat
-          icon={FiMessageSquare}
-          value={stats.unreadMessages}
-          label="Unread Messages"
-          accent="#0284c7"
-          to="/messages"
-        />
+        {/* Unread-messages tile returns with the flag (config/features.js). */}
+        {MESSAGING_ENABLED && (
+          <DashStat
+            icon={FiMessageSquare}
+            value={stats.unreadMessages}
+            label="Unread Messages"
+            accent="#0284c7"
+            to="/messages"
+          />
+        )}
       </div>
 
       {/* ── Quick Actions ── */}

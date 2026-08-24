@@ -2,6 +2,7 @@ const prisma = require('../db/prisma');
 const { calculateMatchScore } = require('../utils/matchScore');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
 const { parsePagination, paginated } = require('../utils/pagination');
+const { MESSAGING_ENABLED } = require('../config/features');
 
 // Shared populate shape for match records.
 const matchInclude = {
@@ -360,8 +361,11 @@ const updateMatchStatus = async (req, res, next) => {
     }
 
     const data = { status };
-    // On accept, open the Deal Room if one isn't linked yet.
+    // On accept, open the Deal Room if one isn't linked yet. Skipped while chat
+    // is shelved — otherwise this keeps creating empty conversations nobody can
+    // open. findOrCreateDealRoom stays in place for when messaging returns.
     if (
+      MESSAGING_ENABLED &&
       status === 'accepted' &&
       !existing.conversationId &&
       ownerId &&

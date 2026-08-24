@@ -1,16 +1,13 @@
-import { useState } from "react";
 import { AiFillStar } from "react-icons/ai";
-import { FiShield, FiMessageSquare, FiPhone } from "react-icons/fi";
+import { FiShield, FiPhone, FiMail } from "react-icons/fi";
 import { formatPrice } from "../../utils/formatters";
-import { MESSAGING_ENABLED } from "../../config/features";
 
-const InquiryCard = ({ property, onMessage }) => {
+const InquiryCard = ({ property, onMessage, contact }) => {
   const { price, rating, reviews, listedBy, purpose } = property || {};
-  const [message, setMessage] = useState("");
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (typeof onMessage === "function") onMessage(message);
+    if (typeof onMessage === "function") onMessage();
   };
 
   return (
@@ -35,35 +32,27 @@ const InquiryCard = ({ property, onMessage }) => {
         </div>
       )}
 
-      {MESSAGING_ENABLED ? (
-        <>
-          <form className="rv-card-form" onSubmit={handleSubmit}>
-            <label className="rv-card-label" htmlFor="pd-inquiry-msg">
-              Send inquiry
-            </label>
-            <textarea
-              id="pd-inquiry-msg"
-              className="rv-card-textarea"
-              rows={4}
-              placeholder="Share your budget, timeline, and any questions..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-
-            <button type="submit" className="rv-card-btn">
-              <FiMessageSquare size={17} />
-              Message on platform
-            </button>
-          </form>
-
-          <p className="rv-card-note">
-            Contact details stay hidden until a deal is confirmed.
-          </p>
-        </>
+      {contact ? (
+        <div className="rv-card-contact">
+          {contact.phone && (
+            <a className="rv-card-contact-row" href={`tel:${contact.phone}`}>
+              <FiPhone size={15} />
+              <span>{contact.phone}</span>
+            </a>
+          )}
+          {contact.email && (
+            <a className="rv-card-contact-row" href={`mailto:${contact.email}`}>
+              <FiMail size={15} />
+              <span>{contact.email}</span>
+            </a>
+          )}
+          {!contact.phone && !contact.email && (
+            <p className="rv-card-note">
+              This owner hasn&apos;t added contact details yet.
+            </p>
+          )}
+        </div>
       ) : (
-        /* Chat is shelved: the inquiry form had nowhere to send to, so the card
-           now leads to the paid contact reveal instead. The old note promised
-           the opposite of what happens here, so it is replaced too. */
         <>
           <button type="button" className="rv-card-btn" onClick={handleSubmit}>
             <FiPhone size={17} />

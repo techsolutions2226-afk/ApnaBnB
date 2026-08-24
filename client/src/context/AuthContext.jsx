@@ -3,7 +3,6 @@ import { toast } from "react-toastify";
 import authService from "../services/authService";
 import userService from "../services/userService";
 import paymentService from "../services/paymentService";
-import { disconnectSocket } from "../api/socket";
 import { getEffectiveRole, roleRequiresPlan } from "../utils/subscription";
 
 /* How long the user can be idle before we log them out automatically.
@@ -304,7 +303,6 @@ export function AuthProvider({ children }) {
   /* ── Logout ── */
   const logout = () => {
     authService.logout();
-    disconnectSocket();
     setCurrentUser(null);
     setSubscription(EMPTY_SUBSCRIPTION);
     setError(null);

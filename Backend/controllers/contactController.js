@@ -41,7 +41,7 @@ const DEFAULTS = {
     {
       question: 'Do I need a paid plan?',
       answer:
-        'Browsing, listing and posting requirements are free. A subscription unlocks messaging and the Deal Room so you can negotiate directly with the other party.',
+        "Browsing, listing and posting requirements are free. A subscription unlocks the owner's contact details so you can reach them directly.",
     },
     {
       question: 'How do I pay?',

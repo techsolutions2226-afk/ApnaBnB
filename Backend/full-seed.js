@@ -23,7 +23,6 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const prisma = require('./db/prisma');
-const { encryptMessage } = require('./utils/messageCrypto');
 
 const PASS = 'Test@1234';
 const DOMAIN = '@apnabnb.seed';
@@ -150,13 +149,6 @@ async function main() {
   const prior = await prisma.user.findMany({ where: { email: { in: emails } }, select: { id: true } });
   const priorIds = prior.map((u) => u.id);
   if (priorIds.length) {
-    const convs = await prisma.conversation.findMany({
-      where: { participants: { some: { id: { in: priorIds } } } },
-      select: { id: true },
-    });
-    if (convs.length) {
-      await prisma.conversation.deleteMany({ where: { id: { in: convs.map((c) => c.id) } } });
-    }
     await prisma.activityLog.deleteMany({ where: { userId: { in: priorIds } } });
   }
   const cleared = await prisma.user.deleteMany({ where: { email: { in: emails } } });
@@ -189,11 +181,11 @@ async function main() {
     { role: 'seller', slug: 'basic',   name: 'Basic',   monthlyPrice: 0,    yearlyPrice: 0,     popular: false, sortOrder: 1, description: 'Get started with a single listing.',      limits: { maxListings: 1,  maxRequirements: 0 },  features: [{ text: '1 active listing', included: true }, { text: 'Email match alerts', included: true }, { text: 'Featured placement', included: false }] },
     { role: 'seller', slug: 'pro',     name: 'Pro',     monthlyPrice: 2500, yearlyPrice: 25000, popular: true,  sortOrder: 2, description: 'For active sellers.',                     limits: { maxListings: 10, maxRequirements: 0 },  features: [{ text: 'Up to 10 listings', included: true }, { text: 'Email match alerts', included: true }, { text: 'Featured placement', included: true }] },
     { role: 'seller', slug: 'premium', name: 'Premium', monthlyPrice: 6000, yearlyPrice: 60000, popular: false, sortOrder: 3, description: 'Unlimited reach.',                        limits: { maxListings: 999, maxRequirements: 0 }, features: [{ text: 'Unlimited listings', included: true }, { text: 'Priority support', included: true }, { text: 'Featured placement', included: true }] },
-    { role: 'dealer', slug: 'basic',   name: 'Basic',   monthlyPrice: 0,    yearlyPrice: 0,     popular: false, sortOrder: 1, description: 'Try the dealer tools.',                   limits: { maxListings: 3,  maxRequirements: 3 },  features: [{ text: '3 active listings', included: true }, { text: 'Requirements board', included: true }, { text: 'Deal Room', included: false }] },
-    { role: 'dealer', slug: 'pro',     name: 'Pro',     monthlyPrice: 4000, yearlyPrice: 40000, popular: true,  sortOrder: 2, description: 'Work both sides of the market.',          limits: { maxListings: 25, maxRequirements: 25 }, features: [{ text: 'Up to 25 listings', included: true }, { text: 'Deal Room', included: true }, { text: 'Priority matching', included: true }] },
-    { role: 'dealer', slug: 'premium', name: 'Premium', monthlyPrice: 9000, yearlyPrice: 90000, popular: false, sortOrder: 3, description: 'For agencies.',                           limits: { maxListings: 999, maxRequirements: 999 }, features: [{ text: 'Unlimited listings', included: true }, { text: 'Deal Room', included: true }, { text: 'Dedicated manager', included: true }] },
+    { role: 'dealer', slug: 'basic',   name: 'Basic',   monthlyPrice: 0,    yearlyPrice: 0,     popular: false, sortOrder: 1, description: 'Try the dealer tools.',                   limits: { maxListings: 3,  maxRequirements: 3 },  features: [{ text: '3 active listings', included: true }, { text: 'Requirements board', included: true }, { text: 'Owner contact details', included: false }] },
+    { role: 'dealer', slug: 'pro',     name: 'Pro',     monthlyPrice: 4000, yearlyPrice: 40000, popular: true,  sortOrder: 2, description: 'Work both sides of the market.',          limits: { maxListings: 25, maxRequirements: 25 }, features: [{ text: 'Up to 25 listings', included: true }, { text: 'Owner contact details', included: true }, { text: 'Priority matching', included: true }] },
+    { role: 'dealer', slug: 'premium', name: 'Premium', monthlyPrice: 9000, yearlyPrice: 90000, popular: false, sortOrder: 3, description: 'For agencies.',                           limits: { maxListings: 999, maxRequirements: 999 }, features: [{ text: 'Unlimited listings', included: true }, { text: 'Owner contact details', included: true }, { text: 'Dedicated manager', included: true }] },
     { role: 'buyer',  slug: 'basic',   name: 'Basic',   monthlyPrice: 0,    yearlyPrice: 0,     popular: false, sortOrder: 1, description: 'Post what you need, free.',               limits: { maxListings: 0, maxRequirements: 2 },   features: [{ text: '2 active requirements', included: true }, { text: 'Email match alerts', included: true }, { text: 'Priority matching', included: false }] },
-    { role: 'buyer',  slug: 'pro',     name: 'Pro',     monthlyPrice: 1500, yearlyPrice: 15000, popular: true,  sortOrder: 2, description: 'Be first in the queue.',                  limits: { maxListings: 0, maxRequirements: 15 },  features: [{ text: 'Up to 15 requirements', included: true }, { text: 'Priority matching', included: true }, { text: 'Deal Room', included: true }] },
+    { role: 'buyer',  slug: 'pro',     name: 'Pro',     monthlyPrice: 1500, yearlyPrice: 15000, popular: true,  sortOrder: 2, description: 'Be first in the queue.',                  limits: { maxListings: 0, maxRequirements: 15 },  features: [{ text: 'Up to 15 requirements', included: true }, { text: 'Priority matching', included: true }, { text: 'Owner contact details', included: true }] },
   ];
   for (const p of PLAN_ROWS) {
     await prisma.plan.upsert({
@@ -310,98 +302,6 @@ async function main() {
   }
   if (matchRows.length) await prisma.match.createMany({ data: matchRows });
   console.log(`Matches:        ${matchRows.length}`);
-
-  /* ── 7. Conversations + participant prefs + messages ── */
-  const enc = (t) => encryptMessage(t);
-  const THREADS = [
-    {
-      a: 'ahmed', b: 'fatima', propIdx: 0, ageDays: 3,
-      msgs: [
-        ['b', 'Assalam o alaikum — is the Gulberg house still available?', true, 3 * DAY],
-        ['a', 'Walaikum assalam. Yes, it is. Listed at 4.8 crore.', true, 3 * DAY - 2 * 3600e3],
-        ['b', 'Could you do 4.5?', true, 2 * DAY],
-        ['a', 'I can go to 4.65 if we close this month — fittings included.', true, 2 * DAY - 3600e3],
-        ['b', 'That works. Can we visit this weekend?', false, 6 * 3600e3],
-        ['a', 'Saturday 11am suits me. I will keep the documents ready.', false, 2 * 3600e3],
-      ],
-    },
-    {
-      a: 'bilal', b: 'ayesha', propIdx: 7, ageDays: 5,
-      msgs: [
-        ['a', 'I manage a fully furnished 3-bed in DHA Phase 6 — 150k/month.', true, 5 * DAY],
-        ['b', 'Are utilities included in that?', true, 4 * DAY],
-        ['a', 'Maintenance yes, electricity and gas are separate.', true, 4 * DAY - 3600e3],
-        ['b', 'Understood. Is it available from next month?', false, 8 * 3600e3],
-      ],
-    },
-    {
-      a: 'sana', b: 'usman', propIdx: 4, ageDays: 8,
-      msgs: [
-        ['b', 'Interested in the F-8 house. Is the price negotiable?', true, 8 * DAY],
-        ['a', 'Slightly — around 7.6 crore is workable.', true, 7 * DAY],
-        ['b', 'Let me discuss with family and revert.', true, 6 * DAY],
-      ],
-    },
-    {
-      a: 'hina', b: 'usman', propIdx: 13, ageDays: 1,
-      msgs: [
-        ['b', 'Is the 1 Kanal plot in Phase 8 still open?', true, 1 * DAY],
-        ['a', 'Yes. Possession is clear and dues are paid.', false, 5 * 3600e3],
-      ],
-    },
-  ];
-
-  let msgCount = 0;
-  let convCount = 0;
-  for (const t of THREADS) {
-    const ua = U[t.a];
-    const ub = U[t.b];
-    const conv = await prisma.conversation.create({
-      data: {
-        participants: { connect: [{ id: ua.id }, { id: ub.id }] },
-        propertyId: props[t.propIdx].prop.id,
-        createdAt: ago(t.ageDays * DAY),
-      },
-    });
-    convCount++;
-    // Per-participant prefs (pinned / muted / archived live here, not on the thread).
-    await prisma.conversationParticipant.createMany({
-      data: [
-        { conversationId: conv.id, userId: ua.id, pinned: t.propIdx === 0, muted: false, archived: false },
-        { conversationId: conv.id, userId: ub.id, pinned: false, muted: false, archived: false },
-      ],
-    });
-    for (const [who, text, read, backMs] of t.msgs) {
-      const sender = who === 'a' ? ua : ub;
-      await prisma.message.create({
-        data: {
-          conversationId: conv.id,
-          senderId: sender.id,
-          content: enc(text),
-          read,
-          deliveredAt: ago(backMs),
-          readAt: read ? ago(backMs - 60e3) : null,
-          createdAt: ago(backMs),
-        },
-      });
-      msgCount++;
-    }
-    // One message that shares the property as a card.
-    await prisma.message.create({
-      data: {
-        conversationId: conv.id,
-        senderId: ua.id,
-        content: enc('Sharing the listing for reference.'),
-        type: 'property',
-        propertyId: props[t.propIdx].prop.id,
-        read: true,
-        createdAt: ago(t.ageDays * DAY - 1800e3),
-      },
-    });
-    msgCount++;
-  }
-  console.log(`Conversations:  ${convCount}`);
-  console.log(`Messages:       ${msgCount}`);
 
   /* ── 8. Reviews — both kinds (property and user) ── */
   const reviewRows = [

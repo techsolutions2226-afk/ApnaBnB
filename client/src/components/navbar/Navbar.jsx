@@ -8,7 +8,6 @@ import {
   FiHelpCircle,
   FiUser,
 } from "react-icons/fi";
-import { MESSAGING_ENABLED } from "../../config/features";
 import "../../styles/Navbar.css";
 
 import NotificationBell from "./NotificationBell";
@@ -136,11 +135,6 @@ const Navbar = () => {
                       </Link>
                     ))}
                     <div className="dropdown-divider" />
-                    {MESSAGING_ENABLED && (
-                      <Link to="/messages" className="dropdown-item" onClick={() => setMenuOpen(false)}>
-                        Messages
-                      </Link>
-                    )}
                     <Link to="/wishlists" className="dropdown-item" onClick={() => setMenuOpen(false)}>
                       Wishlists
                     </Link>

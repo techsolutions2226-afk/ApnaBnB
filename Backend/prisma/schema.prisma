@@ -177,19 +177,10 @@ model User {
   listings          Listing[]
   requirements      Requirement[]
   matches           Match[]                   @relation("MatchInitiator")
-  messages          Message[]
   reviews           Review[]
   trips             Trip[]
   wishlists         Wishlist[]
-  conversations     Conversation[]            @relation("ConversationParticipants")
-  conversationPrefs ConversationParticipant[]
   payments          Payment[]
-
-  // Blocking — implicit m2m self-relation. `blocked` are the users THIS user has
-  // blocked; `blockedBy` are users who blocked THIS user. Either direction blocks
-  // messaging between the pair (enforced in the REST + socket send paths).
-  blocked   User[] @relation("UserBlocks")
-  blockedBy User[] @relation("UserBlocks")
 }
 
 model Property {
@@ -233,11 +224,6 @@ model Property {
   listings Listing[]
   matches  Match[]
   trips    Trip[]
-
-  // Conversations that carry this property as their subject-matter context,
-  // and chat messages that share this property as a card.
-  conversations Conversation[]
-  chatMessages  Message[]      @relation("MessageProperty")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -320,10 +306,6 @@ model Match {
   aiStatus String  @default("pending") // pending | scored | failed
   aiError  String?
 
-  // The private "Deal Room" — created/linked when the match is accepted.
-  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  conversationId String?
-
   // { amount, currency, status } for dealer-dealer commission tracking.
   commission Json?
 
@@ -335,112 +317,8 @@ model Match {
   @@index([type, status])
 }
 
-model Conversation {
-  id           String    @id @default(uuid())
-  participants User[]    @relation("ConversationParticipants") // membership (implicit m2m)
-  archived     Boolean   @default(false) // admin-facing only; users use ConversationParticipant.archived
-  messages     Message[]
-  matches      Match[]
 
-  // Subject-matter context: when a chat starts from a property ("Message the
-  // seller") the property is attached here and the header shows it. Match
-  // deal rooms keep their own Match.conversationId link.
-  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  propertyId String?
 
-  // Per-user chat prefs + read state (pin/mute/archive/lastReadAt).
-  participantPrefs ConversationParticipant[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// Per-user conversation preferences. Membership itself stays in the implicit
-// `_ConversationParticipants` table (so every existing query keeps working);
-// this model only stores per-user UI/read state for each 1:1 chat.
-model ConversationParticipant {
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  conversationId String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String
-
-  pinned     Boolean   @default(false)
-  muted      Boolean   @default(false)
-  archived   Boolean   @default(false)
-  lastReadAt DateTime?
-
-  // "Clear chat" cutoff — messages created at/before this time are hidden for
-  // THIS user only (the other party keeps their full history). Null = nothing
-  // cleared. Applied as `createdAt > clearedAt` in getMessages / last-message.
-  clearedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@id([conversationId, userId])
-  @@index([userId])
-}
-
-model Message {
-  id String @id @default(uuid())
-
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  conversationId String
-
-  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  senderId String
-
-  // Stores the AES-256-GCM blob ("v1:iv:tag:cipher"). Encrypt/decrypt happens
-  // explicitly in the message controller + socket layer.
-  content     String
-  attachments Json    @default("[]") // [{ url, type, name, size }]
-  read        Boolean @default(false)
-
-  // "Delete for me" — userIds that hid this message. They never see it again
-  // (getMessages filters it out), while everyone else still does.
-  deletedForMe String[] @default([])
-
-  // Message kind: text | image | video | document | audio | location | property.
-  type String @default("text")
-
-  // Quoted reply → the message this one replies to (null once that message is
-  // hard-deleted; soft-deleted targets stay linked).
-  parent          Message?  @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
-  parentMessageId String?
-  replies         Message[] @relation("MessageReplies")
-
-  edited    Boolean   @default(false)
-  editedAt  DateTime?
-  forwarded Boolean   @default(false)
-
-  // Soft delete "for everyone" — clients render "This message was deleted".
-  deletedAt DateTime?
-
-  // Receipt timestamps. `read` above is the boolean flavour of readAt (kept
-  // for the existing ✓/✓✓ UI); these drive the "Message info" modal.
-  deliveredAt DateTime?
-  readAt      DateTime?
-
-  // Reactions: { userId: "emoji" }. Add/change/remove by users who are in the
-  // conversation. Stored as JSONB (map), not a separate table.
-  reactions Json     @default("{}")
-  // "Starred/saved" per user.
-  starredBy String[] @default([])
-
-  // Location messages — { lat, lng, label }.
-  location   Json?
-  // Property-card messages — a reference id into the Property table (never a
-  // duplicated object); the client renders a live card from it.
-  property   Property? @relation("MessageProperty", fields: [propertyId], references: [id], onDelete: SetNull)
-  propertyId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([conversationId])
-  // Cursor pagination for infinite history: (conversationId, createdAt).
-  @@index([conversationId, createdAt])
-}
 
 model Review {
   id String @id @default(uuid())
@@ -528,7 +406,7 @@ model Plan {
 
   // [{ text: "Up to 10 active listings", included: true }, ...]
   features Json @default("[]")
-  // { maxListings: 10, maxMessagesPerDay: 5, ... }
+  // { maxListings: 10, ... }
   limits   Json @default("{}")
 
   sortOrder Int      @default(0)
@@ -587,7 +465,7 @@ model ActivityLog {
   userEmail  String? // snapshot of the actor's email (survives later renames)
   userName   String? // snapshot of the actor's name
   action     String // e.g. auth.login, property.create, match.accepted
-  entityType String // property | listing | requirement | match | message | review | trip | wishlist | user | conversation | auth
+  entityType String // property | listing | requirement | match | review | trip | wishlist | user | auth
   entityId   String?
   meta       Json? // extra context (status before/after, ids, labels)
   ip         String?

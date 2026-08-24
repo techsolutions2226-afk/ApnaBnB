@@ -5,7 +5,6 @@ import {
   FiBriefcase,
   FiGitMerge,
   FiShield,
-  FiMessageSquare,
   FiMapPin,
   FiCheckCircle,
   FiLock,
@@ -18,7 +17,7 @@ import "../styles/About.css";
 
 /* ─── About Us ───
    Static marketing page. Everything here describes capabilities the platform
-   actually ships (matchmaking, encrypted chat, Deal Room, verified listings,
+   actually ships (matchmaking, gated contact details, verified listings,
    plans) — keep it in step with the product rather than inventing claims. */
 
 const ROLES = [
@@ -60,8 +59,8 @@ const HOW_IT_WORKS = [
   },
   {
     step: "04",
-    title: "Talk it through, privately",
-    body: "Open the match to reach a private conversation and a shared Deal Room where both parties can negotiate, share documents and agree terms.",
+    title: "Get in touch directly",
+    body: "Unlock the other party's phone and email with an active plan, then take the conversation wherever suits you — a call, WhatsApp, or a viewing.",
   },
 ];
 
@@ -73,13 +72,8 @@ const FEATURES = [
   },
   {
     icon: FiLock,
-    title: "Encrypted messaging",
-    body: "Conversations are encrypted at rest. Personal contact details are filtered out of chat until both sides are ready to share them.",
-  },
-  {
-    icon: FiMessageSquare,
-    title: "Deal Room",
-    body: "A dedicated space per match for serious negotiation, kept separate from ordinary enquiries so nothing gets lost in a busy inbox.",
+    title: "Contact details on demand",
+    body: "Phone numbers and emails are never exposed on public listings. They are released only to members on an active plan, so nobody gets cold-called off a scrape.",
   },
   {
     icon: FiMapPin,

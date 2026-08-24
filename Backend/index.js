@@ -1,14 +1,11 @@
 require("dotenv").config();
 const express = require("express");
-const http = require("http");
 const cors = require("cors");
 const prisma = require("./db/prisma");
 const limiter = require("./middleware/rateLimitMiddleware");
 const securityHeaders = require("./middleware/securityHeaders");
 const auditActivity = require("./middleware/activityMiddleware");
 const { withIds } = require("./utils/serializeIds");
-const { initSockets } = require("./sockets");
-const { MESSAGING_ENABLED } = require("./config/features");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -72,16 +69,6 @@ const requirementRoutes = require("./routes/requirementRoutes");
 app.use("/api/requirements", requirementRoutes);
 const matchRoutes = require("./routes/matchRoutes");
 app.use("/api/matches", matchRoutes);
-// Chat is shelved behind a flag — see config/features.js. The route files stay
-// in the tree; they are simply not mounted while messaging is off.
-if (MESSAGING_ENABLED) {
-  const conversationRoutes = require("./routes/conversationRoutes");
-  const messageRoutes = require("./routes/messageRoutes");
-  app.use("/api/conversations", conversationRoutes);
-  app.use("/api/messages", messageRoutes);
-}
-const blockRoutes = require("./routes/blockRoutes");
-app.use("/api/blocks", blockRoutes);
 const reviewRoutes = require("./routes/reviewRoutes");
 app.use("/api/reviews", reviewRoutes);
 const aiRoutes = require("./routes/aiRoutes");
@@ -111,16 +98,6 @@ app.get("/", (req, res) => {
   res.send("Backend is working and ready for development.");
 });
 
-// Start server — wrap Express in an HTTP server so Socket.IO can attach.
-const server = http.createServer(app);
-// Socket.IO serves chat + presence only, so it is skipped entirely while
-// messaging is off. getIO() then returns null and the emit helpers no-op.
-if (MESSAGING_ENABLED) initSockets(server);
-server.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
-  console.log(
-    MESSAGING_ENABLED
-      ? `Socket.IO attached on the same port`
-      : `Messaging disabled (config/features.js) — Socket.IO not started`
-  );
 });

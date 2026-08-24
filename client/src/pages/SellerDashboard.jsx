@@ -31,7 +31,6 @@ import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
 import "../styles/Common.css";
-import { MESSAGING_ENABLED } from "../config/features";
 
 const SellerDashboard = () => {
   const { currentUser } = useAuth();
@@ -46,7 +45,7 @@ const SellerDashboard = () => {
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
 
   // Live aggregate data (unread messages, wishlist, trips)
-  const { unreadMessages, refetch: refetchDashboardData } = useDashboardData();
+  const { refetch: refetchDashboardData } = useDashboardData();
 
   // Recent matches for the role the user is ACTING AS (seller side only)
   // (+ count for the stat card)
@@ -170,16 +169,6 @@ const SellerDashboard = () => {
           accent="#7c3aed"
           to="/matches"
         />
-        {/* Unread-messages tile returns with the flag (config/features.js). */}
-        {MESSAGING_ENABLED && (
-          <DashStat
-            icon={FiMessageSquare}
-            value={unreadMessages}
-            label="Unread Messages"
-            accent="#0284c7"
-            to="/messages"
-          />
-        )}
       </div>
 
       {/* ── Quick Actions ── */}
@@ -204,14 +193,6 @@ const SellerDashboard = () => {
             </span>
             View Matches
           </Link>
-          {MESSAGING_ENABLED && (
-            <Link to="/messages" className="dash-quick dash-quick--alt">
-              <span className="dash-quick-icon">
-                <FiMessageSquare size={17} />
-              </span>
-              Messages
-            </Link>
-          )}
         </div>
       </div>
 

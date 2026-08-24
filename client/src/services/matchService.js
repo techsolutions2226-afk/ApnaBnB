@@ -65,7 +65,6 @@ const matchService = {
   },
 
   // Update a match's status (pending | accepted | rejected | closed).
-  // Accepting opens the private Deal Room and returns it on the match.
   updateStatus: async (id, status) => {
     try {
       const response = await apiClient.put(`/matches/${id}/status`, { status });

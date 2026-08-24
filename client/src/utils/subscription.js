@@ -1,11 +1,11 @@
 /* Subscription helpers (pure functions only).
  *
- * Messaging + Deal Room are paid for SELLERS and DEALERS; BUYERS are free.
+ * Owner contact details are a paid reveal (see propertyController).
  * The actual gate is SERVER-driven: AuthContext fetches GET /api/payments/
  * status (the backend decides from the user's latest Payment row) and exposes
  * it as `subscription` + `refreshSubscription()`. Nothing is stored in
- * localStorage anymore — an admin rejecting a payment locks messaging on the
- * user's next check.
+ * localStorage anymore — an admin rejecting a payment re-locks the reveal on
+ * the user's next check.
  */
 
 // The role that decides pricing = the role the user is currently acting as

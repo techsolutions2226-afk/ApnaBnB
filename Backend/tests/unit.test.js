@@ -3,8 +3,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-process.env.MESSAGE_ENC_KEY = 'a'.repeat(64); // 32-byte key for messageCrypto
-
 const {
   calculateMatchScore,
   determineMatchType,
@@ -12,9 +10,7 @@ const {
   normalizeSupply,
   normalizeDemand,
 } = require('../utils/matchScore');
-const { encryptMessage, decryptMessage } = require('../utils/messageCrypto');
 const { withIds } = require('../utils/serializeIds');
-const { filterPersonalInfo } = require('../utils/personalInfo');
 const { parsePagination, paginated } = require('../utils/pagination');
 
 test('matchScore: perfect pair scores 100', () => {
@@ -65,22 +61,6 @@ test('match types derive from acting roles', () => {
   assert.equal(normalizeDemand('seller'), 'buyer');
 });
 
-test('messageCrypto: encrypt → decrypt round-trips', () => {
-  const blob = encryptMessage('hello 03001234567');
-  assert.ok(blob.startsWith('v1:'));
-  assert.equal(decryptMessage(blob), 'hello 03001234567');
-});
-
-test('messageCrypto: plaintext passes through untouched', () => {
-  assert.equal(decryptMessage('legacy plaintext'), 'legacy plaintext');
-});
-
-test('messageCrypto: tampered blob never crashes', () => {
-  const blob = encryptMessage('secret');
-  const tampered = blob.slice(0, -4) + 'beef';
-  assert.equal(decryptMessage(tampered), '[unable to decrypt message]');
-});
-
 test('serializeIds: injects _id recursively without mutating dates', () => {
   const out = withIds({
     id: 'a',
@@ -91,14 +71,6 @@ test('serializeIds: injects _id recursively without mutating dates', () => {
   assert.equal(out.nested._id, 'b');
   assert.equal(out.nested.list[0]._id, 'c');
   assert.ok(out.when instanceof Date);
-});
-
-test('personalInfo: filters phone, email and URL', () => {
-  const filtered = filterPersonalInfo('Call 03001234567, mail me@x.com, see https://example.com');
-  assert.ok(!filtered.includes('03001234567'));
-  assert.ok(!filtered.includes('me@x.com'));
-  assert.ok(!filtered.includes('example.com'));
-  assert.ok(filtered.includes('[filtered]'));
 });
 
 test('pagination: disabled by default, enabled only with page/limit', () => {

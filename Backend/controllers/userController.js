@@ -1,6 +1,5 @@
 const prisma = require('../db/prisma');
 const { involvedWhere, roleInvolvedWhere } = require('./matchController');
-const { MESSAGING_ENABLED } = require('../config/features');
 
 // Public read-only profile lookup. Excludes password and email; we only expose
 // fields the client renders on the public Profile page.
@@ -81,8 +80,8 @@ const updateMe = async (req, res, next) => {
 };
 
 // Live dashboard metrics for the authenticated user — powers the stat cards on
-// every role dashboard (active listings, total views, inquiries, matches, and
-// unread messages) with one round-trip instead of several client-side fetches.
+// every role dashboard (active listings, total views, inquiries, matches) with
+// one round-trip instead of several client-side fetches.
 const getUserStats = async (req, res, next) => {
   const userId = req.user.id;
   const viewRole = req.query.viewRole;
@@ -97,33 +96,13 @@ const getUserStats = async (req, res, next) => {
   if (viewRole) listingWhere.property = { actingRole: viewRole };
 
   try {
-    const [listings, matchCount, convs] = await Promise.all([
+    const [listings, matchCount] = await Promise.all([
       prisma.listing.findMany({
         where: listingWhere,
         select: { status: true, views: true, inquiries: true },
       }),
       prisma.match.count({ where: matchWhere }),
-      // Chat is shelved: skip the conversation lookup entirely rather than
-      // reporting a frozen unread count. See config/features.js.
-      MESSAGING_ENABLED
-        ? prisma.conversation.findMany({
-            where: { participants: { some: { id: userId } } },
-            select: { id: true },
-          })
-        : [],
     ]);
-
-    const unreadRows = convs.length
-      ? await prisma.message.groupBy({
-          by: ['conversationId'],
-          where: {
-            conversationId: { in: convs.map((c) => c.id) },
-            read: false,
-            senderId: { not: userId },
-          },
-          _count: { _all: true },
-        })
-      : [];
 
     res.status(200).json({
       totalListings: listings.length,
@@ -131,7 +110,6 @@ const getUserStats = async (req, res, next) => {
       totalViews: listings.reduce((sum, l) => sum + (l.views || 0), 0),
       totalInquiries: listings.reduce((sum, l) => sum + (l.inquiries || 0), 0),
       matches: matchCount,
-      unreadMessages: unreadRows.reduce((sum, r) => sum + r._count._all, 0),
     });
   } catch (error) {
     next(error);

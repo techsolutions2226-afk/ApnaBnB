@@ -220,53 +220,6 @@ const adminService = {
     }
   },
 
-  // ── Messages ──
-  getMessages: async (filters = {}) => {
-    try {
-      const response = await apiClient.get('/admin/messages', { params: filters });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch messages' };
-    }
-  },
-
-  deleteMessage: async (messageId) => {
-    try {
-      const response = await apiClient.delete(`/admin/messages/${messageId}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to delete message' };
-    }
-  },
-
-  // ── Conversations (WhatsApp-style review) ──
-  getConversations: async () => {
-    try {
-      const response = await apiClient.get('/admin/conversations');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch conversations' };
-    }
-  },
-
-  getConversationMessages: async (conversationId) => {
-    try {
-      const response = await apiClient.get(`/admin/conversations/${conversationId}/messages`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch conversation' };
-    }
-  },
-
-  deleteConversation: async (conversationId) => {
-    try {
-      const response = await apiClient.delete(`/admin/conversations/${conversationId}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: 'Failed to delete conversation' };
-    }
-  },
-
   // ── Activity logs ──
   getActivityLogs: async (filters = {}) => {
     try {

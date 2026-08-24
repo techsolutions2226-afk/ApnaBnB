@@ -18,7 +18,6 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/AdminShell.css";
-import { MESSAGING_ENABLED } from "../../config/features";
 
 const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Overview", icon: FiLayout },
@@ -26,10 +25,6 @@ const NAV_ITEMS = [
   { to: "/admin/listings", label: "Listings", icon: FiHome },
   { to: "/admin/requirements", label: "Requirements", icon: FiFileText },
   { to: "/admin/matches", label: "Matches", icon: FiLink },
-  // Chat is shelved; the row returns with the flag (config/features.js).
-  ...(MESSAGING_ENABLED
-    ? [{ to: "/admin/messages", label: "Messages", icon: FiMail }]
-    : []),
   { to: "/admin/payments", label: "Payments", icon: FiCreditCard },
   { to: "/admin/plans", label: "Plans", icon: FiTag },
   { to: "/admin/contact", label: "Contact Page", icon: FiPhone },

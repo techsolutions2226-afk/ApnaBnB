@@ -3,7 +3,7 @@
    plus filter tabs (by type / status) and per-card actions. */
 
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { useMyMatches } from "../hooks/useMatches";
@@ -16,7 +16,6 @@ import useRefresh from "../hooks/useRefresh";
 import FilterTabs from "../components/common/FilterTabs";
 import "../styles/Match.css";
 import "../styles/Common.css";
-import { MESSAGING_ENABLED } from "../config/features";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
 
 const TYPE_LABELS = {
@@ -66,24 +65,16 @@ const Matches = () => {
   // Refresh just this tab — no browser reload.
   const { refresh, refreshing } = useRefresh(refetch);
   const [activeFilter, setActiveFilter] = useState("all");
-  const navigate = useNavigate();
   const [busyId, setBusyId] = useState(null);
 
-  // Accept / reject a match. Accepting opens the private deal room.
+  // Accept / reject a match.
   const handleStatus = async (match, status) => {
     setBusyId(match._id);
     try {
       await matchService.updateStatus(match._id, status);
       if (status === "accepted") {
-        // Chat is shelved, so there's no deal room to open — just confirm and
-        // refresh in place. Restores itself with the flag (config/features.js).
-        if (!MESSAGING_ENABLED) {
-          toast.success("Match accepted.");
-          refetch();
-          return;
-        }
-        toast.success("Match accepted — opening your deal room.");
-        navigate(`/messages?match=${match._id}`);
+        toast.success("Match accepted.");
+        refetch();
         return;
       }
       toast.info("Match dismissed.");
@@ -504,11 +495,7 @@ const Matches = () => {
                         disabled={busyId === match._id}
                         onClick={() => handleStatus(match, "accepted")}
                       >
-                        {busyId === match._id
-                          ? "Working…"
-                          : MESSAGING_ENABLED
-                            ? "Accept & open deal room"
-                            : "Accept match"}
+                        {busyId === match._id ? "Working…" : "Accept match"}
                       </button>
                       <button
                         type="button"
@@ -519,15 +506,6 @@ const Matches = () => {
                         Reject
                       </button>
                     </>
-                  )}
-                  {match.status === "accepted" && MESSAGING_ENABLED && (
-                    <button
-                      type="button"
-                      className="mtch-btn mtch-btn--primary"
-                      onClick={() => navigate(`/messages?match=${match._id}`)}
-                    >
-                      Open deal room →
-                    </button>
                   )}
                   {match.status === "closed" && (
                     <span className="mtch-deal-done">✓ Deal closed</span>

@@ -5,7 +5,6 @@ import { useWishlist } from "../context/WishlistContext";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import propertyService from "../services/propertyService";
-import { MESSAGING_ENABLED } from "../config/features";
 import Modal from "../components/common/Modal";
 import PropertyReviews from "../components/property/detail/PropertyReviews";
 import PropertyGallery from "../components/property/detail/PropertyGallery";
@@ -240,30 +239,6 @@ const PropertyDetail = () => {
     }
   };
 
-  const handleMessageOwner = (message) => {
-    if (!MESSAGING_ENABLED) return handleGetContact();
-    if (!listedBy?._id) {
-      navigate("/messages");
-      return;
-    }
-    if (!isAuthenticated) {
-      toast.info("Please log in to message the owner.");
-      navigate("/login");
-      return;
-    }
-    if (listedBy._id === currentUser?.id) {
-      toast.info("This is your own listing.");
-      return;
-    }
-    /* Open (or create) the 1-1 conversation with the owner, pre-filling the
-       composer with the inquiry the user typed on this page. */
-    const params = new URLSearchParams();
-    params.set("with", listedBy._id);
-    if (message && String(message).trim()) {
-      params.set("draft", String(message).trim());
-    }
-    navigate(`/messages?${params.toString()}`);
-  };
 
   const DESC_LIMIT = 280;
   const isDescLong = (description || "").length > DESC_LIMIT;
@@ -343,9 +318,10 @@ const PropertyDetail = () => {
               <button
                 type="button"
                 className="pd-sticky-nav-cta"
-                onClick={handleMessageOwner}
+                onClick={handleGetContact}
+                disabled={contactLoading}
               >
-                Message
+                Contact
               </button>
             </div>
           </div>
@@ -492,16 +468,7 @@ const PropertyDetail = () => {
               </div>
               {listedBy?._id &&
                 listedBy._id !== currentUser?.id &&
-                (MESSAGING_ENABLED ? (
-                  <button
-                    type="button"
-                    className="pd-msg-btn"
-                    onClick={handleMessageOwner}
-                  >
-                    <FiMessageSquare size={16} />
-                    Message on platform
-                  </button>
-                ) : contact ? (
+                (contact ? (
                   /* Revealed — the server already confirmed this user may see it. */
                   <div className="pd-contact-revealed">
                     {contact.phone && (
@@ -656,7 +623,8 @@ const PropertyDetail = () => {
           <aside className="pd-sidebar">
             <InquiryCard
               property={property}
-              onMessage={handleMessageOwner}
+              onMessage={handleGetContact}
+              contact={contact}
             />
           </aside>
         </div>
@@ -672,9 +640,10 @@ const PropertyDetail = () => {
         <button
           type="button"
           className="pd-mobile-cta-btn"
-          onClick={handleMessageOwner}
+          onClick={handleGetContact}
+          disabled={contactLoading}
         >
-          Message on platform
+          {contactLoading ? "Loading…" : "Get contact info"}
         </button>
       </div>
 

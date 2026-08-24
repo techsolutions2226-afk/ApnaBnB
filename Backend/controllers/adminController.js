@@ -1,9 +1,7 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../db/prisma');
-const { decryptMessage } = require('../utils/messageCrypto');
 const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
-const { MESSAGING_ENABLED } = require('../config/features');
 
 // ── Shared selectors ──────────────────────────────────────────────────────
 const userSelect = { omit: { password: true } };
@@ -129,7 +127,6 @@ const matchInclude = {
     },
   },
   initiator: { select: { id: true, name: true, email: true, role: true } },
-  conversation: { select: { id: true, createdAt: true, updatedAt: true } },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -234,10 +231,6 @@ const getPlatformStats = async (req, res, next) => {
     const totalListings = await prisma.listing.count();
     const totalRequirements = await prisma.requirement.count();
     const totalMatches = await prisma.match.count();
-    // Chat is shelved — don't report totals that can no longer move.
-    // The tables still hold their data; see config/features.js.
-    const totalConversations = MESSAGING_ENABLED ? await prisma.conversation.count() : 0;
-    const totalMessages = MESSAGING_ENABLED ? await prisma.message.count() : 0;
     const totalReviews = await prisma.review.count();
     const roleGroups = await prisma.user.groupBy({ by: ['role'], _count: { _all: true } });
     const statusGroups = await prisma.property.groupBy({ by: ['status'], _count: { _all: true } });
@@ -254,8 +247,6 @@ const getPlatformStats = async (req, res, next) => {
       totalListings,
       totalRequirements,
       totalMatches,
-      totalConversations,
-      totalMessages,
       totalReviews,
       usersByRole,
       listingsByStatus,
@@ -1095,73 +1086,6 @@ const deleteMatch = async (req, res, next) => {
   }
 };
 
-// ── Messages ──────────────────────────────────────────────────────────────
-// Get all messages (admin view) — content decrypted for readability.
-const getAllMessages = async (req, res, next) => {
-  try {
-    const { q } = req.query;
-    const where = {};
-
-    // Plaintext search requires decrypting — skip server-side text filtering
-    // and let the client filter instead. `q` is accepted but unused on purpose.
-
-    const { page, limit, skip, take } = parseAdminPagination(req);
-    const [messages, total] = await Promise.all([
-      prisma.message.findMany({
-        where,
-        include: {
-          sender: { select: { id: true, name: true, email: true, role: true } },
-          conversation: { select: { id: true, updatedAt: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      prisma.message.count({ where }),
-    ]);
-
-    const decrypted = messages.map((m) => ({
-      ...m,
-      content: decryptMessage(m.content),
-    }));
-
-    res.status(200).json({
-      messages: decrypted,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Delete message (admin)
-const deleteMessage = async (req, res, next) => {
-  const { id } = req.params;
-
-  try {
-    const message = await prisma.message.findUnique({ where: { id } });
-    if (!message) {
-      return res.status(404).json({ message: 'Message not found.' });
-    }
-
-    await prisma.message.delete({ where: { id } });
-
-    logActivity({
-      action: 'admin.message.delete',
-      entityType: 'message',
-      entityId: id,
-      meta: { conversationId: message.conversationId },
-      req,
-    });
-
-    res.status(200).json({ message: 'Message deleted successfully.' });
-  } catch (error) {
-    next(error);
-  }
-};
-
 // ── Activity logs ─────────────────────────────────────────────────────────
 // Full platform activity feed — paged, filterable.
 const getActivityLogs = async (req, res, next) => {
@@ -1238,122 +1162,6 @@ const getUserActivity = async (req, res, next) => {
   }
 };
 
-// ── Conversations (admin message review) ───────────────────────────────────
-// WhatsApp-style admin view: every conversation, its participants, and the
-// latest decrypted message. Sorted newest-first.
-const getAllConversations = async (req, res, next) => {
-  try {
-    const conversations = await prisma.conversation.findMany({
-      include: {
-        participants: {
-          select: { id: true, name: true, email: true, role: true, avatar: true },
-        },
-        _count: { select: { messages: true } },
-      },
-    });
-
-    const lastByConv = {};
-    await Promise.all(
-      conversations.map(async (c) => {
-        const last = await prisma.message.findFirst({
-          where: { conversationId: c.id },
-          orderBy: { createdAt: 'desc' },
-          include: {
-            sender: { select: { id: true, name: true, email: true, role: true, avatar: true } },
-          },
-        });
-        lastByConv[c.id] = last ? { ...last, content: decryptMessage(last.content) } : null;
-      }),
-    );
-
-    const enriched = conversations.map((c) => ({
-      _id: c.id,
-      id: c.id,
-      participants: c.participants,
-      messageCount: c._count.messages,
-      updatedAt: c.updatedAt,
-      createdAt: c.createdAt,
-      lastMessage: lastByConv[c.id],
-    }));
-
-    enriched.sort((a, b) => {
-      const ta = a.lastMessage?.createdAt
-        ? new Date(a.lastMessage.createdAt).getTime()
-        : new Date(a.updatedAt).getTime();
-      const tb = b.lastMessage?.createdAt
-        ? new Date(b.lastMessage.createdAt).getTime()
-        : new Date(b.updatedAt).getTime();
-      return tb - ta;
-    });
-
-    res.status(200).json(enriched);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Full decrypted message thread for one conversation (admin review, read-only).
-const getConversationThread = async (req, res, next) => {
-  const { id } = req.params;
-
-  try {
-    const conversation = await prisma.conversation.findUnique({
-      where: { id },
-      include: {
-        participants: {
-          select: { id: true, name: true, email: true, role: true, avatar: true },
-        },
-      },
-    });
-    if (!conversation) {
-      return res.status(404).json({ message: 'Conversation not found.' });
-    }
-
-    const messages = await prisma.message.findMany({
-      where: { conversationId: id },
-      orderBy: { createdAt: 'asc' },
-      include: {
-        sender: { select: { id: true, name: true, email: true, role: true, avatar: true } },
-      },
-    });
-
-    const decrypted = messages.map((m) => ({
-      ...m,
-      _id: m.id,
-      content: decryptMessage(m.content),
-    }));
-
-    res.status(200).json({ conversation: { ...conversation, _id: conversation.id }, messages: decrypted });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Delete a whole conversation (chat) and all its messages (admin).
-const deleteConversation = async (req, res, next) => {
-  const { id } = req.params;
-
-  try {
-    const conversation = await prisma.conversation.findUnique({ where: { id } });
-    if (!conversation) {
-      return res.status(404).json({ message: 'Conversation not found.' });
-    }
-
-    // Messages cascade via the FK.
-    await prisma.conversation.delete({ where: { id } });
-
-    logActivity({
-      action: 'admin.conversation.delete',
-      entityType: 'conversation',
-      entityId: id,
-      req,
-    });
-
-    res.status(200).json({ message: 'Conversation deleted successfully.' });
-  } catch (error) {
-    next(error);
-  }
-};
 
 module.exports = {
   getPlatformStats,
@@ -1380,11 +1188,6 @@ module.exports = {
   deleteRequirement,
   getAllMatches,
   deleteMatch,
-  getAllMessages,
-  deleteMessage,
-  getAllConversations,
-  getConversationThread,
-  deleteConversation,
   getActivityLogs,
   getUserActivity,
 };

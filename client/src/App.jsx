@@ -53,7 +53,6 @@ import ViewRequirement from "./pages/ViewRequirement";
 import RequirementsBoard from "./pages/RequirementsBoard";
 
 /* ── Messaging (Step 7) ── */
-import Messages from "./pages/Messages";
 
 /* ── Matchmaking (Step 6) ── */
 import Matches from "./pages/Matches";
@@ -66,7 +65,6 @@ import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminRequirements from "./pages/admin/AdminRequirements";
 import AdminMatches from "./pages/admin/AdminMatches";
-import AdminMessages from "./pages/admin/AdminMessages";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPlans from "./pages/admin/AdminPlans";
 import AdminContact from "./pages/admin/AdminContact";
@@ -74,7 +72,6 @@ import AdminLogs from "./pages/admin/AdminLogs";
 
 /* ── Subscription Plans (Step 10) ── */
 import Plans from "./pages/Plans";
-import { MESSAGING_ENABLED } from "./config/features";
 
 function App() {
   return (
@@ -119,10 +116,6 @@ function App() {
                   {/* Matches, Wishlists, Trips (all authenticated
                       — auth enforced by the shell's outer ProtectedRoute) */}
                   <Route path="/matches" element={<Matches />} />
-                  {/* Chat is shelved — see config/features.js */}
-                  {MESSAGING_ENABLED && (
-                    <Route path="/messages" element={<Messages />} />
-                  )}
                   <Route path="/wishlists" element={<Wishlists />} />
                   <Route path="/trips" element={<Trips />} />
 
@@ -169,9 +162,6 @@ function App() {
                   <Route path="listings" element={<AdminListings />} />
                   <Route path="requirements" element={<AdminRequirements />} />
                   <Route path="matches" element={<AdminMatches />} />
-                  {MESSAGING_ENABLED && (
-                    <Route path="messages" element={<AdminMessages />} />
-                  )}
                   <Route path="payments" element={<AdminPayments />} />
                   <Route path="plans" element={<AdminPlans />} />
                   <Route path="contact" element={<AdminContact />} />

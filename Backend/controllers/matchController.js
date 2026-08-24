@@ -2,7 +2,6 @@ const prisma = require('../db/prisma');
 const { calculateMatchScore } = require('../utils/matchScore');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
 const { parsePagination, paginated } = require('../utils/pagination');
-const { MESSAGING_ENABLED } = require('../config/features');
 
 // Shared populate shape for match records.
 const matchInclude = {
@@ -294,47 +293,13 @@ const getMyMatches = async (req, res, next) => {
   }
 };
 
-// Find (or create) the private Deal Room conversation between exactly the two
-// parties of a match — the property owner and the requirement poster.
-const findOrCreateDealRoom = async (a, b) => {
-  let conv = await prisma.conversation.findFirst({
-    where: {
-      AND: [
-        { participants: { some: { id: a } } },
-        { participants: { some: { id: b } } },
-        { participants: { every: { id: { in: [a, b] } } } },
-      ],
-    },
-    select: { id: true },
-  });
-  if (!conv) {
-    conv = await prisma.conversation.create({
-      data: { participants: { connect: [{ id: a }, { id: b }] } },
-      select: { id: true },
-    });
-  }
-  // Seed per-user prefs so pin/mute/archive/read state works for both sides.
-  await prisma.conversationParticipant.upsert({
-    where: { conversationId_userId: { conversationId: conv.id, userId: a } },
-    update: {},
-    create: { conversationId: conv.id, userId: a },
-  });
-  await prisma.conversationParticipant.upsert({
-    where: { conversationId_userId: { conversationId: conv.id, userId: b } },
-    update: {},
-    create: { conversationId: conv.id, userId: b },
-  });
-  return conv.id;
-};
-
 // The two parties of a match: property owner + requirement poster.
 const matchParties = (match) => ({
   ownerId: match.property?.listedById || null,
   seekerId: match.requirement?.requiredById || null,
 });
 
-// Update match status. Only the two involved parties may change it. Accepting
-// opens the private Deal Room (a conversation linked to the match).
+// Update match status. Only the two involved parties may change it.
 const updateMatchStatus = async (req, res, next) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -361,19 +326,6 @@ const updateMatchStatus = async (req, res, next) => {
     }
 
     const data = { status };
-    // On accept, open the Deal Room if one isn't linked yet. Skipped while chat
-    // is shelved — otherwise this keeps creating empty conversations nobody can
-    // open. findOrCreateDealRoom stays in place for when messaging returns.
-    if (
-      MESSAGING_ENABLED &&
-      status === 'accepted' &&
-      !existing.conversationId &&
-      ownerId &&
-      seekerId &&
-      ownerId !== seekerId
-    ) {
-      data.conversationId = await findOrCreateDealRoom(ownerId, seekerId);
-    }
 
     const match = await prisma.match.update({
       where: { id },

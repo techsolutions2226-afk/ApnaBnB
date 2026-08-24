@@ -14,7 +14,6 @@ import {
   FiShieldOff,
 } from "react-icons/fi";
 import "../../styles/Admin.css";
-import { MESSAGING_ENABLED } from "../../config/features";
 
 /* ─── AdminOverview — platform KPI dashboard ─── */
 const AdminOverview = () => {
@@ -76,13 +75,6 @@ const AdminOverview = () => {
     { to: "/admin/listings", label: "Properties", value: stats?.totalProperties || 0, icon: FiHome, accent: "#1a8f5a" },
     { to: "/admin/requirements", label: "Requirements", value: stats?.totalRequirements || 0, icon: FiFileText, accent: "#e1a100" },
     { to: "/admin/matches", label: "Matches", value: stats?.totalMatches || 0, icon: FiLink, accent: "#7c3aed" },
-    // Chat is shelved — both tiles return with the flag (config/features.js).
-    ...(MESSAGING_ENABLED
-      ? [
-          { to: "/admin/messages", label: "Messages", value: stats?.totalMessages || 0, icon: FiMessageSquare, accent: "#0284c7" },
-          { to: "/admin/messages", label: "Conversations", value: stats?.totalConversations || 0, icon: FiMail, accent: "#db2777" },
-        ]
-      : []),
     { to: "/admin/users", label: "Reviews", value: stats?.totalReviews || 0, icon: FiStar, accent: "#ea580c" },
     { to: "/admin/users", label: "Suspended Users", value: stats?.totalSuspended || 0, icon: FiShieldOff, accent: "#b91c1c" },
   ];

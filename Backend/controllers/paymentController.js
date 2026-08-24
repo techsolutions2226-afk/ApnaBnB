@@ -3,7 +3,7 @@ const { parsePagination, paginated } = require('../utils/pagination');
 
 const BILLING_CYCLES = ['monthly', 'yearly'];
 
-// Roles that must hold an active plan to use messaging / the Deal Room.
+// Roles that must hold an active plan.
 // Buyers (and admins) are free.
 const requiresPlan = (role) => role === 'seller' || role === 'dealer';
 

@@ -83,7 +83,7 @@ export default function Account() {
             <span className="ac-user-name">
               {currentUser.firstName} {currentUser.lastName}
             </span>
-            , {currentUser.email} ·{" "}
+             {currentUser.email} ·{" "}
             <Link to={`/users/${currentUser.id}`} className="ac-profile-link">
               Go to profile
             </Link>

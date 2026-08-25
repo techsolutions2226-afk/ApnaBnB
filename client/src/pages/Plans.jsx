@@ -14,6 +14,7 @@ import {
   getEffectiveRole,
   roleRequiresPlan,
 } from "../utils/subscription";
+import useViewRole from "../hooks/useViewRole";
 import paymentService from "../services/paymentService";
 import planService from "../services/planService";
 import Modal from "../components/common/Modal";
@@ -92,6 +93,7 @@ const FAQ_ITEMS = [
 export default function Plans() {
   const { currentUser, isAuthenticated, subscription, refreshSubscription } =
     useAuth();
+  const { viewRole: activeViewRole } = useViewRole();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from"); // where to return after subscribing
@@ -112,11 +114,17 @@ export default function Plans() {
     { value: "seller", label: "For Sellers" },
     { value: "buyer", label: "For Buyers" },
   ];
-  const effectiveRole = getEffectiveRole(currentUser);
+  const effectiveRole = activeViewRole || getEffectiveRole(currentUser);
   const paysForPlan = isAuthenticated && roleRequiresPlan(effectiveRole);
   const [roleTab, setRoleTab] = useState(
     ["seller", "buyer", "dealer"].includes(effectiveRole) ? effectiveRole : "dealer",
   );
+
+  useEffect(() => {
+    if (activeViewRole && ["seller", "buyer", "dealer"].includes(activeViewRole)) {
+      setRoleTab(activeViewRole);
+    }
+  }, [activeViewRole]);
   const [plans, setPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(true);
   // Bumped by the Refresh button to re-run the plans fetch below.

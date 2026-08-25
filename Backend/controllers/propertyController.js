@@ -10,6 +10,7 @@ const {
 } = require('../utils/matchScore');
 const { sendPropertyCreatedEmail } = require('../utils/mailer');
 const { hasContactAccess } = require('../utils/subscription');
+const { notifyUserInBackground, notifyUsersInBackground, TYPES } = require('../utils/notifier');
 const {
   notifyPropertyMatches,
   notifyInBackground,
@@ -141,6 +142,33 @@ const generateMatchesForProperty = async (property, userId, { notify = false } =
     enrichMatchesWithAI(aiEntries);
     // Email both sides about the newly created matches (never blocks).
     if (notify) notifyInBackground(notifyPropertyMatches, property, pairs);
+    /* Bell notifications for the same event. Gated on the same `notify` flag so
+       seeders never write thousands of rows. The owner gets one line per match;
+       each requirement poster gets their own. Self-matches are suppressed by
+       notifyUsers. */
+    if (notify && pairs.length) {
+      notifyUsersInBackground([
+        {
+          recipientId: userId,
+          type: TYPES.MATCH_CREATED,
+          title: `${pairs.length} new match${pairs.length === 1 ? '' : 'es'}`,
+          body: `${property.title} matched ${pairs.length} buyer requirement${pairs.length === 1 ? '' : 's'}.`,
+          link: '/matches',
+          entityType: 'property',
+          entityId: property.id,
+        },
+        ...pairs.map(({ match, requirement }) => ({
+          recipientId: requirement.requiredById,
+          actorId: userId,
+          type: TYPES.MATCH_CREATED,
+          title: 'New match found',
+          body: `${property.title} matches what you're looking for.`,
+          link: '/matches',
+          entityType: 'match',
+          entityId: match.id,
+        })),
+      ]);
+    }
     return matches;
   } catch (error) {
     console.error('Error generating matches:', error);
@@ -190,6 +218,18 @@ const createProperty = async (req, res, next) => {
     data.actingRole = normalizeSupply(req.body.actingRole || req.user.role);
 
     const property = await prisma.property.create({ data });
+
+    // Bell confirmation that the listing went live.
+    notifyUserInBackground({
+      recipientId: req.user.id,
+      type: TYPES.PROPERTY_CREATED,
+      title: 'Property posted',
+      body: `${property.title} is now live. We'll tell you as soon as it matches a buyer.`,
+      link: '/my-listings',
+      entityType: 'property',
+      entityId: property.id,
+      allowSelf: true,
+    });
 
     // Fire-and-forget confirmation email to whoever listed it.
     notifyInBackground(async () => {

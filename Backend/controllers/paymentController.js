@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const { parsePagination, paginated } = require('../utils/pagination');
 const { effectiveRole, MEMBER_ROLES } = require('../utils/subscription');
+const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 
 const BILLING_CYCLES = ['monthly', 'yearly'];
 
@@ -221,6 +222,21 @@ const updatePaymentStatus = async (req, res, next) => {
         user: { select: { id: true, name: true, email: true, role: true, avatar: true } },
       },
     });
+    /* A rejected payment silently re-locks the user's paid features, so telling
+       them is the difference between "it stopped working" and knowing why. */
+    const approved = status === 'approved';
+    notifyUserInBackground({
+      recipientId: payment.userId,
+      type: approved ? TYPES.PAYMENT_APPROVED : TYPES.PAYMENT_REJECTED,
+      title: approved ? 'Payment approved' : 'Payment rejected',
+      body: approved
+        ? `Your ${payment.planName} plan is now active.`
+        : `Your payment for ${payment.planName} was rejected. Please submit a clearer proof of payment.`,
+      link: '/plans',
+      entityType: 'payment',
+      entityId: payment.id,
+    });
+
     res.status(200).json(payment);
   } catch (error) {
     next(error);

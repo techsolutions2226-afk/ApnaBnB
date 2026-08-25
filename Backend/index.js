@@ -1,6 +1,8 @@
 require("dotenv").config();
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
+const { initSockets } = require("./sockets");
 const prisma = require("./db/prisma");
 const limiter = require("./middleware/rateLimitMiddleware");
 const securityHeaders = require("./middleware/securityHeaders");
@@ -58,6 +60,8 @@ prisma
 
 // Routes
 const authRoutes = require("./routes/authRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+app.use("/api/notifications", notificationRoutes);
 const userRoutes = require("./routes/userRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
 app.use("/api/auth", authRoutes);
@@ -98,6 +102,9 @@ app.get("/", (req, res) => {
   res.send("Backend is working and ready for development.");
 });
 
-app.listen(port, () => {
+// Wrapped in an HTTP server so Socket.IO can attach for notification pushes.
+const server = http.createServer(app);
+initSockets(server);
+server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

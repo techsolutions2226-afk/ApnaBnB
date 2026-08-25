@@ -1,4 +1,5 @@
 const prisma = require('../db/prisma');
+const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 
 const reviewerSelect = {
   select: { id: true, name: true, email: true, avatar: true, role: true },
@@ -10,6 +11,34 @@ const avgOf = (reviews) =>
     : 0;
 
 // Create a review
+
+/* Resolve the review's recipient and notify them. Fire-and-forget. */
+const notifyReviewTarget = (review, actorId, target, targetType, rating) => {
+  (async () => {
+    let recipientId = target;
+    let what = 'your profile';
+    if (targetType === 'property') {
+      const property = await prisma.property.findUnique({
+        where: { id: target },
+        select: { listedById: true, title: true },
+      });
+      if (!property) return;
+      recipientId = property.listedById;
+      what = property.title;
+    }
+    notifyUserInBackground({
+      recipientId,
+      actorId,
+      type: TYPES.REVIEW_RECEIVED,
+      title: 'New review',
+      body: `${Number(rating)}★ review left on ${what}.`,
+      link: targetType === 'property' ? `/property/${target}` : `/users/${recipientId}`,
+      entityType: 'review',
+      entityId: review.id,
+    });
+  })().catch((err) => console.error('Review notification failed:', err.message));
+};
+
 const createReview = async (req, res, next) => {
   const { target, targetType, rating, comment } = req.body;
 
@@ -39,6 +68,11 @@ const createReview = async (req, res, next) => {
         comment,
       },
     });
+
+    /* Tell whoever was reviewed. For a property review the recipient is the
+       lister, which needs a lookup; for a user review the target IS the
+       recipient. Resolved in the background so it can't slow the response. */
+    notifyReviewTarget(review, req.user.id, target, targetType, rating);
 
     res.status(201).json(review);
   } catch (error) {

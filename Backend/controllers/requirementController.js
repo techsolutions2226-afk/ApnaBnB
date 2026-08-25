@@ -8,6 +8,7 @@ const {
   normalizeDemand,
 } = require('../utils/matchScore');
 const { sendRequirementCreatedEmail } = require('../utils/mailer');
+const { notifyUserInBackground, notifyUsersInBackground, TYPES } = require('../utils/notifier');
 const {
   notifyRequirementMatches,
   notifyInBackground,
@@ -104,6 +105,30 @@ const generateMatchesForRequirement = async (requirement, userId, { notify = fal
     enrichMatchesWithAI(aiEntries);
     // Email both sides about the newly created matches (never blocks).
     if (notify) notifyInBackground(notifyRequirementMatches, requirement, pairs);
+    // Bell notifications for the same event, on the same opt-in flag.
+    if (notify && pairs.length) {
+      notifyUsersInBackground([
+        {
+          recipientId: userId,
+          type: TYPES.MATCH_CREATED,
+          title: `${pairs.length} new match${pairs.length === 1 ? '' : 'es'}`,
+          body: `We found ${pairs.length} propert${pairs.length === 1 ? 'y' : 'ies'} matching your requirement.`,
+          link: '/matches',
+          entityType: 'requirement',
+          entityId: requirement.id,
+        },
+        ...pairs.map(({ match, property }) => ({
+          recipientId: property.listedById,
+          actorId: userId,
+          type: TYPES.MATCH_CREATED,
+          title: 'New match found',
+          body: `${property.title} matches a buyer requirement.`,
+          link: '/matches',
+          entityType: 'match',
+          entityId: match.id,
+        })),
+      ]);
+    }
     return matches;
   } catch (error) {
     console.error('Error generating matches:', error);
@@ -142,6 +167,18 @@ const createRequirement = async (req, res, next) => {
         // to buyer|dealer; falls back to their account role.
         actingRole: normalizeDemand(req.body.actingRole || req.user.role),
       },
+    });
+
+    // Bell confirmation that the requirement is live.
+    notifyUserInBackground({
+      recipientId: req.user.id,
+      type: TYPES.REQUIREMENT_CREATED,
+      title: 'Requirement posted',
+      body: "Your requirement is live. We'll notify you the moment a property matches it.",
+      link: '/my-requirements',
+      entityType: 'requirement',
+      entityId: requirement.id,
+      allowSelf: true,
     });
 
     // Fire-and-forget confirmation email to whoever posted it.

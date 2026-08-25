@@ -2,6 +2,7 @@ const prisma = require('../db/prisma');
 const { calculateMatchScore } = require('../utils/matchScore');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
 const { parsePagination, paginated } = require('../utils/pagination');
+const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 
 // Shared populate shape for match records.
 const matchInclude = {
@@ -332,6 +333,29 @@ const updateMatchStatus = async (req, res, next) => {
       data,
       include: matchInclude,
     });
+
+    /* Tell the OTHER party. Accepting unlocks the contact reveal, so this is
+       materially useful, not just informational. Fire-and-forget. */
+    if (status === 'accepted' || status === 'rejected') {
+      const counterpartId = req.user.id === ownerId ? seekerId : ownerId;
+      const title =
+        status === 'accepted' ? 'Match accepted' : 'Match declined';
+      const body =
+        status === 'accepted'
+          ? `${match.property?.title || 'A property'} — you can now see each other's contact details.`
+          : `${match.property?.title || 'A property'} — the other party declined this match.`;
+      notifyUserInBackground({
+        recipientId: counterpartId,
+        actorId: req.user.id,
+        type: status === 'accepted' ? TYPES.MATCH_ACCEPTED : TYPES.MATCH_REJECTED,
+        title,
+        body,
+        link: '/matches',
+        entityType: 'match',
+        entityId: match.id,
+      });
+    }
+
     res.status(200).json(match);
   } catch (error) {
     next(error);

@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const { sendListingCreatedEmail } = require('../utils/mailer');
 const { parsePagination, paginated } = require('../utils/pagination');
+const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 
 const ownerSelect = { select: { id: true, name: true, email: true, role: true } };
 
@@ -27,6 +28,17 @@ const createListing = async (req, res, next) => {
     // Create the listing
     const listing = await prisma.listing.create({
       data: { propertyId, ownerId: req.user.id },
+    });
+
+    notifyUserInBackground({
+      recipientId: req.user.id,
+      type: TYPES.LISTING_CREATED,
+      title: 'Listing published',
+      body: 'Your listing is live and will be matched against buyer requirements.',
+      link: '/my-listings',
+      entityType: 'listing',
+      entityId: listing.id,
+      allowSelf: true,
     });
 
     // Fire-and-forget confirmation email to the seller/dealer.

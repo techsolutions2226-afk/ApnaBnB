@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const prisma = require('../db/prisma');
 const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
+const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 
 // ── Shared selectors ──────────────────────────────────────────────────────
 const userSelect = { omit: { password: true } };
@@ -519,6 +520,16 @@ const verifyUser = async (req, res, next) => {
       ...userSelect,
     });
 
+    notifyUserInBackground({
+      recipientId: user.id,
+      type: TYPES.ACCOUNT_VERIFIED,
+      title: 'Account verified',
+      body: 'Your account has been verified. Everything is unlocked.',
+      link: '/dashboard',
+      entityType: 'user',
+      entityId: user.id,
+    });
+
     logActivity({
       action: 'admin.user.verify',
       entityType: 'user',
@@ -545,6 +556,19 @@ const suspendUser = async (req, res, next) => {
       where: { id },
       data: { suspended: true },
       ...userSelect,
+    });
+
+    /* Without this the user is simply locked out at login with no explanation. */
+    notifyUserInBackground({
+      recipientId: user.id,
+      type: TYPES.ACCOUNT_SUSPENDED,
+      title: 'Account suspended',
+      body: reason
+        ? `Your account was suspended: ${reason}`
+        : 'Your account has been suspended. Contact support for details.',
+      link: '/contact',
+      entityType: 'user',
+      entityId: user.id,
     });
 
     logActivity({
@@ -777,6 +801,16 @@ const approveProperty = async (req, res, next) => {
       include: { listedBy: { select: { id: true, name: true, email: true } } },
     });
 
+    notifyUserInBackground({
+      recipientId: property.listedById,
+      type: TYPES.PROPERTY_APPROVED,
+      title: 'Property approved',
+      body: `${property.title} is now live and visible to buyers.`,
+      link: '/my-listings',
+      entityType: 'property',
+      entityId: property.id,
+    });
+
     logActivity({
       action: 'admin.property.approve',
       entityType: 'property',
@@ -803,6 +837,18 @@ const rejectProperty = async (req, res, next) => {
       where: { id },
       data: { status: 'rejected' },
       include: { listedBy: { select: { id: true, name: true, email: true } } },
+    });
+
+    notifyUserInBackground({
+      recipientId: property.listedById,
+      type: TYPES.PROPERTY_REJECTED,
+      title: 'Property rejected',
+      body: reason
+        ? `${property.title} was rejected: ${reason}`
+        : `${property.title} was rejected. Please review it and resubmit.`,
+      link: '/my-listings',
+      entityType: 'property',
+      entityId: property.id,
     });
 
     logActivity({

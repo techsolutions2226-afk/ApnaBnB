@@ -119,6 +119,9 @@ function App() {
                   <Route path="/wishlists" element={<Wishlists />} />
                   <Route path="/trips" element={<Trips />} />
 
+                  {/* Subscription Plans — rendered inside the dashboard shell */}
+                  <Route path="/plans" element={<Plans />} />
+
                   {/* Account pages — rendered inside the shell (sidebar + content) */}
                   <Route path="/account" element={<Account />} />
                   <Route path="/account/personal-info" element={<PersonalInfo />} />
@@ -140,7 +143,6 @@ function App() {
                       SearchResults reads `purpose` from the URL pathname. */}
                   <Route path="/sale" element={<SearchResults />} />
                   <Route path="/rent" element={<SearchResults />} />
-                  <Route path="/plans" element={<Plans />} />
                   <Route path="/users/:id" element={<Profile />} />
                   <Route path="/legal/:slug" element={<Legal />} />
                 </Route>

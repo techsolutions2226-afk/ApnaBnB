@@ -1,4 +1,5 @@
 const prisma = require('../db/prisma');
+const { notifyUsersInBackground, TYPES } = require('../utils/notifier');
 
 const propertySelect = {
   select: { id: true, title: true, photos: true, location: true, price: true },
@@ -36,6 +37,31 @@ const createTrip = async (req, res, next) => {
         confirmationCode: generateConfirmationCode(),
       },
     });
+
+    /* Both sides care: the owner has a visitor coming, the guest wants their
+       confirmation code somewhere they can find it again. */
+    notifyUsersInBackground([
+      {
+        recipientId: property.listedById,
+        actorId: req.user.id,
+        type: TYPES.VISIT_BOOKED,
+        title: 'Visit requested',
+        body: `Someone booked a visit to ${property.title}.`,
+        link: '/trips',
+        entityType: 'trip',
+        entityId: trip.id,
+      },
+      {
+        recipientId: req.user.id,
+        type: TYPES.VISIT_BOOKED,
+        title: 'Visit booked',
+        body: `Your visit to ${property.title} is booked. Code ${trip.confirmationCode}.`,
+        link: '/trips',
+        entityType: 'trip',
+        entityId: trip.id,
+        allowSelf: true,
+      },
+    ]);
 
     res.status(201).json(trip);
   } catch (error) {

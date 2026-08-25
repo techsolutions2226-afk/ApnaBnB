@@ -1,29 +1,55 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBell } from "react-icons/fi";
-import { useMyMatches } from "../../hooks/useMatches";
+import { useNotifications } from "../../hooks/useNotifications";
 import { useAuth } from "../../context/AuthContext";
 
-/* Human-readable labels per match type — same scheme as RecentMatches. */
-const TYPE_LABELS = {
-  "seller-buyer": "Seller ↔ Buyer",
-  "dealer-buyer": "Dealer ↔ Buyer",
-  "dealer-dealer": "Dealer ↔ Dealer",
-  "seller-dealer": "Seller ↔ Dealer",
+/* ─── NotificationBell ───
+   Reads real notifications from the API. Read state is server-side, so the
+   badge is consistent across devices — it used to live in localStorage, which
+   meant marking read on one device left it unread on another.
+
+   Styling is deliberately inline and self-contained: that is what lets the
+   same component drop into both the public navbar and the dashboard topbar
+   without either stylesheet needing to know about it. */
+
+/* Emoji per notification type. Falls back to the bell for anything new, so an
+   unrecognised type from a newer server never renders blank. */
+const ICONS = {
+  "match.created": "🔗",
+  "match.accepted": "🤝",
+  "match.rejected": "✖️",
+  "listing.created": "🏠",
+  "property.created": "🏠",
+  "property.approved": "✅",
+  "property.rejected": "⛔",
+  "requirement.created": "📝",
+  "payment.approved": "💳",
+  "payment.rejected": "⛔",
+  "plan.activated": "⭐",
+  "visit.booked": "📅",
+  "visit.cancelled": "🗓️",
+  "review.received": "⭐",
+  "account.verified": "🛡️",
+  "account.suspended": "⚠️",
+  "account.reactivated": "🛡️",
 };
 
-const TYPE_COLORS = {
-  "seller-buyer": "#1e7e34",
-  "dealer-buyer": "#1565c0",
-  "dealer-dealer": "#6a1b9a",
-  "seller-dealer": "#e65100",
+const TINTS = {
+  approved: "#e8f5e9",
+  rejected: "#fdecea",
+  suspended: "#fdecea",
 };
 
-/* Crude relative-time formatter — keeps the bundle dep-free. */
+const tintFor = (type = "") => {
+  const tail = type.split(".")[1];
+  return TINTS[tail] || "#fff8e1";
+};
+
+/* Relative time, dependency-free. */
 const timeAgo = (date) => {
   if (!date) return "";
-  const diffMs = Date.now() - new Date(date).getTime();
-  const sec = Math.round(diffMs / 1000);
+  const sec = Math.round((Date.now() - new Date(date).getTime()) / 1000);
   if (sec < 60) return "just now";
   const min = Math.round(sec / 60);
   if (min < 60) return `${min}m ago`;
@@ -34,100 +60,65 @@ const timeAgo = (date) => {
   return new Date(date).toLocaleDateString();
 };
 
-/* Key into localStorage that tracks which match-IDs the user has already
-   seen. Per-user so accounts on the same machine don't share read state. */
-const seenKeyFor = (userId) => `notif_seen:${userId || "anon"}`;
-
-const loadSeen = (userId) => {
-  try {
-    const raw = localStorage.getItem(seenKeyFor(userId));
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch {
-    return new Set();
-  }
-};
-
-const saveSeen = (userId, set) => {
-  try {
-    localStorage.setItem(seenKeyFor(userId), JSON.stringify(Array.from(set)));
-  } catch {
-    /* quota errors swallowed — read state is best-effort */
-  }
-};
-
 const NotificationBell = () => {
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const { matches } = useMyMatches();
+  const { currentUser } = useAuth();
+  const { items, unreadCount, isLoading, error, markSeen, markAllRead } =
+    useNotifications();
+
   const [open, setOpen] = useState(false);
-  const [seen, setSeen] = useState(() => loadSeen(currentUser?.id));
   const wrapperRef = useRef(null);
 
-  // Refresh the seen-set when the user changes (login/logout).
+  /* Close on outside click. */
   useEffect(() => {
-    setSeen(loadSeen(currentUser?.id));
-  }, [currentUser?.id]);
-
-  // Close on outside click.
-  useEffect(() => {
-    const handler = (e) => {
+    if (!open) return;
+    const onDown = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
-  /* Cap at 10 most-recent — older noise gets dropped from the dropdown but
-     the user can hit "View all" to see everything on /matches. */
-  const items = useMemo(() => (matches || []).slice(0, 10), [matches]);
-  const unreadCount = useMemo(
-    () => items.filter((m) => !seen.has(m._id)).length,
-    [items, seen],
-  );
+  /* Opening the panel marks what is shown as read — "seeing" it clears the
+     badge, which is the behaviour people expect from a bell. Only the visible
+     rows are marked, so nothing further down the inbox is silently cleared. */
+  useEffect(() => {
+    if (!open) return;
+    const unreadIds = items.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length) markSeen(unreadIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const markAllSeen = () => {
-    const next = new Set(seen);
-    items.forEach((m) => next.add(m._id));
-    setSeen(next);
-    saveSeen(currentUser?.id, next);
-  };
+  if (!currentUser) return null;
 
-  const handleItemClick = (match) => {
-    const next = new Set(seen);
-    next.add(match._id);
-    setSeen(next);
-    saveSeen(currentUser?.id, next);
+  const handleItemClick = (n) => {
     setOpen(false);
-    navigate("/matches");
+    if (n.link) navigate(n.link);
   };
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{ position: "relative", display: "inline-block" }}
-    >
+    <div style={{ position: "relative", display: "inline-block" }} ref={wrapperRef}>
       <button
         type="button"
+        aria-label={
+          unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
+        }
+        aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        aria-label="Notifications"
-        title="Notifications"
         style={{
           position: "relative",
           width: 38,
           height: 38,
-          padding: 0,
-          background: open ? "#f5f5f5" : "transparent",
-          border: "1px solid transparent",
-          borderRadius: "50%",
-          cursor: "pointer",
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          transition: "background 0.15s",
+          borderRadius: "50%",
+          border: "none",
+          background: open ? "#f5f5f5" : "transparent",
+          cursor: "pointer",
+          color: "#222",
         }}
         onMouseEnter={(e) => {
           if (!open) e.currentTarget.style.background = "#f5f5f5";
@@ -136,7 +127,7 @@ const NotificationBell = () => {
           if (!open) e.currentTarget.style.background = "transparent";
         }}
       >
-        <FiBell size={18} color="#222" />
+        <FiBell size={19} />
         {unreadCount > 0 && (
           <span
             style={{
@@ -151,10 +142,8 @@ const NotificationBell = () => {
               color: "#fff",
               fontSize: 10,
               fontWeight: 700,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
+              lineHeight: "16px",
+              textAlign: "center",
               border: "2px solid #fff",
               boxSizing: "content-box",
             }}
@@ -173,7 +162,6 @@ const NotificationBell = () => {
             width: 360,
             maxWidth: "calc(100vw - 32px)",
             background: "#fff",
-            border: "1px solid #ebebeb",
             borderRadius: 12,
             boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
             zIndex: 200,
@@ -189,20 +177,21 @@ const NotificationBell = () => {
               borderBottom: "1px solid #ebebeb",
             }}
           >
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#222" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "#222" }}>
               Notifications
             </span>
             {unreadCount > 0 && (
               <button
                 type="button"
-                onClick={markAllSeen}
+                onClick={markAllRead}
                 style={{
-                  background: "none",
                   border: "none",
+                  background: "none",
                   color: "#1976d2",
-                  cursor: "pointer",
                   fontSize: 12,
                   fontWeight: 600,
+                  cursor: "pointer",
+                  padding: 0,
                 }}
               >
                 Mark all as read
@@ -211,166 +200,137 @@ const NotificationBell = () => {
           </div>
 
           <div style={{ maxHeight: 420, overflowY: "auto" }}>
-            {items.length === 0 ? (
-              <div
-                style={{
-                  padding: "32px 16px",
-                  textAlign: "center",
-                  color: "#717171",
-                  fontSize: 14,
-                }}
-              >
-                <div style={{ fontSize: 28, marginBottom: 6 }}>🔔</div>
-                You're all caught up. New matches will appear here.
+            {/* Loading and error used to be swallowed here — a failed fetch
+                rendered as "you're all caught up", which is a lie. */}
+            {isLoading && items.length === 0 ? (
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "#717171", fontSize: 13 }}>
+                Loading notifications…
+              </div>
+            ) : error ? (
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "#c13515", fontSize: 13 }}>
+                {error}
+              </div>
+            ) : items.length === 0 ? (
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "#717171", fontSize: 13 }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
+                You&apos;re all caught up.
               </div>
             ) : (
-              items.map((m) => {
-                const isUnread = !seen.has(m._id);
-                const typeLabel = TYPE_LABELS[m.type] || m.type;
-                const typeColor = TYPE_COLORS[m.type] || "#444";
-                const title =
-                  m.property?.title || "New property match";
-                const loc = [
-                  m.property?.location?.area,
-                  m.property?.location?.city,
-                ]
-                  .filter(Boolean)
-                  .join(", ");
-                return (
-                  <button
-                    key={m._id}
-                    type="button"
-                    onClick={() => handleItemClick(m)}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "12px 16px",
-                      background: isUnread ? "#f0f7ff" : "#fff",
-                      border: "none",
-                      borderBottom: "1px solid #f5f5f5",
-                      cursor: "pointer",
-                      transition: "background 0.12s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f5f5f5";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = isUnread
-                        ? "#f0f7ff"
-                        : "#fff";
-                    }}
-                  >
-                    <div
+              items.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => handleItemClick(n)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "12px 16px",
+                    border: "none",
+                    borderBottom: "1px solid #f5f5f5",
+                    background: n.read ? "#fff" : "#f0f7ff",
+                    cursor: n.link ? "pointer" : "default",
+                    fontFamily: "inherit",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#f5f5f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = n.read ? "#fff" : "#f0f7ff";
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <span
                       style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 10,
+                        flexShrink: 0,
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: tintFor(n.type),
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 14,
                       }}
                     >
+                      {ICONS[n.type] || "🔔"}
+                    </span>
+
+                    <span style={{ minWidth: 0, flex: 1 }}>
                       <span
                         style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          background: "#fff8e1",
-                          flexShrink: 0,
-                          fontSize: 14,
+                          display: "block",
+                          fontSize: 13.5,
+                          fontWeight: n.read ? 500 : 600,
+                          color: "#222",
+                          marginBottom: 2,
                         }}
                       >
-                        🔗
+                        {n.title}
                       </span>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div
-                          style={{
-                            fontSize: 13.5,
-                            color: "#222",
-                            fontWeight: isUnread ? 600 : 500,
-                            marginBottom: 2,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          New match: {title}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "#717171",
-                            marginBottom: 4,
-                          }}
-                        >
-                          {loc || "Location pending"}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 8,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              color: typeColor,
-                            }}
-                          >
-                            {typeLabel} · {Math.round(m.score || 0)}%
-                          </span>
-                          <span style={{ fontSize: 11, color: "#9e9e9e" }}>
-                            {timeAgo(m.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                      {isUnread && (
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: "#1a8f5a",
-                            flexShrink: 0,
-                            marginTop: 8,
-                          }}
-                        />
-                      )}
-                    </div>
-                  </button>
-                );
-              })
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: 12,
+                          color: "#717171",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        {n.body}
+                      </span>
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: 11,
+                          color: "#9e9e9e",
+                          marginTop: 4,
+                        }}
+                      >
+                        {timeAgo(n.createdAt)}
+                      </span>
+                    </span>
+
+                    {!n.read && (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          flexShrink: 0,
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: "#1a8f5a",
+                          marginTop: 6,
+                        }}
+                      />
+                    )}
+                  </div>
+                </button>
+              ))
             )}
           </div>
 
-          {items.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                navigate("/matches");
-              }}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "10px 16px",
-                background: "#fafafa",
-                color: "#222",
-                border: "none",
-                borderTop: "1px solid #ebebeb",
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              View all matches
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate("/account/notifications");
+            }}
+            style={{
+              display: "block",
+              width: "100%",
+              padding: "12px 16px",
+              border: "none",
+              borderTop: "1px solid #ebebeb",
+              background: "#fafafa",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#222",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            View all notifications
+          </button>
         </div>
       )}
     </div>

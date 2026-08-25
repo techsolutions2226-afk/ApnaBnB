@@ -181,6 +181,42 @@ model User {
   trips             Trip[]
   wishlists         Wishlist[]
   payments          Payment[]
+  notifications     Notification[]            @relation("NotificationRecipient")
+}
+
+// In-app notifications. Unlike ActivityLog — which records who ACTED — a row
+// here is addressed to a RECIPIENT and carries read state, so the bell can show
+// an accurate unread count that follows the account across devices.
+model Notification {
+  id String @id @default(uuid())
+
+  // Who this is FOR. Cascades so deleting a user clears their inbox.
+  recipient   User   @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  // Who caused it. Null for system/admin actions. Not a relation: the actor may
+  // be deleted without taking the recipient's history with them.
+  actorId String?
+
+  type  String // match.created | payment.approved | review.received | ...
+  title String
+  body  String
+
+  // Where clicking the notification goes, e.g. "/matches" or "/my-listings".
+  link String?
+
+  entityType String?
+  entityId   String?
+  meta       Json?
+
+  read   Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  // Serves the unread badge and the inbox list respectively.
+  @@index([recipientId, read, createdAt])
+  @@index([recipientId, createdAt])
 }
 
 model Property {

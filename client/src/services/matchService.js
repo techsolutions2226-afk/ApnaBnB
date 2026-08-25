@@ -94,6 +94,18 @@ const matchService = {
     }
   },
 
+  /* Re-run matching across everything you own — the "Check again" button.
+     Server-scoped to the caller, so it only ever regenerates your own pairs.
+     Safe to press repeatedly: existing matches are skipped, not duplicated. */
+  regenerate: async () => {
+    try {
+      const response = await apiClient.post('/matches/regenerate');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Could not re-check your matches' };
+    }
+  },
+
   // Delete a match. Allowed for either party of the match (property owner or
   // requirement poster). Removes it for both sides.
   remove: async (id) => {

@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { FiRefreshCw, FiMapPin } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import { useMyMatches } from "../hooks/useMatches";
 import useViewRole from "../hooks/useViewRole";
@@ -65,7 +66,29 @@ const Matches = () => {
   // Refresh just this tab — no browser reload.
   const { refresh, refreshing } = useRefresh(refetch);
   const [activeFilter, setActiveFilter] = useState("all");
+  /* Proximity tier, independent of the type filter above: "all" | "nearest" |
+     "far". The server tags every match, so this filters what's already loaded
+     rather than re-running the engine. */
+  const [tierFilter, setTierFilter] = useState("all");
   const [busyId, setBusyId] = useState(null);
+  const [rechecking, setRechecking] = useState(false);
+
+  /* "Check again" — re-runs matching across every listing and requirement the
+     user owns, then reloads. Existing matches are skipped server-side, so
+     pressing it twice does not duplicate anything. */
+  const handleRecheck = async () => {
+    if (rechecking) return;
+    setRechecking(true);
+    try {
+      const result = await matchService.regenerate();
+      toast.success(result?.message || "Matches re-checked.");
+      await refetch();
+    } catch (err) {
+      toast.error(err?.message || "Could not re-check your matches.");
+    } finally {
+      setRechecking(false);
+    }
+  };
 
   // Accept / reject a match.
   const handleStatus = async (match, status) => {
@@ -87,8 +110,32 @@ const Matches = () => {
   };
 
   const filtered = useMemo(() => {
-    if (activeFilter === "all") return matches || [];
-    return (matches || []).filter((m) => m.type === activeFilter);
+    let list = matches || [];
+    if (activeFilter !== "all") list = list.filter((m) => m.type === activeFilter);
+    if (tierFilter !== "all") list = list.filter((m) => m.tier === tierFilter);
+    return list;
+  }, [matches, activeFilter, tierFilter]);
+
+  /* Counts come from the type-filtered set, so the tier tabs reflect what you
+     would actually see if you clicked them. */
+  const tierTabs = useMemo(() => {
+    const base =
+      activeFilter === "all"
+        ? matches || []
+        : (matches || []).filter((m) => m.type === activeFilter);
+    return [
+      { key: "all", label: "All", count: base.length },
+      {
+        key: "nearest",
+        label: "Nearest",
+        count: base.filter((m) => m.tier === "nearest").length,
+      },
+      {
+        key: "far",
+        label: "Far",
+        count: base.filter((m) => m.tier === "far").length,
+      },
+    ];
   }, [matches, activeFilter]);
 
   const stats = useMemo(() => {
@@ -240,6 +287,42 @@ const Matches = () => {
         </div>
       </div>
 
+      {/* Proximity filter + re-check.
+          Nearest = same area, within 5 km, rooms +/-1, price within 10% of budget.
+          Far     = same city, rooms +/-1, price within 20% of budget. */}
+      <div className="mtch-tier-bar">
+        <div className="mtch-filters">
+          <FilterTabs
+            tabs={tierTabs}
+            activeKey={tierFilter}
+            onChange={setTierFilter}
+            prefix="mtch-filter-btn"
+            showCounts
+          />
+        </div>
+        <button
+          type="button"
+          className="mtch-recheck"
+          onClick={handleRecheck}
+          disabled={rechecking}
+          title="Re-run matching across all your listings and requirements"
+        >
+          <FiRefreshCw
+            size={15}
+            className={rechecking ? "mtch-recheck-spin" : ""}
+          />
+          {rechecking ? "Checking…" : "Check again"}
+        </button>
+      </div>
+
+      <p className="mtch-tier-hint">
+        {tierFilter === "nearest"
+          ? "Same area, within 5 km, bedrooms and bathrooms within one, price within 10% of budget."
+          : tierFilter === "far"
+            ? "Same city, bedrooms and bathrooms within one, price within 20% of budget."
+            : "Showing every match. Use Nearest for close, tightly-matched results."}
+      </p>
+
       {filtered.length === 0 ? (
         <div className="mtch-empty">
           <div className="mtch-empty-icon">🔗</div>
@@ -314,6 +397,30 @@ const Matches = () => {
                   >
                     {typeLabel}
                   </span>
+
+                  {/* Tier + distance. Sub-100m reads as "< 0.1 km" rather than
+                      a bare 0, which looks like missing data. */}
+                  {match.tier && match.tier !== "other" && (
+                    <span
+                      className={`mtch-tier-pill mtch-tier-pill--${match.tier}`}
+                      title={
+                        match.tier === "nearest"
+                          ? "Same area, within 5 km, closely matched on rooms and budget"
+                          : "Same city, looser match on rooms and budget"
+                      }
+                    >
+                      <FiMapPin size={12} />
+                      {match.tier === "nearest" ? "Nearest" : "Far"}
+                      {match.distanceKm !== null &&
+                        match.distanceKm !== undefined && (
+                          <span className="mtch-tier-dist">
+                            {match.distanceKm < 0.1
+                              ? "· < 0.1 km"
+                              : `· ${match.distanceKm} km`}
+                          </span>
+                        )}
+                    </span>
+                  )}
 
                   <div
                     style={{

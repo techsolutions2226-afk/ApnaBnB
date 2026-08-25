@@ -589,3 +589,98 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+
+/* ── Proximity tier: filter bar, hint and per-card pill ── */
+.mtch-tier-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.mtch-tier-hint {
+  margin: 8px 0 18px;
+  font-size: 13px;
+  color: #717171;
+}
+
+.mtch-recheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #16324f;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.mtch-recheck:hover:not(:disabled) {
+  border-color: #1a8f5a;
+  color: #1a8f5a;
+}
+
+.mtch-recheck:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.mtch-recheck-spin {
+  animation: mtchSpin 0.9s linear infinite;
+}
+
+@keyframes mtchSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mtch-recheck-spin {
+    animation-duration: 2.5s;
+  }
+}
+
+.mtch-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  margin-left: 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mtch-tier-pill--nearest {
+  background: #e3f5ec;
+  color: #127a45;
+}
+
+.mtch-tier-pill--far {
+  background: #eef2f6;
+  color: #55697c;
+}
+
+.mtch-tier-dist {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .mtch-tier-bar {
+    align-items: stretch;
+  }
+
+  .mtch-recheck {
+    justify-content: center;
+  }
+}

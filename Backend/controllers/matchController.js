@@ -3,21 +3,70 @@ const { calculateMatchScore } = require('../utils/matchScore');
 const { enrichMatchesWithAI } = require('../utils/aiMatch');
 const { parsePagination, paginated } = require('../utils/pagination');
 const { notifyUserInBackground, TYPES } = require('../utils/notifier');
+const { classifyMatch } = require('../utils/matchTier');
 
 // Shared populate shape for match records.
+/* `include` on property/requirement would return every scalar column, which
+   pulls contactEmail/contactPhone into every match listing — and those are
+   exactly what getMatchContact withholds until a match is accepted. Selecting
+   explicitly keeps that gate meaningful. Fields listed here are what the
+   Matches UI renders plus what classifyMatch needs to tier the pair. */
 const matchInclude = {
   property: {
-    include: {
-      listedBy: { select: { id: true, name: true, email: true, role: true, avatar: true } },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      photos: true,
+      location: true,
+      purpose: true,
+      price: true,
+      category: true,
+      propertyType: true,
+      size: true,
+      sizeUnit: true,
+      bedrooms: true,
+      bathrooms: true,
+      amenities: true,
+      status: true,
+      actingRole: true,
+      listedById: true,
+      createdAt: true,
+      listedBy: { select: { id: true, name: true, role: true, avatar: true } },
     },
   },
   requirement: {
-    include: {
-      requiredBy: { select: { id: true, name: true, email: true, role: true } },
+    select: {
+      id: true,
+      title: true,
+      notes: true,
+      location: true,
+      budget: true,
+      purpose: true,
+      propertyType: true,
+      size: true,
+      bedrooms: true,
+      bathrooms: true,
+      urgency: true,
+      status: true,
+      actingRole: true,
+      requiredById: true,
+      createdAt: true,
+      requiredBy: { select: { id: true, name: true, role: true } },
     },
   },
-  initiator: { select: { id: true, name: true, email: true, role: true } },
+  initiator: { select: { id: true, name: true, role: true } },
 };
+
+/* Tag each match with its tier + distance so the client can filter instantly
+   without re-running the engine or duplicating the tolerance rules. */
+const withTier = (match) => {
+  if (!match) return match;
+  const { tier, distanceKm } = classifyMatch(match.property, match.requirement);
+  return { ...match, tier, distanceKm };
+};
+
+const withTiers = (matches) => (matches || []).map(withTier);
 
 // "Matches that involve me" — a property I listed OR a requirement I posted.
 const involvedWhere = (userId) => ({
@@ -130,7 +179,7 @@ const matchRequirementsToProperties = async (req, res, next) => {
       .map((property) => ({ property, score: calculateMatchScore(property, requirement) }))
       .sort((a, b) => b.score - a.score);
 
-    res.status(200).json(matches);
+    res.status(200).json(withTiers(matches));
   } catch (error) {
     next(error);
   }
@@ -180,7 +229,7 @@ const createMatch = async (req, res, next) => {
     // Background AI semantic scoring (non-blocking).
     enrichMatchesWithAI([{ matchId: match.id, ruleScore: score }]);
 
-    res.status(201).json(match);
+    res.status(201).json(withTier(match));
   } catch (error) {
     next(error);
   }
@@ -205,10 +254,10 @@ const getMatches = async (req, res, next) => {
 
     if (pag.enabled) {
       const total = await prisma.match.count({ where });
-      return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
+      return res.status(200).json(paginated(withTiers(matches), total, pag.page, pag.limit));
     }
 
-    res.status(200).json(matches);
+    res.status(200).json(withTiers(matches));
   } catch (error) {
     next(error);
   }
@@ -228,7 +277,7 @@ const getMatchById = async (req, res, next) => {
       return res.status(404).json({ message: 'Match not found.' });
     }
 
-    res.status(200).json(match);
+    res.status(200).json(withTier(match));
   } catch (error) {
     next(error);
   }
@@ -253,10 +302,10 @@ const getMatchesByType = (type) => async (req, res, next) => {
 
     if (pag.enabled) {
       const total = await prisma.match.count({ where });
-      return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
+      return res.status(200).json(paginated(withTiers(matches), total, pag.page, pag.limit));
     }
 
-    res.status(200).json(matches);
+    res.status(200).json(withTiers(matches));
   } catch (error) {
     next(error);
   }
@@ -285,10 +334,10 @@ const getMyMatches = async (req, res, next) => {
 
     if (pag.enabled) {
       const total = await prisma.match.count({ where });
-      return res.status(200).json(paginated(matches, total, pag.page, pag.limit));
+      return res.status(200).json(paginated(withTiers(matches), total, pag.page, pag.limit));
     }
 
-    res.status(200).json(matches);
+    res.status(200).json(withTiers(matches));
   } catch (error) {
     next(error);
   }

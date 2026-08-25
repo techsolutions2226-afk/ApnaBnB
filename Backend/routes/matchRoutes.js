@@ -31,6 +31,39 @@ router.get('/seller-buyer', verifyToken, getSellerBuyerMatches);
 router.get('/dealer-buyer', verifyToken, getDealerBuyerMatches);
 router.get('/dealer-dealer', verifyToken, getDealerDealerMatches);
 
+/* Re-run matching across everything the caller owns — the "check again"
+   button on the Matches tab. Scoped to req.user.id on both sides, so it can
+   only ever regenerate the caller's own pairs. Existing matches are skipped by
+   the generators' own duplicate guard, so this is safe to press repeatedly. */
+router.post('/regenerate', verifyToken, async (req, res, next) => {
+  try {
+    const [properties, requirements] = await Promise.all([
+      prisma.property.findMany({ where: { listedById: req.user.id } }),
+      prisma.requirement.findMany({ where: { requiredById: req.user.id } }),
+    ]);
+
+    let created = 0;
+    for (const property of properties) {
+      const made = await generateMatchesForProperty(property, req.user.id, { notify: true });
+      created += made.length;
+    }
+    for (const requirement of requirements) {
+      const made = await generateMatchesForRequirement(requirement, req.user.id, { notify: true });
+      created += made.length;
+    }
+
+    res.status(200).json({
+      created,
+      scanned: { properties: properties.length, requirements: requirements.length },
+      message: created
+        ? `Found ${created} new match${created === 1 ? '' : 'es'}.`
+        : 'No new matches found.',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Manual match generation
 router.post('/generate/property/:propertyId', verifyToken, async (req, res, next) => {
   try {

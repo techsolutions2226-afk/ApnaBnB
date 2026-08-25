@@ -3,6 +3,7 @@ import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { FiChevronDown, FiSettings, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
+import NotificationBell from "../navbar/NotificationBell";
 import "../../styles/DashboardShell.css";
 
 const STORAGE_KEY = "dash_view_role";
@@ -182,6 +183,11 @@ export default function DashboardShell() {
           </button>
 
           <div className="dash-shell-topbar-spacer" />
+
+          {/* Notifications were only reachable from the public navbar, which the
+              dashboard shell doesn't render. The bell is self-contained (it
+              carries its own styling), so it drops in as-is. */}
+          {currentUser && <NotificationBell />}
 
           <div className="dash-shell-roleselect" ref={selectRef}>
             <span className="dash-shell-roleselect-label">Viewing as</span>

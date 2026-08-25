@@ -11,7 +11,6 @@ import {
   FiList,
   FiClipboard,
   FiGitMerge,
-  FiBell,
   FiSearch,
   FiHeart,
   FiCalendar,
@@ -36,7 +35,6 @@ const MATCHES = { to: "/matches", label: "Matches", icon: FiGitMerge };
 // Every member role has its own tier set and can subscribe while acting as
 // that role, so Plans belongs in all three sidebars — not just the dealer's.
 const PLANS = { to: "/plans", label: "Plans", icon: FiCreditCard };
-const NOTIFS = { to: "/account/notifications", label: "Notifications", icon: FiBell };
 
 export const NAV_BY_ROLE = {
   seller: [
@@ -45,7 +43,6 @@ export const NAV_BY_ROLE = {
     { to: "/my-listings", label: "My Listings", icon: FiList },
     MATCHES,
     PLANS,
-    NOTIFS,
   ],
   buyer: [
     DASH,
@@ -56,7 +53,6 @@ export const NAV_BY_ROLE = {
     MATCHES,
     { to: "/trips", label: "Property Visits", icon: FiCalendar },
     PLANS,
-    NOTIFS,
   ],
   dealer: [
     DASH,
@@ -66,6 +62,5 @@ export const NAV_BY_ROLE = {
     { to: "/requirements/new", label: "Post Requirement", icon: FiEdit3 },
     MATCHES,
     PLANS,
-    NOTIFS,
   ],
 };

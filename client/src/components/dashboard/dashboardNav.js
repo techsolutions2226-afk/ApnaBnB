@@ -33,6 +33,9 @@ export const ROLE_META = {
 /* Shared items reused across roles. */
 const DASH = { to: "/dashboard", label: "Dashboard", icon: FiGrid, end: true };
 const MATCHES = { to: "/matches", label: "Matches", icon: FiGitMerge };
+// Every member role has its own tier set and can subscribe while acting as
+// that role, so Plans belongs in all three sidebars — not just the dealer's.
+const PLANS = { to: "/plans", label: "Plans", icon: FiCreditCard };
 const NOTIFS = { to: "/account/notifications", label: "Notifications", icon: FiBell };
 
 export const NAV_BY_ROLE = {
@@ -41,6 +44,7 @@ export const NAV_BY_ROLE = {
     { to: "/listing/new", label: "Create Listing", icon: FiPlusSquare },
     { to: "/my-listings", label: "My Listings", icon: FiList },
     MATCHES,
+    PLANS,
     NOTIFS,
   ],
   buyer: [
@@ -51,6 +55,7 @@ export const NAV_BY_ROLE = {
     { to: "/wishlists", label: "Wishlists", icon: FiHeart },
     MATCHES,
     { to: "/trips", label: "Property Visits", icon: FiCalendar },
+    PLANS,
     NOTIFS,
   ],
   dealer: [
@@ -60,7 +65,7 @@ export const NAV_BY_ROLE = {
     { to: "/requirements", label: "Requirements Board", icon: FiClipboard },
     { to: "/requirements/new", label: "Post Requirement", icon: FiEdit3 },
     MATCHES,
-    { to: "/plans", label: "Plans", icon: FiCreditCard },
+    PLANS,
     NOTIFS,
   ],
 };

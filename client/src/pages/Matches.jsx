@@ -152,6 +152,45 @@ const Matches = () => {
   }, [matches]);
 
   // Loading
+  /* Proximity filter + re-check, shared by the populated and empty branches —
+     the buttons should be reachable even when nothing has matched yet, which
+     is exactly when "Check again" matters most.
+       Nearest = same area, within 5 km, rooms +/-1, price within 10% of budget.
+       Far     = same city, rooms +/-1, price within 20% of budget. */
+  const tierBar = (
+    <>
+      <div className="mtch-tier-bar">
+        <div className="mtch-filters">
+          <FilterTabs
+            tabs={tierTabs}
+            activeKey={tierFilter}
+            onChange={setTierFilter}
+            prefix="mtch-filter-btn"
+            showCounts
+          />
+        </div>
+        <button
+          type="button"
+          className="mtch-recheck"
+          onClick={handleRecheck}
+          disabled={rechecking}
+          title="Re-run matching across all your listings and requirements"
+        >
+          <FiRefreshCw size={15} className={rechecking ? "mtch-recheck-spin" : ""} />
+          {rechecking ? "Checking…" : "Check again"}
+        </button>
+      </div>
+
+      <p className="mtch-tier-hint">
+        {tierFilter === "nearest"
+          ? "Same area, within 5 km, bedrooms and bathrooms within one, price within 10% of budget."
+          : tierFilter === "far"
+            ? "Same city, bedrooms and bathrooms within one, price within 20% of budget."
+            : "Showing every match. Use Nearest for close, tightly-matched results."}
+      </p>
+    </>
+  );
+
   if (isLoading) {
     return (
       <div className="mtch-page">
@@ -220,16 +259,33 @@ const Matches = () => {
           </div>
           <RefreshButton onRefresh={refresh} refreshing={refreshing} />
         </div>
+        {tierBar}
+
         <div className="mtch-empty">
           <div className="mtch-empty-icon">🔗</div>
           <h3 className="mtch-empty-title">No matches yet</h3>
           <p className="mtch-empty-text">
             When a property and a requirement line up on city, area, type, and
-            price (±10%), they'll show up here automatically.
+            price (±10%), they&apos;ll show up here automatically. If you have
+            just posted something, run a check now.
           </p>
-          <Link to={getDashboardPath()} className="mtch-btn mtch-btn--primary">
-            Go to Dashboard
-          </Link>
+          <div className="mtch-empty-actions">
+            <button
+              type="button"
+              className="mtch-btn mtch-btn--primary"
+              onClick={handleRecheck}
+              disabled={rechecking}
+            >
+              <FiRefreshCw
+                size={15}
+                className={rechecking ? "mtch-recheck-spin" : ""}
+              />
+              {rechecking ? "Checking…" : "Match again"}
+            </button>
+            <Link to={getDashboardPath()} className="mtch-btn mtch-btn--ghost">
+              Go to Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -287,55 +343,47 @@ const Matches = () => {
         </div>
       </div>
 
-      {/* Proximity filter + re-check.
-          Nearest = same area, within 5 km, rooms +/-1, price within 10% of budget.
-          Far     = same city, rooms +/-1, price within 20% of budget. */}
-      <div className="mtch-tier-bar">
-        <div className="mtch-filters">
-          <FilterTabs
-            tabs={tierTabs}
-            activeKey={tierFilter}
-            onChange={setTierFilter}
-            prefix="mtch-filter-btn"
-            showCounts
-          />
-        </div>
-        <button
-          type="button"
-          className="mtch-recheck"
-          onClick={handleRecheck}
-          disabled={rechecking}
-          title="Re-run matching across all your listings and requirements"
-        >
-          <FiRefreshCw
-            size={15}
-            className={rechecking ? "mtch-recheck-spin" : ""}
-          />
-          {rechecking ? "Checking…" : "Check again"}
-        </button>
-      </div>
-
-      <p className="mtch-tier-hint">
-        {tierFilter === "nearest"
-          ? "Same area, within 5 km, bedrooms and bathrooms within one, price within 10% of budget."
-          : tierFilter === "far"
-            ? "Same city, bedrooms and bathrooms within one, price within 20% of budget."
-            : "Showing every match. Use Nearest for close, tightly-matched results."}
-      </p>
+      {tierBar}
 
       {filtered.length === 0 ? (
         <div className="mtch-empty">
           <div className="mtch-empty-icon">🔗</div>
-          <h3 className="mtch-empty-title">No matches in this category</h3>
+          <h3 className="mtch-empty-title">
+            {tierFilter === "nearest"
+              ? "No nearby matches"
+              : tierFilter === "far"
+                ? "No wider matches"
+                : "No matches in this category"}
+          </h3>
           <p className="mtch-empty-text">
-            Try selecting a different filter to see your matches.
+            {tierFilter === "nearest"
+              ? "Nothing within 5 km of the same area. Try Far for a wider net, or run a fresh check."
+              : "Try a different filter, or run a fresh check across your listings and requirements."}
           </p>
-          <button
-            className="mtch-btn mtch-btn--primary"
-            onClick={() => setActiveFilter("all")}
-          >
-            View all matches
-          </button>
+          <div className="mtch-empty-actions">
+            <button
+              type="button"
+              className="mtch-btn mtch-btn--primary"
+              onClick={handleRecheck}
+              disabled={rechecking}
+            >
+              <FiRefreshCw
+                size={15}
+                className={rechecking ? "mtch-recheck-spin" : ""}
+              />
+              {rechecking ? "Checking…" : "Match again"}
+            </button>
+            <button
+              type="button"
+              className="mtch-btn mtch-btn--ghost"
+              onClick={() => {
+                setActiveFilter("all");
+                setTierFilter("all");
+              }}
+            >
+              View all matches
+            </button>
+          </div>
         </div>
       ) : (
         <div

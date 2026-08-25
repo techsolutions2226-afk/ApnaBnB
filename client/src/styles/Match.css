@@ -684,3 +684,30 @@
     justify-content: center;
   }
 }
+
+/* Empty-state actions sit side by side and wrap on narrow screens. */
+.mtch-empty-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.mtch-empty-actions .mtch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mtch-btn--ghost {
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  color: #16324f;
+}
+
+.mtch-btn--ghost:hover {
+  border-color: #1a8f5a;
+  color: #1a8f5a;
+}

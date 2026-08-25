@@ -7,6 +7,7 @@
 // fails, the match keeps its pure rule score with aiStatus 'failed'.
 
 const prisma = require('../db/prisma');
+const { emitToUser } = require('../sockets');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // gemini-flash-latest is a thinking model that burns its token budget on
@@ -146,10 +147,22 @@ const callGemini = async (property, requirement) => {
 
 const persistResult = async (matchId, ruleScore, aiScore, aiReason) => {
   const blended = Math.round(ruleScore * RULE_WEIGHT + aiScore * AI_WEIGHT);
-  await prisma.match.update({
+  return prisma.match.update({
     where: { id: matchId },
     data: { score: blended, aiScore, aiReason, aiStatus: 'scored', aiError: null },
   });
+};
+
+/* Scoring is fire-and-forget, so the page that showed "AI scoring in progress…"
+   has no way to learn the answer arrived — it fetches once on mount and there
+   is no polling. Push the result to both parties instead, so the score lands
+   in about a second instead of waiting for a manual refresh. */
+const announce = (match, payload) => {
+  const ownerId = match?.property?.listedById;
+  const seekerId = match?.requirement?.requiredById;
+  for (const userId of new Set([ownerId, seekerId].filter(Boolean))) {
+    emitToUser(userId, 'match:scored', payload);
+  }
 };
 
 // Async fire-and-forget enrichment. entries = [{ matchId, ruleScore }].
@@ -169,20 +182,45 @@ const enrichMatchesWithAI = (entries) => {
         const cacheKey = `${match.propertyId}:${match.requirementId}`;
         if (cache.has(cacheKey)) {
           const { aiScore, aiReason } = cache.get(cacheKey);
-          await persistResult(matchId, ruleScore, aiScore, aiReason);
+          const saved = await persistResult(matchId, ruleScore, aiScore, aiReason);
+          announce(match, {
+            id: matchId,
+            aiStatus: 'scored',
+            aiScore,
+            aiReason,
+            score: saved.score,
+          });
           return;
         }
 
         const { aiScore, aiReason } = await callGemini(match.property, match.requirement);
         cache.set(cacheKey, { aiScore, aiReason });
-        await persistResult(matchId, ruleScore, aiScore, aiReason);
+        const saved = await persistResult(matchId, ruleScore, aiScore, aiReason);
+        announce(match, {
+          id: matchId,
+          aiStatus: 'scored',
+          aiScore,
+          aiReason,
+          score: saved.score,
+        });
       } catch (error) {
-        await prisma.match
+        const failed = await prisma.match
           .update({
             where: { id: matchId },
             data: { aiStatus: 'failed', aiError: String(error.message || error).slice(0, 200) },
           })
-          .catch(() => {});
+          .catch(() => null);
+        /* Tell the client it failed too — otherwise the spinner outlives the
+           work and looks identical to "still running". */
+        if (failed) {
+          const match = await prisma.match
+            .findUnique({
+              where: { id: matchId },
+              include: { property: { select: { listedById: true } }, requirement: { select: { requiredById: true } } },
+            })
+            .catch(() => null);
+          announce(match, { id: matchId, aiStatus: 'failed', score: failed.score });
+        }
       }
     }).catch(() => {});
   }

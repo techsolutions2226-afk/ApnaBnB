@@ -61,7 +61,9 @@ const verifyToken = async (req, res, next) => {
 
     // Attach the DB role, never the JWT role, so role changes (e.g. admin
     // demotes a user) take effect immediately instead of on next login.
-    req.user = { id: user.id, role: user.role };
+    // viewRole must be carried through: effectiveRole() in utils/subscription
+    // reads it to decide which plan tier the user may buy.
+    req.user = { id: user.id, role: user.role, viewRole: user.viewRole };
     next();
   } catch (error) {
     next(error);

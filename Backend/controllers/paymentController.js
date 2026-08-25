@@ -1,5 +1,6 @@
 const prisma = require('../db/prisma');
 const { parsePagination, paginated } = require('../utils/pagination');
+const { effectiveRole, MEMBER_ROLES } = require('../utils/subscription');
 
 const BILLING_CYCLES = ['monthly', 'yearly'];
 
@@ -14,6 +15,22 @@ const requiresPlan = (role) =>
 // planId, billingCycle + proof image). Instant activation: the row is stored
 // as `approved` so the user's messaging unlocks immediately. Admins can later
 // reject it from the admin panel, which locks messaging again on next check.
+
+/* A user may only buy the tier for the role they are ACTING AS. A dealer who
+   switches to the buyer view buys the buyer tier; switching back lets them buy
+   the dealer tier. Enforced here and not just in the UI, since the plan id is
+   client-supplied. Returns an error string, or null when the purchase is OK. */
+const rejectRoleMismatch = (user, plan) => {
+  const acting = effectiveRole(user);
+  if (!MEMBER_ROLES.includes(acting)) {
+    return "Your account type doesn't use subscription plans.";
+  }
+  if (plan.role !== acting) {
+    return `That is a ${plan.role} plan. You are currently acting as a ${acting}, so you can only subscribe to ${acting} plans — switch your role in the dashboard to buy a ${plan.role} plan.`;
+  }
+  return null;
+};
+
 const createPayment = async (req, res, next) => {
   const { planId, billingCycle } = req.body;
 
@@ -31,6 +48,11 @@ const createPayment = async (req, res, next) => {
     const plan = await prisma.plan.findUnique({ where: { id: planId } });
     if (!plan || !plan.active) {
       return res.status(400).json({ message: 'Unknown or inactive plan selected.' });
+    }
+
+    const mismatch = rejectRoleMismatch(req.user, plan);
+    if (mismatch) {
+      return res.status(403).json({ code: 'ROLE_MISMATCH', message: mismatch });
     }
 
     const amount =
@@ -55,13 +77,14 @@ const createPayment = async (req, res, next) => {
 };
 
 // GET /api/payments/status — the subscription gate + dashboard banner data.
-// Returns whether the caller NEEDS a plan (sellers/dealers do; buyers/admins
-// are free) and whether their LATEST payment is approved. Every role gets its
-// approved plan echoed back so dashboards can show it; `active` stays true
-// for non-paying roles so the messaging gate never blocks them.
+// Returns whether the caller NEEDS a plan (every member role does; admins do
+// not) and whether their LATEST payment is approved. The check keys off the
+// role the user is ACTING AS, so switching hats switches which tier applies.
 const getPaymentStatus = async (req, res, next) => {
   try {
-    const needed = requiresPlan(req.user.role);
+    // Acting role, not account role: a dealer viewing as a buyer is
+    // subject to the buyer tier's gate.
+    const needed = requiresPlan(effectiveRole(req.user));
 
     const latest = await prisma.payment.findFirst({
       where: { userId: req.user.id },
@@ -105,6 +128,11 @@ const createFreeSubscription = async (req, res, next) => {
       return res.status(400).json({
         message: 'This plan is not free — payment is required.',
       });
+    }
+
+    const mismatch = rejectRoleMismatch(req.user, plan);
+    if (mismatch) {
+      return res.status(403).json({ code: 'ROLE_MISMATCH', message: mismatch });
     }
 
     const payment = await prisma.payment.create({

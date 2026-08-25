@@ -9,7 +9,9 @@ const prisma = require('../db/prisma');
 const loadActiveUser = async (userId) =>
   prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, verified: true, suspended: true },
+    // viewRole = the hat the user is currently wearing; plan purchases and
+    // the subscription gate key off it, not the account role.
+    select: { id: true, role: true, viewRole: true, verified: true, suspended: true },
   });
 
 // Middleware to verify user token AND that the account still exists/usable.

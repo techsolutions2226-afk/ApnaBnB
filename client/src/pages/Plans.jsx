@@ -17,28 +17,19 @@ import {
 import paymentService from "../services/paymentService";
 import planService from "../services/planService";
 import Modal from "../components/common/Modal";
-import Breadcrumb from "../components/common/Breadcrumb";
 import RefreshButton from "../components/common/RefreshButton";
 import "../styles/Plans.css";
-import "../styles/Dashboard.css"; /* for breadcrumb classes */
 
 /* ─── Plan short descriptions ─── */
 const PLAN_DESCRIPTIONS = {
-  basic: "Great for new dealers starting out with limited listings.",
-  pro: "Best for growing dealers who need advanced tools and analytics.",
-  premium:
-    "For top-performing dealers who want unlimited access and priority.",
+  basic: "Try the dealer tools before you commit.",
+  pro: "Work both sides of the market with full contact access.",
+  premium: "For agencies running high listing volume.",
 };
 
 /* ─── Comparison table rows ─── */
 const COMPARISON_ROWS = [
   { label: "Active listings", basic: "10", pro: "50", premium: "Unlimited" },
-  {
-    label: "Messages per day",
-    basic: "5",
-    pro: "50",
-    premium: "Unlimited",
-  },
   {
     label: "Requirements",
     basic: "3",
@@ -80,12 +71,12 @@ const FAQ_ITEMS = [
     a: "Yes, you can upgrade or downgrade your plan at any time. When upgrading, you'll be charged the prorated difference. When downgrading, the new rate applies at your next billing cycle.",
   },
   {
-    q: "Is there a free trial?",
-    a: "New dealers automatically start with the Basic plan features for a 14-day trial period. After the trial, you can choose a plan that fits your needs or continue with the free tier (limited to 3 listings).",
+    q: "What payment methods do you accept?",
+    a: "For now we accept EasyPaisa — scan the QR code shown after you pick a plan, send the amount, and upload your payment screenshot. Your plan activates instantly. JazzCash, bank transfers, and cards are coming soon.",
   },
   {
-    q: "What payment methods are accepted?",
-    a: "For now we accept EasyPaisa — scan the QR code shown after you pick a plan, send the amount, and upload your payment screenshot. Your plan activates instantly. JazzCash, bank transfers, and cards are coming soon.",
+    q: "Is there a free trial?",
+    a: "New dealers automatically start with the Basic plan features for a trial period. After the trial, you can choose a plan that fits your needs or continue with the free tier (limited to 3 listings).",
   },
   {
     q: "What happens if I cancel?",
@@ -93,7 +84,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Do yearly plans get a discount?",
-    a: "Yes! Yearly billing saves you approximately 2 months compared to paying monthly. The discount is applied automatically when you select yearly billing.",
+    a: "Yes! Yearly billing saves you approximately 17% compared to paying monthly. The discount is applied automatically when you select yearly billing.",
   },
 ];
 
@@ -105,7 +96,7 @@ export default function Plans() {
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from"); // where to return after subscribing
 
-  const [billing, setBilling] = useState("monthly"); /* monthly | yearly */
+  const [billing, setBilling] = useState("yearly"); /* monthly | yearly — default to yearly like reference */
   const [openFaq, setOpenFaq] = useState(null);
   const [payModal, setPayModal] = useState(null); /* plan being paid for, or null */
   const [proofFile, setProofFile] = useState(null); /* the actual File for upload */
@@ -154,7 +145,6 @@ export default function Plans() {
   }, [roleTab, reloadKey]);
 
   // Server-driven subscription state (AuthContext fetched /payments/status).
-  // Payments snapshot planId + planName, so the banner needs no lookup.
   const mySub = subscription?.plan || null;
   const currentPlanId = mySub?.planId || null;
 
@@ -191,13 +181,22 @@ export default function Plans() {
       navigate("/login");
       return;
     }
-    if (!paysForPlan && !isFreePlan(plan)) {
+    if (!paysForPlan) {
       // Admins are the only role without a tier of their own.
       toast.info("Your account type doesn't use subscription plans.");
       return;
     }
+    /* You buy the tier for the role you are ACTING AS. A dealer viewing as a
+       buyer buys the buyer tier; switching the dashboard hat switches which
+       tier is purchasable. Enforced server-side too — rejectRoleMismatch in
+       paymentController — since the plan id comes from the client. */
+    if (plan.role !== effectiveRole) {
+      toast.info(
+        `You're acting as a ${effectiveRole}. Switch your role in the dashboard to subscribe to ${plan.role} plans.`,
+      );
+      return;
+    }
     if (currentPlanId === plan.id) return;
-    // Free plans skip the payment modal entirely.
     if (isFreePlan(plan)) return activateFreePlan(plan);
     setProofFile(null);
     setProofPreview(null);
@@ -239,16 +238,12 @@ export default function Plans() {
     }
     setSubmitting(true);
     try {
-      // Multipart submit — the backend re-validates the plan + recomputes the
-      // amount server-side, stores the Cloudinary proof URL and records the
-      // payment as approved (instant activation).
       const formData = new FormData();
       formData.append("planId", payModal.id);
       formData.append("billingCycle", billing);
       formData.append("proof", proofFile);
       await paymentService.submit(formData);
 
-      // Re-pull the gate from the server so messaging unlocks everywhere.
       await refreshSubscription();
 
       const plan = payModal;
@@ -276,32 +271,21 @@ export default function Plans() {
 
   return (
     <div className="plan-page">
-      {/* ── Breadcrumb ── */}
-      <Breadcrumb
-        items={[
-          { label: "Home", to: "/" },
-          { label: "Subscription Plans" },
-        ]}
-      />
-
-      {/* ── Unlock prompt (shown when bounced here from a gated feature) ──
-             Contact reveal is billed to EVERY role, so the buyers-are-free note
-             below must not appear for it. */}
+      {/* ── Unlock prompt (shown when bounced here from a gated feature) ── */}
       {from && !mySub && (
         <div className="plan-gate-note">
-          <FiAward size={18} />
+          <FiAward size={16} />
           <span>
             Choose a plan and complete payment to see owner contact details.
           </span>
         </div>
       )}
 
-
       {/* ── Current Plan Banner (subscribed sellers / dealers) ── */}
       {paysForPlan && mySub && (
         <div className="plan-current">
           <div className="plan-current-icon">
-            <FiAward size={24} />
+            <FiAward size={22} />
           </div>
           <div className="plan-current-info">
             <p className="plan-current-title">
@@ -333,7 +317,6 @@ export default function Plans() {
           <h1 className="plan-hero-title">
             Choose the right plan for your business
           </h1>
-          {/* Refresh just this tab — re-runs the plans fetch, no browser reload. */}
           <RefreshButton
             onRefresh={() => setReloadKey((k) => k + 1)}
             refreshing={plansLoading}
@@ -344,148 +327,174 @@ export default function Plans() {
           anytime as your needs evolve.
         </p>
 
-        {/* Role tabs — each role has its own tier set (admin-managed) */}
-        <div className="plan-toggle plan-toggle--roles">
-          {ROLE_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              className={`plan-toggle-btn${roleTab === tab.value ? " plan-toggle-btn--active" : ""}`}
-              onClick={() => setRoleTab(tab.value)}
-            >
-              {tab.label}
-              {roleRequiresPlan(tab.value) && isAuthenticated && effectiveRole === tab.value
-                ? " (you)"
-                : ""}
-            </button>
-          ))}
-        </div>
+        {/* ── Controls Bar: Role Tabs on Left, Billing Switch on Right ── */}
+        <div className="plan-controls-bar">
+          {/* Role tabs */}
+          <div className="plan-role-tabs">
+            {ROLE_TABS.map((tab) => {
+              const isSelected = roleTab === tab.value;
+              const isUser = roleRequiresPlan(tab.value) && isAuthenticated && effectiveRole === tab.value;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  className={`plan-role-pill${isSelected ? " plan-role-pill--active" : ""}`}
+                  onClick={() => setRoleTab(tab.value)}
+                >
+                  {tab.label}
+                  {isUser ? " (you)" : ""}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Billing toggle */}
-        <div className="plan-toggle">
-          <button
-            className={`plan-toggle-btn${billing === "monthly" ? " plan-toggle-btn--active" : ""}`}
-            onClick={() => setBilling("monthly")}
-          >
-            Monthly
-          </button>
-          <button
-            className={`plan-toggle-btn${billing === "yearly" ? " plan-toggle-btn--active" : ""}`}
-            onClick={() => setBilling("yearly")}
-          >
-            Yearly
-            <span className="plan-toggle-save">Save ~17%</span>
-          </button>
+          {/* Billing Switch */}
+          <div className="plan-billing-control">
+            <span
+              className={`plan-billing-label${billing === "monthly" ? " plan-billing-label--active" : ""}`}
+              onClick={() => setBilling("monthly")}
+            >
+              Monthly
+            </span>
+            <button
+              type="button"
+              className={`plan-switch${billing === "yearly" ? " plan-switch--on" : ""}`}
+              onClick={() => setBilling(billing === "yearly" ? "monthly" : "yearly")}
+              aria-label="Toggle yearly billing"
+            >
+              <span className="plan-switch-handle" />
+            </button>
+            <span
+              className={`plan-billing-label${billing === "yearly" ? " plan-billing-label--active" : ""}`}
+              onClick={() => setBilling("yearly")}
+            >
+              Yearly
+            </span>
+            <span className="plan-save-badge">SAVE ~17%</span>
+          </div>
         </div>
       </div>
 
       {/* ── Pricing Cards (dynamic, admin-managed) ── */}
-      <div className="plan-cards">
+      <div className="plan-cards-container">
         {plansLoading ? (
-          <p className="plan-empty-note">Loading plans…</p>
+          <div className="plan-loading-state">
+            <div className="cm-spinner" style={{ margin: "0 auto 16px" }} />
+            <p>Loading plans…</p>
+          </div>
         ) : plans.length === 0 ? (
           <p className="plan-empty-note">
             No {roleTab} plans available yet — check back soon.
           </p>
         ) : (
-          plans.map((plan) => {
-          const isCurrent = currentPlanId === plan.id;
-          const isPopular = plan.popular && !isCurrent;
+          <div className="plan-cards-grid">
+            {plans.map((plan) => {
+              const isCurrent = currentPlanId === plan.id;
+              const isPopular = plan.popular && !isCurrent;
+              const isFree = isFreePlan(plan);
+              const monthlyEquivalent = billing === "yearly"
+                ? Math.round(plan.yearlyPrice / 12)
+                : plan.monthlyPrice;
 
-          return (
-            <div
-              key={plan.id}
-              className={`plan-card${isPopular ? " plan-card--popular" : ""}${isCurrent ? " plan-card--current" : ""}`}
-            >
-              {isPopular && (
-                <span className="plan-card-badge">Most popular</span>
-              )}
-              {isCurrent && (
-                <span className="plan-card-current-badge">Current plan</span>
-              )}
+              return (
+                <div
+                  key={plan.id}
+                  className={`plan-card-item${isPopular ? " plan-card-item--popular" : ""}${isCurrent ? " plan-card-item--current" : ""}`}
+                >
+                  {isPopular && (
+                    <div className="plan-badge-popular">MOST POPULAR</div>
+                  )}
+                  {isCurrent && (
+                    <div className="plan-badge-current">CURRENT PLAN</div>
+                  )}
 
-              <h3 className="plan-card-name">{plan.name}</h3>
-              <p className="plan-card-desc">
-                {plan.description || PLAN_DESCRIPTIONS[plan.slug] || ""}
-              </p>
+                  <div className="plan-card-top">
+                    <h3 className="plan-card-tier-name">{plan.name}</h3>
+                    <p className="plan-card-tier-desc">
+                      {plan.description || PLAN_DESCRIPTIONS[plan.slug] || "Unlock platform tools."}
+                    </p>
 
-              <div className="plan-card-price">
-                {isFreePlan(plan) ? (
-                  <>
-                    <span className="plan-card-amount">Free</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="plan-card-currency">{plan.currency}</span>
-                    <span className="plan-card-amount">
-                      {Number(
-                        billing === "yearly"
-                          ? Math.round(plan.yearlyPrice / 12)
-                          : plan.monthlyPrice,
-                      ).toLocaleString()}
-                    </span>
-                  </>
-                )}
-              </div>
-              {!isFreePlan(plan) && <p className="plan-card-period">/month</p>}
-              {!isFreePlan(plan) && billing === "yearly" && (
-                <p className="plan-card-yearly-note">
-                  Billed as {formatPrice(plan.yearlyPrice)} per year
-                </p>
-              )}
-
-              <button
-                className={`plan-card-cta${
-                  isCurrent
-                    ? " plan-card-cta--current"
-                    : isPopular
-                      ? " plan-card-cta--primary"
-                      : " plan-card-cta--secondary"
-                }`}
-                onClick={() => handleSelectPlan(plan)}
-                disabled={isCurrent}
-              >
-                {isCurrent
-                  ? "Current plan"
-                  : isFreePlan(plan)
-                    ? submitting
-                      ? "Activating…"
-                      : "Activate Free"
-                    : mySub
-                      ? plan.monthlyPrice >
-                        (mySub.billingCycle === "yearly"
-                          ? mySub.amount / 12
-                          : mySub.amount)
-                        ? "Upgrade"
-                        : "Downgrade"
-                      : roleTab === effectiveRole && paysForPlan
-                        ? "Get started"
-                        : "Select"}
-              </button>
-
-              <hr className="plan-card-divider" />
-
-              <ul className="plan-card-features">
-                {(plan.features || []).map((f, i) => (
-                  <li
-                    key={i}
-                    className={`plan-card-feature${!f.included ? " plan-card-feature--excluded" : ""}`}
-                  >
-                    <span
-                      className={`plan-card-feature-icon ${f.included ? "plan-card-feature-icon--check" : "plan-card-feature-icon--x"}`}
-                    >
-                      {f.included ? (
-                        <FiCheck size={16} />
+                    <div className="plan-price-wrapper">
+                      {isFree ? (
+                        <div className="plan-price-free">Free</div>
                       ) : (
-                        <FiX size={16} />
+                        <div className="plan-price-block">
+                          <span className="plan-price-currency">{plan.currency || "PKR"}</span>
+                          <span className="plan-price-digits">
+                            {Number(monthlyEquivalent).toLocaleString()}
+                          </span>
+                        </div>
                       )}
-                    </span>
-                    {f.text}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-          })
+                      {!isFree && (
+                        <div className="plan-price-frequency">/month</div>
+                      )}
+                    </div>
+
+                    {!isFree && billing === "yearly" && (
+                      <p className="plan-yearly-subtext">
+                        Billed as {plan.currency || "PKR"} {Number(plan.yearlyPrice).toLocaleString()} per year
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      className={`plan-action-btn${
+                        isCurrent
+                          ? " plan-action-btn--current"
+                          : isPopular
+                            ? " plan-action-btn--primary"
+                            : " plan-action-btn--secondary"
+                      }`}
+                      onClick={() => handleSelectPlan(plan)}
+                      disabled={isCurrent}
+                    >
+                      {isCurrent
+                        ? "Current plan"
+                        : plan.role !== effectiveRole
+                          ? `Switch to ${plan.role} to buy`
+                          : isFree
+                            ? submitting
+                              ? "Activating…"
+                              : "Activate Free"
+                            : mySub
+                              ? plan.monthlyPrice >
+                                (mySub.billingCycle === "yearly"
+                                  ? mySub.amount / 12
+                                  : mySub.amount)
+                                ? "Upgrade"
+                                : "Downgrade"
+                              : "Get started"}
+                    </button>
+                  </div>
+
+                  <ul className="plan-features-list">
+                    {(plan.features || []).map((f, i) => {
+                      const isIncluded = f.included !== false;
+                      const isHighlight =
+                        f.text?.toLowerCase().includes("contact") ||
+                        f.text?.toLowerCase().includes("dedicated");
+
+                      return (
+                        <li
+                          key={i}
+                          className={`plan-feature-row${!isIncluded ? " plan-feature-row--excluded" : ""}${isHighlight && isIncluded ? " plan-feature-row--bold" : ""}`}
+                        >
+                          <span className="plan-feature-icon-wrap">
+                            {isIncluded ? (
+                              <FiCheck size={15} className="plan-icon-check" />
+                            ) : (
+                              <FiX size={15} className="plan-icon-x" />
+                            )}
+                          </span>
+                          <span className="plan-feature-text">{f.text}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -494,87 +503,91 @@ export default function Plans() {
         plans.some((p) => p.slug === "basic") &&
         plans.some((p) => p.slug === "pro") &&
         plans.some((p) => p.slug === "premium") && (
-      <div className="plan-comparison">
-        <h2 className="plan-comparison-title">Compare plans in detail</h2>
-        <table className="plan-comparison-table">
-          <thead>
-            <tr>
-              <th>Feature</th>
-              <th>Basic</th>
-              <th>Pro</th>
-              <th>Premium</th>
-            </tr>
-          </thead>
-          <tbody>
-            {COMPARISON_ROWS.map((row, i) => (
-              <tr key={i}>
-                <td>{row.label}</td>
-                {["basic", "pro", "premium"].map((tier) => (
-                  <td key={tier}>
-                    {typeof row[tier] === "boolean" ? (
-                      row[tier] ? (
-                        <FiCheck
-                          size={18}
-                          className="plan-comparison-check"
-                        />
-                      ) : (
-                        <FiX size={18} className="plan-comparison-x" />
-                      )
-                    ) : (
-                      <span className="plan-comparison-value">
-                        {row[tier]}
-                      </span>
-                    )}
-                  </td>
+        <div className="plan-comparison-section">
+          <h2 className="plan-section-title">Compare plans in detail</h2>
+          <div className="plan-table-wrapper">
+            <table className="plan-detail-table">
+              <thead>
+                <tr>
+                  <th className="plan-th-feature">Feature</th>
+                  <th>Basic</th>
+                  <th>Pro</th>
+                  <th>Premium</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_ROWS.map((row, i) => (
+                  <tr key={i}>
+                    <td className="plan-td-feature">{row.label}</td>
+                    {["basic", "pro", "premium"].map((tier) => (
+                      <td key={tier} className="plan-td-val">
+                        {typeof row[tier] === "boolean" ? (
+                          row[tier] ? (
+                            <FiCheck size={18} className="plan-table-check" />
+                          ) : (
+                            <FiX size={18} className="plan-table-x" />
+                          )
+                        ) : (
+                          <span className="plan-table-text">{row[tier]}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
-      {/* ── FAQ ── */}
-      <div className="plan-faq">
-        <h2 className="plan-faq-title">Frequently asked questions</h2>
-        {FAQ_ITEMS.map((item, i) => (
-          <div key={i} className="plan-faq-item">
-            <button
-              className="plan-faq-question"
-              onClick={() => toggleFaq(i)}
-            >
-              {item.q}
-              <FiChevronDown
-                size={20}
-                className={`plan-faq-chevron${openFaq === i ? " plan-faq-chevron--open" : ""}`}
-              />
-            </button>
-            {openFaq === i && <p className="plan-faq-answer">{item.a}</p>}
-          </div>
-        ))}
+      {/* ── FAQ Section ── */}
+      <div className="plan-faq-section">
+        <h2 className="plan-section-title">Frequently asked questions</h2>
+        <div className="plan-faq-list">
+          {FAQ_ITEMS.map((item, i) => (
+            <div key={i} className="plan-faq-card">
+              <button
+                type="button"
+                className="plan-faq-trigger"
+                onClick={() => toggleFaq(i)}
+              >
+                <span>{item.q}</span>
+                <FiChevronDown
+                  size={18}
+                  className={`plan-faq-arrow${openFaq === i ? " plan-faq-arrow--open" : ""}`}
+                />
+              </button>
+              {openFaq === i && (
+                <div className="plan-faq-content">
+                  <p>{item.a}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* ── Bottom CTA ── */}
-      <div className="plan-bottom-cta">
-        <h3 className="plan-bottom-cta-title">
+      {/* ── Bottom CTA Box ── */}
+      <div className="plan-cta-box">
+        <h3 className="plan-cta-title">
           Ready to grow your real estate business?
         </h3>
-        <p className="plan-bottom-cta-desc">
+        <p className="plan-cta-desc">
           Join hundreds of dealers who use our platform to close more deals,
           find better matches, and grow their client base.
         </p>
         {isAuthenticated ? (
           paysForPlan ? (
-            <Link to={`/dashboard/${effectiveRole}`} className="plan-bottom-cta-btn">
+            <Link to={`/dashboard/${effectiveRole}`} className="plan-cta-btn">
               Go to Dashboard
             </Link>
           ) : (
-            <Link to="/" className="plan-bottom-cta-btn">
+            <Link to="/" className="plan-cta-btn">
               Explore Properties
             </Link>
           )
         ) : (
-          <Link to="/signup" className="plan-bottom-cta-btn">
+          <Link to="/signup" className="plan-cta-btn">
             Create a free account
           </Link>
         )}
@@ -612,7 +625,7 @@ export default function Plans() {
               <li>Upload it here and press <strong>Submit</strong> to unlock messaging.</li>
             </ol>
 
-            {/* EasyPaisa QR — served from client/public/easypaisa-qr.jpg */}
+            {/* EasyPaisa QR */}
             <div className="plan-pay-qr">
               {qrError ? (
                 <div className="plan-pay-qr-fallback">
@@ -707,3 +720,4 @@ export default function Plans() {
     </div>
   );
 }
+

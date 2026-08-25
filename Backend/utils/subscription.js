@@ -13,6 +13,20 @@
 
 const prisma = require('../db/prisma');
 
+const MEMBER_ROLES = ['seller', 'buyer', 'dealer'];
+
+/* The role a user is ACTING AS — the dashboard "viewing as" hat, falling back
+   to the account role. Mirrors getEffectiveRole() on the client.
+
+   This is what plan purchases key off: a dealer who switches to the buyer view
+   is shopping as a buyer and must be able to buy the buyer tier. Keying off the
+   account role instead locked them out of every tier but their own. */
+const effectiveRole = (user) => {
+  const view = user?.viewRole;
+  if (view && MEMBER_ROLES.includes(view)) return view;
+  return user?.role || null;
+};
+
 /* True only when the user's latest payment is approved AND the plan behind it
    actually grants the contact reveal.
 
@@ -48,4 +62,4 @@ const hasContactAccess = async (userId) => {
   return Number(latest.amount) > 0;
 };
 
-module.exports = { hasContactAccess };
+module.exports = { hasContactAccess, effectiveRole, MEMBER_ROLES };

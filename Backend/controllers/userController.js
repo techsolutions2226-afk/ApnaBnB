@@ -1,6 +1,6 @@
 const prisma = require('../db/prisma');
 const { involvedWhere, roleInvolvedWhere } = require('./matchController');
-const { hasApprovedPayment } = require('../utils/subscription');
+const { hasContactAccess } = require('../utils/subscription');
 
 // Public read-only profile lookup. Excludes password and email; we only expose
 // fields the client renders on the public Profile page.
@@ -43,7 +43,7 @@ const getUserProfile = async (req, res, next) => {
 
   try {
     const isSelf = req.user.id === id;
-    if (!isSelf && !(await hasApprovedPayment(req.user.id))) {
+    if (!isSelf && !(await hasContactAccess(req.user.id))) {
       return res.status(402).json({
         code: 'PLAN_REQUIRED',
         message: 'Choose a plan to see full owner details.',

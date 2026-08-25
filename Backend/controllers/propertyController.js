@@ -9,7 +9,7 @@ const {
   normalizeSupply,
 } = require('../utils/matchScore');
 const { sendPropertyCreatedEmail } = require('../utils/mailer');
-const { hasApprovedPayment } = require('../utils/subscription');
+const { hasContactAccess } = require('../utils/subscription');
 const {
   notifyPropertyMatches,
   notifyInBackground,
@@ -403,7 +403,7 @@ const getPropertyContact = async (req, res, next) => {
     }
 
     const isOwner = property.listedById === req.user.id;
-    const unlocked = isOwner || (await hasApprovedPayment(req.user.id));
+    const unlocked = isOwner || (await hasContactAccess(req.user.id));
 
     if (!unlocked) {
       return res.status(402).json({

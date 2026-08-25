@@ -73,7 +73,7 @@ const COMPARISON_ROWS = [
 const FAQ_ITEMS = [
   {
     q: "Who needs a subscription?",
-    a: "Subscriptions are designed for dealers and agents. Sellers and buyers can use the platform for free. Dealers get enhanced tools, more listings, matchmaking, and co-brokering features through paid plans.",
+    a: "Browsing listings, posting requirements and listing a property are free on every role's starter tier. A paid plan is what unlocks the other party's phone and email, plus higher listing and requirement limits. Buyers, sellers and dealers each have their own tiers.",
   },
   {
     q: "Can I switch plans later?",
@@ -192,7 +192,8 @@ export default function Plans() {
       return;
     }
     if (!paysForPlan && !isFreePlan(plan)) {
-      toast.info("Buyers use the platform for free — no plan needed!");
+      // Admins are the only role without a tier of their own.
+      toast.info("Your account type doesn't use subscription plans.");
       return;
     }
     if (currentPlanId === plan.id) return;

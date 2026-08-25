@@ -5,7 +5,10 @@ const BILLING_CYCLES = ['monthly', 'yearly'];
 
 // Roles that must hold an active plan.
 // Buyers (and admins) are free.
-const requiresPlan = (role) => role === 'seller' || role === 'dealer';
+// Every member role can hold a plan — the paid feature (owner contact reveal)
+// is billed to buyers as well. Mirrors roleRequiresPlan on the client.
+const requiresPlan = (role) =>
+  role === 'seller' || role === 'dealer' || role === 'buyer';
 
 // POST /api/payments — submit a manual EasyPaisa payment (multipart form:
 // planId, billingCycle + proof image). Instant activation: the row is stored

@@ -1,220 +1,680 @@
 /* ═══════════════════════════════════════════════
-   Profile.css — Public user profile page
+   Profile.css — User Profile Page
    Prefix: pf-
+   Matches the clean, modern real-estate design
    ═══════════════════════════════════════════════ */
 
 .pf-page {
-  min-height: 60vh;
-  padding: 40px 24px 80px;
+  min-height: 100vh;
+  background-color: #fbfcfd;
+  padding: 36px 24px 80px;
 }
 
 .pf-container {
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
 }
 
-/* ── Layout: sidebar + main ── */
+/* ── Layout: 2 Columns (Sidebar + Main Content) ── */
 .pf-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 64px;
+  grid-template-columns: 310px 1fr;
+  gap: 32px;
   align-items: start;
 }
 
-/* ── Sidebar — Identity Card ── */
+/* ═══════════════════════════════════════════════
+   LEFT SIDEBAR
+   ═══════════════════════════════════════════════ */
 .pf-sidebar {
   position: sticky;
-  top: 100px;
+  top: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
+/* ── User Identity Card ── */
 .pf-identity-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #eef2f6;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+.pf-card-banner {
+  height: 105px;
+  background: linear-gradient(180deg, #dcf4e5 0%, #eaf7ee 100%);
+  width: 100%;
+}
+
+.pf-avatar-section {
+  margin-top: -52px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 24px;
-  border: 1px solid #ebebeb;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
-  margin-bottom: 24px;
+  padding: 0 20px 24px;
+  text-align: center;
 }
 
-.pf-name {
-  font-size: 28px;
-  font-weight: 700;
-  color: #222;
-  margin: 16px 0 4px;
+.pf-avatar-wrap {
+  position: relative;
+  margin-bottom: 6px;
 }
 
-.pf-superhost-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #f7f7f7;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #222;
-  margin-top: 4px;
+.pf-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: block;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-/* ── Stats ── */
-.pf-stats {
+.pf-avatar-wrap .cm-avatar,
+.pf-avatar-wrap img {
+  border: 4px solid #ffffff !important;
+}
+
+.pf-verified-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2.5px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 20px 24px;
-  border: 1px solid #ebebeb;
-  border-radius: 16px;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.pf-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 8px 0 6px;
+  line-height: 1.25;
+}
+
+.pf-role-pill {
+  background: #e8f7ee;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+/* ── Stats Row (Listings, Reviews, Needs) ── */
+.pf-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  padding: 0 6px;
   margin-bottom: 24px;
 }
 
-.pf-stat {
+.pf-stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  flex: 1;
 }
 
-.pf-stat-value {
-  font-size: 20px;
+.pf-stat-number {
+  font-size: 22px;
   font-weight: 700;
-  color: #222;
+  color: #111827;
+  line-height: 1.2;
 }
 
-.pf-stat-label {
-  font-size: 11px;
-  color: #717171;
-  white-space: nowrap;
+.pf-stat-text {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
 }
 
-.pf-stat-divider {
-  width: 1px;
-  height: 36px;
-  background: #ebebeb;
-}
-
-/* ── Verified ── */
-.pf-verified {
-  padding: 20px 24px;
-  border: 1px solid #ebebeb;
-  border-radius: 16px;
-}
-
-.pf-verified-title {
+/* ── Primary Action Button (Edit Profile / Unlock) ── */
+.pf-btn-action {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #222;
-  margin: 0 0 12px;
-}
-
-.pf-verified-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pf-verified-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  background: #16a34a;
+  color: #ffffff;
   font-size: 14px;
-  color: #222;
-}
-
-/* ── Main content ── */
-.pf-main {
-  padding-top: 8px;
-}
-
-.pf-about-title {
-  font-size: 24px;
   font-weight: 600;
-  color: #222;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.pf-btn-action:hover {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.pf-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pf-btn-primary:hover {
+  background: #15803d;
+  color: #ffffff;
+}
+
+/* ── Contact Information Card ── */
+.pf-contact-card {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #eef2f6;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  padding: 24px;
+}
+
+.pf-contact-header {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
   margin: 0 0 20px;
 }
 
-.pf-details {
+.pf-contact-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 16px;
 }
 
-.pf-detail {
+.pf-contact-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  color: #484848;
-  margin: 0;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease;
 }
 
-.pf-about-text {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #484848;
+a.pf-contact-item:hover {
+  transform: translateX(2px);
+}
+
+.pf-contact-item--static {
+  cursor: default;
+}
+
+.pf-contact-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e8f7ee;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pf-contact-item-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pf-contact-item-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.pf-contact-item-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+.pf-muted {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* ── Contact Locked State ── */
+.pf-contact-locked-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 4px;
+}
+
+.pf-locked-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.pf-locked-text {
+  font-size: 13.5px;
+  color: #6b7280;
+  line-height: 1.5;
   margin: 0 0 16px;
 }
 
-.pf-edit-link {
-  display: inline-block;
-  color: #222;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  margin-bottom: 32px;
-}
-
-.pf-edit-link:hover {
-  color: #000;
-}
-
-.pf-link {
-  color: #1a8f5a;
-  font-weight: 600;
-  text-decoration: underline;
-}
-
-/* ── Reviews ── */
-.pf-reviews-section {
-  border-top: 1px solid #ebebeb;
-  padding-top: 32px;
-}
-
-.pf-reviews-title {
-  display: flex;
+.pf-btn-unlock-small {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 20px;
+  gap: 6px;
+  padding: 9px 18px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: #222;
-  margin: 0 0 24px;
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
-.pf-reviews-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-}
-
-.pf-no-reviews {
-  font-size: 15px;
-  color: #717171;
+.pf-btn-unlock-small:hover {
+  background: #15803d;
 }
 
 /* ═══════════════════════════════════════════════
-   Responsive
+   RIGHT MAIN CONTENT
    ═══════════════════════════════════════════════ */
+.pf-main {
+  min-width: 0;
+}
 
-@media (max-width: 900px) {
+.pf-section {
+  width: 100%;
+}
+
+.pf-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.pf-section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.pf-view-all {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.pf-view-all:hover {
+  color: #111827;
+  text-decoration: underline;
+}
+
+/* ── Active Listings Grid ── */
+.pf-listings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.pf-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pf-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-color: #d1d5db;
+}
+
+.pf-card-img-container {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #f3f4f6;
+  overflow: hidden;
+}
+
+.pf-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.pf-card:hover .pf-card-img {
+  transform: scale(1.03);
+}
+
+.pf-card-img-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 13px;
+  background: #f3f4f6;
+}
+
+.pf-card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.pf-card-content {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.pf-card-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pf-card-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.pf-card-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.pf-card-price--green {
+  color: #16a34a;
+}
+
+.pf-card-location-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+
+.pf-card-pin {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.pf-card-divider {
+  border: 0;
+  border-top: 1px solid #f3f4f6;
+  margin: 0 0 10px;
+}
+
+.pf-card-features {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12.5px;
+  color: #4b5563;
+}
+
+.pf-card-feat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pf-card-feat svg {
+  color: #6b7280;
+}
+
+/* ── Empty Listings Card ── */
+.pf-empty-listings-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* ── Reviews & Reputation Section ── */
+.pf-reviews-container {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 48px 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.pf-empty-reviews-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.pf-empty-icon-circle {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.pf-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
+.pf-empty-desc {
+  font-size: 13.5px;
+  color: #6b7280;
+  max-width: 460px;
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.pf-empty-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pf-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #e5e7eb;
+}
+
+.pf-dot.active {
+  background: #d1d5db;
+}
+
+/* ── Active Reviews List ── */
+.pf-reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pf-review-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.pf-review-wrapper:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.pf-review-prop-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  text-decoration: none;
+  color: #111827;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background 0.15s, border-color 0.15s;
+  max-width: 260px;
+}
+
+.pf-review-prop-tag:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.pf-review-prop-tag span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-review-prop-stars {
+  color: #eab308;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Fullscreen Avatar Modal ── */
+.pf-avatar-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+}
+
+.pf-avatar-modal-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.pf-avatar-modal-img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE DESIGN
+   ═══════════════════════════════════════════════ */
+@media (max-width: 920px) {
   .pf-layout {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -222,200 +682,33 @@
 
   .pf-sidebar {
     position: static;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
   }
 
-  .pf-identity-card {
-    grid-column: 1 / -1;
-    margin-bottom: 0;
-  }
-
-  .pf-stats {
-    margin-bottom: 0;
+  .pf-listings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
   .pf-page {
-    padding: 24px 16px 64px;
+    padding: 20px 16px 60px;
   }
 
-  .pf-sidebar {
+  .pf-listings-grid {
     grid-template-columns: 1fr;
   }
 
   .pf-name {
-    font-size: 24px;
+    font-size: 22px;
   }
 
-  .pf-about-title {
-    font-size: 20px;
+  .pf-reviews-container {
+    padding: 32px 16px;
   }
 
-  .pf-stats {
-    padding: 16px;
-  }
-
-  .pf-stat-value {
-    font-size: 18px;
-  }
-
-  .pf-identity-card {
-    padding: 24px 16px;
+  .pf-review-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
-/* ══════════════════════════════════════
-   OWNER CONTACT — the paid reveal
-   ══════════════════════════════════════ */
-
-.pf-role-chip {
-  display: inline-block;
-  padding: 2px 9px;
-  margin: 0 2px;
-  border-radius: 999px;
-  background: #e9f2ec;
-  color: #134e2c;
-  font-size: 12.5px;
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
-.pf-contact-card {
-  margin: 20px 0 28px;
-  padding: 22px;
-  border: 1px solid #e8edf2;
-  border-radius: 14px;
-  background: #fff;
-}
-
-.pf-contact-card--locked {
-  border-style: dashed;
-  border-color: #d7dee6;
-  background: #fafbfc;
-}
-
-.pf-contact-title {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin: 0 0 14px;
-  font-size: 16px;
-  font-weight: 800;
-  color: #16324f;
-}
-
-.pf-contact-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: 10px;
-}
-
-.pf-contact-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid #e8edf2;
-  border-radius: 10px;
-  background: #fff;
-  text-decoration: none;
-  color: inherit;
-  min-width: 0;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-a.pf-contact-row:hover {
-  border-color: #1a8f5a;
-  box-shadow: 0 2px 10px rgba(22, 50, 79, 0.07);
-}
-
-.pf-contact-row--static {
-  cursor: default;
-}
-
-.pf-contact-icon {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #e9f2ec;
-  color: #134e2c;
-}
-
-.pf-contact-label {
-  display: block;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #8a9aaa;
-}
-
-.pf-contact-value {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 600;
-  color: #16324f;
-  overflow-wrap: anywhere;
-}
-
-.pf-contact-empty,
-.pf-contact-locked-text {
-  margin: 0 0 14px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #66788a;
-}
-
-.pf-stat-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid #eef2f6;
-  font-size: 13.5px;
-  color: #66788a;
-}
-
-.pf-stat-row strong {
-  color: #16324f;
-  font-size: 15px;
-}
-
-.pf-unlock-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 20px;
-  border: none;
-  border-radius: 8px;
-  background: #134e2c;
-  color: #fff;
-  font-family: inherit;
-  font-size: 14.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.pf-unlock-btn:hover {
-  background: #0f3d24;
-}
-
-@media (max-width: 640px) {
-  .pf-contact-card {
-    padding: 18px 16px;
-  }
-
-  .pf-unlock-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}

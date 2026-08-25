@@ -10,7 +10,8 @@
     "seed": "node demo-seed.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "seed:plans": "node seed-plans.js"
   },
   "keywords": [],
   "author": "",

@@ -430,7 +430,7 @@ const AdminUsers = () => {
                     {col.label}
                   </th>
                 ))}
-                <th className="adm-th-actions">Actions</th>
+                <th className="adm-th-actions adm-sticky-col adm-sticky-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -480,7 +480,7 @@ const AdminUsers = () => {
                       );
                     })}
 
-                    <td className="adm-th-actions">
+                    <td className="adm-th-actions adm-sticky-col adm-sticky-actions">
                       <div className="adm-actions">
                         <Link
                           to={`/admin/users/${uid}`}

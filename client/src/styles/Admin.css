@@ -1821,6 +1821,15 @@ textarea.adm-form-input {
   box-shadow: 1px 0 0 #eef2f6;
 }
 
+.adm-sticky-actions {
+  box-sizing: border-box;
+  right: 0;
+  width: 190px;
+  min-width: 190px;
+  /* A hairline that reads as the edge of the frozen right region. */
+  box-shadow: -1px 0 0 #eef2f6;
+}
+
 /* Row tints must repaint the sticky cells too, or a selected/suspended row
    shows a white gap where the frozen columns are. */
 .adm-row--selected .adm-sticky-col { background: #eef8f2; }

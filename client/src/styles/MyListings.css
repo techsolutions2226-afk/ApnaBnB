@@ -52,6 +52,8 @@
 
 .ml-header-content {
   flex: 1;
+    padding-left: 15px;
+
 }
 
 .ml-title {

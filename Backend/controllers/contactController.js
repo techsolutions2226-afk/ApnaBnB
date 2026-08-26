@@ -1,5 +1,8 @@
 const prisma = require('../db/prisma');
 const { sendContactMessageEmail } = require('../utils/mailer');
+const cache = require('../utils/cache');
+
+const CONTACT_CACHE_KEY = 'contact:singleton';
 
 const SINGLETON_ID = 'singleton';
 
@@ -53,13 +56,17 @@ const DEFAULTS = {
 };
 
 /* Returns the single row, creating it with DEFAULTS the first time. */
-const ensureSeeded = async () => {
-  const existing = await prisma.contactPage.findUnique({
-    where: { id: SINGLETON_ID },
+/* One row, read on every Contact page visit and on every contact-form
+   submission. No TTL — updateContactPage invalidates explicitly, so an admin
+   edit shows up on the next read. */
+const ensureSeeded = async () =>
+  cache.wrap(CONTACT_CACHE_KEY, 0, async () => {
+    const existing = await prisma.contactPage.findUnique({
+      where: { id: SINGLETON_ID },
+    });
+    if (existing) return existing;
+    return prisma.contactPage.create({ data: DEFAULTS });
   });
-  if (existing) return existing;
-  return prisma.contactPage.create({ data: DEFAULTS });
-};
 
 // GET /api/contact — public. Everything the Contact Us page renders.
 const getContactPage = async (req, res, next) => {
@@ -107,6 +114,8 @@ const updateContactPage = async (req, res, next) => {
       where: { id: SINGLETON_ID },
       data,
     });
+    // After the write commits — see the note in planController on ordering.
+    cache.del(CONTACT_CACHE_KEY);
     res.status(200).json(updated);
   } catch (error) {
     next(error);

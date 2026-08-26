@@ -5,6 +5,7 @@ import userService from "../services/userService";
 import paymentService from "../services/paymentService";
 import { getEffectiveRole, roleRequiresPlan } from "../utils/subscription";
 import { disconnectSocket } from "../api/socket";
+import { clearRequestCache } from "../utils/requestCache";
 
 /* How long the user can be idle before we log them out automatically.
    Default 30 minutes; override per-deploy with VITE_IDLE_LOGOUT_MINUTES. */
@@ -142,6 +143,8 @@ export function AuthProvider({ children }) {
           // Account gone / suspended / unverified / expired token → dead session.
           authService.logout();
     disconnectSocket();
+    // A cached list must never survive into the next account's session.
+    clearRequestCache();
           setCurrentUser(null);
           setAuthReady(true);
           if (!window.location.pathname.startsWith("/login")) {

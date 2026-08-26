@@ -3,6 +3,10 @@ const prisma = require('../db/prisma');
 const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
 const { notifyUserInBackground, TYPES } = require('../utils/notifier');
+const cache = require('../utils/cache');
+
+const STATS_CACHE_KEY = 'admin:stats';
+const STATS_TTL_MS = 60_000;
 
 // ── Shared selectors ──────────────────────────────────────────────────────
 const userSelect = { omit: { password: true } };
@@ -223,6 +227,13 @@ const buildRequirementData = (body) => {
 // ── Platform stats ────────────────────────────────────────────────────────
 const getPlatformStats = async (req, res, next) => {
   try {
+    /* Ten sequential full-table aggregates, identical for every admin. TTL-only
+       (no invalidation): dashboard counts do not need to be second-fresh, and
+       wiring every write path in the app to invalidate them would be far more
+       code than the staleness is worth. */
+    const cached = cache.get(STATS_CACHE_KEY);
+    if (cached) return res.status(200).json(cached);
+
     // Counts run sequentially (not Promise.all) so we never burst past
     // Supabase's PgBouncer session cap (see db/prisma.js). Cheap queries.
     const totalUsers = await prisma.user.count();
@@ -240,7 +251,7 @@ const getPlatformStats = async (req, res, next) => {
     const usersByRole = roleGroups.map((g) => ({ _id: g.role, count: g._count._all }));
     const listingsByStatus = statusGroups.map((g) => ({ _id: g.status, count: g._count._all }));
 
-    res.status(200).json({
+    const payload = {
       totalUsers,
       totalSuspended,
       totalProperties,
@@ -251,7 +262,9 @@ const getPlatformStats = async (req, res, next) => {
       totalReviews,
       usersByRole,
       listingsByStatus,
-    });
+    };
+    cache.set(STATS_CACHE_KEY, payload, STATS_TTL_MS);
+    res.status(200).json(payload);
   } catch (error) {
     next(error);
   }

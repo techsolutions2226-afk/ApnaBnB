@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import matchService from '../services/matchService';
 import { getSocket } from '../api/socket';
+import { cachedRequest, invalidate } from '../utils/requestCache';
 
 export const useMatches = (type = 'all') => {
   const [matches, setMatches] = useState([]);
@@ -36,11 +37,17 @@ export const useMyMatches = (viewRole) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMatches = async () => {
+  /* Deduped: the dashboards mount this hook AND <RecentMatches>, which mounts
+     it again with the same viewRole — two identical requests per load. The
+     AI-scoring poll below runs per instance too, so without this a pending
+     match produced two requests every 4s. Concurrent callers now share one. */
+  const fetchMatches = async ({ fresh = false } = {}) => {
+    const key = `matches:mine:${viewRole || 'all'}`;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await matchService.getMyMatches(viewRole);
+      if (fresh) invalidate(key);
+      const data = await cachedRequest(key, () => matchService.getMyMatches(viewRole));
       setMatches(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || 'Failed to fetch your matches');
@@ -99,7 +106,8 @@ export const useMyMatches = (viewRole) => {
         clearInterval(id);
         return;
       }
-      fetchMatches();
+      // Bypass the cache: the whole point of the poll is to see a NEW score.
+      fetchMatches({ fresh: true });
     }, 4000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps

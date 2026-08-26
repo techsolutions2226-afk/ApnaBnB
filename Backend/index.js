@@ -6,6 +6,7 @@ const { initSockets } = require("./sockets");
 const prisma = require("./db/prisma");
 const limiter = require("./middleware/rateLimitMiddleware");
 const securityHeaders = require("./middleware/securityHeaders");
+const cacheHeaders = require("./middleware/cacheHeaders");
 const auditActivity = require("./middleware/activityMiddleware");
 const { withIds } = require("./utils/serializeIds");
 
@@ -16,6 +17,8 @@ const port = process.env.PORT || 5000;
 app.disable("x-powered-by"); // don't advertise Express
 // Escape < > & etc. in JSON responses — cheap XSS-in-JSON mitigation.
 app.set("json escape", true);
+// Weak ETags on JSON so repeat public GETs can answer 304 (see middleware/cacheHeaders).
+app.set("etag", "weak");
 
 // Behind a reverse proxy (Render) the rate limiter + req.ip need the real
 // client IP. Only trust one hop, and only in production.
@@ -25,6 +28,7 @@ if (process.env.NODE_ENV === "production") {
 
 // Middleware
 app.use(securityHeaders);
+app.use(cacheHeaders);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 

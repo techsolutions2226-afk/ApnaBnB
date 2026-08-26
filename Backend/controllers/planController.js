@@ -1,5 +1,8 @@
 const prisma = require('../db/prisma');
 const { parsePagination, paginated } = require('../utils/pagination');
+const cache = require('../utils/cache');
+
+const PLANS_CACHE_PREFIX = 'plans:';
 
 // Seed rows matching the former hardcoded client catalog
 // (client/src/config/subscriptions.js). Runs once: only inserts when the
@@ -198,14 +201,22 @@ const ensureSeeded = async () => {
 const getPublicPlans = async (req, res, next) => {
   try {
     await ensureSeeded();
-    const where = { active: true };
-    if (req.query.role && ['seller', 'buyer', 'dealer'].includes(req.query.role)) {
-      where.role = req.query.role;
-    }
-    const plans = await prisma.plan.findMany({
-      where,
-      orderBy: [{ role: 'asc' }, { sortOrder: 'asc' }, { monthlyPrice: 'asc' }],
-    });
+    const role =
+      req.query.role && ['seller', 'buyer', 'dealer'].includes(req.query.role)
+        ? req.query.role
+        : null;
+
+    /* Nine rows, four possible responses, read on every dashboard mount via
+       PlanBanner — and changed by hand maybe monthly. No TTL: the three admin
+       write handlers invalidate explicitly, so a price edit is visible on the
+       very next read rather than after a timer. */
+    const plans = await cache.wrap(`${PLANS_CACHE_PREFIX}${role || 'all'}`, 0, () =>
+      prisma.plan.findMany({
+        where: role ? { active: true, role } : { active: true },
+        orderBy: [{ role: 'asc' }, { sortOrder: 'asc' }, { monthlyPrice: 'asc' }],
+      }),
+    );
+
     res.status(200).json(plans);
   } catch (error) {
     next(error);
@@ -331,6 +342,10 @@ const createPlan = async (req, res, next) => {
       });
     }
     const plan = await prisma.plan.create({ data });
+    /* Invalidate AFTER the write commits, not before: a read landing
+       between an early invalidation and the commit would repopulate the cache
+       with the old rows, and with no TTL that staleness would never heal. */
+    cache.delByPrefix(PLANS_CACHE_PREFIX);
     res.status(201).json(plan);
   } catch (err) {
     next(err);
@@ -360,6 +375,10 @@ const updatePlan = async (req, res, next) => {
       }
     }
     const plan = await prisma.plan.update({ where: { id }, data });
+    /* Invalidate AFTER the write commits, not before: a read landing
+       between an early invalidation and the commit would repopulate the cache
+       with the old rows, and with no TTL that staleness would never heal. */
+    cache.delByPrefix(PLANS_CACHE_PREFIX);
     res.status(200).json(plan);
   } catch (err) {
     next(err);
@@ -374,6 +393,7 @@ const deletePlan = async (req, res, next) => {
     const existing = await prisma.plan.findUnique({ where: { id } });
     if (!existing) return res.status(404).json({ message: 'Plan not found.' });
     await prisma.plan.delete({ where: { id } });
+    cache.delByPrefix(PLANS_CACHE_PREFIX);
     res.status(200).json({ message: `Plan "${existing.name}" deleted.` });
   } catch (err) {
     next(err);

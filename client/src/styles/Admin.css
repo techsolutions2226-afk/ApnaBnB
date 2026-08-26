@@ -1821,15 +1821,6 @@ textarea.adm-form-input {
   box-shadow: 1px 0 0 #eef2f6;
 }
 
-.adm-sticky-actions {
-  box-sizing: border-box;
-  right: 0;
-  width: 190px;
-  min-width: 190px;
-  /* A hairline that reads as the edge of the frozen right region. */
-  box-shadow: -1px 0 0 #eef2f6;
-}
-
 /* Row tints must repaint the sticky cells too, or a selected/suspended row
    shows a white gap where the frozen columns are. */
 .adm-row--selected .adm-sticky-col { background: #eef8f2; }
@@ -1895,6 +1886,12 @@ tr:hover .adm-trunc-btn,
   .adm-trunc-btn { opacity: 1; }
 }
 
+.adm-cellvalue-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .adm-cellvalue {
   margin: 0;
   padding: 14px;
@@ -1908,6 +1905,37 @@ tr:hover .adm-trunc-btn,
   /* Long ids and URLs must wrap rather than widen the modal. */
   word-break: break-word;
   white-space: pre-wrap;
+  user-select: all;
+}
+
+.adm-cellvalue-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.adm-cellvalue-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #1a8f5a;
+  background: #1a8f5a;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adm-cellvalue-copy-btn:hover {
+  background: #127a45;
+  border-color: #127a45;
+}
+
+.adm-cellvalue-copy-btn--copied {
+  background: #15803d;
+  border-color: #15803d;
 }
 
 /* ── Column picker ── */

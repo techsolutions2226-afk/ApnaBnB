@@ -14,7 +14,7 @@ import useStickyOffset from "../../hooks/useStickyOffset";
 import ColumnPicker from "../../components/admin/ColumnPicker";
 import TruncatedCell from "../../components/admin/TruncatedCell";
 import { USER_COLUMNS, DEFAULT_VISIBLE } from "../../config/adminUserColumns";
-import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShield, FiXCircle, FiImage, FiUserCheck, FiUserX } from "react-icons/fi";
+import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShield, FiXCircle, FiImage, FiUserCheck, FiUserX, FiCopy, FiCheck } from "react-icons/fi";
 import "../../styles/Admin.css";
 
 const ROLES = ["seller", "buyer", "dealer"];
@@ -76,7 +76,22 @@ const AdminUsers = () => {
   });
 
   const [expandedCell, setExpandedCell] = useState(null); // { label, value }
+  const [copied, setCopied] = useState(false);
   const [activateTarget, setActivateTarget] = useState(null);
+
+  const handleCopy = useCallback((text) => {
+    if (!text) return;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true);
+        toast.success("Copied to clipboard!");
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        toast.error("Failed to copy");
+      });
+  }, []);
 
   useEffect(() => {
     try {
@@ -430,7 +445,7 @@ const AdminUsers = () => {
                     {col.label}
                   </th>
                 ))}
-                <th className="adm-th-actions adm-sticky-col adm-sticky-actions">Actions</th>
+                <th className="adm-th-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -480,7 +495,7 @@ const AdminUsers = () => {
                       );
                     })}
 
-                    <td className="adm-th-actions adm-sticky-col adm-sticky-actions">
+                    <td className="adm-th-actions">
                       <div className="adm-actions">
                         <Link
                           to={`/admin/users/${uid}`}
@@ -768,11 +783,36 @@ const AdminUsers = () => {
       {/* Full value of a truncated cell */}
       <Modal
         isOpen={!!expandedCell}
-        onClose={() => setExpandedCell(null)}
+        onClose={() => {
+          setExpandedCell(null);
+          setCopied(false);
+        }}
         title={expandedCell?.label || "Value"}
         size="small"
       >
-        <p className="adm-cellvalue">{expandedCell?.value}</p>
+        <div className="adm-cellvalue-box">
+          <p className="adm-cellvalue">{expandedCell?.value}</p>
+          <div className="adm-cellvalue-actions">
+            <button
+              type="button"
+              className={`adm-cellvalue-copy-btn ${copied ? "adm-cellvalue-copy-btn--copied" : ""}`}
+              onClick={() => handleCopy(expandedCell?.value)}
+              title="Copy to clipboard"
+            >
+              {copied ? (
+                <>
+                  <FiCheck size={14} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <FiCopy size={14} />
+                  <span>Copy {expandedCell?.label || "value"}</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Bulk delete confirm */}

@@ -322,7 +322,7 @@ const Home = () => {
       <section className="abn-popular">
         <div className="abn-popular-head">
           <h2 className="abn-popular-title">
-            Popular homes in Islamabad <FiArrowRight size={20} />
+            Popular Homes<FiArrowRight size={20} />
           </h2>
         </div>
 

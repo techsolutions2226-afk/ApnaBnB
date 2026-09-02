@@ -1,21 +1,21 @@
 /* ════════════════════════════════════════════════════════════════
    AdminShell.css — admin panel app shell
-   Fixed navy sidebar + scrolling content column.
-   Palette: navy #16324f · green #1a8f5a · soft neutral greys.
+   Dark slate sidebar + scrolling content column, indigo brand accents
+   matching the site fintech design tokens (index.css).
    ════════════════════════════════════════════════════════════════ */
 
 .ash-shell {
   display: flex;
   min-height: 100vh;
-  background: #f4f6f8;
+  background: var(--color-slate-50);
 }
 
 /* ── Sidebar ── */
 .ash-sidebar {
   width: 250px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #16324f 0%, #0f2438 100%);
-  color: #cbd8e5;
+  background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  color: var(--color-slate-400);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -38,8 +38,8 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #1a8f5a;
-  box-shadow: 0 0 0 4px rgba(26, 143, 90, 0.18);
+  background: var(--color-primary-500);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
 }
 
 .ash-logo-word {
@@ -54,9 +54,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #8fd3b0;
-  background: rgba(26, 143, 90, 0.2);
-  border: 1px solid rgba(26, 143, 90, 0.45);
+  color: var(--color-primary-300);
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.45);
   padding: 2px 8px;
   border-radius: 999px;
 }
@@ -84,7 +84,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   color: #fff;
   font-weight: 700;
   font-size: 16px;
@@ -107,7 +107,7 @@
 
 .ash-brand-role {
   font-size: 11px;
-  color: #8aa3bb;
+  color: var(--color-slate-500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -126,7 +126,7 @@
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #5f7a94;
+  color: var(--color-slate-500);
   padding: 8px 12px 8px;
 }
 
@@ -137,7 +137,7 @@
   padding: 10px 12px;
   margin-bottom: 2px;
   border-radius: 10px;
-  color: #b7c8d8;
+  color: var(--color-slate-400);
   text-decoration: none;
   font-size: 13.5px;
   font-weight: 500;
@@ -150,9 +150,9 @@
 }
 
 .ash-navlink--active {
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(26, 143, 90, 0.35);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
 }
 
 .ash-navicon {
@@ -166,7 +166,6 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .ash-foot-link,
@@ -178,7 +177,7 @@
   border-radius: 10px;
   background: none;
   border: none;
-  color: #b7c8d8;
+  color: var(--color-slate-400);
   font-size: 13.5px;
   cursor: pointer;
   text-decoration: none;
@@ -193,11 +192,11 @@
 }
 
 .ash-foot-logout {
-  color: #f2a0a0;
+  color: #f87171;
 }
 
 .ash-foot-logout:hover {
-  background: rgba(185, 28, 28, 0.2);
+  background: rgba(220, 38, 38, 0.2);
   color: #fff;
 }
 
@@ -214,7 +213,7 @@
   height: 60px;
   flex-shrink: 0;
   background: #fff;
-  border-bottom: 1px solid #e6eaef;
+  border-bottom: 1px solid var(--color-slate-200);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -228,7 +227,7 @@
   display: none;
   background: none;
   border: none;
-  color: #16324f;
+  color: var(--color-slate-900);
   cursor: pointer;
   padding: 4px;
 }
@@ -236,7 +235,7 @@
 .ash-topbar-title {
   font-size: 15px;
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 .ash-topbar-spacer {
@@ -248,8 +247,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #1a8f5a;
-  background: rgba(26, 143, 90, 0.12);
+  color: var(--color-accent-700);
+  background: var(--color-accent-50);
   padding: 4px 10px;
   border-radius: 999px;
 }
@@ -285,7 +284,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 36, 56, 0.5);
+    background: rgba(2, 6, 23, 0.5);
     z-index: 55;
   }
   .ash-content {

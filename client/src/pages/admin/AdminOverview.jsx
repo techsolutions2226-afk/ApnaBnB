@@ -71,12 +71,12 @@ const AdminOverview = () => {
     stats?.listingsByStatus?.find((s) => s._id === status)?.count || 0;
 
   const cards = [
-    { to: "/admin/users", label: "Total Users", value: stats?.totalUsers || 0, icon: FiUsers, accent: "#16324f" },
-    { to: "/admin/listings", label: "Properties", value: stats?.totalProperties || 0, icon: FiHome, accent: "#1a8f5a" },
-    { to: "/admin/requirements", label: "Requirements", value: stats?.totalRequirements || 0, icon: FiFileText, accent: "#e1a100" },
+    { to: "/admin/users", label: "Total Users", value: stats?.totalUsers || 0, icon: FiUsers, accent: "#4f46e5" },
+    { to: "/admin/listings", label: "Properties", value: stats?.totalProperties || 0, icon: FiHome, accent: "#059669" },
+    { to: "/admin/requirements", label: "Requirements", value: stats?.totalRequirements || 0, icon: FiFileText, accent: "#d97706" },
     { to: "/admin/matches", label: "Matches", value: stats?.totalMatches || 0, icon: FiLink, accent: "#7c3aed" },
     { to: "/admin/users", label: "Reviews", value: stats?.totalReviews || 0, icon: FiStar, accent: "#ea580c" },
-    { to: "/admin/users", label: "Suspended Users", value: stats?.totalSuspended || 0, icon: FiShieldOff, accent: "#b91c1c" },
+    { to: "/admin/users", label: "Suspended Users", value: stats?.totalSuspended || 0, icon: FiShieldOff, accent: "#dc2626" },
   ];
 
   return (

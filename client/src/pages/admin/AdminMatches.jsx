@@ -63,9 +63,9 @@ const AdminMatches = () => {
   const totalPages = Math.max(1, Math.ceil(total / 15));
 
   const scoreColor = (score) => {
-    if (score >= 80) return "#1a8f5a";
-    if (score >= 60) return "#e1a100";
-    return "#b91c1c";
+    if (score >= 80) return "#059669";
+    if (score >= 60) return "#f59e0b";
+    return "#dc2626";
   };
 
   return (

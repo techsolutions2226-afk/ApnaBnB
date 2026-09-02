@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════════════════════════════
    Admin.css — admin panel pages
    Prefix: adm-*
-   Palette: navy #16324f · green #1a8f5a · soft neutral greys.
+   Palette: navy var(--color-slate-900) · green var(--color-primary-600) · soft neutral greys.
    ════════════════════════════════════════════════════════════════ */
 
 /* ── Page shell ── */
@@ -17,16 +17,16 @@
 .adm-empty {
   padding: 40px;
   text-align: center;
-  color: #66788a;
+  color: var(--color-slate-500);
   font-size: 14px;
 }
 
 .adm-error {
   padding: 20px;
   text-align: center;
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--color-danger-700);
+  background: var(--color-danger-50);
+  border: 1px solid var(--color-danger-100);
   border-radius: 12px;
 }
 
@@ -34,7 +34,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   font-size: 13.5px;
   font-weight: 600;
   text-decoration: none;
@@ -61,13 +61,13 @@
 .adm-title {
   font-size: 24px;
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
   margin: 0 0 4px;
 }
 
 .adm-subtitle {
   font-size: 14px;
-  color: #66788a;
+  color: var(--color-slate-500);
   margin: 0;
 }
 
@@ -85,14 +85,14 @@
   gap: 14px;
   padding: 16px;
   background: #fff;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 14px;
   text-decoration: none;
   transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
 }
 
 .adm-kpi:hover {
-  border-color: #cfe3d8;
+  border-color: var(--color-slate-200);
   box-shadow: 0 6px 18px rgba(22, 50, 79, 0.08);
   transform: translateY(-2px);
 }
@@ -110,13 +110,13 @@
 .adm-kpi-value {
   font-size: 22px;
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
   line-height: 1.1;
 }
 
 .adm-kpi-label {
   font-size: 12.5px;
-  color: #66788a;
+  color: var(--color-slate-500);
   margin-top: 2px;
 }
 
@@ -131,7 +131,7 @@
 /* ── Cards ── */
 .adm-card {
   background: #fff;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 14px;
   padding: 20px;
 }
@@ -146,7 +146,7 @@
 .adm-card-title {
   font-size: 16px;
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
   margin: 0 0 14px;
 }
 
@@ -156,7 +156,7 @@
 
 .adm-card-link {
   font-size: 13px;
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   font-weight: 600;
   text-decoration: none;
 }
@@ -176,14 +176,14 @@
 .adm-bar-label {
   width: 90px;
   font-size: 13px;
-  color: #33465a;
+  color: var(--color-slate-700);
   flex-shrink: 0;
 }
 
 .adm-bar-track {
   flex: 1;
   height: 8px;
-  background: #eef2f6;
+  background: var(--color-slate-100);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -195,11 +195,11 @@
 }
 
 .adm-bar-fill--navy {
-  background: #16324f;
+  background: var(--color-slate-900);
 }
 
 .adm-bar-fill--green {
-  background: #1a8f5a;
+  background: var(--color-primary-600);
 }
 
 .adm-bar-count {
@@ -207,7 +207,7 @@
   text-align: right;
   font-size: 13px;
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 /* ── Activity feed ── */
@@ -222,7 +222,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 4px;
-  border-bottom: 1px solid #f0f3f6;
+  border-bottom: 1px solid var(--color-slate-100);
 }
 
 .adm-feed-item:last-child {
@@ -235,7 +235,7 @@
 }
 
 .adm-feed--dense .adm-feed-item:hover {
-  background: #f7faf9;
+  background: var(--color-slate-50);
 }
 
 .adm-feed-main {
@@ -255,7 +255,7 @@
 .adm-feed-action {
   font-size: 13px;
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-slate-900);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -264,12 +264,12 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
 }
 
 .adm-feed-meta {
   font-size: 12.5px;
-  color: #66788a;
+  color: var(--color-slate-500);
 }
 
 .adm-feed-actor {
@@ -277,7 +277,7 @@
   align-items: center;
   gap: 4px;
   font-size: 12.5px;
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   text-decoration: none;
   font-weight: 500;
 }
@@ -288,7 +288,7 @@
 
 .adm-feed-time {
   font-size: 12px;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
   text-align: right;
   flex-shrink: 0;
   white-space: nowrap;
@@ -296,7 +296,7 @@
 
 .adm-feed-ip {
   font-size: 11px;
-  color: #a6b4c2;
+  color: var(--color-slate-400);
   margin-top: 2px;
 }
 
@@ -308,22 +308,22 @@
   letter-spacing: 0.6px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #eef2f6;
-  color: #33465a;
+  background: var(--color-slate-100);
+  color: var(--color-slate-700);
 }
 
-.adm-log-badge--admin { background: #fde8e8; color: #b91c1c; }
-.adm-log-badge--auth { background: #e0edfb; color: #0369a1; }
+.adm-log-badge--admin { background: var(--color-danger-50); color: var(--color-danger-700); }
+.adm-log-badge--auth { background: var(--color-primary-50); color: var(--color-primary-700); }
 .adm-log-badge--match { background: #f3e8ff; color: #7c3aed; }
-.adm-log-badge--message { background: #e0f2fe; color: #0284c7; }
-.adm-log-badge--activity { background: #fef3c7; color: #a16207; }
-.adm-log-badge--listing { background: #e3f5ec; color: #127a45; }
+.adm-log-badge--message { background: var(--color-primary-50); color: var(--color-primary-700); }
+.adm-log-badge--activity { background: var(--color-warning-50); color: var(--color-warning-600); }
+.adm-log-badge--listing { background: var(--color-accent-50); color: var(--color-primary-700); }
 
 .adm-log-count,
 .adm-section-count {
   margin: 6px 2px 10px;
   font-size: 13px;
-  color: #66788a;
+  color: var(--color-slate-500);
 }
 
 /* ── Toolbar ── */
@@ -350,11 +350,11 @@
 .adm-select {
   height: 40px;
   padding: 0 34px 0 12px;
-  border: 1px solid #dfe5ec;
+  border: 1px solid var(--color-slate-200);
   border-radius: 10px;
   background: #fff;
   font-size: 13px;
-  color: #33465a;
+  color: var(--color-slate-700);
   cursor: pointer;
   outline: none;
   appearance: none;
@@ -364,7 +364,7 @@
 }
 
 .adm-select:focus {
-  border-color: #1a8f5a;
+  border-color: var(--color-primary-600);
   box-shadow: 0 0 0 3px rgba(26, 143, 90, 0.12);
 }
 
@@ -375,10 +375,10 @@
   gap: 7px;
   height: 40px;
   padding: 0 16px;
-  border: 1px solid #dfe5ec;
+  border: 1px solid var(--color-slate-200);
   border-radius: 10px;
   background: #fff;
-  color: #33465a;
+  color: var(--color-slate-700);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -386,41 +386,41 @@
 }
 
 .adm-btn:hover {
-  border-color: #1a8f5a;
-  color: #1a8f5a;
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-600);
 }
 
 .adm-btn--primary {
-  background: #1a8f5a;
-  border-color: #1a8f5a;
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
   color: #fff;
 }
 
 .adm-btn--primary:hover {
-  background: #127a45;
-  border-color: #127a45;
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
   color: #fff;
 }
 
 .adm-btn--outline {
-  border-color: #1a8f5a;
-  color: #1a8f5a;
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-600);
 }
 
 .adm-btn--outline:hover {
-  background: #e3f5ec;
-  color: #127a45;
+  background: var(--color-accent-50);
+  color: var(--color-primary-700);
 }
 
 .adm-btn--danger {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--color-danger-700);
+  border-color: var(--color-danger-700);
   color: #fff;
 }
 
 .adm-btn--danger:hover {
-  background: #991b1b;
-  border-color: #991b1b;
+  background: var(--color-danger-700);
+  border-color: var(--color-danger-700);
   color: #fff;
 }
 
@@ -434,7 +434,7 @@
   display: flex;
   gap: 4px;
   margin-bottom: 16px;
-  border-bottom: 1px solid #e6eaef;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .adm-tab {
@@ -443,7 +443,7 @@
   background: none;
   font-size: 14px;
   font-weight: 600;
-  color: #66788a;
+  color: var(--color-slate-500);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
@@ -451,18 +451,18 @@
 }
 
 .adm-tab:hover {
-  color: #1a8f5a;
+  color: var(--color-primary-600);
 }
 
 .adm-tab--active {
-  color: #1a8f5a;
-  border-bottom-color: #1a8f5a;
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-600);
 }
 
 /* ── Tables ── */
 .adm-table-wrap {
   background: #fff;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 14px;
   overflow-x: auto;
   min-height: 100px;
@@ -487,16 +487,16 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  color: #8a9aaa;
-  background: #f9fbfc;
-  border-bottom: 1px solid #eef2f6;
+  color: var(--color-slate-400);
+  background: var(--color-slate-50);
+  border-bottom: 1px solid var(--color-slate-100);
   white-space: nowrap;
 }
 
 .adm-table td {
   padding: 12px 14px;
-  border-bottom: 1px solid #f0f3f6;
-  color: #33465a;
+  border-bottom: 1px solid var(--color-slate-100);
+  color: var(--color-slate-700);
   vertical-align: top;
 }
 
@@ -509,7 +509,7 @@
 }
 
 .adm-table tbody tr:hover {
-  background: #f7faf9;
+  background: var(--color-slate-50);
 }
 
 .adm-th-actions {
@@ -518,21 +518,21 @@
 
 /* Row states */
 .adm-row--suspended td {
-  background: #fef8f8;
+  background: var(--color-danger-50);
 }
 
 .adm-row--unread td {
-  background: #f4faf7;
+  background: var(--color-accent-50);
 }
 
 .adm-table-title {
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 .adm-table-sub {
   font-size: 12px;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
   margin-top: 2px;
 }
 
@@ -555,19 +555,19 @@
   display: inline-block;
   margin-top: 2px;
   font-size: 12px;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
   text-decoration: none;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
 .adm-user-coords:hover {
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   text-decoration: underline;
 }
 
 .adm-muted {
-  color: #a6b4c2;
+  color: var(--color-slate-400);
 }
 
 /* User cell */
@@ -581,8 +581,8 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #e3f5ec;
-  color: #127a45;
+  background: var(--color-accent-50);
+  color: var(--color-primary-700);
   font-weight: 700;
   font-size: 13px;
   display: flex;
@@ -597,7 +597,7 @@
 
 .adm-user-name {
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 /* Status pills: verified / unverified / suspended / active */
@@ -618,8 +618,8 @@
 }
 
 .adm-verified {
-  color: #127a45;
-  background: #e3f5ec;
+  color: var(--color-primary-700);
+  background: var(--color-accent-50);
 }
 
 .adm-verified-dot,
@@ -631,43 +631,43 @@
 }
 
 .adm-verified-dot {
-  background: #1a8f5a;
+  background: var(--color-primary-600);
 }
 
 .adm-unverified {
-  color: #a16207;
-  background: #fef3c7;
+  color: var(--color-warning-600);
+  background: var(--color-warning-50);
 }
 
 .adm-unverified-dot {
-  background: #e1a100;
+  background: var(--color-warning-500);
 }
 
 .adm-suspended-tag {
-  color: #b91c1c;
-  background: #fde8e8;
+  color: var(--color-danger-700);
+  background: var(--color-danger-50);
 }
 
 .adm-active-tag {
-  color: #127a45;
-  background: #e3f5ec;
+  color: var(--color-primary-700);
+  background: var(--color-accent-50);
 }
 
 /* Self-deactivation. Amber, not red: the user chose this, it is reversible,
    and it must not read as an admin sanction the way `suspended` does. */
 .adm-deactivated-tag {
-  color: #92610a;
-  background: #fdf3e0;
+  color: var(--color-warning-700);
+  background: var(--color-warning-50);
 }
 
 .adm-unread-tag {
-  color: #0369a1;
-  background: #e0edfb;
+  color: var(--color-primary-700);
+  background: var(--color-primary-50);
 }
 
 .adm-attachments {
   font-size: 12px;
-  color: #66788a;
+  color: var(--color-slate-500);
 }
 
 /* Score */
@@ -691,24 +691,24 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid #e4e9ef;
+  border: 1px solid var(--color-slate-200);
   background: #fff;
-  color: #55687b;
+  color: var(--color-slate-600);
   cursor: pointer;
   text-decoration: none;
   transition: all 0.13s;
 }
 
 .adm-action-icon:hover {
-  border-color: #1a8f5a;
-  color: #1a8f5a;
-  background: #f4faf7;
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-600);
+  background: var(--color-accent-50);
 }
 
 .adm-action-icon--danger:hover {
-  border-color: #b91c1c;
-  color: #b91c1c;
-  background: #fef2f2;
+  border-color: var(--color-danger-700);
+  color: var(--color-danger-700);
+  background: var(--color-danger-50);
 }
 
 /* ── Message cell ── */
@@ -724,7 +724,7 @@
 }
 
 .adm-msg-empty {
-  color: #a6b4c2;
+  color: var(--color-slate-400);
 }
 
 /* ── Profile card (user detail) ── */
@@ -734,7 +734,7 @@
   gap: 18px;
   padding: 22px;
   background: #fff;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 14px;
   margin-bottom: 16px;
   flex-wrap: wrap;
@@ -745,8 +745,8 @@
   height: 64px;
   border-radius: 50%;
   overflow: hidden;
-  background: #e3f5ec;
-  color: #127a45;
+  background: var(--color-accent-50);
+  color: var(--color-primary-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -779,19 +779,19 @@
 .adm-profile-name {
   font-size: 20px;
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
   margin: 0;
 }
 
 .adm-profile-email {
-  color: #66788a;
+  color: var(--color-slate-500);
   font-size: 14px;
   margin: 4px 0 2px;
 }
 
 .adm-profile-meta {
   font-size: 13px;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
   margin: 0;
 }
 
@@ -811,7 +811,7 @@
 
 .adm-userstat {
   background: #fff;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   padding: 16px;
   text-align: center;
@@ -822,8 +822,8 @@
   height: 36px;
   margin: 0 auto 8px;
   border-radius: 10px;
-  background: #e3f5ec;
-  color: #127a45;
+  background: var(--color-accent-50);
+  color: var(--color-primary-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -832,12 +832,12 @@
 .adm-userstat-value {
   font-size: 20px;
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 .adm-userstat-label {
   font-size: 12px;
-  color: #66788a;
+  color: var(--color-slate-500);
   margin-top: 2px;
 }
 
@@ -855,7 +855,7 @@
   top: 4px;
   bottom: 4px;
   width: 2px;
-  background: #e3eaf0;
+  background: var(--color-slate-200);
 }
 
 .adm-timeline-item {
@@ -870,15 +870,15 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   border: 2px solid #fff;
-  box-shadow: 0 0 0 2px #cfe3d8;
+  box-shadow: 0 0 0 2px var(--color-slate-200);
 }
 
 .adm-timeline-action {
   font-size: 13.5px;
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-slate-900);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -891,17 +891,17 @@
 
 .adm-timeline-kv {
   font-size: 12px;
-  color: #66788a;
+  color: var(--color-slate-500);
 }
 
 .adm-timeline-kv strong {
-  color: #8a9aaa;
+  color: var(--color-slate-400);
   font-weight: 600;
 }
 
 .adm-timeline-time {
   font-size: 12px;
-  color: #a6b4c2;
+  color: var(--color-slate-400);
   margin-top: 4px;
 }
 
@@ -925,16 +925,16 @@
   gap: 6px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #33465a;
+  color: var(--color-slate-700);
 }
 
 .adm-form-input {
   height: 40px;
   padding: 0 12px;
-  border: 1px solid #dfe5ec;
+  border: 1px solid var(--color-slate-200);
   border-radius: 10px;
   font-size: 13.5px;
-  color: #16324f;
+  color: var(--color-slate-900);
   background: #fff;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -949,7 +949,7 @@ textarea.adm-form-input {
 }
 
 .adm-form-input:focus {
-  border-color: #1a8f5a;
+  border-color: var(--color-primary-600);
   box-shadow: 0 0 0 3px rgba(26, 143, 90, 0.12);
 }
 
@@ -962,7 +962,7 @@ textarea.adm-form-input {
 
 .adm-modal-note {
   font-size: 13px;
-  color: #66788a;
+  color: var(--color-slate-500);
   margin: 0 0 14px;
   line-height: 1.5;
 }
@@ -978,25 +978,25 @@ textarea.adm-form-input {
   text-transform: capitalize;
 }
 
-.adm-badge--seller { background: #e0edfb; color: #0369a1; }
-.adm-badge--buyer { background: #e3f5ec; color: #127a45; }
+.adm-badge--seller { background: var(--color-primary-50); color: var(--color-primary-700); }
+.adm-badge--buyer { background: var(--color-accent-50); color: var(--color-primary-700); }
 .adm-badge--dealer { background: #f3e8ff; color: #7c3aed; }
-.adm-badge--admin { background: #fde8e8; color: #b91c1c; }
-.adm-badge--active { background: #e3f5ec; color: #127a45; }
-.adm-badge--pending { background: #fef3c7; color: #a16207; }
-.adm-badge--sold { background: #e0edfb; color: #0369a1; }
-.adm-badge--rented { background: #e0edfb; color: #0284c7; }
+.adm-badge--admin { background: var(--color-danger-50); color: var(--color-danger-700); }
+.adm-badge--active { background: var(--color-accent-50); color: var(--color-primary-700); }
+.adm-badge--pending { background: var(--color-warning-50); color: var(--color-warning-600); }
+.adm-badge--sold { background: var(--color-primary-50); color: var(--color-primary-700); }
+.adm-badge--rented { background: var(--color-primary-50); color: var(--color-primary-700); }
 .adm-badge--featured { background: #f3e8ff; color: #7c3aed; }
-.adm-badge--rejected { background: #fde8e8; color: #b91c1c; }
-.adm-badge--fulfilled { background: #e3f5ec; color: #127a45; }
-.adm-badge--closed { background: #eef2f6; color: #66788a; }
-.adm-badge--accepted { background: #e3f5ec; color: #127a45; }
-.adm-badge--sale { background: #e0edfb; color: #0369a1; }
-.adm-badge--rent { background: #d5f1e4; color: #127a45; }
-.adm-badge--seller-buyer { background: #e0edfb; color: #0369a1; }
+.adm-badge--rejected { background: var(--color-danger-50); color: var(--color-danger-700); }
+.adm-badge--fulfilled { background: var(--color-accent-50); color: var(--color-primary-700); }
+.adm-badge--closed { background: var(--color-slate-100); color: var(--color-slate-500); }
+.adm-badge--accepted { background: var(--color-accent-50); color: var(--color-primary-700); }
+.adm-badge--sale { background: var(--color-primary-50); color: var(--color-primary-700); }
+.adm-badge--rent { background: var(--color-accent-50); color: var(--color-primary-700); }
+.adm-badge--seller-buyer { background: var(--color-primary-50); color: var(--color-primary-700); }
 .adm-badge--dealer-buyer { background: #f3e8ff; color: #7c3aed; }
-.adm-badge--dealer-dealer { background: #fde8e8; color: #b91c1c; }
-.adm-badge--seller-dealer { background: #fef3c7; color: #a16207; }
+.adm-badge--dealer-dealer { background: var(--color-danger-50); color: var(--color-danger-700); }
+.adm-badge--seller-dealer { background: var(--color-warning-50); color: var(--color-warning-600); }
 
 /* Responsive */
 @media (max-width: 720px) {
@@ -1020,13 +1020,13 @@ textarea.adm-form-input {
    Full admin property/requirement editors
    ══════════════════════════════════════════════════════════════ */
 .adm-property-editor .lst-form-section {
-  border-bottom: 1px solid #eef0f3;
+  border-bottom: 1px solid var(--color-slate-100);
 }
 .adm-form-error {
   display: block;
   margin-top: 4px;
   font-size: 12px;
-  color: #c62828;
+  color: var(--color-danger-600);
 }
 .adm-chip-wrap {
   display: flex;
@@ -1039,9 +1039,9 @@ textarea.adm-form-input {
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  background: #eef7f1;
-  border: 1px solid #cfe6d8;
-  color: #134e2c;
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-slate-200);
+  color: var(--color-primary-600);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
@@ -1049,8 +1049,8 @@ textarea.adm-form-input {
   overflow: hidden;
 }
 .adm-chip--link {
-  background: #f4f6f8;
-  border-color: #e5e7eb;
+  background: var(--color-slate-100);
+  border-color: var(--color-slate-200);
   color: #111;
 }
 .adm-chip--link a {
@@ -1063,20 +1063,20 @@ textarea.adm-form-input {
   justify-content: center;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: var(--color-slate-500);
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
 }
 .adm-chip-x:hover {
-  color: #c62828;
+  color: var(--color-danger-600);
 }
 .adm-chip-img {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
   border-radius: 3px;
-  background: #d1d5db;
+  background: var(--color-slate-300);
 }
 
 /* ── System logs table ── */
@@ -1092,7 +1092,7 @@ textarea.adm-form-input {
   font-size: 11px;
   letter-spacing: 0.04em;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--color-slate-500);
 }
 .adm-log-actor {
   display: block;
@@ -1100,7 +1100,7 @@ textarea.adm-form-input {
   text-decoration: none;
 }
 .adm-log-actor:hover .adm-table-title {
-  color: #134e2c;
+  color: var(--color-primary-600);
   text-decoration: underline;
 }
 .adm-log-detail .adm-timeline-meta {
@@ -1111,7 +1111,7 @@ textarea.adm-form-input {
 }
 .adm-log-when {
   font-size: 12px;
-  color: #374151;
+  color: var(--color-slate-700);
   white-space: nowrap;
 }
 
@@ -1131,13 +1131,13 @@ textarea.adm-form-input {
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   overflow: hidden;
 }
 .adm-chat-search {
   padding: 10px 12px;
-  border-bottom: 1px solid #eef0f3;
+  border-bottom: 1px solid var(--color-slate-100);
 }
 .adm-chat-convos {
   flex: 1;
@@ -1159,10 +1159,10 @@ textarea.adm-form-input {
   transition: background 0.15s;
 }
 .adm-chat-item:hover {
-  background: #f4f6f8;
+  background: var(--color-slate-100);
 }
 .adm-chat-item--active {
-  background: #eef7f1;
+  background: var(--color-accent-50);
 }
 .adm-chat-avatar {
   display: inline-flex;
@@ -1172,7 +1172,7 @@ textarea.adm-form-input {
   height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #134e2c;
+  background: var(--color-primary-600);
   color: #fff;
   font-weight: 700;
   font-size: 16px;
@@ -1200,12 +1200,12 @@ textarea.adm-form-input {
 }
 .adm-chat-item-time {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--color-slate-400);
   white-space: nowrap;
 }
 .adm-chat-item-preview {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-slate-500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1214,7 +1214,7 @@ textarea.adm-form-input {
   font-size: 11px;
   font-weight: 700;
   color: #fff;
-  background: #134e2c;
+  background: var(--color-primary-600);
   border-radius: 999px;
   padding: 0 7px;
   line-height: 16px;
@@ -1231,7 +1231,7 @@ textarea.adm-form-input {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #9ca3af;
+  color: var(--color-slate-400);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.15s, background 0.15s, color 0.15s;
@@ -1241,8 +1241,8 @@ textarea.adm-form-input {
   opacity: 1;
 }
 .adm-chat-item-del:hover {
-  background: #fdecea;
-  color: #c62828;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
 }
 
 /* Right pane — thread */
@@ -1251,7 +1251,7 @@ textarea.adm-form-input {
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -1262,14 +1262,14 @@ textarea.adm-form-input {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  color: #9ca3af;
+  color: var(--color-slate-400);
 }
 .adm-chat-thread-header {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #eef0f3;
+  border-bottom: 1px solid var(--color-slate-100);
 }
 .adm-chat-thread-title {
   margin: 0;
@@ -1279,7 +1279,7 @@ textarea.adm-form-input {
 }
 .adm-chat-thread-sub {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--color-slate-400);
 }
 .adm-chat-bubbles {
   flex: 1;
@@ -1288,7 +1288,7 @@ textarea.adm-form-input {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  background: #f0f2f5;
+  background: var(--color-slate-100);
   background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0);
   background-size: 22px 22px;
 }
@@ -1313,17 +1313,17 @@ textarea.adm-form-input {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--color-slate-500);
 }
 .adm-bubble-sender {
   font-weight: 700;
-  color: #134e2c;
+  color: var(--color-primary-600);
 }
 .adm-bubble-content {
   position: relative;
   padding: 8px 12px 22px;
   background: #fff;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   border-top-left-radius: 4px;
   font-size: 14px;
@@ -1332,8 +1332,8 @@ textarea.adm-form-input {
   word-break: break-word;
 }
 .adm-bubble-row--right .adm-bubble-content {
-  background: #d9fdd3;
-  border-color: #c6efbe;
+  background: var(--color-accent-50);
+  border-color: var(--color-accent-200);
   border-top-left-radius: 12px;
   border-top-right-radius: 4px;
 }
@@ -1342,7 +1342,7 @@ textarea.adm-form-input {
   right: 10px;
   bottom: 5px;
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--color-slate-400);
 }
 .adm-bubble-files {
   display: flex;
@@ -1355,7 +1355,7 @@ textarea.adm-form-input {
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: #1565c0;
+  color: var(--color-primary-700);
   text-decoration: underline;
 }
 .adm-bubble-actions {
@@ -1368,7 +1368,7 @@ textarea.adm-form-input {
 .adm-bubble-del {
   border: none;
   background: transparent;
-  color: #c62828;
+  color: var(--color-danger-600);
   cursor: pointer;
   padding: 2px;
 }
@@ -1392,17 +1392,17 @@ textarea.adm-form-input {
   justify-content: center;
   width: 30px;
   height: 30px;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 8px;
   background: #fff;
-  color: #33465a;
+  color: var(--color-slate-700);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .adm-action-btn--view:hover {
-  background: #e0edfb;
-  color: #0369a1;
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
 }
 
 .adm-proof-meta {
@@ -1416,7 +1416,7 @@ textarea.adm-form-input {
 
 .adm-proof-amount {
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 .adm-proof-image {
@@ -1426,9 +1426,9 @@ textarea.adm-form-input {
   min-height: 220px;
   max-height: 55vh;
   overflow: auto;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
-  background: #f7fafc;
+  background: var(--color-slate-50);
   padding: 10px;
   margin-bottom: 16px;
 }
@@ -1466,30 +1466,30 @@ textarea.adm-form-input {
 }
 
 .adm-proof-btn--approve {
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   color: #fff;
 }
 
 .adm-proof-btn--approve:hover:not(:disabled) {
-  background: #127a45;
+  background: var(--color-primary-700);
 }
 
 .adm-proof-btn--reject {
-  background: #fde8e8;
-  color: #b91c1c;
+  background: var(--color-danger-50);
+  color: var(--color-danger-700);
 }
 
 .adm-proof-btn--reject:hover:not(:disabled) {
-  background: #fbd5d5;
+  background: var(--color-danger-100);
 }
 
 .adm-proof-btn--pending {
-  background: #fef3c7;
-  color: #a16207;
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
 }
 
 .adm-proof-btn--pending:hover:not(:disabled) {
-  background: #fde68a;
+  background: var(--color-warning-200);
 }
 
 /* ── Plans editor (AdminPlans) ── */
@@ -1506,14 +1506,14 @@ textarea.adm-form-input {
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #33465a;
+  color: var(--color-slate-700);
   cursor: pointer;
 }
 
 .adm-check input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #1a8f5a;
+  accent-color: var(--color-primary-600);
   cursor: pointer;
 }
 
@@ -1522,7 +1522,7 @@ textarea.adm-form-input {
   align-items: center;
   gap: 6px;
   padding: 10px 18px;
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -1533,18 +1533,18 @@ textarea.adm-form-input {
 }
 
 .adm-primary-btn:hover {
-  background: #127a45;
+  background: var(--color-primary-700);
 }
 
 .adm-action-btn--danger:hover {
-  background: #fde8e8;
-  color: #b91c1c;
+  background: var(--color-danger-50);
+  color: var(--color-danger-700);
 }
 
 .adm-form-hint {
   font-size: 12.5px;
   color: #64748b;
-  background: #f4f7fa;
+  background: var(--color-slate-50);
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 8px 12px;
@@ -1557,16 +1557,16 @@ textarea.adm-form-input {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 9px;
   background: #f8fafc;
-  color: #0369a1;
+  color: var(--color-primary-700);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .adm-photo-btn:hover {
-  background: #e0f2fe;
+  background: var(--color-primary-50);
   border-color: #7dd3fc;
 }
 
@@ -1610,31 +1610,31 @@ textarea.adm-form-input {
 .adm-row-check {
   width: 16px;
   height: 16px;
-  accent-color: #1a8f5a;
+  accent-color: var(--color-primary-600);
   cursor: pointer;
   margin: 0;
   vertical-align: middle;
 }
 
 .adm-row-check:focus-visible {
-  outline: 2px solid #1a8f5a;
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
 /* Selected rows are tinted so the selection survives a glance away from the
    checkbox column on a wide, horizontally-scrolled table. */
 .adm-row--selected td {
-  background: #eef8f2;
+  background: var(--color-accent-50);
 }
 
 .adm-table tbody tr.adm-row--selected:hover td {
-  background: #e6f4ec;
+  background: var(--color-accent-50);
 }
 
 /* Selection outranks the suspended tint — while picking rows, what is
    selected matters more than what is suspended. */
 .adm-row--suspended.adm-row--selected td {
-  background: #eef8f2;
+  background: var(--color-accent-50);
 }
 
 .adm-bulkbar {
@@ -1644,14 +1644,14 @@ textarea.adm-form-input {
   gap: 12px;
   margin-bottom: 12px;
   padding: 10px 14px;
-  border: 1px solid #cfe3d8;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
-  background: #f2f9f5;
+  background: var(--color-accent-50);
 }
 
 .adm-bulkbar-count {
   font-size: 13.5px;
-  color: #134e2c;
+  color: var(--color-primary-600);
 }
 
 .adm-bulkbar-count strong {
@@ -1683,12 +1683,12 @@ textarea.adm-form-input {
   font-family: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: #55697c;
+  color: var(--color-slate-600);
   cursor: pointer;
 }
 
 .adm-bulkbar-clear:hover {
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 .adm-bulkbar-clear:disabled {
@@ -1707,27 +1707,27 @@ textarea.adm-form-input {
 /* Row tint for a self-deactivated account — lighter than the suspended tint,
    matching its lower severity. Selection still outranks both. */
 .adm-row--deactivated td {
-  background: #fffcf5;
+  background: var(--color-warning-50);
 }
 
 .adm-table tbody tr.adm-row--deactivated:hover td {
-  background: #fdf8ee;
+  background: var(--color-warning-50);
 }
 
 .adm-row--deactivated.adm-row--selected td {
-  background: #eef8f2;
+  background: var(--color-accent-50);
 }
 
 /* Affirmative action icon (reactivate), so it doesn't read as destructive. */
 .adm-action-icon--ok {
-  border-color: #cfe3d8;
-  color: #127a45;
+  border-color: var(--color-slate-200);
+  color: var(--color-primary-700);
 }
 
 .adm-action-icon--ok:hover {
-  border-color: #127a45;
-  color: #0f6338;
-  background: #e9f6ef;
+  border-color: var(--color-primary-700);
+  color: var(--color-primary-700);
+  background: var(--color-accent-50);
 }
 
 
@@ -1789,7 +1789,7 @@ textarea.adm-form-input {
 .adm-table--dense thead .adm-sticky-col {
   /* Above the body's sticky cells, so the header wins where they overlap. */
   z-index: 3;
-  background: #f9fbfc;
+  background: var(--color-slate-50);
 }
 
 /* The name column's `left` must equal the checkbox column's RENDERED width.
@@ -1818,7 +1818,7 @@ textarea.adm-form-input {
   width: 190px;
   min-width: 190px;
   /* A hairline that reads as the edge of the frozen region. */
-  box-shadow: 1px 0 0 #eef2f6;
+  box-shadow: 1px 0 0 var(--color-slate-100);
 }
 
 .adm-sticky-actions {
@@ -1827,18 +1827,18 @@ textarea.adm-form-input {
   width: 190px;
   min-width: 190px;
   /* A hairline that reads as the edge of the frozen right region. */
-  box-shadow: -1px 0 0 #eef2f6;
+  box-shadow: -1px 0 0 var(--color-slate-100);
 }
 
 /* Row tints must repaint the sticky cells too, or a selected/suspended row
    shows a white gap where the frozen columns are. */
-.adm-row--selected .adm-sticky-col { background: #eef8f2; }
-.adm-row--suspended .adm-sticky-col { background: #fef8f8; }
-.adm-row--deactivated .adm-sticky-col { background: #fffcf5; }
+.adm-row--selected .adm-sticky-col { background: var(--color-accent-50); }
+.adm-row--suspended .adm-sticky-col { background: var(--color-danger-50); }
+.adm-row--deactivated .adm-sticky-col { background: var(--color-warning-50); }
 .adm-row--suspended.adm-row--selected .adm-sticky-col,
-.adm-row--deactivated.adm-row--selected .adm-sticky-col { background: #eef8f2; }
-.adm-table tbody tr:hover .adm-sticky-col { background: #f7faf9; }
-.adm-table tbody tr.adm-row--selected:hover .adm-sticky-col { background: #e6f4ec; }
+.adm-row--deactivated.adm-row--selected .adm-sticky-col { background: var(--color-accent-50); }
+.adm-table tbody tr:hover .adm-sticky-col { background: var(--color-slate-50); }
+.adm-table tbody tr.adm-row--selected:hover .adm-sticky-col { background: var(--color-accent-50); }
 
 /* ── Truncated cells ── */
 .adm-trunc {
@@ -1871,10 +1871,10 @@ textarea.adm-form-input {
   width: 20px;
   height: 20px;
   padding: 0;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 6px;
   background: #fff;
-  color: #66788a;
+  color: var(--color-slate-500);
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.12s, color 0.12s, border-color 0.12s;
@@ -1886,8 +1886,8 @@ tr:hover .adm-trunc-btn,
 }
 
 .adm-trunc-btn:hover {
-  border-color: #1a8f5a;
-  color: #1a8f5a;
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-600);
 }
 
 /* Touch devices have no hover, so the control must be permanently visible. */
@@ -1904,13 +1904,13 @@ tr:hover .adm-trunc-btn,
 .adm-cellvalue {
   margin: 0;
   padding: 14px;
-  border: 1px solid #eef2f6;
+  border: 1px solid var(--color-slate-100);
   border-radius: 10px;
-  background: #f9fbfc;
+  background: var(--color-slate-50);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
   line-height: 1.6;
-  color: #16324f;
+  color: var(--color-slate-900);
   /* Long ids and URLs must wrap rather than widen the modal. */
   word-break: break-word;
   white-space: pre-wrap;
@@ -1928,8 +1928,8 @@ tr:hover .adm-trunc-btn,
   gap: 6px;
   padding: 8px 16px;
   border-radius: 8px;
-  border: 1px solid #1a8f5a;
-  background: #1a8f5a;
+  border: 1px solid var(--color-primary-600);
+  background: var(--color-primary-600);
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
@@ -1938,13 +1938,13 @@ tr:hover .adm-trunc-btn,
 }
 
 .adm-cellvalue-copy-btn:hover {
-  background: #127a45;
-  border-color: #127a45;
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
 }
 
 .adm-cellvalue-copy-btn--copied {
-  background: #15803d;
-  border-color: #15803d;
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
 }
 
 /* ── Column picker ── */
@@ -1956,10 +1956,10 @@ tr:hover .adm-trunc-btn,
   margin-left: 2px;
   padding: 1px 6px;
   border-radius: 999px;
-  background: #eef2f6;
+  background: var(--color-slate-100);
   font-size: 11px;
   font-weight: 700;
-  color: #66788a;
+  color: var(--color-slate-500);
 }
 
 .adm-colpick-menu {
@@ -1971,7 +1971,7 @@ tr:hover .adm-trunc-btn,
   max-height: 420px;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 12px 32px rgba(16, 40, 64, 0.14);
@@ -1982,10 +1982,10 @@ tr:hover .adm-trunc-btn,
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid #eef2f6;
+  border-bottom: 1px solid var(--color-slate-100);
   font-size: 13px;
   font-weight: 700;
-  color: #16324f;
+  color: var(--color-slate-900);
 }
 
 .adm-colpick-reset {
@@ -1994,7 +1994,7 @@ tr:hover .adm-trunc-btn,
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   cursor: pointer;
 }
 
@@ -2019,12 +2019,12 @@ tr:hover .adm-trunc-btn,
   letter-spacing: 0.7px;
   text-transform: uppercase;
   text-align: left;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
   cursor: pointer;
 }
 
 .adm-colpick-grouphead:hover {
-  color: #1a8f5a;
+  color: var(--color-primary-600);
 }
 
 .adm-colpick-item {
@@ -2033,24 +2033,24 @@ tr:hover .adm-trunc-btn,
   gap: 9px;
   padding: 6px 14px;
   font-size: 13px;
-  color: #33465a;
+  color: var(--color-slate-700);
   cursor: pointer;
 }
 
 .adm-colpick-item:hover {
-  background: #f7faf9;
+  background: var(--color-slate-50);
 }
 
 .adm-colpick-item input {
   width: 15px;
   height: 15px;
-  accent-color: #1a8f5a;
+  accent-color: var(--color-primary-600);
   cursor: pointer;
 }
 
 .adm-colpick-item--locked {
   cursor: default;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
 }
 
 .adm-colpick-item--locked input {
@@ -2064,7 +2064,7 @@ tr:hover .adm-trunc-btn,
   margin-left: auto;
   font-size: 10.5px;
   font-weight: 600;
-  color: #8a9aaa;
+  color: var(--color-slate-400);
 }
 
 /* ── Small status tags for credential columns ── */
@@ -2078,10 +2078,10 @@ tr:hover .adm-trunc-btn,
   white-space: nowrap;
 }
 
-.adm-tag--set   { background: #e3f5ec; color: #127a45; }
-.adm-tag--live  { background: #fff4e0; color: #92610a; }
-.adm-tag--stale { background: #f0f3f6; color: #8a9aaa; }
-.adm-tag--off   { background: #f0f3f6; color: #8a9aaa; }
+.adm-tag--set   { background: var(--color-accent-50); color: var(--color-accent-700); }
+.adm-tag--live  { background: var(--color-warning-50); color: var(--color-warning-700); }
+.adm-tag--stale { background: var(--color-slate-100); color: var(--color-slate-400); }
+.adm-tag--off   { background: var(--color-slate-100); color: var(--color-slate-400); }
 
 /* Both blocked states at once — stack rather than truncate. */
 .adm-state-stack {

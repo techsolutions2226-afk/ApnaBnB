@@ -32,9 +32,10 @@ const NAV_ITEMS = [
 ];
 
 /* ─── AdminShell — standalone admin management panel.
-   Fixed navy sidebar + scrolling content column, brand green accents.
-   Renders inside the existing ProtectedRoute(roles=["admin"]) wrapper in
-   App.jsx, so no re-auth logic is needed here. ───────────────────────────── */
+   Dark slate sidebar + scrolling content column, indigo accents
+   matching the site fintech design tokens. Renders inside the existing
+   ProtectedRoute(roles=["admin"]) wrapper in App.jsx, so no re-auth
+   logic is needed here. ───────────────────────────────────────────── */
 export default function AdminShell() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();

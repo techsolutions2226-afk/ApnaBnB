@@ -24,7 +24,7 @@ import {
 export const ROLES = ["seller", "buyer", "dealer"];
 
 export const ROLE_META = {
-  seller: { label: "Seller", icon: FiKey, accent: "#00a699" },
+  seller: { label: "Seller", icon: FiKey, accent: "#4f46e5" },
   buyer: { label: "Buyer", icon: FiHome, accent: "#4a90d9" },
   dealer: { label: "Dealer", icon: FiBriefcase, accent: "#8b5cf6" },
 };

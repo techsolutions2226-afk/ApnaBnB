@@ -20,13 +20,13 @@
 .mtch-title {
   font-size: 28px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 4px;
 }
 
 .mtch-subtitle {
   font-size: 16px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 0;
 }
 
@@ -39,8 +39,8 @@
   align-items: center;
   gap: 24px;
   padding: 16px 20px;
-  background: #fafafa;
-  border: 1px solid #ebebeb;
+  background: var(--color-slate-50);
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
@@ -55,12 +55,12 @@
 .mtch-stats-num {
   font-size: 22px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .mtch-stats-label {
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 /* ══════════════════════════════════════
@@ -88,23 +88,23 @@
   font-size: 13px;
   font-weight: 600;
   border-radius: 20px;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   background: #fff;
-  color: #717171;
+  color: var(--color-slate-500);
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 
 .mtch-filter-btn:hover {
-  border-color: #222;
-  color: #222;
+  border-color: var(--color-slate-900);
+  color: var(--color-slate-900);
 }
 
 .mtch-filter-btn--active {
-  background: #222;
+  background: var(--color-slate-900);
   color: #fff;
-  border-color: #222;
+  border-color: var(--color-slate-900);
 }
 
 .mtch-filter-btn--active:hover {
@@ -123,7 +123,7 @@
 
 .mtch-card {
   background: #fff;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   padding: 20px;
   transition: box-shadow 0.2s, transform 0.15s;
@@ -157,17 +157,17 @@
 }
 
 .mtch-card-type--seller-buyer {
-  background: #e6f7f5;
-  color: #00856f;
+  background: var(--color-accent-50);
+  color: var(--color-accent-600);
 }
 
 .mtch-card-type--dealer-buyer {
-  background: #e8f0fe;
-  color: #1a56db;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
 }
 
 .mtch-card-type--dealer-dealer {
-  background: #f3e8fd;
+  background: #f3e8ff;
   color: #7c3aed;
 }
 
@@ -180,7 +180,7 @@
 .mtch-card-score-bar {
   width: 60px;
   height: 6px;
-  background: #ebebeb;
+  background: var(--color-slate-200);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -192,21 +192,21 @@
 }
 
 .mtch-card-score-fill--high {
-  background: #00856f;
+  background: var(--color-accent-600);
 }
 
 .mtch-card-score-fill--medium {
-  background: #e65100;
+  background: var(--color-warning-600);
 }
 
 .mtch-card-score-fill--low {
-  background: #c13515;
+  background: var(--color-danger-600);
 }
 
 .mtch-card-score-text {
   font-size: 13px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   min-width: 32px;
 }
 
@@ -220,13 +220,13 @@
 }
 
 .mtch-card-status--active {
-  background: #e6f7f5;
-  color: #00856f;
+  background: var(--color-accent-50);
+  color: var(--color-accent-600);
 }
 
 .mtch-card-status--pending {
-  background: #fff3e0;
-  color: #e65100;
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
 }
 
 /* ── Property info row ── */
@@ -235,7 +235,7 @@
   align-items: center;
   gap: 14px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--color-slate-50);
   border-radius: 8px;
   margin-bottom: 14px;
 }
@@ -246,7 +246,7 @@
   border-radius: 6px;
   object-fit: cover;
   flex-shrink: 0;
-  background: #ebebeb;
+  background: var(--color-slate-200);
 }
 
 .mtch-card-prop-info {
@@ -257,7 +257,7 @@
 .mtch-card-prop-title {
   font-size: 14px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -265,7 +265,7 @@
 }
 
 .mtch-card-prop-title a {
-  color: #222;
+  color: var(--color-slate-900);
   text-decoration: none;
 }
 
@@ -275,13 +275,13 @@
 
 .mtch-card-prop-detail {
   font-size: 12px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 .mtch-card-prop-price {
   font-size: 14px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -289,7 +289,7 @@
 /* ── Summary ── */
 .mtch-card-summary {
   font-size: 14px;
-  color: #484848;
+  color: var(--color-slate-700);
   line-height: 1.5;
   margin-bottom: 14px;
 }
@@ -300,7 +300,7 @@
   align-items: center;
   gap: 16px;
   padding-top: 14px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--color-slate-100);
   margin-top: auto;
   flex-wrap: wrap;
 }
@@ -316,20 +316,20 @@
   height: 28px;
   border-radius: 50%;
   object-fit: cover;
-  background: #f0f0f0;
+  background: var(--color-slate-100);
 }
 
 .mtch-card-person-avatar-fallback {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #ebebeb;
+  background: var(--color-slate-200);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: 600;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 .mtch-card-person-info {
@@ -340,18 +340,18 @@
 .mtch-card-person-name {
   font-size: 13px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .mtch-card-person-role {
   font-size: 11px;
-  color: #717171;
+  color: var(--color-slate-500);
   text-transform: capitalize;
 }
 
 .mtch-card-connector {
   font-size: 14px;
-  color: #b0b0b0;
+  color: var(--color-slate-400);
   flex-shrink: 0;
 }
 
@@ -384,23 +384,23 @@
 }
 
 .mtch-btn--primary {
-  background: var(--brand-navy, #16324f);
+  background: var(--color-primary-600);
   color: #fff;
 }
 
 .mtch-btn--primary:hover {
-  background: var(--brand-navy-light, #1f4a6d);
+  background: var(--color-primary-800);
 }
 
 .mtch-btn--secondary {
   background: #fff;
-  color: #222;
-  border: 1px solid #b0b0b0;
+  color: var(--color-slate-900);
+  border: 1px solid var(--color-slate-400);
 }
 
 .mtch-btn--secondary:hover {
-  border-color: #222;
-  background: #fafafa;
+  border-color: var(--color-slate-900);
+  background: var(--color-slate-50);
 }
 
 .mtch-actions {
@@ -417,12 +417,12 @@
 
 .mtch-btn--ghost {
   background: transparent;
-  color: #c62828;
+  color: var(--color-danger-600);
   border: 1px solid #e0b4b4;
 }
 
 .mtch-btn--ghost:hover {
-  background: #fdecea;
+  background: var(--color-danger-50);
 }
 
 .mtch-deal-done {
@@ -430,7 +430,7 @@
   align-items: center;
   font-size: 13px;
   font-weight: 700;
-  color: #1e7e34;
+  color: var(--color-accent-700);
 }
 
 .mtch-deal-rejected {
@@ -438,7 +438,7 @@
   align-items: center;
   font-size: 13px;
   font-weight: 600;
-  color: #999;
+  color: var(--color-slate-400);
 }
 
 /* ── AI matchmaking note ── */
@@ -447,11 +447,11 @@
   align-items: flex-start;
   gap: 8px;
   padding: 10px 12px;
-  background: linear-gradient(135deg, #eef6ff, #f6f3ff);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, var(--color-primary-50), #f5f3ff);
+  border: 1px solid var(--color-slate-200);
   border-radius: 8px;
   font-size: 13px;
-  color: #3b4252;
+  color: var(--color-slate-700);
   line-height: 1.45;
 }
 
@@ -462,7 +462,7 @@
   padding: 2px 8px;
   margin-top: 1px;
   border-radius: 999px;
-  background: #135332;
+  background: var(--color-slate-900);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -472,7 +472,7 @@
 
 .mtch-ai-pending {
   font-size: 12px;
-  color: #9aa0ae;
+  color: var(--color-slate-400);
   font-style: italic;
 }
 
@@ -483,7 +483,7 @@
 .mtch-empty {
   text-align: center;
   padding: 64px 24px;
-  background: #fafafa;
+  background: var(--color-slate-50);
   border: 1px dashed #ddd;
   border-radius: 12px;
 }
@@ -496,13 +496,13 @@
 .mtch-empty-title {
   font-size: 20px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 8px;
 }
 
 .mtch-empty-text {
   font-size: 15px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 0 0 24px;
 }
 
@@ -603,7 +603,7 @@
 .mtch-tier-hint {
   margin: 8px 0 18px;
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 .mtch-recheck {
@@ -617,14 +617,14 @@
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 600;
-  color: #16324f;
+  color: var(--color-primary-600);
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
 
 .mtch-recheck:hover:not(:disabled) {
-  border-color: #1a8f5a;
-  color: #1a8f5a;
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-600);
 }
 
 .mtch-recheck:disabled {
@@ -661,8 +661,8 @@
 }
 
 .mtch-tier-pill--nearest {
-  background: #e3f5ec;
-  color: #127a45;
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
 }
 
 .mtch-tier-pill--far {
@@ -704,10 +704,10 @@
 .mtch-btn--ghost {
   background: #fff;
   border: 1px solid #dfe5ec;
-  color: #16324f;
+  color: var(--color-primary-600);
 }
 
 .mtch-btn--ghost:hover {
-  border-color: #1a8f5a;
-  color: #1a8f5a;
+  border-color: var(--color-primary-600);
+  color: var(--color-primary-600);
 }

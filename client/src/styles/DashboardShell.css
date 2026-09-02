@@ -1,18 +1,15 @@
 /* ===================================================
    DashboardShell.css — standalone dashboard app shell
-   Design mirrors the Admin panel shell (same layout &
-   structure) but with the WEBSITE's green for the sidebar:
-     forest green   #134e2c → #0f1d14  (sidebar gradient)
-     brand green    #1a8f5a / #127a45  (active nav, accents)
-     white content  #f5f7f8 background
-   The active-role accent is passed in via --role-accent.
+   Dark sidebar (slate-900) with indigo active states,
+   matching the website's fintech design system tokens.
+   Active-role accent is passed via --role-accent.
    =================================================== */
 
 .dash-shell {
   display: flex;
   min-height: 100vh;
   width: 100%;
-  background: #f5f7f8;
+  background: var(--color-surface-alt, #f8fafc);
 }
 
 /* ── Fixed sidebar ── */
@@ -20,8 +17,8 @@
   width: 250px;
   flex-shrink: 0;
   height: 100vh;
-  background: linear-gradient(180deg, #134e2c 0%, #0f1d14 100%);
-  color: #d5e5da;
+  background: var(--color-slate-900, #0f172a);
+  color: var(--color-slate-400, #94a3b8);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -75,7 +72,7 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  background: #1a8f5a;
+  background: var(--color-primary-600, #4f46e5);
   border: none;
   font-size: 15px;
   font-weight: 700;
@@ -101,7 +98,7 @@
 .dash-shell-brand-role {
   display: block;
   font-size: 11px;
-  color: #9fbfae;
+  color: var(--color-slate-400, #94a3b8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -124,14 +121,14 @@
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 500;
-  color: #b7cdbf;
+  color: var(--color-slate-400, #94a3b8);
   text-decoration: none;
   position: relative;
   transition: background 0.15s, color 0.15s;
 }
 
 .dash-shell-navlink:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
@@ -142,9 +139,9 @@
 }
 
 .dash-shell-navlink--active {
-  background: #1a8f5a;
+  background: var(--color-primary-600, #4f46e5);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(26, 143, 90, 0.35);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
 }
 
 .dash-shell-navlink--active .dash-shell-navicon {
@@ -169,7 +166,7 @@
   border-radius: 10px;
   font-size: 13.5px;
   font-weight: 500;
-  color: #b7cdbf;
+  color: var(--color-slate-400, #94a3b8);
   text-decoration: none;
   background: transparent;
   border: none;
@@ -180,16 +177,16 @@
 }
 
 .dash-shell-foot-link:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
 .dash-shell-foot-logout {
-  color: #f2a0a0;
+  color: #f87171;
 }
 
 .dash-shell-foot-logout:hover {
-  background: rgba(185, 28, 28, 0.2);
+  background: rgba(239, 68, 68, 0.15);
   color: #fff;
 }
 
@@ -216,7 +213,7 @@
   gap: 12px;
   padding: 0 24px;
   background: #fff;
-  border-bottom: 1px solid #e6eaef;
+  border-bottom: 1px solid var(--color-slate-200, #e2e8f0);
 }
 
 .dash-shell-topbar-spacer {
@@ -226,9 +223,6 @@
 /* Hamburger (mobile only) */
 .dash-shell-hamburger {
   display: none;
-  /* The button only ever renders as a flex box (inline-flex below 900px), so
-     the three bars need an explicit column direction — in the default `row`
-     they sit side by side and read as one line, not a hamburger. */
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -236,7 +230,7 @@
   width: 40px;
   height: 38px;
   border-radius: 9px;
-  border: 1px solid #dfe5ec;
+  border: 1px solid var(--color-slate-200, #e2e8f0);
   background: #fff;
   cursor: pointer;
   padding: 0;
@@ -246,9 +240,8 @@
   display: block;
   height: 2px;
   width: 18px;
-  background: #16324f;
+  background: var(--color-slate-900, #0f172a);
   border-radius: 2px;
-  /* Stop the bars being squashed along the column's main axis. */
   flex-shrink: 0;
 }
 
@@ -262,7 +255,7 @@
 
 .dash-shell-roleselect-label {
   font-size: 12px;
-  color: #8a9aaa;
+  color: var(--color-slate-400, #94a3b8);
   font-weight: 600;
 }
 
@@ -274,23 +267,23 @@
   border-radius: 10px;
   cursor: pointer;
   background: #fff;
-  border: 1px solid #dfe5ec;
-  color: #16324f;
+  border: 1px solid var(--color-slate-200, #e2e8f0);
+  color: var(--color-slate-800, #1e293b);
   font-size: 13.5px;
   font-weight: 600;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .dash-shell-roleselect-btn:hover {
-  border-color: #1a8f5a;
-  box-shadow: 0 2px 8px rgba(26, 143, 90, 0.12);
+  border-color: var(--color-primary-500, #6366f1);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
 }
 
 .dash-shell-roleselect-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--role-accent, #1a8f5a);
+  background: var(--role-accent, var(--color-primary-500, #6366f1));
 }
 
 .dash-shell-roleselect-menu {
@@ -300,9 +293,9 @@
   z-index: 40;
   min-width: 214px;
   background: #fff;
-  border: 1px solid #e8edf2;
+  border: 1px solid var(--color-slate-200, #e2e8f0);
   border-radius: 12px;
-  box-shadow: 0 12px 30px rgba(22, 50, 79, 0.14);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
   padding: 6px;
   list-style: none;
   margin: 0;
@@ -318,24 +311,24 @@
   cursor: pointer;
   background: transparent;
   border: none;
-  color: #33465a;
+  color: var(--color-slate-700, #334155);
   font-size: 13.5px;
   font-weight: 500;
   text-align: left;
 }
 
 .dash-shell-roleselect-item svg {
-  color: var(--role-accent, #1a8f5a);
+  color: var(--role-accent, var(--color-primary-500, #6366f1));
   flex-shrink: 0;
 }
 
 .dash-shell-roleselect-item:hover {
-  background: #f4faf7;
+  background: var(--color-slate-50, #f8fafc);
 }
 
 .dash-shell-roleselect-item--active {
-  background: #e3f5ec;
-  color: #127a45;
+  background: var(--color-primary-50, #eef2ff);
+  color: var(--color-primary-700, #4338ca);
   font-weight: 600;
 }
 
@@ -345,8 +338,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: #127a45;
-  background: #e3f5ec;
+  color: var(--color-primary-700, #4338ca);
+  background: var(--color-primary-50, #eef2ff);
   padding: 2px 6px;
   border-radius: 6px;
 }
@@ -359,15 +352,7 @@
   max-width: 100%;
 }
 
-/* ── Unified tab geometry ──
-   Each routed tab was authored as a standalone page and brought its own
-   container: max-widths of 1080/1120/1400/none and horizontal padding of
-   24/40/48px, so content visibly jumped sideways on every tab change. The
-   shell owns the geometry now — one width, one gutter, one canvas — and the
-   per-page containers below are neutralised.
-
-   This generalises the previous one-off `.dash-shell-content .dash-page`
-   rule. Page-internal layout (cards, grids, headers) is untouched. */
+/* ── Unified tab geometry ── */
 .dash-shell-content > * {
   --dash-tab-max: 1180px;
   --dash-tab-pad: 28px;
@@ -390,7 +375,7 @@
   padding-left: var(--dash-tab-pad);
 }
 
-/* Inner wrappers that re-cap the width would re-introduce the drift. */
+/* Inner wrappers that re-cap the width */
 .dash-shell-content .ml-page > *,
 .dash-shell-content .wl-container,
 .dash-shell-content .tr-container,
@@ -402,8 +387,7 @@
   padding-right: 0;
 }
 
-/* One canvas across every tab — MyListings' gradient and the white/grey
-   page backgrounds used to change the colour underfoot on each switch. */
+/* One canvas across every tab */
 .dash-shell-content .ml-page,
 .dash-shell-content .wl-page,
 .dash-shell-content .tr-page,
@@ -414,7 +398,7 @@
   min-height: 0;
 }
 
-/* Page titles were 32px on some tabs, 26px on the dashboard home. */
+/* Consistent page titles */
 .dash-shell-content .ml-title,
 .dash-shell-content .wl-title,
 .dash-shell-content .tr-title,
@@ -430,10 +414,12 @@
   display: none;
 }
 
-/* ── Responsive: sidebar becomes an off-canvas drawer ── */
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+
+/* Sidebar becomes an off-canvas drawer */
 @media (max-width: 900px) {
-  /* Shrink the shared gutter once, rather than letting each tab pick its own
-     (they previously ranged 12-20px on mobile). */
   .dash-shell-content > * {
     --dash-tab-pad: 16px;
   }
@@ -448,7 +434,7 @@
 
   .dash-shell-sidebar--open {
     transform: translateX(0);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
   }
 
   .dash-shell-hamburger {
@@ -459,7 +445,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 29, 20, 0.45);
+    background: var(--color-overlay, rgba(15, 23, 42, 0.5));
     z-index: 55;
   }
 }
@@ -472,6 +458,7 @@
     display: none;
   }
 }
+
 @media (max-width: 480px) {
   .dash-shell-content > * {
     --dash-tab-pad: 12px;
@@ -485,5 +472,9 @@
   .dash-shell-content .req-title,
   .dash-shell-content .lst-title {
     font-size: 22px;
+  }
+
+  .dash-shell-topbar {
+    height: 56px;
   }
 }

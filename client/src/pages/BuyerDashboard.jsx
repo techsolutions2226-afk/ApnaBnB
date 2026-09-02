@@ -148,7 +148,7 @@ const BuyerDashboard = () => {
           icon={FiFileText}
           value={stats.activeRequirements}
           label="Active Requirements"
-          accent="#1a8f5a"
+          accent="#4f46e5"
           to="/my-requirements"
         />
         <DashStat
@@ -162,7 +162,7 @@ const BuyerDashboard = () => {
           icon={FiCalendar}
           value={upcomingTrips}
           label="Upcoming Visits"
-          accent="#1f4a6d"
+          accent="#4f46e5"
           to="/trips"
         />
         <DashStat

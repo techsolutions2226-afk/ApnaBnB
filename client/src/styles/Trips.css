@@ -16,7 +16,7 @@
 .tr-title {
   font-size: 32px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 24px;
 }
 
@@ -25,7 +25,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 32px;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
   padding-bottom: 0;
 }
 
@@ -36,7 +36,7 @@
   border-bottom: 2px solid transparent;
   font-size: 15px;
   font-weight: 500;
-  color: #717171;
+  color: var(--color-slate-500);
   cursor: pointer;
   font-family: inherit;
   transition: color 0.15s, border-color 0.15s;
@@ -47,18 +47,18 @@
 }
 
 .tr-tab:hover {
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .tr-tab--active {
-  color: #222;
-  border-bottom-color: #222;
+  color: var(--color-slate-900);
+  border-bottom-color: var(--color-slate-900);
   font-weight: 600;
 }
 
 .tr-tab-count {
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
   font-weight: 400;
 }
 
@@ -73,7 +73,7 @@
 .tr-card {
   display: grid;
   grid-template-columns: 260px 1fr;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 16px;
   overflow: hidden;
   background: #fff;
@@ -112,11 +112,11 @@
 }
 
 .tr-card-badge--upcoming {
-  background: #008489;
+  background: var(--color-accent-600);
 }
 
 .tr-card-badge--cancelled {
-  background: #c13515;
+  background: var(--color-danger-600);
 }
 
 .tr-card-body {
@@ -128,7 +128,7 @@
 .tr-card-title {
   font-size: 18px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 12px;
 }
 
@@ -153,7 +153,7 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #484848;
+  color: var(--color-slate-700);
   margin: 0;
 }
 
@@ -174,12 +174,12 @@
 .tr-card-total {
   font-size: 18px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .tr-card-total-label {
   font-size: 14px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 .tr-card-actions {
@@ -191,18 +191,18 @@
 .tr-cancel-btn {
   padding: 8px 16px;
   background: #fff;
-  border: 1px solid #222;
+  border: 1px solid var(--color-slate-900);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s;
 }
 
 .tr-cancel-btn:hover {
-  background: #f7f7f7;
+  background: var(--color-slate-100);
 }
 
 .tr-review-btn {
@@ -210,7 +210,7 @@
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -222,22 +222,22 @@
 }
 
 .tr-review-btn:hover {
-  background: #e0314f;
+  background: var(--color-danger-600);
 }
 
 .tr-refund {
   font-size: 14px;
-  color: #008489;
+  color: var(--color-accent-600);
   font-weight: 600;
   margin: 0;
 }
 
 .tr-confirmation {
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 12px 0 0;
   padding-top: 12px;
-  border-top: 1px solid #ebebeb;
+  border-top: 1px solid var(--color-slate-200);
 }
 
 /* ── Modals ── */
@@ -247,7 +247,7 @@
 
 .tr-modal-body p {
   font-size: 15px;
-  color: #484848;
+  color: var(--color-slate-700);
   line-height: 1.5;
   margin: 0 0 24px;
 }
@@ -261,22 +261,22 @@
 .tr-modal-cancel {
   padding: 10px 20px;
   background: #fff;
-  border: 1px solid #222;
+  border: 1px solid var(--color-slate-900);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   cursor: pointer;
   font-family: inherit;
 }
 
 .tr-modal-cancel:hover {
-  background: #f7f7f7;
+  background: var(--color-slate-100);
 }
 
 .tr-modal-confirm {
   padding: 10px 20px;
-  background: #c13515;
+  background: var(--color-danger-600);
   border: none;
   border-radius: 8px;
   font-size: 14px;
@@ -287,7 +287,7 @@
 }
 
 .tr-modal-confirm:hover {
-  background: #a62e12;
+  background: var(--color-danger-700);
 }
 
 /* ── Review Modal ── */
@@ -298,13 +298,13 @@
 .tr-review-property {
   font-size: 16px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 4px;
 }
 
 .tr-review-dates {
   font-size: 14px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 0 0 24px;
 }
 
@@ -315,7 +315,7 @@
 .tr-review-rating-label {
   font-size: 14px;
   font-weight: 500;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 8px;
 }
 
@@ -327,14 +327,14 @@
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #222;
+  color: var(--color-slate-900);
   margin-bottom: 8px;
 }
 
 .tr-review-textarea {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #b0b0b0;
+  border: 1px solid var(--color-slate-400);
   border-radius: 8px;
   font-size: 15px;
   font-family: inherit;
@@ -346,19 +346,19 @@
 }
 
 .tr-review-textarea:focus {
-  border-color: #222;
+  border-color: var(--color-slate-900);
 }
 
 .tr-review-char-count {
   font-size: 12px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 6px 0 0;
 }
 
 .tr-review-submit {
   width: 100%;
   padding: 14px;
-  background: #1a8f5a;
+  background: var(--color-primary-600);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -370,12 +370,12 @@
 }
 
 .tr-review-submit:hover {
-  background: #e0314f;
+  background: var(--color-danger-600);
 }
 
 .tr-review-submit:disabled {
-  background: #ddd;
-  color: #999;
+  background: var(--color-slate-200);
+  color: var(--color-slate-400);
   cursor: not-allowed;
 }
 

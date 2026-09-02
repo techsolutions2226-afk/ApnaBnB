@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
      to        — optional route to wrap the whole card as a link
    ─────────────────────────────────────────────────────── */
 
-const DashStat = ({ icon, value, label, accent = "#1a8f5a", to }) => {
+const DashStat = ({ icon, value, label, accent = "#059669", to }) => {
   const Icon = icon;
   const body = (
     <>

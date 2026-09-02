@@ -8,10 +8,10 @@
   align-items: center;
   gap: 7px;
   padding: 8px 14px;
-  border: 1px solid #d7dee6;
+  border: 1px solid var(--color-slate-200);
   border-radius: 8px;
   background: #fff;
-  color: #16324f;
+  color: var(--color-slate-900);
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -20,8 +20,8 @@
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: #f2f6fa;
-  border-color: #b9c6d3;
+  background: var(--color-slate-50);
+  border-color: var(--color-slate-400);
 }
 
 .refresh-btn:disabled {

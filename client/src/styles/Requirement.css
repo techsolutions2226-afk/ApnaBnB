@@ -101,19 +101,19 @@
 .req-input--error,
 .req-select--error,
 .req-textarea--error {
-  border-color: #c13515;
+  border-color: var(--color-danger-600);
 }
 
 .req-input--error:focus,
 .req-select--error:focus,
 .req-textarea--error:focus {
-  border-color: #c13515;
-  box-shadow: 0 0 0 2px rgba(193, 53, 21, 0.15);
+  border-color: var(--color-danger-600);
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
 }
 
 .req-error {
   font-size: 13px;
-  color: #c13515;
+  color: var(--color-danger-600);
   margin-top: 4px;
 }
 
@@ -390,7 +390,7 @@
 
 .req-card-role--buyer {
   background: #e8f0fe;
-  color: #1a56db;
+  color: var(--color-primary-600);
 }
 
 .req-card-role--dealer {
@@ -499,17 +499,17 @@
 
 .req-card-urgency--urgent {
   background: #fde8e8;
-  color: #c13515;
+  color: var(--color-danger-600);
 }
 
 .req-card-urgency--normal {
   background: #fff3e0;
-  color: #e65100;
+  color: var(--color-warning-600);
 }
 
 .req-card-urgency--flexible {
   background: #e6f7f5;
-  color: #00856f;
+  color: var(--color-accent-700);
 }
 
 /* ── Empty State ── */
@@ -805,7 +805,7 @@
 
 .req-view-value {
   font-size: 1rem;
-  color: #333;
+  color: var(--color-slate-900);
   margin: 0;
 }
 
@@ -862,7 +862,7 @@
 /* Notes */
 .req-view-notes {
   font-size: 0.9375rem;
-  color: #333;
+  color: var(--color-slate-900);
   line-height: 1.7;
   margin: 0;
   white-space: pre-wrap;

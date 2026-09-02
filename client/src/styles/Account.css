@@ -19,7 +19,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #222;
+  color: var(--color-slate-900);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -38,29 +38,29 @@
 .ac-title {
   font-size: 32px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 8px;
 }
 
 .ac-subtitle {
   font-size: 16px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 .ac-subtitle-text {
   font-size: 16px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin-top: 4px;
   margin-bottom: 32px;
 }
 
 .ac-user-name {
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .ac-profile-link {
-  color: #222;
+  color: var(--color-slate-900);
   font-weight: 600;
   text-decoration: underline;
 }
@@ -83,7 +83,7 @@
   align-items: flex-start;
   padding: 24px;
   background: #fff;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 16px;
   text-decoration: none;
   color: inherit;
@@ -97,11 +97,11 @@
 
 .ac-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  border-color: #ddd;
+  border-color: var(--color-slate-200);
 }
 
 .ac-card--disabled {
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
 }
 
 .ac-card--disabled:hover {
@@ -111,20 +111,20 @@
 .ac-card-icon {
   width: 32px;
   height: 32px;
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   margin-bottom: 16px;
 }
 
 .ac-card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 8px;
 }
 
 .ac-card-desc {
   font-size: 14px;
-  color: #717171;
+  color: var(--color-slate-500);
   line-height: 1.4;
   margin: 0;
 }
@@ -135,9 +135,9 @@
   align-items: flex-start;
   gap: 16px;
   padding: 24px;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 16px;
-  background: #f7f7f7;
+  background: var(--color-slate-50);
 }
 
 .ac-bottom-icon {
@@ -148,13 +148,13 @@
 .ac-bottom-title {
   font-size: 16px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 4px;
 }
 
 .ac-bottom-desc {
   font-size: 14px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 0;
   line-height: 1.4;
 }
@@ -169,11 +169,11 @@
 
 .ac-field-row {
   padding: 24px 0;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .ac-field-row:first-child {
-  border-top: 1px solid #ebebeb;
+  border-top: 1px solid var(--color-slate-200);
 }
 
 .ac-field-header {
@@ -184,20 +184,20 @@
 
 .ac-field-label {
   font-size: 14px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 0 0 4px;
 }
 
 .ac-field-value {
   font-size: 16px;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0;
 }
 
 .ac-field-edit-btn {
   background: none;
   border: none;
-  color: #222;
+  color: var(--color-slate-900);
   font-size: 14px;
   font-weight: 600;
   text-decoration: underline;
@@ -221,7 +221,7 @@
 .ac-field-input {
   flex: 1;
   padding: 12px 16px;
-  border: 1px solid #b0b0b0;
+  border: 1px solid var(--color-slate-400);
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
@@ -230,12 +230,12 @@
 }
 
 .ac-field-input:focus {
-  border-color: #222;
+  border-color: var(--color-slate-900);
 }
 
 .ac-field-save-btn {
   padding: 10px 24px;
-  background: #222;
+  background: var(--color-slate-900);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -266,10 +266,10 @@
 .ac-notif-section-title {
   font-size: 18px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .ac-notif-row {
@@ -288,13 +288,13 @@
 .ac-notif-label {
   font-size: 15px;
   font-weight: 500;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 2px;
 }
 
 .ac-notif-desc {
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
   margin: 0;
   line-height: 1.4;
 }
@@ -306,7 +306,7 @@
   height: 28px;
   border-radius: 14px;
   border: none;
-  background: #b0b0b0;
+  background: var(--color-slate-400);
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.2s;
@@ -314,7 +314,7 @@
 }
 
 .ac-toggle--on {
-  background: #222;
+  background: var(--color-slate-900);
 }
 
 .ac-toggle-thumb {
@@ -402,10 +402,10 @@
   max-width: 640px;
   margin: 0 0 28px;
   padding: 12px 14px;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--color-slate-200);
   border-radius: 10px;
-  background: #fafafa;
-  color: #717171;
+  background: var(--color-slate-100);
+  color: var(--color-slate-500);
   font-size: 13.5px;
   line-height: 1.5;
 }
@@ -425,7 +425,7 @@
 .ac-sec-heading {
   font-size: 20px;
   font-weight: 600;
-  color: #222;
+  color: var(--color-slate-900);
   margin: 0 0 4px;
 }
 
@@ -461,12 +461,12 @@
   flex-direction: column;
   gap: 6px;
   font-size: 14px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 
 .ac-sec-hint {
   font-size: 12.5px;
-  color: #8a8a8a;
+  color: var(--color-slate-400);
 }
 
 .ac-sec-hint--block {
@@ -494,10 +494,10 @@
   align-items: center;
   gap: 6px;
   padding: 9px 16px;
-  border: 1px solid #222;
+  border: 1px solid var(--color-slate-900);
   border-radius: 8px;
   background: #fff;
-  color: #222;
+  color: var(--color-slate-900);
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -507,14 +507,14 @@
 }
 
 .ac-btn-outline:hover:not(:disabled) {
-  background: #f7f7f7;
+  background: var(--color-slate-50);
 }
 
 .ac-btn-ghost {
   padding: 10px 16px;
   border: none;
   background: none;
-  color: #222;
+  color: var(--color-slate-900);
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -527,10 +527,10 @@
   align-items: center;
   gap: 6px;
   padding: 9px 16px;
-  border: 1px solid #c13515;
+  border: 1px solid var(--color-danger-600);
   border-radius: 8px;
   background: #fff;
-  color: #c13515;
+  color: var(--color-danger-600);
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -540,7 +540,7 @@
 }
 
 .ac-btn-danger:hover:not(:disabled) {
-  background: #fdf2f0;
+  background: var(--color-danger-50);
 }
 
 /* Every inert control on these pages routes through here, so the "not wired
@@ -567,13 +567,13 @@
 }
 
 .ac-chip--ok {
-  background: #e9f2ec;
-  color: #134e2c;
+  background: var(--color-primary-50);
+  color: var(--color-slate-900);
 }
 
 .ac-chip--muted {
-  background: #f0f0f0;
-  color: #717171;
+  background: var(--color-slate-50);
+  color: var(--color-slate-500);
 }
 
 .ac-chip--inline {
@@ -596,7 +596,7 @@
   align-items: center;
   gap: 14px;
   padding: 18px 0;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .ac-device-row:last-child,
@@ -616,8 +616,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: #f7f7f7;
-  color: #222;
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
   flex-shrink: 0;
 }
 
@@ -639,7 +639,7 @@
 .ac-tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
   margin-bottom: 28px;
   overflow-x: auto;
 }
@@ -650,7 +650,7 @@
   border: none;
   border-bottom: 2px solid transparent;
   background: none;
-  color: #717171;
+  color: var(--color-slate-500);
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
@@ -660,13 +660,13 @@
 }
 
 .ac-tab:hover {
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .ac-tab--active {
-  color: #222;
+  color: var(--color-slate-900);
   font-weight: 600;
-  border-bottom-color: #222;
+  border-bottom-color: var(--color-slate-900);
 }
 
 /* ── Preference rows ── */
@@ -676,21 +676,21 @@
   justify-content: space-between;
   gap: 20px;
   padding: 20px 0;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .ac-pref-row:first-child {
-  border-top: 1px solid #ebebeb;
+  border-top: 1px solid var(--color-slate-200);
 }
 
 .ac-select {
   min-width: 220px;
   max-width: 100%;
   padding: 10px 12px;
-  border: 1px solid #b0b0b0;
+  border: 1px solid var(--color-slate-400);
   border-radius: 8px;
   background: #fff;
-  color: #222;
+  color: var(--color-slate-900);
   font-family: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -699,13 +699,13 @@
 }
 
 .ac-select:focus {
-  border-color: #222;
+  border-color: var(--color-slate-900);
 }
 
 /* ── Transaction table ── */
 .ac-table-wrap {
   margin-top: 16px;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   overflow-x: auto;
 }
@@ -719,20 +719,20 @@
 .ac-table th {
   text-align: left;
   padding: 12px 16px;
-  background: #fafafa;
-  color: #717171;
+  background: var(--color-slate-100);
+  color: var(--color-slate-500);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .ac-table td {
   padding: 14px 16px;
-  color: #222;
-  border-bottom: 1px solid #f2f2f2;
+  color: var(--color-slate-900);
+  border-bottom: 1px solid var(--color-slate-100);
 }
 
 .ac-table tr:last-child td {
@@ -811,7 +811,7 @@
   gap: 14px;
   width: 100%;
   padding: 16px;
-  border: 1px solid #e4e4e4;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   background: #fff;
   font-family: inherit;
@@ -821,8 +821,8 @@
 }
 
 .ac-2fa-option:hover {
-  border-color: #222;
-  background: #fafafa;
+  border-color: var(--color-slate-900);
+  background: var(--color-slate-100);
 }
 
 .ac-2fa-option .ac-device-info {
@@ -840,7 +840,7 @@
 .ac-setup-steps {
   margin: 0 0 20px;
   padding-left: 20px;
-  color: #555;
+  color: var(--color-slate-700);
   font-size: 14px;
   line-height: 1.7;
 }
@@ -850,7 +850,7 @@
   width: 200px;
   height: 200px;
   margin: 0 auto 20px;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
   background: #fff;
 }
@@ -859,13 +859,13 @@
   display: block;
   padding: 12px;
   margin: 8px 0 0;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--color-slate-100);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 14px;
   letter-spacing: 1px;
-  color: #222;
+  color: var(--color-slate-900);
   text-align: center;
   /* A 32-char base32 secret must wrap rather than widen the modal. */
   word-break: break-all;
@@ -878,10 +878,10 @@
   gap: 10px;
   padding: 12px 14px;
   margin-bottom: 18px;
-  border: 1px solid #f2d5cd;
+  border: 1px solid var(--color-danger-100);
   border-radius: 10px;
-  background: #fdf2f0;
-  color: #c13515;
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
   font-size: 13.5px;
   line-height: 1.5;
 }
@@ -898,16 +898,16 @@
   margin: 0 0 18px;
   padding: 16px;
   list-style: none;
-  border: 1px solid #ebebeb;
+  border: 1px solid var(--color-slate-200);
   border-radius: 12px;
-  background: #fafafa;
+  background: var(--color-slate-100);
 }
 
 .ac-recovery-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 14px;
   letter-spacing: 0.5px;
-  color: #222;
+  color: var(--color-slate-900);
   text-align: center;
   padding: 6px 4px;
   background: #fff;
@@ -933,7 +933,7 @@
 /* Explanatory line at the top of a confirm modal. */
 .ac-modal-note {
   margin: 0 0 18px;
-  color: #717171;
+  color: var(--color-slate-500);
   font-size: 14px;
   line-height: 1.6;
 }

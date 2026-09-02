@@ -26,7 +26,7 @@
 .prop-section-title {
   font-size: 22px;
   font-weight: 600;
-  color: #222222;
+  color: var(--color-slate-900);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -53,17 +53,17 @@
   width: 36px;
   height: 36px;
   background: #ffffff;
-  border: 1px solid #dddddd;
+  border: 1px solid var(--color-slate-200);
   border-radius: 50%;
   cursor: pointer;
-  color: #222222;
+  color: var(--color-slate-900);
   transition:
     box-shadow 0.2s,
     background 0.15s;
 }
 .prop-nav-btn:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-  background: #f7f7f7;
+  background: var(--color-slate-100);
 }
 
 /* ── Scrollable row (legacy) ── */
@@ -134,7 +134,7 @@
   aspect-ratio: 1 / 1;
   border-radius: 14px;
   overflow: hidden;
-  background: #ebebeb;
+  background: var(--color-slate-200);
 }
 
 .prop-img {
@@ -153,7 +153,7 @@
   top: 10px;
   left: 10px;
   background: rgba(255, 255, 255, 0.92);
-  color: #222222;
+  color: var(--color-slate-900);
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
@@ -199,7 +199,7 @@
 .prop-title {
   font-size: 14px;
   font-weight: 600;
-  color: #222222;
+  color: var(--color-slate-900);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -211,14 +211,14 @@
   align-items: center;
   gap: 3px;
   font-size: 13px;
-  color: #222222;
+  color: var(--color-slate-900);
   font-weight: 500;
   flex-shrink: 0;
 }
 
 .prop-location {
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -226,21 +226,21 @@
 
 .prop-price {
   font-size: 13px;
-  color: #717171;
+  color: var(--color-slate-500);
 }
 .prop-price strong {
-  color: #222222;
+  color: var(--color-slate-900);
   font-weight: 600;
 }
 
 .prop-meta {
-  color: #717171;
+  color: var(--color-slate-500);
   margin-left: 6px;
 }
 
 .prop-listed-by {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-slate-400);
 }
 
 /* ── Responsive ── */

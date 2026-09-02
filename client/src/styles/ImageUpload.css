@@ -8,50 +8,50 @@
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-slate-700);
   margin-bottom: 0.5rem;
 }
 
 .image-upload-dropzone {
-  border: 2px dashed #d1d5db;
+  border: 2px dashed var(--color-slate-300);
   border-radius: 0.5rem;
   padding: 2rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: #f9fafb;
+  background-color: var(--color-slate-50);
 }
 
 .image-upload-dropzone:hover {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-50);
 }
 
 .image-upload-dropzone.dragging {
-  border-color: #3b82f6;
-  background-color: #dbeafe;
+  border-color: var(--color-primary-600);
+  background-color: var(--color-primary-100);
 }
 
 .upload-icon {
   font-size: 2.5rem;
-  color: #9ca3af;
+  color: var(--color-slate-400);
   margin-bottom: 0.75rem;
 }
 
 .image-upload-dropzone:hover .upload-icon {
-  color: #3b82f6;
+  color: var(--color-primary-600);
 }
 
 .upload-text {
   font-size: 1rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--color-slate-700);
   margin: 0 0 0.25rem 0;
 }
 
 .upload-hint {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-slate-500);
   margin: 0;
 }
 
@@ -67,7 +67,7 @@
   border-radius: 0.5rem;
   overflow: hidden;
   aspect-ratio: 1;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--color-slate-200);
   cursor: grab;
   transition: transform 0.2s ease;
 }
@@ -78,8 +78,8 @@
 }
 
 .image-upload-item.cover-image {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: var(--color-primary-600);
+  box-shadow: 0 0 0 2px var(--color-primary-600);
 }
 
 .image-upload-item.uploading {
@@ -158,7 +158,7 @@
   position: absolute;
   top: 0.25rem;
   left: 0.25rem;
-  background: #3b82f6;
+  background: var(--color-primary-600);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
@@ -186,7 +186,7 @@
 .image-upload-instructions {
   margin-top: 0.75rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-slate-500);
   text-align: center;
 }
 

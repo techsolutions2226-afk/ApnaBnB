@@ -116,19 +116,19 @@
 .lst-input--error,
 .lst-select--error,
 .lst-textarea--error {
-  border-color: #c13515;
+  border-color: var(--color-danger-600);
 }
 
 .lst-input--error:focus,
 .lst-select--error:focus,
 .lst-textarea--error:focus {
-  border-color: #c13515;
+  border-color: var(--color-danger-600);
   box-shadow: 0 0 0 2px rgba(193, 53, 21, 0.15);
 }
 
 .lst-error {
   font-size: 13px;
-  color: #c13515;
+  color: var(--color-danger-600);
   margin-top: 4px;
 }
 
@@ -182,21 +182,21 @@
 }
 
 .lst-unit-trigger:hover {
-  border-color: #134e2c;
+  border-color: var(--color-slate-900);
 }
 
 .lst-unit-trigger:hover .abn-s2-chev {
-  color: #134e2c;
+  color: var(--color-slate-900);
 }
 
 .lst-unit-trigger--error {
-  border-color: #c13515;
+  border-color: var(--color-danger-600);
 }
 
 .lst-page--create .lst-unit-trigger:hover,
 .lst-page--create .lst-unit-trigger:focus {
   background: #fff;
-  border-color: #134e2c;
+  border-color: var(--color-slate-900);
 }
 
 /* ── Row (side-by-side fields) ── */
@@ -271,7 +271,7 @@
 }
 
 .lst-toggle-track--on {
-  background: #134e2c;
+  background: var(--color-slate-900);
 }
 
 .lst-toggle-thumb {
@@ -389,12 +389,12 @@
 }
 
 .lst-btn--primary {
-  background: #134e2c;
+  background: var(--color-slate-900);
   color: #fff;
 }
 
 .lst-btn--primary:hover {
-  background: #0f1d14;
+  background: var(--color-slate-900);
 }
 
 .lst-btn--primary:disabled {
@@ -416,12 +416,12 @@
 
 .lst-btn--danger {
   background: #fff;
-  color: #c13515;
-  border: 1px solid #c13515;
+  color: var(--color-danger-600);
+  border: 1px solid var(--color-danger-600);
 }
 
 .lst-btn--danger:hover {
-  background: #fef2f0;
+  background: var(--color-danger-50);
 }
 
 .lst-btn--sm {
@@ -637,9 +637,9 @@
 }
 
 .lst-purpose-card.lst-purpose-card--active {
-  border-color: #134e2c;
-  background: #e9f2ec;
-  color: #134e2c;
+  border-color: var(--color-slate-900);
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
 }
 
 .lst-purpose-icon {
@@ -674,8 +674,8 @@
 }
 
 .lst-category-card.lst-category-card--active {
-  border-color: #134e2c;
-  background: #e9f2ec;
+  border-color: var(--color-slate-900);
+  background: var(--color-slate-50);
 }
 
 .lst-category-icon {
@@ -716,19 +716,19 @@
 }
 
 .lst-subtype-card:hover {
-  border-color: #134e2c;
-  background: #eef5f0;
+  border-color: var(--color-slate-900);
+  background: var(--color-slate-50);
 }
 
 .lst-subtype-card.lst-subtype-card--active {
-  border-color: #134e2c;
-  background: #e9f2ec;
+  border-color: var(--color-slate-900);
+  background: var(--color-slate-50);
 }
 
 .lst-subtype-card-icon {
   display: inline-flex;
   flex-shrink: 0;
-  color: #134e2c;
+  color: var(--color-slate-900);
 }
 
 .lst-subtype-card-label {
@@ -738,7 +738,7 @@
 }
 
 .lst-subtype-card.lst-subtype-card--active .lst-subtype-card-label {
-  color: #0d2c1e;
+  color: var(--color-slate-900);
   font-weight: 700;
 }
 
@@ -815,7 +815,7 @@
 }
 
 .lst-amenity-slider-selected {
-  color: #134e2c;
+  color: var(--color-slate-900);
   font-weight: 600;
   margin-left: 4px;
 }
@@ -853,7 +853,7 @@
 }
 
 .lst-amenity-dot--active {
-  background: #134e2c;
+  background: var(--color-slate-900);
   transform: scale(1.25);
 }
 
@@ -964,14 +964,14 @@
 }
 
 .lst-amenity-chip.lst-amenity-chip--selected {
-  background: #e9f2ec;
-  border-color: #134e2c;
-  color: #134e2c;
+  background: var(--color-slate-50);
+  border-color: var(--color-slate-900);
+  color: var(--color-slate-900);
   font-weight: 600;
 }
 
 .lst-amenity-chip.lst-amenity-chip--selected .lst-amenity-checkmark {
-  background: #134e2c;
+  background: var(--color-slate-900);
   color: #fff;
 }
 
@@ -1100,14 +1100,14 @@
 }
 
 .lst-banner--success {
-  background: #e9f2ec;
-  color: #0d2c1e;
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
   border: 1px solid #bcd6c6;
 }
 
 .lst-banner--info {
-  background: #e9f2ec;
-  color: #134e2c;
+  background: var(--color-slate-50);
+  color: var(--color-slate-900);
   border: 1px solid #bcd6c6;
 }
 
@@ -1173,9 +1173,9 @@
 /* Tinted green page background — distinct from other (mostly-white) pages */
 .lst-page--create {
   background:
-    radial-gradient(1200px 600px at 0% 0%, #e9f2ec 0%, transparent 50%),
-    radial-gradient(1000px 600px at 100% 0%, #dcebe2 0%, transparent 55%),
-    linear-gradient(180deg, #fbfdfb 0%, #f2f7f3 100%);
+    radial-gradient(1200px 600px at 0% 0%, var(--color-slate-50) 0%, transparent 50%),
+    radial-gradient(1000px 600px at 100% 0%, var(--color-slate-50) 0%, transparent 55%),
+    linear-gradient(180deg, var(--color-slate-50) 0%, var(--color-slate-50) 100%);
   min-height: calc(100vh - 80px);
   max-width: none;
   padding: 24px 24px 80px;
@@ -1194,7 +1194,7 @@
 
 /* Hero header — gradient banner in the same green as the dashboard sidebar */
 .lst-page--create .lst-hero {
-  background: linear-gradient(135deg, #134e2c 0%, #0f1d14 100%);
+  background: linear-gradient(135deg, var(--color-slate-900) 0%, var(--color-slate-900) 100%);
   border-radius: 18px;
   padding: 28px 32px;
   margin-bottom: 24px;
@@ -1265,7 +1265,7 @@
 .lst-page--create .dash-breadcrumb-sep,
 .lst-page--create .dash-breadcrumb-current,
 .lst-page--create .lst-back-link {
-  color: #134e2c;
+  color: var(--color-slate-900);
 }
 
 /* Each section becomes a floating white card */
@@ -1304,7 +1304,7 @@
   bottom: 18px;
   width: 4px;
   border-radius: 2px;
-  background: #134e2c;
+  background: var(--color-slate-900);
 }
 
 .lst-page--create .lst-form-section-sub {
@@ -1329,14 +1329,14 @@
 .lst-page--create .lst-select:focus,
 .lst-page--create .lst-textarea:focus {
   background: #fff;
-  border-color: #134e2c;
+  border-color: var(--color-slate-900);
   box-shadow: 0 0 0 4px rgba(19, 78, 44, 0.12);
   outline: none;
 }
 
 /* Submit button — solid sidebar green */
 .lst-page--create .lst-btn--primary {
-  background: #134e2c;
+  background: var(--color-slate-900);
   border: none;
   padding: 14px 32px;
   font-size: 16px;

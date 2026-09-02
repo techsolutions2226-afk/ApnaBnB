@@ -8,7 +8,7 @@
   gap: 16px;
   border-radius: 16px;
   overflow: hidden;
-  background: #f8f9fa;
+  background: var(--color-slate-50);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -91,7 +91,7 @@
   border-radius: 12px;
   margin: 24px 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e8e8e8;
+  border: 1px solid var(--color-slate-200);
 }
 
 .vl-action-bar-left {
@@ -107,9 +107,9 @@
   align-items: center;
   padding: 8px 14px;
   border-radius: 8px;
-  background: #f4f6f8;
-  border: 1px dashed #c7ccd2;
-  color: #667180;
+  background: var(--color-slate-50);
+  border: 1px dashed var(--color-slate-300);
+  color: var(--color-slate-500);
   font-size: 13px;
   font-weight: 600;
   cursor: default;
@@ -134,7 +134,7 @@
 }
 
 .vl-action-btn--primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-800) 100%);
   color: white;
 }
 
@@ -144,7 +144,7 @@
 }
 
 .vl-action-btn--success {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  background: linear-gradient(135deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
   color: white;
 }
 
@@ -154,7 +154,7 @@
 }
 
 .vl-action-btn--warning {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, var(--color-danger-600) 0%, var(--color-warning-600) 100%);
   color: white;
 }
 
@@ -164,7 +164,7 @@
 }
 
 .vl-action-btn--danger {
-  background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+  background: linear-gradient(135deg, var(--color-danger-600) 0%, var(--color-danger-700) 100%);
   color: white;
 }
 

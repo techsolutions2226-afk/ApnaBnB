@@ -47,7 +47,7 @@ export default function OwnerReviewsSection({ userId }) {
     <div className="dash-section">
       <div className="dash-section-header">
         <h2 className="dash-section-title">
-          <FiStar size={16} style={{ color: "#e1a100" }} />
+          <FiStar size={16} style={{ color: "#f59e0b" }} />
           Reviews on My Properties
         </h2>
         {count > 0 && (

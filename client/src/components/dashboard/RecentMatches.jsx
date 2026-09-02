@@ -164,17 +164,17 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
                     borderRadius: 8,
                     border: "none",
                     background: "transparent",
-                    color: "#9aa4ae",
+                    color: "#64748b",
                     cursor: "pointer",
                     zIndex: 2,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#fdecec";
-                    e.currentTarget.style.color = "#d33";
+                    e.currentTarget.style.background = "#fef2f2";
+                    e.currentTarget.style.color = "#dc2626";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "#9aa4ae";
+                    e.currentTarget.style.color = "#64748b";
                   }}
                 >
                   <FiTrash2 size={15} />
@@ -234,7 +234,7 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
         title="Delete this match?"
         message={
           deleteError ? (
-            <span style={{ color: "#d33" }}>{deleteError}</span>
+            <span style={{ color: "#dc2626" }}>{deleteError}</span>
           ) : (
             "This removes the match for both parties and cannot be undone."
           )

@@ -90,10 +90,10 @@ export default function DashboardShell() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      {/* ── Fixed sidebar ── */}
+    <div className="flex h-screen bg-slate-50 font-sans">
+      {/* ── Fixed sidebar (dark theme) ── */}
       <aside
-        className={`fixed left-0 top-0 z-[50] h-full w-72 flex flex-col bg-white border-r border-slate-200 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-[50] h-full w-72 flex flex-col bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ "--role-accent": meta.accent }}
@@ -102,40 +102,39 @@ export default function DashboardShell() {
         {/* apnabnb logo → home */}
         <Link
           to="/"
-          className="flex items-center gap-2 px-5 py-4 border-b border-slate-100"
+          className="flex items-center gap-2 px-5 py-5 border-b border-white/[0.08]"
           aria-label="apnabnb home"
           onClick={() => setNavOpen(false)}
         >
-          <span className="text-xl font-bold text-slate-900 font-heading">
-            Apna<span className="text-primary-600">BnB</span>
+          <span className="text-xl font-bold text-white font-heading">
+            Apna<span className="text-primary-400">BnB</span>
           </span>
         </Link>
 
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+        {/* User profile */}
+        <div className="flex items-center gap-3 mx-3 mt-4 mb-3 px-3 py-3 bg-white/[0.05] border border-white/[0.07] rounded-xl">
           {currentUser?.avatar ? (
             <img
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-10 w-10 rounded-full object-cover border border-white/[0.18]"
               src={currentUser.avatar}
               alt={currentUser.name || "Profile"}
             />
           ) : (
-            <span
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700 font-semibold"
-            >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white font-semibold text-sm">
               {(currentUser?.name?.trim()?.[0] || "U").toUpperCase()}
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-900">
+            <p className="truncate text-sm font-medium text-white">
               {currentUser?.name || "My Account"}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               {meta.label} workspace
             </p>
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 overflow-y-auto" aria-label="Main navigation">
+        <nav className="flex-1 px-3 py-2 overflow-y-auto" aria-label="Main navigation">
           {items.map((item) => {
             const Icon = item.icon;
             return (
@@ -146,8 +145,8 @@ export default function DashboardShell() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
                     isActive
-                      ? "bg-primary-50 text-primary-700"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      ? "bg-primary-600 text-white shadow-lg shadow-primary-600/30"
+                      : "text-slate-400 hover:bg-white/[0.08] hover:text-white"
                   }`
                 }
                 onClick={() => setNavOpen(false)}
@@ -155,7 +154,7 @@ export default function DashboardShell() {
                 <Icon
                   size={17}
                   className={({ isActive }) =>
-                    isActive ? "text-primary-600" : "text-slate-400"
+                    isActive ? "text-white" : "text-slate-500"
                   }
                   aria-hidden="true"
                 />
@@ -165,11 +164,11 @@ export default function DashboardShell() {
           })}
         </nav>
 
-        {/* Account + logout (the navbar is gone, so these live here) */}
-        <div className="p-3 border-t border-slate-100 space-y-2">
+        {/* Account + logout */}
+        <div className="p-3 border-t border-white/[0.08] space-y-1">
           <Link
             to="/account"
-            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/[0.08] hover:text-white rounded-lg transition-colors"
             onClick={() => setNavOpen(false)}
           >
             <FiSettings size={16} />
@@ -177,7 +176,7 @@ export default function DashboardShell() {
           </Link>
           <button
             type="button"
-            className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
+            className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/[0.15] hover:text-red-300 rounded-lg transition-colors"
             onClick={handleLogout}
           >
             <FiLogOut size={16} />
@@ -188,7 +187,7 @@ export default function DashboardShell() {
 
       {/* ── Scrolling main column ── */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-72">
-        <header className="flex h-16 items-center gap-4 px-4 sm:px-6 border-b border-slate-200 bg-white sticky top-0 z-[40]">
+        <header className="flex h-14 sm:h-16 items-center gap-3 px-4 sm:px-6 border-b border-slate-200 bg-white sticky top-0 z-[40]">
           <button
             type="button"
             className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
@@ -271,7 +270,7 @@ export default function DashboardShell() {
 
         {navOpen && (
           <div
-            className="fixed inset-0 z-[45] bg-black/30 lg:hidden"
+            className="fixed inset-0 z-[45] bg-black/50 lg:hidden"
             onClick={() => setNavOpen(false)}
             aria-hidden="true"
           />

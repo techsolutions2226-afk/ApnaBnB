@@ -147,20 +147,20 @@ const SellerDashboard = () => {
           icon={FiHome}
           value={stats.activeListings}
           label="Active Listings"
-          accent="#1a8f5a"
+          accent="#059669"
           to="/my-listings"
         />
         <DashStat
           icon={FiEye}
           value={stats.totalViews.toLocaleString()}
           label="Total Views"
-          accent="#1f4a6d"
+          accent="#4f46e5"
         />
         <DashStat
           icon={FiMail}
           value={stats.totalInquiries}
           label="Total Inquiries"
-          accent="#a16207"
+          accent="#d97706"
         />
         <DashStat
           icon={FiGitMerge}

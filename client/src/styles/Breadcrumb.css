@@ -21,24 +21,24 @@
 }
 
 .dash-breadcrumb-link {
-  color: #66788a;
+  color: var(--color-slate-500);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.15s;
 }
 
 .dash-breadcrumb-link:hover {
-  color: #1a8f5a;
+  color: var(--color-primary-600);
   text-decoration: underline;
 }
 
 .dash-breadcrumb-sep {
-  color: #b0b0b0;
+  color: var(--color-slate-400);
   font-weight: 400;
   user-select: none;
 }
 
 .dash-breadcrumb-current {
-  color: #16324f;
+  color: var(--color-slate-900);
   font-weight: 600;
 }

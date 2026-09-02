@@ -4,7 +4,6 @@ import { FiChevronDown, FiSettings, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
-import "../../styles/DashboardShell.css";
 
 const STORAGE_KEY = "dash_view_role";
 
@@ -91,43 +90,52 @@ export default function DashboardShell() {
   };
 
   return (
-    <div className="dash-shell">
+    <div className="flex h-screen bg-slate-50">
       {/* ── Fixed sidebar ── */}
       <aside
-        className={`dash-shell-sidebar${navOpen ? " dash-shell-sidebar--open" : ""}`}
+        className={`fixed left-0 top-0 z-[50] h-full w-72 flex flex-col bg-white border-r border-slate-200 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
+          navOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         style={{ "--role-accent": meta.accent }}
+        aria-label="Dashboard navigation"
       >
         {/* apnabnb logo → home */}
         <Link
           to="/"
-          className="dash-shell-logo"
+          className="flex items-center gap-2 px-5 py-4 border-b border-slate-100"
           aria-label="apnabnb home"
           onClick={() => setNavOpen(false)}
         >
-          <span className="dash-shell-logo-word">apnabnb</span>
+          <span className="text-xl font-bold text-slate-900 font-heading">
+            Apna<span className="text-primary-600">BnB</span>
+          </span>
         </Link>
 
-        <div className="dash-shell-brand">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
           {currentUser?.avatar ? (
             <img
-              className="dash-shell-avatar"
+              className="h-10 w-10 rounded-full object-cover"
               src={currentUser.avatar}
               alt={currentUser.name || "Profile"}
             />
           ) : (
-            <span className="dash-shell-avatar dash-shell-avatar--fallback">
+            <span
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700 font-semibold"
+            >
               {(currentUser?.name?.trim()?.[0] || "U").toUpperCase()}
             </span>
           )}
-          <div className="dash-shell-brand-text">
-            <span className="dash-shell-brand-name">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-slate-900">
               {currentUser?.name || "My Account"}
-            </span>
-            <span className="dash-shell-brand-role">{meta.label} workspace</span>
+            </p>
+            <p className="text-xs text-slate-500">
+              {meta.label} workspace
+            </p>
           </div>
         </div>
 
-        <nav className="dash-shell-nav">
+        <nav className="flex-1 px-3 py-4 overflow-y-auto" aria-label="Main navigation">
           {items.map((item) => {
             const Icon = item.icon;
             return (
@@ -136,11 +144,21 @@ export default function DashboardShell() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `dash-shell-navlink${isActive ? " dash-shell-navlink--active" : ""}`
+                  `flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`
                 }
                 onClick={() => setNavOpen(false)}
               >
-                <Icon size={17} className="dash-shell-navicon" />
+                <Icon
+                  size={17}
+                  className={({ isActive }) =>
+                    isActive ? "text-primary-600" : "text-slate-400"
+                  }
+                  aria-hidden="true"
+                />
                 <span>{item.label}</span>
               </NavLink>
             );
@@ -148,10 +166,10 @@ export default function DashboardShell() {
         </nav>
 
         {/* Account + logout (the navbar is gone, so these live here) */}
-        <div className="dash-shell-sidebar-foot">
+        <div className="p-3 border-t border-slate-100 space-y-2">
           <Link
             to="/account"
-            className="dash-shell-foot-link"
+            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
             onClick={() => setNavOpen(false)}
           >
             <FiSettings size={16} />
@@ -159,7 +177,7 @@ export default function DashboardShell() {
           </Link>
           <button
             type="button"
-            className="dash-shell-foot-logout"
+            className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
             onClick={handleLogout}
           >
             <FiLogOut size={16} />
@@ -169,50 +187,55 @@ export default function DashboardShell() {
       </aside>
 
       {/* ── Scrolling main column ── */}
-      <div className="dash-shell-main">
-        <div className="dash-shell-topbar">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-72">
+        <header className="flex h-16 items-center gap-4 px-4 sm:px-6 border-b border-slate-200 bg-white sticky top-0 z-[40]">
           <button
             type="button"
-            className="dash-shell-hamburger"
+            className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
             aria-label="Toggle menu"
             onClick={() => setNavOpen((v) => !v)}
           >
-            <span />
-            <span />
-            <span />
+            <span className="block h-0.5 w-6 bg-current mb-1.5" />
+            <span className="block h-0.5 w-6 bg-current mb-1.5" />
+            <span className="block h-0.5 w-6 bg-current" />
           </button>
 
-          <div className="dash-shell-topbar-spacer" />
+          <div className="flex-1" />
 
           {/* Notifications were only reachable from the public navbar, which the
               dashboard shell doesn't render. The bell is self-contained (it
               carries its own styling), so it drops in as-is. */}
           {currentUser && <NotificationBell />}
 
-          <div className="dash-shell-roleselect" ref={selectRef}>
-            <span className="dash-shell-roleselect-label">Viewing as</span>
+          <div className="relative" ref={selectRef}>
+            <span className="sr-only">Viewing as</span>
             <button
               type="button"
-              className="dash-shell-roleselect-btn"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
               style={{ "--role-accent": meta.accent }}
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="listbox"
               aria-expanded={menuOpen}
             >
-              <span className="dash-shell-roleselect-dot" />
-              <RoleIcon size={15} />
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: meta.accent }}
+              />
+              <RoleIcon size={15} className="text-slate-600" />
               <span>{meta.label}</span>
               <FiChevronDown
                 size={15}
-                style={{
-                  transform: menuOpen ? "rotate(180deg)" : "none",
-                  transition: "transform .15s",
-                }}
+                className={`transition-transform ${
+                  menuOpen ? "rotate-180" : "rotate-0"
+                }`}
               />
             </button>
 
             {menuOpen && (
-              <ul className="dash-shell-roleselect-menu" role="listbox">
+              <ul
+                className="absolute right-0 mt-1.5 w-48 origin-top-right rounded-lg bg-white border border-slate-200 shadow-lg ring-1 ring-slate-100 overflow-hidden animate-slide-down"
+                role="listbox"
+              >
                 {ROLES.map((role) => {
                   const m = ROLE_META[role];
                   const Icon = m.icon;
@@ -222,18 +245,18 @@ export default function DashboardShell() {
                         type="button"
                         role="option"
                         aria-selected={role === viewRole}
-                        className={`dash-shell-roleselect-item${
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
                           role === viewRole
-                            ? " dash-shell-roleselect-item--active"
-                            : ""
+                            ? "bg-primary-50 text-primary-700"
+                            : "text-slate-700 hover:bg-slate-50"
                         }`}
                         style={{ "--role-accent": m.accent }}
                         onClick={() => pickRole(role)}
                       >
-                        <Icon size={15} />
+                        <Icon size={15} className="text-slate-500" />
                         <span>{m.label}</span>
                         {role === realRole && (
-                          <span className="dash-shell-roleselect-you">
+                          <span className="ml-auto text-xs text-slate-400">
                             your role
                           </span>
                         )}
@@ -244,19 +267,19 @@ export default function DashboardShell() {
               </ul>
             )}
           </div>
-        </div>
+        </header>
 
         {navOpen && (
           <div
-            className="dash-shell-scrim"
+            className="fixed inset-0 z-[45] bg-black/30 lg:hidden"
             onClick={() => setNavOpen(false)}
             aria-hidden="true"
           />
         )}
 
-        <div className="dash-shell-content">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet context={{ viewRole, setViewRole, realRole }} />
-        </div>
+        </main>
       </div>
     </div>
   );

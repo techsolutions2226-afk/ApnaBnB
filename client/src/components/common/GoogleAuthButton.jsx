@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 import { FcGoogle } from "react-icons/fc";
 import { openGooglePopup } from "../../utils/googleAuth";
 import { useAuth } from "../../context/AuthContext";
-import Modal from "./Modal";
+import Modal from "../ui/Modal";
 import GoogleSignupDetails from "./GoogleSignupDetails";
 
 
@@ -86,13 +86,13 @@ const GoogleAuthButton = ({ className = "" }) => {
     <>
       <button
         type="button"
-        className={className}
+        className={`inline-flex items-center justify-center gap-2.5 h-11 px-4 text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 hover:border-slate-400 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${className}`}
         onClick={handleClick}
         disabled={isLoading || busy}
       >
         {busy ? (
-          <span className="auth-google-loading">
-            <span className="auth-google-spinner" />
+          <span className="inline-flex items-center gap-2">
+            <span className="h-4 w-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
             Connecting to Google...
           </span>
         ) : (
@@ -106,10 +106,10 @@ const GoogleAuthButton = ({ className = "" }) => {
       {/* New Google accounts finish here: role + phone + business address,
           since the Google token carries none of those. */}
       <Modal
-        isOpen={!!pendingRole}
+        open={!!pendingRole}
         onClose={() => setPendingRole(null)}
         title="Finish setting up your account"
-        size="small"
+        size="lg"
       >
         <GoogleSignupDetails
           profile={pendingRole?.profile}

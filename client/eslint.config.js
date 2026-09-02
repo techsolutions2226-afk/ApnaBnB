@@ -23,7 +23,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // This config has no eslint-plugin-react, so JSX usage isn't tracked;
+      // it relies on the pattern below to skip capitalised components. Lower-
+      // case namespaces used only as JSX (framer-motion's `motion.div`) need
+      // to be listed explicitly or they read as unused.
+      'no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^([A-Z_]|motion$)' },
+      ],
     },
   },
 ])

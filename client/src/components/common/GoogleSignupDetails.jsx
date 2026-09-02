@@ -18,7 +18,6 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { FiCrosshair, FiEdit3 } from "react-icons/fi";
 import { reverseGeocode } from "../../utils/geocode";
-import "../../styles/GoogleSignupDetails.css";
 
 const ROLE_OPTIONS = [
   { value: "buyer", label: "Buyer", icon: "🏠", description: "I'm looking to buy or rent a property" },
@@ -124,36 +123,55 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
     });
   };
 
+  const inputBase =
+    "w-full h-10 px-3.5 text-sm rounded-lg bg-white text-slate-900 placeholder:text-slate-400 border transition-colors focus:outline-none focus:ring-2 disabled:bg-slate-50 disabled:text-slate-400";
+  const inputCls = (hasErr) =>
+    `${inputBase} ${
+      hasErr
+        ? "border-danger-500 focus:border-danger-500 focus:ring-danger-500/20"
+        : "border-slate-200 hover:border-slate-300 focus:border-primary-500 focus:ring-primary-500/20"
+    }`;
+
   return (
-    <form className="gsd-form" onSubmit={handleSubmit} noValidate>
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
       {profile?.name && (
-        <p className="gsd-intro">
+        <p className="text-sm text-slate-600">
           Welcome to ApnaBnB, {profile.name}. A few details finish setting up
           your account.
         </p>
       )}
 
       {/* ── Role ── */}
-      <fieldset className="gsd-fieldset">
-        <legend className="gsd-legend">How will you use the platform?</legend>
-        <div className="signup-role-grid">
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium text-slate-700">
+          How will you use the platform?
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
           {ROLE_OPTIONS.map((r) => (
             <button
               key={r.value}
               type="button"
-              className={`signup-role-card ${role === r.value ? "signup-role-card--active" : ""}`}
+              className={`relative flex flex-col items-start gap-1 p-2.5 text-left rounded-xl border transition-colors ${
+                role === r.value
+                  ? "border-primary-600 bg-primary-50"
+                  : "border-slate-200 hover:border-slate-300"
+              }`}
               onClick={() => {
                 setRole(r.value);
                 setErrors((prev) => ({ ...prev, role: undefined }));
               }}
               aria-pressed={role === r.value}
             >
-              <span className="signup-role-icon">{r.icon}</span>
-              <span className="signup-role-label">{r.label}</span>
-              <span className="signup-role-desc">{r.description}</span>
+              <span className="text-base leading-none">{r.icon}</span>
+              <span className={`text-sm font-semibold ${role === r.value ? "text-primary-700" : "text-slate-800"}`}>
+                {r.label}
+              </span>
+              <span className="text-[11px] leading-tight text-slate-500">
+                {r.description}
+              </span>
               {role === r.value && (
-                <span className="signup-role-check">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <span className="absolute top-1.5 right-1.5 flex items-center justify-center h-4 w-4 rounded-full bg-primary-600 text-white">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="h-2.5 w-2.5">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </span>
@@ -161,18 +179,18 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
             </button>
           ))}
         </div>
-        {errors.role && <p className="gsd-error">{errors.role}</p>}
+        {errors.role && <p className="text-xs text-danger-600">{errors.role}</p>}
       </fieldset>
 
       {/* ── Phone ── */}
-      <div className="gsd-field">
-        <label className="gsd-label" htmlFor="gsd-phone">
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-slate-700" htmlFor="gsd-phone">
           Phone number
         </label>
         <input
           id="gsd-phone"
           type="tel"
-          className={`gsd-input ${errors.phone ? "gsd-input--error" : ""}`}
+          className={inputCls(!!errors.phone)}
           placeholder="+92 300 1234567"
           value={phone}
           autoComplete="tel"
@@ -181,40 +199,44 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
             if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
           }}
         />
-        {errors.phone && <p className="gsd-error">{errors.phone}</p>}
+        {errors.phone && <p className="text-xs text-danger-600">{errors.phone}</p>}
       </div>
 
       {/* ── Business address ── */}
-      <div className="gsd-field">
-        <span className="gsd-label">Business address</span>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-slate-700">Business address</span>
 
-        <div className="gsd-modes" role="group" aria-label="How to set your address">
+        <div className="flex gap-2" role="group" aria-label="How to set your address">
           {MODES.map((m) => {
             const Icon = m.icon;
             const { key, label } = m;
             return (
-            <button
-              key={key}
-              type="button"
-              className={`gsd-mode ${mode === key ? "gsd-mode--active" : ""}`}
-              onClick={() => {
-                setMode(key);
-                setErrors((prev) => ({ ...prev, location: undefined }));
-              }}
-              aria-pressed={mode === key}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
+              <button
+                key={key}
+                type="button"
+                className={`inline-flex items-center gap-1.5 h-9 px-3 text-sm rounded-lg border transition-colors ${
+                  mode === key
+                    ? "bg-primary-50 text-primary-700 border-primary-500"
+                    : "text-slate-600 border-slate-200 hover:border-slate-300"
+                }`}
+                onClick={() => {
+                  setMode(key);
+                  setErrors((prev) => ({ ...prev, location: undefined }));
+                }}
+                aria-pressed={mode === key}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
             );
           })}
         </div>
 
         {mode === "detect" && (
-          <div className="gsd-detect">
+          <div className="mt-1">
             <button
               type="button"
-              className="gsd-detect-btn"
+              className="inline-flex items-center gap-2 h-9 px-3 text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
               onClick={handleDetect}
               disabled={detecting}
             >
@@ -222,21 +244,21 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
               {detecting ? "Detecting…" : "Detect my location"}
             </button>
             {detected && (
-              <>
-                <p className="gsd-detected">{detected}</p>
+              <div className="mt-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <p className="text-sm text-slate-700">{detected}</p>
                 {coords && (
-                  <p className="gsd-coords">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
                   </p>
                 )}
-              </>
+              </div>
             )}
           </div>
         )}
 
         {mode === "manual" && (
           <input
-            className={`gsd-input ${errors.location ? "gsd-input--error" : ""}`}
+            className={inputCls(!!errors.location)}
             placeholder="e.g. Office 4, Main Boulevard, Gulberg III, Lahore"
             value={manual}
             maxLength={200}
@@ -248,10 +270,14 @@ const GoogleSignupDetails = ({ profile, submitting = false, onSubmit }) => {
           />
         )}
 
-        {errors.location && <p className="gsd-error">{errors.location}</p>}
+        {errors.location && <p className="text-xs text-danger-600">{errors.location}</p>}
       </div>
 
-      <button type="submit" className="gsd-submit" disabled={submitting}>
+      <button
+        type="submit"
+        className="flex items-center justify-center h-11 w-full text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        disabled={submitting}
+      >
         {submitting ? "Creating account…" : "Create account"}
       </button>
     </form>

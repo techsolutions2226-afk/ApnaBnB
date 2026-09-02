@@ -1,7 +1,14 @@
 /* ====================================================
-   Home.css — apnabnb landing (reference-image layout)
+   Home.css — apnabnb landing
      hero banner + BUY/RENT search + CTA cards + popular row
-   Palette: forest green #134e2c · accent #1a8f5a · cream page
+
+   Design direction (ui-ux-pro-max: "real estate marketplace"):
+     pattern    Hero-Centric — full-bleed hero, one primary CTA
+     style      Glassmorphism — frosted panels, z-depth, light edge
+     type       Cinzel (display) / Josefin Sans (UI)
+
+   Colour comes exclusively from the tokens in index.css.
+   No hex literals in this file.
    ==================================================== */
 
 /* Hide the navbar's own search bar while this landing is up — the hero
@@ -15,103 +22,171 @@ body.hide-navbar-search .nav-mobile-pill {
   width: 100%;
   max-width: 100%;
   margin: 0;
-  padding: 0 clamp(32px, 5vw, 52px) 64px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #0f1d14;
+  padding: 0 clamp(32px, 5vw, 52px) 88px;
+  font-family: var(--font-body);
+  color: var(--brand-ink);
+}
+
+/* Shared focus ring — the skill's checklist flags removed focus rings as a
+   critical failure, and this page is almost entirely custom buttons. */
+.abn-home :focus-visible {
+  outline: 2px solid var(--brand-green);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+.abn-hero :focus-visible {
+  outline-color: var(--white);
 }
 
 /* ══════════════════════════════════════ HERO ══
-   The hero stretches edge-to-edge (full viewport width) even though it
-   lives inside the centered .abn-home container. The 50% - 50vw trick pulls
-   it leftward by exactly the container's left offset and sizes it to the
-   viewport, so it touches BOTH viewport edges without any horizontal
-   overflow/scrollbar (100vw minus nothing overlapping). */
+   Edge-to-edge: the 50% - 50vw trick pulls the section leftward by exactly
+   the container's left offset and sizes it to the viewport, so it touches
+   both viewport edges without any horizontal overflow. */
 .abn-hero {
   position: relative;
-  overflow: hidden;
-  background-size: cover;
-  background-position: center;
-  min-height: 580px;
+  overflow: hidden; /* clips the parallax layer */
+  min-height: 680px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 76px 24px;
 
-  /* Edge-to-edge, away from the container's max-width + padding. */
   width: 100vw;
   margin-left: calc(50% - 50vw);
+  background: var(--brand-navy-deep);
 }
 
+/* The photo lives on its own layer so GSAP can parallax it without ever
+   touching the text or the search controls above it. */
+.abn-hero-bg {
+  position: absolute;
+  inset: -12% 0;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
+
+/* Navy-tinted scrim. Navy (not black) keeps the hero on-brand and gives the
+   white type a cooler, more deliberate ground. */
 .abn-hero-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(10, 20, 14, 0.35) 0%,
-    rgba(10, 20, 14, 0.28) 45%,
-    rgba(10, 20, 14, 0.55) 100%
-  );
+  background:
+    linear-gradient(
+      180deg,
+      var(--scrim-2) 0%,
+      var(--scrim-3) 34%,
+      var(--scrim-1) 100%
+    ),
+    radial-gradient(120% 78% at 50% 104%, var(--scrim-1) 0%, transparent 62%);
 }
 
 .abn-hero-inner {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 900px;
+  max-width: 940px;
   text-align: center;
 }
 
 .abn-hero-title {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(30px, 4.5vw, 52px);
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.5px;
-  margin: 0 0 24px;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4.8vw, 58px);
+  font-weight: 600;
+  line-height: 1.14;
+  color: var(--white);
+  letter-spacing: 0.01em;
+  margin: 0 0 30px;
+  text-shadow: 0 2px 28px rgba(12, 30, 49, 0.45);
 }
 
-/* BUY / RENT toggle */
+/* ── BUY / RENT toggle — glass rail, framer-motion drives the pill ── */
 .abn-hero-toggle {
+  position: relative;
   display: inline-flex;
   gap: 4px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(6px);
-  border-radius: 999px;
-  margin-bottom: 18px;
+  padding: 5px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-pill);
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-md);
 }
 
 .abn-toggle-btn {
+  position: relative;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--white);
+  font-family: var(--font-ui);
   font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 8px 26px;
-  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  /* 44px min touch target (skill: Touch & Interaction, CRITICAL) */
+  min-height: 44px;
+  padding: 0 32px;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
-.abn-toggle-btn--active {
-  background: #134e2c;
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+/* The sliding indicator sits behind the labels — framer-motion owns its
+   position via layoutId, so neither button repaints its own background. */
+.abn-toggle-pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    135deg,
+    var(--brand-green-start) 0%,
+    var(--brand-green-dark) 100%
+  );
+  box-shadow: var(--shadow-md);
 }
 
-/* Search bar — two-row zameen-style panel */
+.abn-toggle-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Search panel ──
+   Near-opaque rather than true glass: the skill flags glassmorphism as
+   `risk:conditional | requires contrast-text-4.5`, and this panel holds
+   input text over a photograph. Heavy blur + 94% white keeps the frosted
+   read while the text stays comfortably above 4.5:1. */
 .abn-search2 {
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px;
-  max-width: 860px;
+  position: relative;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(1.25);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.5)) saturate(1.25);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 15px;
+  max-width: 900px;
   margin: 0 auto;
-  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
+}
+
+/* Light-source sheen along the top edge — the "light reflection" the
+   glassmorphism spec calls for. */
+.abn-search2::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-sheen),
+    transparent
+  );
 }
 
 .abn-s2-row {
@@ -126,14 +201,26 @@ body.hide-navbar-search .nav-mobile-pill {
   gap: 8px;
   flex: 1;
   min-width: 0;
-  height: 48px;
-  padding: 0 12px;
-  background: #fff;
-  border: 1px solid #dcdcdc;
-  border-radius: 10px;
+  height: 50px;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
-/* Row-1 field weighting to mirror the reference (city | location | type). */
+.abn-s2-field:hover {
+  border-color: var(--brand-green);
+}
+
+.abn-s2-field:focus-within {
+  border-color: var(--brand-green);
+  box-shadow: 0 0 0 3px var(--brand-green-soft);
+}
+
+/* Row-1 field weighting (city | location | type). */
 .abn-s2-city {
   flex: 1.1;
 }
@@ -142,39 +229,42 @@ body.hide-navbar-search .nav-mobile-pill {
 }
 
 .abn-s2-ico {
-  color: #2f6f4a;
+  color: var(--brand-green);
   flex-shrink: 0;
 }
 .abn-s2-ico--muted {
-  color: #9a9a9a;
+  color: var(--grey-400);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
-/* Collapsed "Search by Location" trigger button (reuses the field look). */
+/* Collapsed "Search by Location" trigger (reuses the field look). */
 .abn-s2-expand-btn {
   cursor: pointer;
   font-family: inherit;
-  transition: border-color 0.15s;
 }
-.abn-s2-expand-btn:hover {
-  border-color: #2f6f4a;
+.abn-s2-expand-btn:hover .abn-s2-ico--muted,
+.abn-s2-expand-btn:hover .abn-s2-expand-chev {
+  color: var(--brand-green);
 }
 .abn-s2-placeholder {
   flex: 1;
   min-width: 0;
   text-align: left;
   font-size: 14px;
-  color: #9a9a9a;
+  color: var(--grey-400);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .abn-s2-expand-chev {
-  color: #9a9a9a;
+  color: var(--grey-400);
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-mid) var(--ease-out);
 }
-.abn-s2-expand-btn:hover .abn-s2-expand-chev {
-  color: #2f6f4a;
+.abn-search2--open .abn-s2-expand-chev {
+  transform: rotate(180deg);
 }
 
 .abn-s2-input,
@@ -185,105 +275,129 @@ body.hide-navbar-search .nav-mobile-pill {
   outline: none;
   background: transparent;
   font-size: 14px;
-  color: #333;
+  color: var(--grey-800);
   font-family: inherit;
 }
 
 .abn-s2-input::placeholder {
-  color: #9a9a9a;
+  color: var(--grey-400);
 }
 
 .abn-s2-select {
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
-  padding-right: 18px; /* room for the chevron */
+  padding-right: 18px;
 }
 
 .abn-s2-chev {
   position: absolute;
   right: 12px;
-  color: #6b6b6b;
+  color: var(--grey-600);
   pointer-events: none;
 }
 
 .abn-s2-btn {
   flex: 1.4;
-  height: 48px;
+  height: 50px;
   border: none;
-  border-radius: 10px;
-  background: #1f9d55;
-  color: #fff;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    135deg,
+    var(--btn-grad-start) 0%,
+    var(--btn-grad-end) 100%
+  );
+  color: var(--white);
+  font-family: var(--font-ui);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  box-shadow: var(--shadow-md);
+  transition:
+    filter var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .abn-s2-btn:hover {
-  background: #16813f;
-}
-.abn-s2-btn:active {
-  transform: scale(0.98);
+  filter: brightness(1.08);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Category pills */
+/* ── Category pills ── */
 .abn-hero-pills {
   display: flex;
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 20px;
+  margin-top: 26px;
 }
 
 .abn-pill {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(15, 29, 20, 0.45);
-  backdrop-filter: blur(6px);
-  color: #fff;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  color: var(--white);
+  font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.05em;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 
 .abn-pill:hover {
-  background: rgba(19, 78, 44, 0.85);
-}
-.abn-pill:active {
-  transform: scale(0.97);
+  background: var(--brand-green);
+  border-color: var(--brand-green);
 }
 
 /* ══════════════════════════════════ CTA CARDS ══ */
 .abn-cta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-top: 40px;
+  gap: 22px;
+  margin-top: 68px;
 }
 
 .abn-cta-card {
   position: relative;
-  min-height: 220px;
-  border-radius: 18px;
+  min-height: 265px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: none;
   padding: 0;
   cursor: pointer;
-  background-size: cover;
-  background-position: center;
   text-align: left;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: var(--brand-navy-deep);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow var(--dur-mid) var(--ease-out);
 }
 
 .abn-cta-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Image on its own layer so the slow push-in never fights the framer-motion
+   transform on the card itself. */
+.abn-cta-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1);
+  transition: transform 0.8s var(--ease-out);
+}
+.abn-cta-card:hover .abn-cta-img {
+  transform: scale(1.06);
 }
 
 .abn-cta-shade {
@@ -291,88 +405,141 @@ body.hide-navbar-search .nav-mobile-pill {
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(10, 20, 14, 0.78) 0%,
-    rgba(10, 20, 14, 0.45) 55%,
-    rgba(10, 20, 14, 0.15) 100%
+    var(--brand-navy-deep) 0%,
+    var(--scrim-2) 56%,
+    transparent 100%
   );
+  opacity: 0.9;
 }
 
 .abn-cta-content {
   position: relative;
   z-index: 2;
-  padding: 26px 28px;
-  max-width: 62%;
-  color: #fff;
+  padding: 30px 32px;
+  max-width: 64%;
+  color: var(--white);
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: 220px;
+  min-height: 265px;
   box-sizing: border-box;
 }
 
 .abn-cta-title {
-  font-size: 22px;
-  font-weight: 800;
-  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0 0 10px;
 }
 
 .abn-cta-text {
   font-size: 14px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+  margin: 0 0 16px;
 }
 
 .abn-cta-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 700;
-  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--white);
+  padding-bottom: 6px;
+  align-self: flex-start;
+}
+
+/* Arrow slides + an underline grows from the left, both on card hover. */
+.abn-cta-link svg {
+  transition: transform var(--dur-mid) var(--ease-out);
+}
+.abn-cta-card:hover .abn-cta-link svg {
+  transform: translateX(5px);
+}
+
+.abn-cta-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1.5px;
+  width: 0;
+  background: var(--white);
+  transition: width var(--dur-mid) var(--ease-out);
+}
+.abn-cta-card:hover .abn-cta-link::after {
+  width: 100%;
 }
 
 /* ══════════════════════════════ POPULAR HOMES ══ */
 .abn-popular {
-  margin-top: 52px;
+  margin-top: 78px;
 }
 
 .abn-popular-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 26px;
 }
 
 .abn-popular-title {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 22px;
-  font-weight: 700;
-  color: #0f1d14;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--brand-navy);
   margin: 0;
 }
 
-/* Five per row, wrapping onto the next line — no horizontal scrolling and
-   no arrow controls. minmax(0, 1fr) keeps the columns equal and stops long
-   titles from widening a track. */
+/* The heading's arrow gets a ring, so it reads as a deliberate mark rather
+   than a stray glyph. */
+.abn-popular-title svg {
+  color: var(--brand-green);
+  padding: 7px;
+  border: 1.5px solid var(--brand-green-soft);
+  background: var(--brand-green-soft);
+  border-radius: var(--radius-pill);
+  box-sizing: content-box;
+}
+
+/* Five per row, wrapping — no horizontal scrolling, no arrow controls.
+   minmax(0, 1fr) keeps columns equal and stops long titles widening a track. */
 .abn-popular-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 20px;
+  gap: 22px;
   padding-bottom: 8px;
 }
 
 .abn-popular-cell {
   min-width: 0;
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--dur-mid) var(--ease-out);
+}
+
+.abn-popular-cell:hover {
+  box-shadow: var(--shadow-lg);
 }
 
 .abn-popular-skel {
-  height: 260px;
-  border-radius: 12px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #f7f7f7 50%, #f0f0f0 75%);
+  height: 268px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--grey-200) 25%,
+    var(--grey-100) 50%,
+    var(--grey-200) 75%
+  );
   background-size: 200% 100%;
   animation: abn-shimmer 1.4s infinite;
 }
@@ -387,15 +554,16 @@ body.hide-navbar-search .nav-mobile-pill {
 }
 
 .abn-popular-empty {
-  padding: 32px;
+  padding: 40px;
   text-align: center;
-  color: #717171;
-  background: #fafafa;
-  border: 1px dashed #ddd;
-  border-radius: 12px;
+  color: var(--grey-500);
+  background: var(--surface-alt);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
 }
 
-/* ══════════════════════════════════ RESPONSIVE ══ */
+/* ══════════════════════════════════ RESPONSIVE ══
+   Breakpoints checked at 375 / 768 / 1024 / 1440 per the skill checklist. */
 @media (max-width: 860px) {
   .abn-cta-grid {
     grid-template-columns: 1fr;
@@ -422,14 +590,18 @@ body.hide-navbar-search .nav-mobile-pill {
 
 @media (max-width: 560px) {
   .abn-home {
-    padding: 0 16px 48px;
+    padding: 0 16px 56px;
   }
   .abn-hero {
-    min-height: 420px;
+    min-height: 500px;
+    padding: 48px 20px;
+  }
+  .abn-toggle-btn {
+    padding: 0 24px;
   }
 }
 
-/* ── Popular homes grid: 5 per row, stepping down with the viewport ── */
+/* ── Popular grid steps down with the viewport ── */
 @media (max-width: 1280px) {
   .abn-popular-row {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -452,5 +624,41 @@ body.hide-navbar-search .nav-mobile-pill {
 @media (max-width: 440px) {
   .abn-popular-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ══════════════════════════ LENIS SMOOTH SCROLL ══
+   Scoped by the `lenis` class Lenis puts on <html>, which exists only while
+   the landing page is mounted. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* ══════════════════════════════ REDUCED MOTION ══
+   Everything lands in its final, fully-visible state. */
+@media (prefers-reduced-motion: reduce) {
+  .abn-hero-bg,
+  .abn-cta-img,
+  .abn-cta-link svg,
+  .abn-cta-link::after,
+  .abn-s2-expand-chev {
+    transition: none !important;
+    transform: none !important;
+  }
+  .abn-popular-skel {
+    animation: none;
   }
 }

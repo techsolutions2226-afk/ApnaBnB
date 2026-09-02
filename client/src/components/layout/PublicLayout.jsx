@@ -1,0 +1,303 @@
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  FiBell,
+  FiHome,
+  FiSearch,
+  FiPlus,
+  FiGrid,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
+import Avatar from "../ui/Avatar";
+import { useAuth } from "../../context/AuthContext";
+
+function AnnouncementBanner() {
+  const [visible, setVisible] = useState(true);
+  if (!visible) return null;
+  return (
+    <div className="bg-primary-600 text-white text-center py-2 px-4 text-sm">
+      <span className="inline-flex items-center gap-2">
+        <span className="hidden sm:inline">Welcome to ApnaBnB</span>
+        <span className="sm:hidden">Welcome!</span>
+        <button
+          onClick={() => setVisible(false)}
+          className="ml-2 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+          aria-label="Dismiss"
+        >
+          <FiX className="h-3.5 w-3.5" />
+        </button>
+      </span>
+    </div>
+  );
+}
+
+const mobileNavItems = [
+  { to: "/", icon: FiHome, label: "Home" },
+  { to: "/search", icon: FiSearch, label: "Search" },
+  { to: "/listing/new", icon: FiPlus, label: "List", isCenter: true },
+  { to: "/dashboard", icon: FiGrid, label: "Dashboard" },
+  { to: "/account", icon: FiUser, label: "Profile" },
+];
+
+export default function PublicLayout() {
+  const [scrolled, setScrolled] = useState(false);
+  const headerRef = useRef(null);
+  const { currentUser, isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  useLayoutEffect(() => {
+    const updateHeight = () => {
+      if (headerRef.current) {
+        document.documentElement.style.setProperty(
+          "--app-header-h",
+          `${headerRef.current.offsetHeight}px`
+        );
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    if (headerRef.current) observer.observe(headerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const navLinks = [
+    { to: "/", label: "Home" },
+    { to: "/about", label: "About" },
+    { to: "/contact", label: "Contact" },
+  ];
+
+  const hasOwnBottomCta = /^\/(property|listing)\//.test(location.pathname);
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <AnnouncementBanner />
+
+      {/* Header */}
+      <header
+        ref={headerRef}
+        className={`sticky top-0 z-40 transition-all duration-200 ${
+          scrolled
+            ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100"
+            : "bg-white border-b border-slate-200"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <span className="text-xl font-bold text-slate-900 font-heading">
+                Apna<span className="text-primary-600">BnB</span>
+              </span>
+            </Link>
+
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    location.pathname === link.to
+                      ? "text-primary-600 bg-primary-50"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Desktop Actions */}
+            <div className="hidden md:flex items-center gap-2">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className="px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    className="h-9 w-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors relative"
+                    aria-label="Notifications"
+                  >
+                    <FiBell className="h-4.5 w-4.5" />
+                  </button>
+                  <Link to="/account" className="shrink-0">
+                    <Avatar
+                      src={currentUser?.avatar}
+                      name={currentUser?.name}
+                      size="sm"
+                    />
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm"
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile: Avatar/notifications (no hamburger — bottom nav handles primary nav) */}
+            <div className="md:hidden flex items-center gap-2">
+              {isAuthenticated && (
+                <Link to="/account" className="shrink-0">
+                  <Avatar
+                    src={currentUser?.avatar}
+                    name={currentUser?.name}
+                    size="sm"
+                  />
+                </Link>
+              )}
+              {!isAuthenticated && (
+                <Link
+                  to="/login"
+                  className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                >
+                  Log in
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className={`flex-1 ${!hasOwnBottomCta ? "pb-20 md:pb-0" : ""}`}>
+        <Outlet />
+      </main>
+
+      {/* Footer — hidden on mobile where bottom nav is visible */}
+      <footer className="hidden md:block bg-slate-900 text-slate-400"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="col-span-2 md:col-span-1">
+              <span className="text-lg font-bold text-white font-heading">
+                Apna<span className="text-primary-400">BnB</span>
+              </span>
+              <p className="mt-3 text-sm leading-relaxed">
+                Pakistan's trusted platform for property buying, selling, and renting.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-3">Company</h3>
+              <ul className="space-y-2">
+                {["About", "Contact", "Careers"].map((item) => (
+                  <li key={item}>
+                    <Link
+                      to={`/${item.toLowerCase()}`}
+                      className="text-sm hover:text-white transition-colors"
+                    >
+                      {item}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-3">Explore</h3>
+              <ul className="space-y-2">
+                {["Homes for Sale", "Homes for Rent", "Plots", "Commercial"].map((item) => (
+                  <li key={item}>
+                    <Link to="/search" className="text-sm hover:text-white transition-colors">
+                      {item}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-3">Support</h3>
+              <ul className="space-y-2">
+                {["Help Center", "Privacy Policy", "Terms of Service"].map((item) => (
+                  <li key={item}>
+                    <Link to="/legal/terms" className="text-sm hover:text-white transition-colors">
+                      {item}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="mt-10 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-slate-500">
+              &copy; {new Date().getFullYear()} ApnaBnB. All rights reserved.
+            </p>
+            <div className="flex items-center gap-4">
+              {["Facebook", "Twitter", "Instagram"].map((social) => (
+                <a
+                  key={social}
+                  href="#"
+                  className="text-xs text-slate-500 hover:text-white transition-colors"
+                  aria-label={social}
+                >
+                  {social}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Mobile Bottom Nav */}
+      {!hasOwnBottomCta && (
+        <nav
+          className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 safe-bottom"
+          aria-label="Mobile navigation"
+        >
+        <div className="flex items-center justify-around h-16">
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.to;
+            if (item.isCenter) {
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="flex flex-col items-center justify-center -mt-3"
+                >
+                  <div className="h-11 w-11 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg">
+                    <FiPlus className="h-5 w-5" />
+                  </div>
+                  <span className="text-[10px] font-medium text-slate-500 mt-0.5">
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            }
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 min-w-[48px] ${
+                  isActive ? "text-primary-600" : "text-slate-400"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+        </nav>
+      )}
+    </div>
+  );
+}

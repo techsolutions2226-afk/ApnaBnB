@@ -7,7 +7,11 @@ import { WishlistProvider } from "./context/WishlistContext";
 import { BookingProvider } from "./context/BookingContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import RouteErrorBoundary from "./components/common/RouteErrorBoundary";
-import Layout from "./components/layout/Layout";
+
+/* ── New Layouts ── */
+import PublicLayout from "./components/layout/PublicLayout";
+import DashboardLayout from "./components/layout/DashboardLayout";
+import AuthLayout from "./components/layout/AuthLayout";
 
 /* ── Pages ── */
 import Home from "./pages/Home";
@@ -37,27 +41,25 @@ import Legal from "./pages/Legal";
 import DashboardShell from "./components/dashboard/DashboardShell";
 import DashboardHome from "./pages/DashboardHome";
 
-/* ── Listing management pages (Step 4) ── */
+/* ── Listing management pages ── */
 import CreateListing from "./pages/CreateListing";
 import EditListing from "./pages/EditListing";
 import ViewListing from "./pages/ViewListing";
 import MyListings from "./pages/MyListings";
 
-/* ── My Requirements (own requirements manager) ── */
+/* ── My Requirements ── */
 import MyRequirements from "./pages/MyRequirements";
 
-/* ── Requirements pages (Step 5) ── */
+/* ── Requirements pages ── */
 import PostRequirement from "./pages/PostRequirement";
 import EditRequirement from "./pages/EditRequirement";
 import ViewRequirement from "./pages/ViewRequirement";
 import RequirementsBoard from "./pages/RequirementsBoard";
 
-/* ── Messaging (Step 7) ── */
-
-/* ── Matchmaking (Step 6) ── */
+/* ── Matchmaking ── */
 import Matches from "./pages/Matches";
 
-/* ── Admin Panel (Step 8) ── */
+/* ── Admin Panel ── */
 import AdminShell from "./components/admin/AdminShell";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -70,7 +72,7 @@ import AdminPlans from "./pages/admin/AdminPlans";
 import AdminContact from "./pages/admin/AdminContact";
 import AdminLogs from "./pages/admin/AdminLogs";
 
-/* ── Subscription Plans (Step 10) ── */
+/* ── Subscription Plans ── */
 import Plans from "./pages/Plans";
 
 function App() {
@@ -81,10 +83,7 @@ function App() {
           <BrowserRouter>
             <RouteErrorBoundary>
               <Routes>
-                {/* ── Dashboard app shell (standalone — fixed sidebar, NO
-                    navbar/footer). Presentational wrapper only; the outer
-                    ProtectedRoute requires auth and each child keeps its OWN
-                    role gate. The role selector switches the VIEW only. ── */}
+                {/* ── Dashboard app shell ── */}
                 <Route
                   element={
                     <ProtectedRoute>
@@ -92,37 +91,25 @@ function App() {
                     </ProtectedRoute>
                   }
                 >
-                  {/* Dashboard home — body follows the selected view role;
-                      /dashboard/:role keeps login redirects working. */}
                   <Route path="/dashboard" element={<DashboardHome />} />
                   <Route path="/dashboard/:role" element={<DashboardHome />} />
 
-                  {/* Listing management — any authenticated user (auth via the
-                      shell's outer ProtectedRoute). The acting role is recorded
-                      on the property at create time. */}
                   <Route path="/listing/new" element={<CreateListing />} />
                   <Route path="/listing/:id/edit" element={<EditListing />} />
                   <Route path="/listing/:id" element={<ViewListing />} />
                   <Route path="/my-listings" element={<MyListings />} />
                   <Route path="/my-requirements" element={<MyRequirements />} />
 
-                  {/* Requirements — any authenticated user. The acting role is
-                      recorded on the requirement at create time. */}
                   <Route path="/requirements/new" element={<PostRequirement />} />
                   <Route path="/requirements/:id/edit" element={<EditRequirement />} />
                   <Route path="/requirements/:id" element={<ViewRequirement />} />
                   <Route path="/requirements" element={<RequirementsBoard />} />
 
-                  {/* Matches, Wishlists, Trips (all authenticated
-                      — auth enforced by the shell's outer ProtectedRoute) */}
                   <Route path="/matches" element={<Matches />} />
                   <Route path="/wishlists" element={<Wishlists />} />
                   <Route path="/trips" element={<Trips />} />
-
-                  {/* Subscription Plans — rendered inside the dashboard shell */}
                   <Route path="/plans" element={<Plans />} />
 
-                  {/* Account pages — rendered inside the shell (sidebar + content) */}
                   <Route path="/account" element={<Account />} />
                   <Route path="/account/personal-info" element={<PersonalInfo />} />
                   <Route path="/account/notifications" element={<Notifications />} />
@@ -132,24 +119,20 @@ function App() {
                   <Route path="/account/preferences" element={<GlobalPreferences />} />
                 </Route>
 
-                {/* ── Public routes with layout (navbar + footer) ── */}
-                <Route element={<Layout />}>
+                {/* ── Public routes with layout ── */}
+                <Route element={<PublicLayout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/property/:id" element={<PropertyDetail />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/search" element={<SearchResults />} />
-                  {/* Clean URLs for the For Sale / For Rent landing cards.
-                      SearchResults reads `purpose` from the URL pathname. */}
                   <Route path="/sale" element={<SearchResults />} />
                   <Route path="/rent" element={<SearchResults />} />
                   <Route path="/users/:id" element={<Profile />} />
                   <Route path="/legal/:slug" element={<Legal />} />
                 </Route>
 
-                {/* ── Admin panel (standalone shell — fixed sidebar, NO
-                    navbar/footer). The outer ProtectedRoute requires the
-                    admin role; sub-routes render inside the shell. ── */}
+                {/* ── Admin panel ── */}
                 <Route
                   path="/admin"
                   element={
@@ -170,14 +153,16 @@ function App() {
                   <Route path="logs" element={<AdminLogs />} />
                 </Route>
 
-                {/* ── Auth pages (no layout — standalone) ── */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/login/verify" element={<VerifyTwoFactor />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-            </Routes>
+                {/* ── Auth pages with AuthLayout ── */}
+                <Route element={<AuthLayout />}>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
+                  <Route path="/login/verify" element={<VerifyTwoFactor />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                </Route>
+              </Routes>
             </RouteErrorBoundary>
             <ToastContainer
               position="top-right"

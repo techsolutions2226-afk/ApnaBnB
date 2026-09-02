@@ -4,8 +4,8 @@ import { useProperties } from "../hooks/useProperties";
 import PropertyCard from "../components/property/PropertyCard";
 import SearchFiltersModal from "../components/search/SearchFiltersModal";
 import PropertySearchMap from "../components/search/PropertySearchMap";
-import Skeleton from "../components/common/Skeleton";
-import EmptyState from "../components/common/EmptyState";
+import { SkeletonCard } from "../components/ui/Skeleton";
+import EmptyState from "../components/ui/EmptyState";
 import {
   FiSliders,
   FiX,
@@ -14,7 +14,7 @@ import {
   FiMap,
   FiList,
 } from "react-icons/fi";
-import "../styles/SearchResults.css";
+import "../styles/SearchDropdowns.css";
 
 /* ─── Constants ─── */
 const PER_PAGE = 12;
@@ -129,104 +129,122 @@ const SearchResults = () => {
     }, [dest, purpose, activeType, sortBy, filters]);
 
   /* ── Filter + sort logic ── */
-  const filteredProperties = useMemo(() => {
-    // Build a single searchable string per property so the haystack matches
-    // however the backend stores location (object `{ city, area }` from the
-    // API, or legacy string from mock data).
-    const haystack = (p) => {
-      const loc = p.location;
-      const locStr =
-        typeof loc === "string"
-          ? loc
-          : loc && typeof loc === "object"
-            ? [loc.city, loc.area].filter(Boolean).join(" ")
-            : "";
-      return `${p.title || ""} ${locStr}`.toLowerCase();
-    };
+  const computeResults = useCallback(
+    (props, flt, srt) => {
+      // Build a single searchable string per property so the haystack matches
+      // however the backend stores location (object `{ city, area }` from the
+      // API, or legacy string from mock data).
+      const haystack = (p) => {
+        const loc = p.location;
+        const locStr =
+          typeof loc === "string"
+            ? loc
+            : loc && typeof loc === "object"
+              ? [loc.city, loc.area].filter(Boolean).join(" ")
+              : "";
+        return `${p.title || ""} ${locStr}`.toLowerCase();
+      };
 
-    let result = [...properties];
+      let result = [...props];
 
-    /* Purpose filter (sale vs rent). Properties without a `purpose` field
-       default to "sale" — matches the Mongoose schema default. */
-    if (purpose === "sale" || purpose === "rent") {
-      result = result.filter((p) => (p.purpose || "sale") === purpose);
-    }
-
-    /* Property-type chip (from the category bar at the top of results). */
-    if (activeType) {
-      result = result.filter(
-        (p) => (p.propertyType || "").toLowerCase() === activeType,
-      );
-    }
-
-    /* Destination search — split on commas so e.g. "Rawalpindi, Pakistan"
-       matches any property whose haystack contains "rawalpindi". */
-    if (dest) {
-      const tokens = dest
-        .toLowerCase()
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (tokens.length > 0) {
-        result = result.filter((p) => {
-          const h = haystack(p);
-          return tokens.some((t) => h.includes(t));
-        });
+      /* Purpose filter (sale vs rent). Properties without a `purpose` field
+         default to "sale" — matches the Mongoose schema default. */
+      if (purpose === "sale" || purpose === "rent") {
+        result = result.filter((p) => (p.purpose || "sale") === purpose);
       }
-    }
 
-    /* Property type */
-    if (filters.types.length > 0) {
-      result = result.filter((p) => filters.types.includes(p.propertyType));
-    }
+      /* Property-type chip (from the category bar at the top of results). */
+      if (activeType) {
+        result = result.filter(
+          (p) => (p.propertyType || "").toLowerCase() === activeType,
+        );
+      }
 
-    /* Price range */
-    result = result.filter(
-      (p) => p.price >= filters.minPrice && p.price <= filters.maxPrice
-    );
+      /* Destination search — split on commas so e.g. "Rawalpindi, Pakistan"
+         matches any property whose haystack contains "rawalpindi". */
+      if (dest) {
+        const tokens = dest
+          .toLowerCase()
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (tokens.length > 0) {
+          result = result.filter((p) => {
+            const h = haystack(p);
+            return tokens.some((t) => h.includes(t));
+          });
+        }
+      }
 
-    /* Bedrooms */
-    if (filters.bedrooms > 0) {
-      result = result.filter((p) => (p.bedrooms || 0) >= filters.bedrooms);
-    }
+      /* Property type */
+      if (flt.types.length > 0) {
+        result = result.filter(
+          (p) => flt.types.includes(p.propertyType)
+        );
+      }
 
-    /* Amenities — guarded since backend Property model has no amenities field */
-    if (filters.amenities.length > 0) {
-      result = result.filter((p) =>
-        Array.isArray(p.amenities) &&
-        filters.amenities.every((a) => p.amenities.includes(a))
+      /* Price range */
+      result = result.filter(
+        (p) => p.price >= flt.minPrice && p.price <= flt.maxPrice
       );
-    }
 
-    /* Verified host */
-    if (filters.superhost) {
-      result = result.filter((p) => p.listedBy?.verified);
-    }
+      /* Bedrooms */
+      if (flt.bedrooms > 0) {
+        result = result.filter((p) => (p.bedrooms || 0) >= flt.bedrooms);
+      }
 
-    /* Sort */
-    switch (sortBy) {
-      case "price-asc":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      default:
-        /* recommended — guest favs first, then by rating, then newest */
-        result.sort((a, b) => {
-          const favDiff = (b.isGuestFav ? 1 : 0) - (a.isGuestFav ? 1 : 0);
-          if (favDiff !== 0) return favDiff;
-          const ratingDiff = (b.rating || 0) - (a.rating || 0);
-          if (ratingDiff !== 0) return ratingDiff;
-          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-        });
-    }
+      /* Amenities — guarded since backend Property model has no amenities field */
+      if (flt.amenities.length > 0) {
+        result = result.filter((p) =>
+          Array.isArray(p.amenities) &&
+          flt.amenities.every((a) => p.amenities.includes(a))
+        );
+      }
 
-    return result;
-  }, [dest, filters, sortBy, properties, purpose, activeType]);
+      /* Verified host */
+      if (flt.superhost) {
+        result = result.filter((p) => p.listedBy?.verified);
+      }
+
+      /* Sort */
+      switch (srt) {
+        case "price-asc":
+          result.sort((a, b) => a.price - b.price);
+          break;
+        case "price-desc":
+          result.sort((a, b) => b.price - a.price);
+          break;
+        case "rating":
+          result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        default:
+          /* recommended — guest favs first, then by rating, then newest */
+          result.sort((a, b) => {
+            const favDiff = (b.isGuestFav ? 1 : 0) - (a.isGuestFav ? 1 : 0);
+            if (favDiff !== 0) return favDiff;
+            const ratingDiff = (b.rating || 0) - (a.rating || 0);
+            if (ratingDiff !== 0) return ratingDiff;
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+          });
+      }
+
+      return result;
+    },
+    [dest, properties, purpose, activeType]
+  );
+
+  /* Applied results — respects the live `filters` + `sortBy`. */
+  const filteredProperties = useMemo(
+    () => computeResults(properties, filters, sortBy),
+    [computeResults, filters, sortBy, properties]
+  );
+
+  /* Live count shown inside the filter modal while the user adjusts
+     `pendingFilters`, before they click Apply. */
+  const pendingCount = useMemo(
+    () => computeResults(properties, pendingFilters, sortBy).length,
+    [computeResults, pendingFilters, sortBy, properties]
+  );
 
   /* Pagination */
   const totalPages = Math.ceil(filteredProperties.length / PER_PAGE);
@@ -371,256 +389,283 @@ const SearchResults = () => {
           : "All properties";
 
   return (
-    <div className="sr-wrapper">
-      {/* ═══ Top Bar: search summary + sort + filter button ═══ */}
-      <div className="sr-top-bar">
-        <div className="sr-summary">
-          <h1 className="sr-heading">{purposeHeading}</h1>
-          <p className="sr-meta">
-            {filteredProperties.length} listing{filteredProperties.length !== 1 ? "s" : ""}
-            {filters.bedrooms > 0 && <> &middot; {filters.bedrooms}+ bedrooms</>}
-          </p>
-        </div>
-        <div className="sr-actions">
-          <div
-            style={{
-              display: "inline-flex",
-              border: "1px solid #ddd",
-              borderRadius: 8,
-              overflow: "hidden",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 14px",
-                background: viewMode === "list" ? "#222" : "#fff",
-                color: viewMode === "list" ? "#fff" : "#222",
-                border: "none",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-              aria-pressed={viewMode === "list"}
-            >
-              <FiList size={16} /> List
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("map")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 14px",
-                background: viewMode === "map" ? "#222" : "#fff",
-                color: viewMode === "map" ? "#fff" : "#222",
-                border: "none",
-                borderLeft: "1px solid #ddd",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-              aria-pressed={viewMode === "map"}
-            >
-              <FiMap size={16} /> Map
-            </button>
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* ═══ Top Bar: search summary + sort + filter button ═══ */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-heading tracking-tight">
+              {purposeHeading}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {filteredProperties.length} listing{filteredProperties.length !== 1 ? "s" : ""}
+              {filters.bedrooms > 0 && <> &middot; {filters.bedrooms}+ bedrooms</>}
+            </p>
           </div>
-          <button className="sr-filter-btn" onClick={openFilterModal}>
-            <FiSliders size={16} />
-            <span>Filters</span>
-            {activeChips.filter((c) => c.key !== "dest" && c.key !== "guests").length > 0 && (
-              <span className="sr-filter-badge">
-                {activeChips.filter((c) => c.key !== "dest" && c.key !== "guests").length}
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            {/* List / Map toggle */}
+            <div className="inline-flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === "list"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                aria-pressed={viewMode === "list"}
+              >
+                <FiList size={15} /> List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("map")}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === "map"
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+                aria-pressed={viewMode === "map"}
+              >
+                <FiMap size={15} /> Map
+              </button>
+            </div>
+
+            {/* Filter button */}
+            <button
+              className="inline-flex items-center gap-1.5 h-10 px-4 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg shadow-xs hover:bg-slate-50 transition-colors relative"
+              onClick={openFilterModal}
+              aria-label="Open filters"
+            >
+              <FiSliders size={15} />
+              <span>Filters</span>
+              {activeChips.filter((c) => c.key !== "dest" && c.key !== "guests").length > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[11px] font-bold text-white bg-primary-600 rounded-full">
+                  {activeChips.filter((c) => c.key !== "dest" && c.key !== "guests").length}
+                </span>
+              )}
+            </button>
+
+            {/* Sort dropdown */}
+            <div className="relative">
+              <button
+                className="inline-flex items-center gap-1.5 h-10 px-3.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg shadow-xs hover:bg-slate-50 transition-colors"
+                onClick={() => setSortOpen(!sortOpen)}
+                aria-haspopup="true"
+                aria-expanded={sortOpen}
+              >
+                <span className="sm:hidden">Sort</span>
+                <span className="hidden sm:inline">
+                  {SORT_OPTIONS.find((o) => o.value === sortBy)?.label}
+                </span>
+                <FiChevronDown size={15} className={`transition-transform ${sortOpen ? "rotate-180" : ""}`} />
+              </button>
+              {sortOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setSortOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl z-40 py-1 animate-scale-in">
+                    {SORT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                          sortBy === opt.value
+                            ? "bg-primary-50 text-primary-700 font-medium"
+                            : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                        onClick={() => {
+                          setSortBy(opt.value);
+                          setSortOpen(false);
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ Property-type Category Bar ═══ */}
+        {typeChips.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <button
+              type="button"
+              onClick={() => setActiveType("")}
+              className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 text-sm font-medium rounded-full border transition-colors ${
+                activeType === ""
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+              }`}
+            >
+              All
+              <span className={activeType === "" ? "text-white/70" : "text-slate-400"}>
+                {typeChips.reduce((s, c) => s + c.count, 0)}
               </span>
-            )}
-          </button>
-          <div className="sr-sort-wrap">
-            <button
-              className="sr-sort-btn"
-              onClick={() => setSortOpen(!sortOpen)}
-            >
-              <span>{SORT_OPTIONS.find((o) => o.value === sortBy)?.label}</span>
-              <FiChevronDown size={16} className={`sr-sort-chevron${sortOpen ? " sr-sort-chevron--open" : ""}`} />
             </button>
-            {sortOpen && (
-              <>
-                <div className="sr-sort-backdrop" onClick={() => setSortOpen(false)} />
-                <div className="sr-sort-dropdown">
-                  {SORT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={`sr-sort-option${sortBy === opt.value ? " sr-sort-option--active" : ""}`}
-                      onClick={() => {
-                        setSortBy(opt.value);
-                        setSortOpen(false);
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </>
+            {typeChips.map(({ type, count }) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setActiveType(type)}
+                className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 text-sm font-medium rounded-full border transition-colors ${
+                  activeType === type
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                {TYPE_LABEL[type] || type}
+                <span className={activeType === type ? "text-white/70" : "text-slate-400"}>{count}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ═══ Active Filter Chips ═══ */}
+        {activeChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 mb-5">
+            {activeChips.map((chip) => (
+              <button
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-sm bg-primary-50 text-primary-700 rounded-full hover:bg-primary-100 transition-colors"
+                onClick={() => removeChip(chip.key)}
+              >
+                <span>{chip.label}</span>
+                <FiX size={13} />
+              </button>
+            ))}
+            {activeChips.length > 1 && (
+              <button
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                onClick={clearAllFilters}
+              >
+                Clear all
+              </button>
             )}
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* ═══ Property-type Category Bar — chips for every type that exists
-            under the current purpose. Filters results when a chip is clicked. ═══ */}
-      {typeChips.length > 0 && (
-        <div className="sr-type-bar">
-          <button
-            type="button"
-            onClick={() => setActiveType("")}
-            className={`sr-type-chip${activeType === "" ? " sr-type-chip--active" : ""}`}
-          >
-            All
-            <span className="sr-type-count">
-              {typeChips.reduce((s, c) => s + c.count, 0)}
-            </span>
-          </button>
-          {typeChips.map(({ type, count }) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => setActiveType(type)}
-              className={`sr-type-chip${activeType === type ? " sr-type-chip--active" : ""}`}
-            >
-              {TYPE_LABEL[type] || type}
-              <span className="sr-type-count">{count}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ═══ Active Filter Chips ═══ */}
-      {activeChips.length > 0 && (
-        <div className="sr-chips">
-          {activeChips.map((chip) => (
-            <button
-              key={chip.key}
-              className="sr-chip"
-              onClick={() => removeChip(chip.key)}
-            >
-              <span>{chip.label}</span>
-              <FiX size={14} />
-            </button>
-          ))}
-          {activeChips.length > 1 && (
-            <button className="sr-chip sr-chip--clear" onClick={clearAllFilters}>
-              Clear all
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ═══ Results: Map or List ═══ */}
-      {isLoading ? (
-        <div className="sr-grid">
-          <Skeleton count={8} />
-        </div>
-      ) : viewMode === "map" ? (
-        filteredProperties.length > 0 ? (
-          <PropertySearchMap properties={filteredProperties} height={600} />
+        {/* ═══ Results: Map or List ═══ */}
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : viewMode === "map" ? (
+          filteredProperties.length > 0 ? (
+            <PropertySearchMap properties={filteredProperties} height={600} />
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs">
+              <EmptyState
+                icon={FiSearch}
+                title="No exact matches"
+                description="Try changing or removing some of your filters, or adjust your search area."
+                actionLabel="Clear all filters"
+                onAction={clearAllFilters}
+              />
+            </div>
+          )
+        ) : paginatedProperties.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {paginatedProperties.map((p) => (
+              <PropertyCard
+                key={p._id || p.id}
+                id={p._id || p.id}
+                {...p}
+              />
+            ))}
+          </div>
         ) : (
-          <EmptyState
-            icon={<FiSearch size={48} />}
-            title="No exact matches"
-            description="Try changing or removing some of your filters, or adjust your search area."
-            actionLabel="Clear all filters"
-            onAction={clearAllFilters}
-          />
-        )
-      ) : paginatedProperties.length > 0 ? (
-        <div className="sr-grid">
-          {paginatedProperties.map((p) => (
-            <PropertyCard
-              key={p._id || p.id}
-              id={p._id || p.id}
-              {...p}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs">
+            <EmptyState
+              icon={FiSearch}
+              title="No exact matches"
+              description="Try changing or removing some of your filters, or adjust your search area."
+              actionLabel="Clear all filters"
+              onAction={clearAllFilters}
             />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={<FiSearch size={48} />}
-          title="No exact matches"
-          description="Try changing or removing some of your filters, or adjust your search area."
-          actionLabel="Clear all filters"
-          onAction={clearAllFilters}
-        />
-      )}
+          </div>
+        )}
 
-      {/* ═══ Pagination (list view only) ═══ */}
-      {viewMode === "list" && totalPages > 1 && (
-        <div className="sr-pagination">
-          <button
-            className="sr-page-btn sr-page-arrow"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
-            &lsaquo;
-          </button>
-          {getPageNumbers().map((n) => (
+        {/* ═══ Pagination (list view only) ═══ */}
+        {viewMode === "list" && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-8">
             <button
-              key={n}
-              className={`sr-page-btn${currentPage === n ? " sr-page-btn--active" : ""}`}
-              onClick={() => setCurrentPage(n)}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              aria-label="Previous page"
             >
-              {n}
+              &lsaquo;
             </button>
-          ))}
-          <button
-            className="sr-page-btn sr-page-arrow"
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
-            &rsaquo;
-          </button>
-        </div>
-      )}
+            {getPageNumbers().map((n) => (
+              <button
+                key={n}
+                className={`inline-flex items-center justify-center h-9 w-9 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === n
+                    ? "bg-primary-600 text-white"
+                    : "text-slate-600 bg-white border border-slate-200 hover:bg-slate-50"
+                }`}
+                onClick={() => setCurrentPage(n)}
+                aria-current={currentPage === n ? "page" : undefined}
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              aria-label="Next page"
+            >
+              &rsaquo;
+            </button>
+          </div>
+        )}
 
-      {/* ═══ Filter Modal ═══ */}
-      <SearchFiltersModal
-        isOpen={filterModalOpen}
-        onClose={() => setFilterModalOpen(false)}
-        pendingFilters={pendingFilters}
-        onToggleType={togglePendingType}
-        onToggleAmenity={togglePendingAmenity}
-        onSetMinPrice={(e) =>
-          setPendingFilters((f) => ({
-            ...f,
-            minPrice: Math.max(0, parseInt(e.target.value) || 0),
-          }))
-        }
-        onSetMaxPrice={(e) =>
-          setPendingFilters((f) => ({
-            ...f,
-            maxPrice: Math.max(0, parseInt(e.target.value) || 0),
-          }))
-        }
-        onSetBedrooms={(n) => setPendingFilters((f) => ({ ...f, bedrooms: n }))}
-        onToggleVerified={() =>
-          setPendingFilters((f) => ({ ...f, superhost: !f.superhost }))
-        }
-        onClear={() =>
-          setPendingFilters({
-            types: [],
-            minPrice: 0,
-            maxPrice: 150000000,
-            bedrooms: 0,
-            amenities: [],
-            superhost: false,
-          })
-        }
-        onApply={applyFilters}
-        totalCount={filteredProperties.length}
-      />
+        {/* ═══ Filter Modal ═══ */}
+        <SearchFiltersModal
+          isOpen={filterModalOpen}
+          onClose={() => setFilterModalOpen(false)}
+          pendingFilters={pendingFilters}
+          onToggleType={togglePendingType}
+          onToggleAmenity={togglePendingAmenity}
+          onSetMinPrice={(e) =>
+            setPendingFilters((f) => ({
+              ...f,
+              minPrice: Math.max(0, parseInt(e.target.value) || 0),
+            }))
+          }
+          onSetMaxPrice={(e) =>
+            setPendingFilters((f) => ({
+              ...f,
+              maxPrice: Math.max(0, parseInt(e.target.value) || 0),
+            }))
+          }
+          onSetBedrooms={(n) => setPendingFilters((f) => ({ ...f, bedrooms: n }))}
+          onToggleVerified={() =>
+            setPendingFilters((f) => ({ ...f, superhost: !f.superhost }))
+          }
+          onClear={() =>
+            setPendingFilters({
+              types: [],
+              minPrice: 0,
+              maxPrice: 150000000,
+              bedrooms: 0,
+              amenities: [],
+              superhost: false,
+            })
+          }
+          onClearTypes={() =>
+            setPendingFilters((f) => ({ ...f, types: [] }))
+          }
+          onApply={applyFilters}
+          totalCount={pendingCount}
+        />
+      </div>
     </div>
   );
 };

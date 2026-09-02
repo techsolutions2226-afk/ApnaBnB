@@ -1,0 +1,750 @@
+/* ====================================================
+   Signup.css — apnabnb account creation
+
+   Own `abn-su-*` prefix on purpose: Auth.css is shared by six pages
+   (Login, Forgot, Reset, VerifyEmail, VerifyTwoFactor, Signup), so a
+   private namespace lets this page be redesigned without touching the
+   other five. Signup.jsx still imports Auth.css because GoogleAuthButton
+   renders `.auth-google-*` internals from it.
+
+   Direction: green primary, harvest-gold accent (the pairing the
+   ui-ux-pro-max palette set uses most with a green primary), navy as the
+   deep anchor. Buttons match the Home hero exactly via --btn-grad-*.
+
+   Colour comes exclusively from the tokens in index.css.
+   No hex literals in this file.
+   ==================================================== */
+
+.abn-su {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--brand-ink);
+  background: var(--surface);
+}
+
+/* Shared focus ring — this page is nearly all custom controls. */
+.abn-su :focus-visible {
+  outline: 2px solid var(--brand-green-dark);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+.abn-su-left :focus-visible {
+  outline-color: var(--accent-gold-bright);
+}
+
+/* ══════════════════════════════════ LEFT PANEL ══
+   A living green field: deep forest ground with three slow-drifting
+   radial "aurora" blooms. Pure GPU transforms on a clipped layer, so it
+   costs nothing on the main thread and never shifts layout. */
+.abn-su-left {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 44px clamp(32px, 4vw, 64px);
+  background: linear-gradient(
+    155deg,
+    var(--brand-forest) 0%,
+    var(--brand-green-dark) 52%,
+    var(--brand-navy) 100%
+  );
+  color: var(--white);
+  isolation: isolate;
+}
+
+.abn-su-aurora {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(64px);
+  opacity: 0.5;
+  z-index: -1;
+  will-change: transform;
+}
+
+.abn-su-aurora--a {
+  width: 46vmin;
+  height: 46vmin;
+  top: -8%;
+  left: -10%;
+  background: var(--brand-green-start);
+  animation: abn-su-drift-a 18s ease-in-out infinite alternate;
+}
+
+.abn-su-aurora--b {
+  width: 38vmin;
+  height: 38vmin;
+  bottom: -6%;
+  right: -8%;
+  background: var(--accent-gold-bright);
+  opacity: 0.3;
+  animation: abn-su-drift-b 22s ease-in-out infinite alternate;
+}
+
+.abn-su-aurora--c {
+  width: 30vmin;
+  height: 30vmin;
+  top: 42%;
+  left: 46%;
+  background: var(--brand-navy-light);
+  animation: abn-su-drift-c 26s ease-in-out infinite alternate;
+}
+
+@keyframes abn-su-drift-a {
+  to {
+    transform: translate3d(14%, 18%, 0) scale(1.18);
+  }
+}
+@keyframes abn-su-drift-b {
+  to {
+    transform: translate3d(-16%, -12%, 0) scale(1.24);
+  }
+}
+@keyframes abn-su-drift-c {
+  to {
+    transform: translate3d(-20%, 14%, 0) scale(0.86);
+  }
+}
+
+/* Fine grid overlay — reads as blueprint/plot paper, a quiet nod to
+   property without resorting to a stock photo. */
+.abn-su-left::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--glass-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--glass-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(78% 62% at 30% 34%, #000 0%, transparent 78%);
+  -webkit-mask-image: radial-gradient(
+    78% 62% at 30% 34%,
+    #000 0%,
+    transparent 78%
+  );
+  opacity: 0.5;
+}
+
+.abn-su-logo-link {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.abn-su-left-content {
+  max-width: 30ch;
+}
+
+/* Gold eyebrow — the accent's main job on this panel. */
+.abn-su-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-gold-bright);
+}
+
+.abn-su-eyebrow::before {
+  content: "";
+  width: 30px;
+  height: 1.5px;
+  background: var(--accent-gold-bright);
+}
+
+.abn-su-left-title {
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.4vw, 46px);
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: 0.01em;
+  margin: 0;
+  color: var(--white);
+}
+
+.abn-su-left-sub {
+  margin: 18px 0 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+/* Trust strip along the bottom of the panel. */
+.abn-su-trust {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.abn-su-trust li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.abn-su-trust-num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.abn-su-trust-label {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ═════════════════════════════════ RIGHT PANEL ══ */
+.abn-su-right {
+  display: flex;
+  justify-content: center;
+  padding: 48px clamp(20px, 4vw, 64px) 64px;
+  overflow-y: auto;
+}
+
+.abn-su-inner {
+  width: 100%;
+  max-width: 520px;
+}
+
+.abn-su-title {
+  font-family: var(--font-display);
+  font-size: clamp(25px, 2.6vw, 32px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--brand-navy);
+  margin: 0 0 8px;
+}
+
+.abn-su-subtitle {
+  font-size: 14.5px;
+  color: var(--grey-500);
+  margin: 0 0 30px;
+}
+
+.abn-su-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Role selector ── */
+.abn-su-role-title,
+.abn-su-field-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--grey-500);
+  margin: 0 0 10px;
+}
+
+.abn-su-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.abn-su-role-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 44px;
+  padding: 16px 14px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.abn-su-role-card:hover:not(:disabled) {
+  border-color: var(--brand-green);
+  background: var(--brand-green-soft);
+}
+
+.abn-su-role-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* The selected ring is a single shared element that slides between cards
+   (framer-motion layoutId) — the same device as the Home BUY/RENT pill,
+   so the two pages feel like one product. */
+.abn-su-role-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--brand-green-dark);
+  border-radius: var(--radius-md);
+  background: var(--brand-green-soft);
+  pointer-events: none;
+}
+
+.abn-su-role-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.abn-su-role-ico {
+  color: var(--brand-green-dark);
+}
+
+.abn-su-role-card--error {
+  border-color: var(--danger);
+}
+
+.abn-su-role-label {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand-navy);
+}
+
+.abn-su-role-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--grey-500);
+}
+
+.abn-su-role-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-green-dark);
+  color: var(--white);
+}
+
+.abn-su-role-check svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ── Fields ── */
+.abn-su-row-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.abn-su-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.abn-su-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.abn-su-input-wrap:hover {
+  border-color: var(--brand-green);
+}
+
+.abn-su-input-wrap:focus-within {
+  border-color: var(--brand-green-dark);
+  box-shadow: 0 0 0 4px var(--brand-green-soft);
+}
+
+.abn-su-input-wrap--error {
+  border-color: var(--danger);
+}
+.abn-su-input-wrap--error:focus-within {
+  box-shadow: 0 0 0 4px var(--accent-gold-soft);
+}
+
+.abn-su-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--brand-ink);
+}
+
+.abn-su-input::placeholder {
+  color: var(--grey-400);
+}
+
+.abn-su-input:disabled {
+  cursor: not-allowed;
+}
+
+.abn-su-toggle-pw {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--grey-500);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.abn-su-toggle-pw:hover {
+  color: var(--brand-green-dark);
+}
+
+.abn-su-hint {
+  margin: 7px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--grey-500);
+}
+
+.abn-su-error {
+  margin: 7px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--danger);
+}
+
+/* ── Password strength ── */
+.abn-su-pw-meter {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.abn-su-pw-seg {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--grey-200);
+  overflow: hidden;
+}
+
+.abn-su-pw-seg-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: var(--radius-pill);
+  transform-origin: left center;
+}
+
+/* Weak → gold, strong → green. Colour is never the only signal: the
+   segment count and the checklist below both carry the same information. */
+.abn-su-pw-seg--weak .abn-su-pw-seg-fill {
+  background: var(--accent-gold-bright);
+}
+.abn-su-pw-seg--strong .abn-su-pw-seg-fill {
+  background: var(--brand-green-dark);
+}
+
+.abn-su-pw-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.abn-su-pw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--grey-500);
+}
+
+.abn-su-pw-chip--ok {
+  border-color: var(--brand-green);
+  background: var(--brand-green-soft);
+  color: var(--brand-forest);
+}
+
+.abn-su-pw-chip svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Terms + checkbox ── */
+.abn-su-terms {
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--grey-500);
+  margin: 0;
+}
+
+.abn-su-terms-link {
+  color: var(--brand-green-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.abn-su-terms-link:hover {
+  color: var(--brand-forest);
+}
+
+.abn-su-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.abn-su-checkbox-row:hover {
+  border-color: var(--brand-green);
+  background: var(--brand-green-soft);
+}
+
+.abn-su-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--brand-green-dark);
+  cursor: pointer;
+}
+
+.abn-su-checkbox-text {
+  font-size: 13.5px;
+  color: var(--brand-ink);
+}
+
+/* ── Submit — the Home hero button, exactly ── */
+.abn-su-submit {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    135deg,
+    var(--btn-grad-start) 0%,
+    var(--btn-grad-end) 100%
+  );
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition:
+    filter var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.abn-su-submit:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow: var(--shadow-lg);
+}
+
+.abn-su-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* A gold sheen sweeps the button once it becomes enabled — the moment the
+   form is finally valid is worth marking. */
+.abn-su-submit-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 38%,
+    var(--glass-sheen) 50%,
+    transparent 62%
+  );
+}
+
+.abn-su-btn-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.abn-su-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--white);
+  border-radius: var(--radius-pill);
+  animation: abn-su-spin 0.7s linear infinite;
+}
+
+@keyframes abn-su-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Divider / social / switch ── */
+.abn-su-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 26px 0;
+}
+
+.abn-su-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.abn-su-divider-text {
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--grey-400);
+}
+
+.abn-su-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--brand-navy);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.abn-su-google:hover:not(:disabled) {
+  border-color: var(--brand-green);
+  background: var(--brand-green-soft);
+}
+
+.abn-su-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.abn-su-switch {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--grey-500);
+}
+
+.abn-su-switch-link {
+  color: var(--brand-green-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.abn-su-switch-link:hover {
+  color: var(--brand-forest);
+}
+
+/* ══════════════════════════════════ RESPONSIVE ══
+   Checked at 375 / 768 / 1024 / 1440. */
+@media (max-width: 1024px) {
+  .abn-su {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .abn-su-left {
+    min-height: 300px;
+    gap: 32px;
+  }
+  .abn-su-right {
+    padding-top: 40px;
+  }
+}
+
+@media (max-width: 620px) {
+  .abn-su-role-grid,
+  .abn-su-row-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .abn-su-left {
+    padding: 32px 22px;
+  }
+  .abn-su-right {
+    padding: 32px 20px 48px;
+  }
+  .abn-su-trust {
+    gap: 20px;
+  }
+}
+
+/* ══════════════════════════════ REDUCED MOTION ══
+   The aurora, the sheen and the spinner all stop; every element is already
+   in its final, fully-visible state. */
+@media (prefers-reduced-motion: reduce) {
+  .abn-su-aurora,
+  .abn-su-submit-sheen {
+    animation: none !important;
+    transition: none !important;
+  }
+  .abn-su-spinner {
+    animation-duration: 2s;
+  }
+}

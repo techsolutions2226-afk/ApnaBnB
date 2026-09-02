@@ -4,7 +4,6 @@ import { toast } from "react-toastify";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import authService from "../services/authService";
 import Logo from "../components/common/Logo";
-import "../styles/Auth.css";
 
 /* Reset password page — only reachable via a valid email link.
  *   /reset-password?token=XXX&email=YYY
@@ -75,15 +74,15 @@ export default function ResetPassword() {
   // We never show the reset form for an unvalidated link.
   if (status !== "valid") {
     return (
-      <div className="auth-page">
-        <header className="auth-header">
-          <Link to="/" className="auth-logo-link" aria-label="apnabnb home">
-            <Logo size={56} />
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <header className="w-full flex items-center justify-center py-5 px-6 bg-white border-b border-slate-200">
+          <Link to="/" className="flex items-center" aria-label="apnabnb home">
+            <Logo size={40} />
           </Link>
         </header>
-        <div className="auth-card">
-          <div className="auth-card-body" style={{ textAlign: "center" }}>
-            <p style={{ color: "#555", margin: 0 }}>
+        <div className="w-full max-w-md mx-auto my-8 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="p-6 text-center">
+            <p className="text-sm text-slate-500">
               {status === "checking"
                 ? "Validating your reset link..."
                 : "Redirecting..."}
@@ -95,88 +94,97 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="auth-page">
-      <header className="auth-header">
-        <Link to="/" className="auth-logo-link" aria-label="apnabnb home">
-          <Logo size={56} />
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <header className="w-full flex items-center justify-center py-5 px-6 bg-white border-b border-slate-200">
+        <Link to="/" className="flex items-center" aria-label="apnabnb home">
+          <Logo size={40} />
         </Link>
       </header>
 
-      <div className="auth-card">
-        <div className="auth-card-header">
-          <h1 className="auth-card-title">Choose a new password</h1>
+      <div className="w-full max-w-md mx-auto my-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-center px-6 py-4 border-b border-slate-100">
+          <h1 className="text-base font-bold text-slate-900">Choose a new password</h1>
         </div>
 
-        <div className="auth-card-body">
-          <p className="auth-welcome" style={{ marginBottom: 8 }}>
-            Almost done
-          </p>
-          <p
-            style={{
-              fontSize: 14,
-              color: "#717171",
-              margin: "0 0 20px",
-              lineHeight: 1.5,
-            }}
-          >
-            Resetting password for <strong style={{ color: "#222" }}>{email}</strong>
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-1">Almost done</h2>
+          <p className="text-sm text-slate-500 leading-relaxed mb-5">
+            Resetting password for <strong className="text-slate-900">{email}</strong>
           </p>
 
-          <form className="auth-form" onSubmit={handleSubmit} noValidate>
-            <div className="auth-input-group">
-              <div className="auth-input-wrapper auth-input-wrapper--top">
+          <form onSubmit={handleSubmit} noValidate>
+            {/* New password */}
+            <div className="mb-3">
+              <div className="relative border border-slate-200 rounded-lg transition-colors focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500">
                 <input
                   type={showPw ? "text" : "password"}
                   id="new-password"
-                  className="auth-input"
+                  className="peer w-full h-10 px-3.5 pt-4 pb-1 pr-10 text-sm bg-transparent text-slate-900 border-none outline-none focus:ring-0"
                   placeholder=" "
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
                   disabled={isSubmitting}
                 />
-                <label htmlFor="new-password" className="auth-label">
+                <label
+                  htmlFor="new-password"
+                  className="absolute left-3.5 top-1 text-[11px] font-medium text-slate-500 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-focus:top-1 peer-focus:text-[11px] peer-focus:text-primary-600 pointer-events-none"
+                >
                   New password
                 </label>
                 <button
                   type="button"
-                  className="auth-toggle-pw"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
                   onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? "Hide password" : "Show password"}
                 >
                   {showPw ? <FiEyeOff size={18} /> : <FiEye size={18} />}
                 </button>
               </div>
-              <div className="auth-input-wrapper auth-input-wrapper--bottom">
+            </div>
+
+            {/* Confirm new password */}
+            <div className="mb-2">
+              <div className="relative border border-slate-200 rounded-lg transition-colors focus-within:ring-2 focus-within:ring-primary-500/20 focus-within:border-primary-500">
                 <input
                   type={showPw ? "text" : "password"}
                   id="confirm-password"
-                  className="auth-input"
+                  className="peer w-full h-10 px-3.5 pt-4 pb-1 pr-10 text-sm bg-transparent text-slate-900 border-none outline-none focus:ring-0"
                   placeholder=" "
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   autoComplete="new-password"
                   disabled={isSubmitting}
                 />
-                <label htmlFor="confirm-password" className="auth-label">
+                <label
+                  htmlFor="confirm-password"
+                  className="absolute left-3.5 top-1 text-[11px] font-medium text-slate-500 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-slate-400 peer-focus:top-1 peer-focus:text-[11px] peer-focus:text-primary-600 pointer-events-none"
+                >
                   Confirm new password
                 </label>
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                  onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                >
+                  {showPw ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                </button>
               </div>
             </div>
 
-            <p style={{ fontSize: 12, color: "#717171", margin: "10px 0 0" }}>
+            <p className="text-xs text-slate-400 mt-2">
               Must be at least 8 characters.
             </p>
 
             <button
               type="submit"
-              className="auth-btn auth-btn--primary"
+              className="flex items-center justify-center h-11 w-full text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-4"
               disabled={isSubmitting || !password || !confirm}
-              style={{ marginTop: 16 }}
             >
               {isSubmitting ? (
-                <span className="auth-btn-loading">
-                  <span className="auth-spinner" />
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Saving...
                 </span>
               ) : (
@@ -185,19 +193,13 @@ export default function ResetPassword() {
             </button>
           </form>
 
-          <p className="auth-switch">
-            <Link to="/login" className="auth-switch-link">
+          <p className="mt-4 text-sm text-slate-500 text-center">
+            <Link to="/login" className="text-primary-600 hover:underline font-medium">
               Back to log in
             </Link>
           </p>
         </div>
       </div>
-
-      <footer className="auth-footer">
-        <p className="auth-footer-text">
-          Real Estate Marketplace &mdash; Your trusted property platform.
-        </p>
-      </footer>
     </div>
   );
 }

@@ -1,0 +1,126 @@
+/* ====================================================
+   Search field styles for the home hero search panel.
+   These style the trigger buttons inside the dropdown
+   components (SearchableList, TabbedGrid, etc.)
+   ==================================================== */
+
+/* Base field wrapper — gives every dropdown trigger a consistent box */
+.abn-s2-field {
+  position: relative;
+  height: 48px;
+  background: white;
+  border: 1.5px solid var(--color-border);
+  border-radius: 0.75rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.abn-s2-field:focus-within {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* City variant — full width in its flex parent */
+.abn-s2-city {
+  width: 100%;
+}
+
+/* Open state */
+.dd-field--open {
+  border-color: var(--color-primary-500) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+}
+
+/* Override trigger colors to match new palette */
+.dd-trigger {
+  color: var(--color-slate-900);
+}
+
+.dd-trigger-value {
+  color: var(--color-slate-900);
+}
+
+.dd-trigger-placeholder {
+  color: var(--color-slate-400);
+  font-weight: 400;
+}
+
+.dd-chev {
+  color: var(--color-slate-400);
+}
+
+/* Override panel colors to match new palette */
+.dd-panel {
+  border-color: var(--color-border);
+}
+
+.dd-item--active {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.dd-tab--active {
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-600);
+}
+
+.dd-card:hover {
+  border-color: var(--color-primary-400);
+}
+
+.dd-card--active {
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+}
+
+.dd-card--active .dd-card-label {
+  color: var(--color-primary-700);
+}
+
+.dd-card-icon {
+  color: var(--color-primary-600);
+}
+
+.dd-range-input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.dd-change-link {
+  color: var(--color-primary-600);
+}
+
+.dd-btn--outline {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-600);
+}
+
+.dd-btn--outline:hover {
+  background: var(--color-primary-50);
+}
+
+.dd-btn--solid {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+  color: white;
+}
+
+.dd-btn--solid:hover {
+  background: var(--color-primary-700);
+}
+
+.dd-opt--active {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  border-color: var(--color-primary-500);
+}
+
+.dd-opt-check {
+  color: var(--color-primary-500);
+}
+
+/* Responsive: on mobile make fields full-width and slightly taller for touch */
+@media (max-width: 640px) {
+  .abn-s2-field {
+    height: 52px;
+  }
+}

@@ -40,6 +40,7 @@ import "../../styles/Listing.css";
 import { CITIES, AREAS_BY_CITY } from "../../config/locations";
 import AiDescriptionBadge from "../common/AiDescriptionBadge";
 import { useAiDescription } from "../../hooks/useAiDescription";
+import { AMENITY_GROUPS } from "../../config/amenities";
 
 
 /* ── Static Options ── */
@@ -169,76 +170,7 @@ const AREA_CENTERS = {
   "Rawalpindi|Satellite Town": { lat: 33.6294, lng: 73.0664 },
 };
 
-// Grouped amenity catalogue — mirrors zameen.com's amenities section.
-// Each amenity is a plain string; the group label is UI-only.
-const AMENITY_GROUPS = [
-  {
-    label: "Main Features",
-    items: [
-      "Drawing room",
-      "Dining room",
-      "Kitchen",
-      "Study room",
-      "Prayer room",
-      "Powder room",
-      "TV lounge",
-      "Servant quarter",
-      "Store room",
-      "Lobby in building",
-    ],
-  },
-  {
-    label: "Business & Communication",
-    items: [
-      "Broadband internet",
-      "Satellite cable TV",
-      "Intercom",
-      "Wi-Fi",
-    ],
-  },
-  {
-    label: "Community Features",
-    items: [
-      "Community lawn",
-      "Community swimming pool",
-      "Community gym",
-      "Mosque",
-      "Daycare",
-      "Kids play area",
-    ],
-  },
-  {
-    label: "Healthcare",
-    items: ["Nearby hospital", "Nearby pharmacy", "First aid kit"],
-  },
-  {
-    label: "Nearby Locations",
-    items: [
-      "Nearby schools",
-      "Nearby restaurants",
-      "Nearby shopping mall",
-      "Nearby public transport",
-      "Nearby park",
-    ],
-  },
-  {
-    label: "Other Facilities",
-    items: [
-      "Lift / Elevator",
-      "Backup power",
-      "Generator",
-      "Solar panels",
-      "Parking",
-      "Underground parking",
-      "Security",
-      "CCTV",
-      "Garden",
-      "Maintenance staff",
-      "Corner plot",
-      "Boundary wall",
-    ],
-  },
-];
+// Grouped amenity catalogue comes from ../../config/amenities.js (see import).
 
 // Flat list derived from the groups — used by validation + edit-mode hydration.
 const ALL_AMENITIES = AMENITY_GROUPS.flatMap((g) => g.items);

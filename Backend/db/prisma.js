@@ -15,12 +15,21 @@ const { PrismaClient } = require('@prisma/client');
 
 /* Cap Prisma's connection pool under Supabase's PgBouncer ceiling (15 clients
    in session mode). Prisma's default pool (cpu*2+1) can exceed that, which
-   trips EMAXCONNSESSION whenever several controllers query in parallel. */
+   trips EMAXCONNSESSION whenever several controllers query in parallel.
+
+   - connection_limit: keep the client pool small so parallel bursts (e.g.
+     Promise.all in getUserStats) can never exhaust Supabase's 15-connection
+     session cap. 6 leaves clear headroom even when Prisma opens an extra
+     physical connection per transaction/query batch.
+   - pool_timeout: fail fast instead of queueing indefinitely once the pool is
+     full. Without this, saturated requests pile up and re-open/re-hold more
+     connections, making the exhaustion cascade worse. */
 function cappedDatabaseUrl(url) {
   if (!url || !url.includes('pooler.supabase.com')) return url;
   try {
     const u = new URL(url);
-    u.searchParams.set('connection_limit', '8');
+    u.searchParams.set('connection_limit', '6');
+    u.searchParams.set('pool_timeout', '5');
     return u.toString();
   } catch {
     return url;

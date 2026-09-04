@@ -90,7 +90,7 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
                 className="tr-cancel-btn"
                 onClick={() => onCancel(trip.id)}
               >
-                Cancel reservation
+                Cancel visit
               </button>
             )}
             {trip.status === "completed" && (
@@ -107,6 +107,12 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
         <p className="tr-confirmation">
           Confirmation code: <strong>{trip.confirmationCode}</strong>
         </p>
+        {trip.status === "upcoming" && (
+          <p className="tr-visit-fee-note">
+            ₹200 refundable visit fee — returned if the owner no-shows or the
+            listing is fake.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -164,9 +170,9 @@ export default function Trips() {
    const handleCancel = async (tripId) => {
      try {
        await cancelTrip(tripId);
-       toast.success("Reservation cancelled. Refund will be processed.");
+       toast.success("Visit cancelled. Refundable fee will be returned.");
      } catch (err) {
-       toast.error(err?.message || "Failed to cancel reservation");
+       toast.error(err?.message || "Failed to cancel visit");
      } finally {
        setCancelConfirm(null);
      }
@@ -188,7 +194,7 @@ export default function Trips() {
     <div className="tr-page">
       <div className="tr-container">
         <div className="tr-header-row">
-          <h1 className="tr-title">Trips</h1>
+          <h1 className="tr-title">Visits</h1>
           <RefreshButton onRefresh={refresh} refreshing={refreshing} />
         </div>
 
@@ -214,17 +220,17 @@ export default function Trips() {
             icon={<FiCalendar size={48} />}
             title={
               activeTab === "upcoming"
-                ? "No upcoming trips"
+                ? "No upcoming visits"
                 : activeTab === "completed"
-                  ? "No completed trips yet"
-                  : "No cancelled trips"
+                  ? "No completed visits yet"
+                  : "No cancelled visits"
             }
             description={
               activeTab === "upcoming"
-                ? "Time to dust off your bags and start planning your next adventure."
+                ? "Time to plan your next property visit."
                 : activeTab === "completed"
-                  ? "Once you complete a trip, it will show up here."
-                  : "Cancelled trips will appear here."
+                  ? "Once you complete a visit, it will show up here."
+                  : "Cancelled visits will appear here."
             }
             actionLabel={activeTab === "upcoming" ? "Start searching" : null}
             onAction={
@@ -250,26 +256,27 @@ export default function Trips() {
       {cancelConfirm && (
         <Modal
           onClose={() => setCancelConfirm(null)}
-          title="Cancel reservation"
+          title="Cancel visit"
           size="small"
         >
           <div className="tr-modal-body">
             <p>
-              Are you sure you want to cancel this reservation? You will receive
-              a refund per the cancellation policy.
+              Are you sure you want to cancel this visit? If the property owner
+              was a no-show or the listing was fake, your refundable visit fee
+              is returned. Otherwise, cancellation is per the visit policy.
             </p>
             <div className="tr-modal-actions">
               <button
                 className="tr-modal-cancel"
                 onClick={() => setCancelConfirm(null)}
               >
-                Keep reservation
+                Keep visit
               </button>
               <button
                 className="tr-modal-confirm"
                 onClick={() => handleCancel(cancelConfirm)}
               >
-                Cancel reservation
+                Cancel visit
               </button>
             </div>
           </div>
@@ -313,7 +320,7 @@ export default function Trips() {
                 rows={5}
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="What was your stay like? What did you enjoy most?"
+                placeholder="How was your visit? What did you enjoy most?"
                 maxLength={500}
               />
               <p className="tr-review-char-count">

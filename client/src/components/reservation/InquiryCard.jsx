@@ -51,6 +51,12 @@ const InquiryCard = ({ property, onMessage }) => {
             : "Verified owner listing"}
         </div>
       )}
+
+      <div className="rv-card-visit-fee">
+        <FiShield size={14} />
+        ₹200 refundable visit fee — returned if the owner no-shows or the
+        listing is fake.
+      </div>
     </div>
   );
 };

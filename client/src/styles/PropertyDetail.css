@@ -810,6 +810,25 @@
   margin-top: 12px;
 }
 
+.rv-card-visit-fee {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-accent-700);
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-accent-100);
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 12px;
+}
+
+.rv-card-visit-fee svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 /* ── Lightbox ── */
 .pd-lightbox-overlay {
   position: fixed;

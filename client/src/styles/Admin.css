@@ -71,6 +71,11 @@
   margin: 0;
 }
 
+.adm-updated-at {
+  color: var(--color-slate-400);
+  font-size: 12.5px;
+}
+
 /* ── KPI cards ── */
 .adm-kpis {
   display: grid;
@@ -208,6 +213,177 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--color-slate-900);
+}
+
+/* ── Overview analytics charts ── */
+.adm-overview-grid--charts {
+  align-items: stretch;
+}
+
+.adm-card--chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.adm-overview-grid .adm-card--chart {
+  margin-bottom: 0;
+}
+
+.adm-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--chart-label);
+  font-size: 13px;
+  background: var(--chart-track);
+  border-radius: 12px;
+}
+
+.adm-donut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.adm-donut-svg {
+  flex-shrink: 0;
+  display: block;
+}
+
+.adm-donut-total {
+  fill: var(--chart-ink);
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
+.adm-donut-total-label {
+  fill: var(--chart-label);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adm-chart-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.adm-chart-legend--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  margin-top: 10px;
+}
+
+.adm-chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--chart-ink);
+}
+
+.adm-chart-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.adm-chart-legend-label {
+  flex: 1;
+  color: var(--color-slate-700);
+}
+
+.adm-chart-legend-value {
+  font-weight: 650;
+  color: var(--chart-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-chart-legend-pct {
+  font-weight: 500;
+  color: var(--chart-label);
+}
+
+.adm-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 4px;
+}
+
+.adm-bars-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.adm-bars-track {
+  width: 100%;
+  max-width: 48px;
+  flex: 1;
+  min-height: 120px;
+  background: var(--chart-track);
+  border-radius: 10px 10px 4px 4px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.adm-bars-fill {
+  width: 100%;
+  border-radius: 10px 10px 4px 4px;
+  transition: height 0.45s ease;
+  min-height: 0;
+}
+
+.adm-bars-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--chart-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-bars-label {
+  font-size: 11px;
+  color: var(--chart-label);
+  text-align: center;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .adm-donut {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adm-donut-svg {
+    margin: 0 auto;
+  }
+
+  .adm-card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* ── Activity feed ── */

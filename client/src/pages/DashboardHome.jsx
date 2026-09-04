@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { useParams, useOutletContext } from "react-router-dom";
+import { Navigate, useParams, useOutletContext } from "react-router-dom";
 import SellerDashboard from "./SellerDashboard";
 import BuyerDashboard from "./BuyerDashboard";
 import DealerDashboard from "./DealerDashboard";
 import { ROLES } from "../components/dashboard/dashboardNav";
+import { useAuth } from "../context/AuthContext";
 
 const BODY = {
   seller: SellerDashboard,
@@ -21,16 +22,24 @@ const BODY = {
 export default function DashboardHome() {
   const { role } = useParams();
   const { viewRole, setViewRole } = useOutletContext();
+  const { currentUser } = useAuth();
 
+  const isAdmin = currentUser?.role === "admin";
   const urlRole = role && ROLES.includes(role) ? role : null;
 
   /* When arriving via /dashboard/:role, adopt that role as the view. */
   useEffect(() => {
+    if (isAdmin) return;
     if (urlRole && urlRole !== viewRole) {
       setViewRole(urlRole);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlRole]);
+  }, [urlRole, isAdmin]);
+
+  /* Admins have a dedicated panel; never show the seller/buyer/dealer body. */
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
 
   const active = urlRole || viewRole;
   const Body = BODY[active] || BuyerDashboard;

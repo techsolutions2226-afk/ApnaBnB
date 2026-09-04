@@ -43,8 +43,8 @@ const URGENCY_OPTIONS = ["30 days", "45 days", "60 days", "90 days"];
 
 // Buy vs rent — same two-option toggle as the Create Listing page.
 const PURPOSES = [
-  { value: "sale", label: "For Sale" },
-  { value: "rent", label: "For Rent" },
+  { value: "sale", label: "To Buy" },
+  { value: "rent", label: "To Rent" },
 ];
 
 // Top-level property category — drives which sub-types the user can pick.

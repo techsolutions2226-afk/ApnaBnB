@@ -32,19 +32,20 @@ function AnnouncementBanner() {
   );
 }
 
-const mobileNavItems = [
-  { to: "/", icon: FiHome, label: "Home" },
-  { to: "/search", icon: FiSearch, label: "Search" },
-  { to: "/listing/new", icon: FiPlus, label: "List", isCenter: true },
-  { to: "/dashboard", icon: FiGrid, label: "Dashboard" },
-  { to: "/account", icon: FiUser, label: "Profile" },
-];
-
 export default function PublicLayout() {
   const [scrolled, setScrolled] = useState(false);
   const headerRef = useRef(null);
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, getDashboardPath } = useAuth();
   const location = useLocation();
+  const dashboardPath = isAuthenticated ? getDashboardPath() : "/login";
+
+  const mobileNavItems = [
+    { to: "/", icon: FiHome, label: "Home" },
+    { to: "/search", icon: FiSearch, label: "Search" },
+    { to: "/listing/new", icon: FiPlus, label: "List", isCenter: true },
+    { to: dashboardPath, icon: FiGrid, label: "Dashboard" },
+    { to: "/account", icon: FiUser, label: "Profile" },
+  ];
 
   useLayoutEffect(() => {
     const updateHeight = () => {
@@ -119,7 +120,7 @@ export default function PublicLayout() {
               {isAuthenticated ? (
                 <>
                   <Link
-                    to="/dashboard"
+                    to={dashboardPath}
                     className="px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                   >
                     Dashboard
@@ -265,7 +266,11 @@ export default function PublicLayout() {
         <div className="flex items-center justify-around h-16">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.to;
+            const isActive =
+              item.to === dashboardPath
+                ? location.pathname === dashboardPath ||
+                  location.pathname.startsWith(`${dashboardPath}/`)
+                : location.pathname === item.to;
             if (item.isCenter) {
               return (
                 <Link

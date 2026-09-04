@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GoogleMap,
   Marker,
@@ -30,11 +30,13 @@ const LocationPicker = ({
   height = 320,
   defaultCenter,
   defaultZoom = 11,
+  watchCenter,
 }) => {
   const { isLoaded, loadError } = useGoogleMapsLoader();
 
   const [internal, setInternal] = useState(null);
   const [mapCenter, setMapCenter] = useState(null);
+  const hasInteractedRef = useRef(false);
 
   const initialCenter = useMemo(() => {
     if (value?.lat && value?.lng) return { lat: value.lat, lng: value.lng };
@@ -42,12 +44,20 @@ const LocationPicker = ({
     return DEFAULT_CENTER;
   }, [value, defaultCenter]);
 
+  // Pan the map when watchCenter changes (e.g. geocoded city/area coordinates)
+  // but only if the user hasn't placed a pin yet.
+  useEffect(() => {
+    if (!watchCenter?.lat || !watchCenter?.lng || hasInteractedRef.current) return;
+    setMapCenter(watchCenter);
+  }, [watchCenter?.lat, watchCenter?.lng]);
+
   const marker = value?.lat && value?.lng ? value : internal;
 
   const handleClick = (e) => {
     const next = { lat: e.latLng.lat(), lng: e.latLng.lng() };
     setInternal(next);
     setMapCenter(next);
+    hasInteractedRef.current = true;
     onPick?.(next);
     // Fire-and-forget reverse geocode; failure is silent so the pick still succeeds.
     if (onAddressResolved) {

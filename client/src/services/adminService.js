@@ -2,9 +2,10 @@ import apiClient from '../api/apiClient';
 
 const adminService = {
   // ── Stats ──
-  getStats: async () => {
+  getStats: async (opts = {}) => {
     try {
-      const response = await apiClient.get('/admin/stats');
+      const params = opts.fresh ? { fresh: 1 } : undefined;
+      const response = await apiClient.get('/admin/stats', { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch stats' };

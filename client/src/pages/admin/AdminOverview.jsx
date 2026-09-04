@@ -1,21 +1,47 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import adminService from "../../services/adminService";
 import RefreshButton from "../../components/common/RefreshButton";
+import { DonutChart, BarChart } from "../../components/admin/AdminCharts";
 import {
   FiUsers,
   FiHome,
   FiFileText,
   FiLink,
-  FiMail,
-  FiMessageSquare,
   FiStar,
   FiShieldOff,
+  FiLayers,
 } from "react-icons/fi";
 import "../../styles/Admin.css";
 
-/* ─── AdminOverview — platform KPI dashboard ─── */
+/* KPI accents map to chart / theme CSS variables in index.css. */
+const KPI_CARDS = [
+  { to: "/admin/users", label: "Total Users", key: "totalUsers", icon: FiUsers, accent: "var(--chart-1)" },
+  { to: "/admin/listings", label: "Properties", key: "totalProperties", icon: FiHome, accent: "var(--chart-2)" },
+  { to: "/admin/requirements", label: "Requirements", key: "totalRequirements", icon: FiFileText, accent: "var(--chart-3)" },
+  { to: "/admin/matches", label: "Matches", key: "totalMatches", icon: FiLink, accent: "var(--chart-5)" },
+  { to: "/admin/listings", label: "Listings", key: "totalListings", icon: FiLayers, accent: "var(--chart-6)" },
+  { to: "/admin/users", label: "Reviews", key: "totalReviews", icon: FiStar, accent: "var(--chart-3)" },
+  { to: "/admin/users", label: "Suspended", key: "totalSuspended", icon: FiShieldOff, accent: "var(--chart-4)" },
+];
+
+const ROLE_META = [
+  { role: "seller", label: "Sellers", color: "var(--chart-1)" },
+  { role: "buyer", label: "Buyers", color: "var(--chart-2)" },
+  { role: "dealer", label: "Dealers", color: "var(--chart-3)" },
+  { role: "admin", label: "Admins", color: "var(--chart-4)" },
+];
+
+const STATUS_META = [
+  { status: "active", label: "Active", color: "var(--chart-2)" },
+  { status: "pending", label: "Pending", color: "var(--chart-3)" },
+  { status: "sold", label: "Sold", color: "var(--chart-1)" },
+  { status: "rented", label: "Rented", color: "var(--chart-5)" },
+  { status: "featured", label: "Featured", color: "var(--chart-6)" },
+  { status: "rejected", label: "Rejected", color: "var(--chart-4)" },
+];
+
 const AdminOverview = () => {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
@@ -23,15 +49,12 @@ const AdminOverview = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Shared loader for the initial mount and the Refresh button. On a manual
-  // refresh a failure is toasted (keeping the loaded page in place); on the
-  // first load it shows the full-page error state.
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     setError(null);
     try {
       const [s, a] = await Promise.all([
-        adminService.getStats(),
+        adminService.getStats({ fresh: isRefresh }),
         adminService.getActivityLogs({ limit: 8 }),
       ]);
       setStats(s);
@@ -49,6 +72,35 @@ const AdminOverview = () => {
     loadData();
   }, [loadData]);
 
+  const roleCount = useCallback(
+    (role) => stats?.usersByRole?.find((r) => r._id === role)?.count || 0,
+    [stats]
+  );
+  const statusCount = useCallback(
+    (status) => stats?.listingsByStatus?.find((s) => s._id === status)?.count || 0,
+    [stats]
+  );
+
+  const roleItems = useMemo(
+    () =>
+      ROLE_META.map((r) => ({
+        label: r.label,
+        value: roleCount(r.role),
+        color: r.color,
+      })),
+    [roleCount]
+  );
+
+  const statusItems = useMemo(
+    () =>
+      STATUS_META.map((s) => ({
+        label: s.label,
+        value: statusCount(s.status),
+        color: s.color,
+      })),
+    [statusCount]
+  );
+
   if (isLoading) {
     return (
       <div className="adm-page">
@@ -65,27 +117,21 @@ const AdminOverview = () => {
     );
   }
 
-  const roleCount = (role) =>
-    stats?.usersByRole?.find((r) => r._id === role)?.count || 0;
-  const statusCount = (status) =>
-    stats?.listingsByStatus?.find((s) => s._id === status)?.count || 0;
-
-  const cards = [
-    { to: "/admin/users", label: "Total Users", value: stats?.totalUsers || 0, icon: FiUsers, accent: "#4f46e5" },
-    { to: "/admin/listings", label: "Properties", value: stats?.totalProperties || 0, icon: FiHome, accent: "#059669" },
-    { to: "/admin/requirements", label: "Requirements", value: stats?.totalRequirements || 0, icon: FiFileText, accent: "#d97706" },
-    { to: "/admin/matches", label: "Matches", value: stats?.totalMatches || 0, icon: FiLink, accent: "#7c3aed" },
-    { to: "/admin/users", label: "Reviews", value: stats?.totalReviews || 0, icon: FiStar, accent: "#ea580c" },
-    { to: "/admin/users", label: "Suspended Users", value: stats?.totalSuspended || 0, icon: FiShieldOff, accent: "#dc2626" },
-  ];
-
   return (
     <div className="adm-page">
       <div className="adm-header">
         <div>
           <h1 className="adm-title">Platform Overview</h1>
           <p className="adm-subtitle">
-            A snapshot of everything happening on apnabnb right now.
+            Live analytics across users, inventory, demand, and matches.
+            {stats?.generatedAt ? (
+              <>
+                {" "}
+                <span className="adm-updated-at">
+                  Updated {new Date(stats.generatedAt).toLocaleString()}
+                </span>
+              </>
+            ) : null}
           </p>
         </div>
         <RefreshButton onRefresh={() => loadData(true)} refreshing={refreshing} />
@@ -93,18 +139,21 @@ const AdminOverview = () => {
 
       {/* KPI cards */}
       <div className="adm-kpis">
-        {cards.map((card) => {
+        {KPI_CARDS.map((card) => {
           const Icon = card.icon;
           return (
             <Link key={card.label} to={card.to} className="adm-kpi">
               <div
                 className="adm-kpi-icon"
-                style={{ background: `${card.accent}1a`, color: card.accent }}
+                style={{
+                  background: `color-mix(in srgb, ${card.accent} 14%, transparent)`,
+                  color: card.accent,
+                }}
               >
                 <Icon size={20} />
               </div>
               <div className="adm-kpi-body">
-                <div className="adm-kpi-value">{card.value}</div>
+                <div className="adm-kpi-value">{stats?.[card.key] || 0}</div>
                 <div className="adm-kpi-label">{card.label}</div>
               </div>
             </Link>
@@ -112,61 +161,25 @@ const AdminOverview = () => {
         })}
       </div>
 
-      {/* Breakdowns */}
-      <div className="adm-overview-grid">
-        <div className="adm-card">
-          <h3 className="adm-card-title">Users by Role</h3>
-          {[
-            { role: "seller", label: "Sellers" },
-            { role: "buyer", label: "Buyers" },
-            { role: "dealer", label: "Dealers" },
-            { role: "admin", label: "Admins" },
-          ].map(({ role, label }) => (
-            <div className="adm-bar-row" key={role}>
-              <span className="adm-bar-label">{label}</span>
-              <div className="adm-bar-track">
-                <div
-                  className="adm-bar-fill adm-bar-fill--navy"
-                  style={{
-                    width: `${stats?.totalUsers ? Math.max(4, (roleCount(role) / stats.totalUsers) * 100) : 0}%`,
-                  }}
-                />
-              </div>
-              <span className="adm-bar-count">{roleCount(role)}</span>
-            </div>
-          ))}
+      {/* Distribution charts */}
+      <div className="adm-overview-grid adm-overview-grid--charts">
+        <div className="adm-card adm-card--chart">
+          <h3 className="adm-card-title">Users by role</h3>
+          <p className="adm-card-sub">Share of each account type on the platform.</p>
+          <DonutChart items={roleItems} size={200} thickness={26} />
         </div>
 
-        <div className="adm-card">
-          <h3 className="adm-card-title">Properties by Status</h3>
-          {[
-            { status: "active", label: "Active" },
-            { status: "pending", label: "Pending" },
-            { status: "sold", label: "Sold" },
-            { status: "rented", label: "Rented" },
-            { status: "featured", label: "Featured" },
-            { status: "rejected", label: "Rejected" },
-          ].map(({ status, label }) => (
-            <div className="adm-bar-row" key={status}>
-              <span className="adm-bar-label">{label}</span>
-              <div className="adm-bar-track">
-                <div
-                  className="adm-bar-fill adm-bar-fill--green"
-                  style={{
-                    width: `${stats?.totalProperties ? Math.max(4, (statusCount(status) / stats.totalProperties) * 100) : 0}%`,
-                  }}
-                />
-              </div>
-              <span className="adm-bar-count">{statusCount(status)}</span>
-            </div>
-          ))}
+        <div className="adm-card adm-card--chart">
+          <h3 className="adm-card-title">Properties by status</h3>
+          <p className="adm-card-sub">Moderation and lifecycle mix for inventory.</p>
+          <BarChart items={statusItems} height={240} />
         </div>
       </div>
 
       {/* Recent activity */}
       <div className="adm-card">
         <div className="adm-card-head">
-          <h3 className="adm-card-title">Recent Activity</h3>
+          <h3 className="adm-card-title">Recent activity</h3>
           <Link to="/admin/logs" className="adm-card-link">
             View all logs →
           </Link>

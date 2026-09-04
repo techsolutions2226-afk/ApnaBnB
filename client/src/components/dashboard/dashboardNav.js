@@ -58,7 +58,7 @@ export const NAV_BY_ROLE = {
     DASH,
     { to: "/listing/new", label: "Create Listing", icon: FiPlusSquare },
     { to: "/my-listings", label: "My Listings", icon: FiList },
-    { to: "/requirements", label: "Requirements Board", icon: FiClipboard },
+    { to: "/requirements", label: "Requirements Board", icon: FiClipboard, end: true },
     { to: "/requirements/new", label: "Post Requirement", icon: FiEdit3 },
     MATCHES,
     PLANS,

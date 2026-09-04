@@ -34,35 +34,49 @@ const EditListing = () => {
 
   // Enrich listing data when loaded
   useEffect(() => {
-    if (listing && properties) {
-      // Get property data from populated listing or find in properties list
-      const propData = typeof listing.property === 'object' 
-        ? listing.property 
-        : properties.find(p => p._id === listing.property || p._id === listing.propertyId);
-      
-      if (propData) {
-        setProperty(propData);
-        
-        // Build form initial data
-        setInitialData({
-          title: propData.title || '',
-          propertyType: propData.propertyType || '',
-          price: propData.price || '',
-          size: propData.size || '',
-          sizeUnit: propData.sizeUnit || 'sq ft',
-          city: propData.location?.city || propData.city || '',
-          area: propData.location?.area || propData.area || '',
-          coordinates: propData.location?.coordinates || propData.coordinates || null,
-          bedrooms: propData.bedrooms || '',
-          bathrooms: propData.bathrooms || '',
-          description: propData.description || '',
-          amenities: propData.amenities || [],
-          image: propData.image || '',
-          gallery: propData.gallery || propData.photos || [],
-          status: listing.status || 'active',
-          featured: listing.featured || false,
-        });
-      }
+    if (!listing) return;
+
+    // Prefer the populated property on the listing; fall back to the
+    // public properties list. Guard `null` — typeof null === "object".
+    const propData =
+      listing.property && typeof listing.property === "object"
+        ? listing.property
+        : (properties || []).find(
+            (p) =>
+              p._id === listing.property ||
+              p.id === listing.property ||
+              p._id === listing.propertyId ||
+              p.id === listing.propertyId
+          );
+
+    if (propData) {
+      setProperty(propData);
+
+      setInitialData({
+        title: propData.title || "",
+        purpose: propData.purpose || "sale",
+        category: propData.category || "home",
+        propertyType: propData.propertyType || "",
+        price: propData.price || "",
+        size: propData.size || "",
+        sizeUnit: propData.sizeUnit || "Marla",
+        city: propData.location?.city || propData.city || "",
+        area: propData.location?.area || propData.area || "",
+        coordinates: propData.location?.coordinates || propData.coordinates || null,
+        bedrooms: propData.bedrooms ?? "",
+        bathrooms: propData.bathrooms ?? "",
+        description: propData.description || "",
+        amenities: propData.amenities || [],
+        gallery: propData.photos || propData.gallery || [],
+        securityDeposit: propData.securityDeposit ?? "",
+        leaseTerm: propData.leaseTerm || 12,
+        furnished: propData.furnished || "unfurnished",
+        availableFrom: propData.availableFrom || "",
+        contactName: propData.contactName || "",
+        contactEmail: propData.contactEmail || "",
+        contactPhone: propData.contactPhone || "",
+        status: listing.status || "active",
+      });
     }
   }, [listing, properties]);
 
@@ -70,16 +84,26 @@ const EditListing = () => {
   const handleSubmit = useCallback(
     async (formData) => {
       if (!property || !listing) return;
-      
+
+      const propertyId = property._id || property.id || listing.propertyId;
+      const listingId = listing._id || listing.id;
+      if (!propertyId || !listingId) {
+        toast.error("Missing listing id — refresh and try again.");
+        return;
+      }
+
       setIsSubmitting(true);
 
       try {
-        // Update property details via API
         const propertyUpdates = {
           title: formData.title,
+          description: formData.description,
+          purpose: formData.purpose || "sale",
+          category: formData.category || "home",
           propertyType: formData.propertyType,
           price: Number(formData.price),
           size: Number(formData.size) || undefined,
+          sizeUnit: formData.sizeUnit,
           location: {
             city: formData.city,
             area: formData.area,
@@ -87,20 +111,25 @@ const EditListing = () => {
           },
           bedrooms: Number(formData.bedrooms) || undefined,
           bathrooms: Number(formData.bathrooms) || undefined,
-          description: formData.description,
           amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
           photos: Array.isArray(formData.images) ? formData.images : undefined,
+          securityDeposit: formData.securityDeposit,
+          leaseTerm: formData.leaseTerm,
+          furnished: formData.furnished,
+          availableFrom: formData.availableFrom,
+          contactName: formData.contactName,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
         };
 
-        // Update listing status via API
-        const statusUpdate = {
-          status: formData.status,
-          featured: formData.featured,
-        };
+        await updateProperty(propertyId, propertyUpdates);
 
-        // Call APIs to update
-        await updateProperty(property._id, propertyUpdates);
-        await updateListing(listing._id, statusUpdate);
+        // Listing row only stores status/views/inquiries — skip when the form
+        // didn't change any of those (avoids a false "unauthorized" from an
+        // empty Prisma updateMany).
+        if (formData.status) {
+          await updateListing(listingId, { status: formData.status });
+        }
 
         setIsSubmitting(false);
         toast.success("Listing updated successfully!");

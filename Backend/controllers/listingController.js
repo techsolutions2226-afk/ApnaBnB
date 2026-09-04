@@ -114,16 +114,26 @@ const updateListing = async (req, res, next) => {
   try {
     const b = req.body;
     const data = {};
-    if ('status' in b) data.status = b.status;
-    if ('views' in b) data.views = Number(b.views);
-    if ('inquiries' in b) data.inquiries = Number(b.inquiries);
+    // Only accept real values — `status: undefined` / ignored fields like
+    // `featured` must not produce an empty `data` object. Prisma's
+    // updateMany({ data: {} }) returns count:0 even when the row matches,
+    // which the old code treated as "not found or unauthorized".
+    if (b.status != null && b.status !== '') data.status = b.status;
+    if (b.views != null && b.views !== '') data.views = Number(b.views);
+    if (b.inquiries != null && b.inquiries !== '') data.inquiries = Number(b.inquiries);
 
-    const result = await prisma.listing.updateMany({
+    const owned = await prisma.listing.findFirst({
       where: { id, ownerId: req.user.id },
-      data,
+      select: { id: true },
     });
-    if (result.count === 0) {
+    if (!owned) {
       return res.status(404).json({ message: 'Listing not found or unauthorized.' });
+    }
+
+    // No listing fields to change (e.g. edit-form only updates the property) —
+    // treat as a successful no-op so the client doesn't see a false 404.
+    if (Object.keys(data).length > 0) {
+      await prisma.listing.update({ where: { id }, data });
     }
 
     const listing = await prisma.listing.findUnique({

@@ -314,6 +314,8 @@ const ListingForm = ({
   // auto-saves form state to localStorage so a closed tab doesn't lose work.
   // Ignored when editing — that flow always seeds from the server.
   draftKey = null,
+  // Optional — notified when Sale/Rent purpose changes (admin status options).
+  onPurposeChange = null,
 }) => {
   const { currentUser } = useAuth();
 
@@ -574,6 +576,9 @@ const ListingForm = ({
         }
         return next;
       });
+      if (field === "purpose" && typeof onPurposeChange === "function") {
+        onPurposeChange(value);
+      }
       /* Clear error on change */
       if (errors[field]) {
         setErrors((prev) => {
@@ -583,7 +588,7 @@ const ListingForm = ({
         });
       }
     },
-    [errors],
+    [errors, onPurposeChange],
   );
 
   const handleBlur = useCallback((field) => {
@@ -1200,6 +1205,7 @@ const ListingForm = ({
                 });
               }}
               defaultCenter={mapDefaultCenter}
+              watchCenter={mapDefaultCenter}
               defaultZoom={mapDefaultZoom}
               height={300}
             />

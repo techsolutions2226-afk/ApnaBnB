@@ -5,7 +5,7 @@ const { sendSecurityAlertEmail } = require('../utils/mailer');
 const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 const cache = require('../utils/cache');
 
-const STATS_CACHE_KEY = 'admin:stats';
+const STATS_CACHE_KEY = 'admin:stats:v3';
 const STATS_TTL_MS = 60_000;
 
 // ── Shared selectors ──────────────────────────────────────────────────────
@@ -227,29 +227,46 @@ const buildRequirementData = (body) => {
 // ── Platform stats ────────────────────────────────────────────────────────
 const getPlatformStats = async (req, res, next) => {
   try {
-    /* Ten sequential full-table aggregates, identical for every admin. TTL-only
-       (no invalidation): dashboard counts do not need to be second-fresh, and
-       wiring every write path in the app to invalidate them would be far more
-       code than the staleness is worth. */
-    const cached = cache.get(STATS_CACHE_KEY);
-    if (cached) return res.status(200).json(cached);
+    /* Live Postgres aggregates. TTL cache keeps the admin dashboard snappy;
+       pass ?fresh=1 (Refresh button) to skip it. */
+    const forceFresh =
+      req.query.fresh === '1' ||
+      req.query.fresh === 'true' ||
+      String(req.headers['cache-control'] || '').includes('no-cache');
 
-    // Counts run sequentially (not Promise.all) so we never burst past
-    // Supabase's PgBouncer session cap (see db/prisma.js). Cheap queries.
-    const totalUsers = await prisma.user.count();
-    const totalSuspended = await prisma.user.count({ where: { suspended: true } });
-    const totalProperties = await prisma.property.count();
-    const totalActiveProperties = await prisma.property.count({ where: { status: 'active' } });
-    const totalListings = await prisma.listing.count();
-    const totalRequirements = await prisma.requirement.count();
-    const totalMatches = await prisma.match.count();
-    const totalReviews = await prisma.review.count();
-    const roleGroups = await prisma.user.groupBy({ by: ['role'], _count: { _all: true } });
-    const statusGroups = await prisma.property.groupBy({ by: ['status'], _count: { _all: true } });
+    if (!forceFresh) {
+      const cached = cache.get(STATS_CACHE_KEY);
+      if (cached) return res.status(200).json(cached);
+    } else {
+      cache.del(STATS_CACHE_KEY);
+    }
 
-    // Match the previous {_id, count} shape the dashboard consumes.
+    // Parallel batch — these are cheap COUNTs/groupBys. Kept to 7 queries so
+    // we stay under the Prisma pool cap (6) with only brief queueing.
+    const [
+      totalSuspended,
+      totalListings,
+      totalRequirements,
+      totalMatches,
+      totalReviews,
+      roleGroups,
+      statusGroups,
+    ] = await Promise.all([
+      prisma.user.count({ where: { suspended: true } }),
+      prisma.listing.count(),
+      prisma.requirement.count(),
+      prisma.match.count(),
+      prisma.review.count(),
+      prisma.user.groupBy({ by: ['role'], _count: { _all: true } }),
+      prisma.property.groupBy({ by: ['status'], _count: { _all: true } }),
+    ]);
+
     const usersByRole = roleGroups.map((g) => ({ _id: g.role, count: g._count._all }));
     const listingsByStatus = statusGroups.map((g) => ({ _id: g.status, count: g._count._all }));
+    const totalUsers = usersByRole.reduce((n, r) => n + r.count, 0);
+    const totalProperties = listingsByStatus.reduce((n, s) => n + s.count, 0);
+    const totalActiveProperties =
+      listingsByStatus.find((s) => s._id === 'active')?.count || 0;
 
     const payload = {
       totalUsers,
@@ -262,6 +279,7 @@ const getPlatformStats = async (req, res, next) => {
       totalReviews,
       usersByRole,
       listingsByStatus,
+      generatedAt: new Date().toISOString(),
     };
     cache.set(STATS_CACHE_KEY, payload, STATS_TTL_MS);
     res.status(200).json(payload);
@@ -764,6 +782,8 @@ const updateProperty = async (req, res, next) => {
       include: { listedBy: listedBySelect },
     });
 
+    cache.del(STATS_CACHE_KEY);
+
     logActivity({
       action: 'admin.property.update',
       entityType: 'property',
@@ -790,6 +810,8 @@ const deleteProperty = async (req, res, next) => {
 
     await prisma.property.delete({ where: { id } });
 
+    cache.del(STATS_CACHE_KEY);
+
     logActivity({
       action: 'admin.property.delete',
       entityType: 'property',
@@ -813,6 +835,8 @@ const approveProperty = async (req, res, next) => {
       data: { status: 'active' },
       include: { listedBy: { select: { id: true, name: true, email: true } } },
     });
+
+    cache.del(STATS_CACHE_KEY);
 
     notifyUserInBackground({
       recipientId: property.listedById,
@@ -851,6 +875,8 @@ const rejectProperty = async (req, res, next) => {
       data: { status: 'rejected' },
       include: { listedBy: { select: { id: true, name: true, email: true } } },
     });
+
+    cache.del(STATS_CACHE_KEY);
 
     notifyUserInBackground({
       recipientId: property.listedById,

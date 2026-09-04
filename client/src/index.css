@@ -153,6 +153,21 @@
   --brand-ink: #0f172a;             /* slate-900 */
   --surface: #ffffff;
   --surface-alt: #f8fafc;           /* slate-50 */
+
+  /* ── Chart palette (admin analytics) ──
+     Remap these to restyle every Overview graph without touching JS.
+     Values point at the @theme color tokens above. */
+  --chart-1: var(--color-primary-600);
+  --chart-2: var(--color-accent-600);
+  --chart-3: var(--color-warning-600);
+  --chart-4: var(--color-danger-600);
+  --chart-5: var(--color-primary-400);
+  --chart-6: var(--color-accent-400);
+  --chart-track: var(--color-slate-100);
+  --chart-grid: var(--color-slate-200);
+  --chart-label: var(--color-slate-500);
+  --chart-ink: var(--color-slate-900);
+  --chart-surface: var(--color-surface);
 }
 
 /* ── Keyframes ── */

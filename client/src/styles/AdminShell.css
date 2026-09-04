@@ -200,6 +200,60 @@
   color: #fff;
 }
 
+.ash-foot-account--active {
+  background: var(--color-primary-600);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+}
+
+.ash-foot-account--active:hover {
+  background: var(--color-primary-600);
+  color: #fff;
+}
+
+/* ── Theme selector ── */
+.ash-theme {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.35);
+}
+
+.ash-theme-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-slate-500);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ash-theme-opt:hover {
+  color: #fff;
+}
+
+.ash-theme-opt--active {
+  background: var(--color-primary-600);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+}
+
+.ash-theme-opt--active:hover {
+  color: #fff;
+}
+
 /* ── Main column ── */
 .ash-main {
   flex: 1;

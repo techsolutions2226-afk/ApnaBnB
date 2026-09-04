@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import securityService from "../services/securityService";
 import Modal from "../components/common/Modal";
 import RecoveryCodesPanel from "../components/account/RecoveryCodesPanel";
+import useAccountPath from "../hooks/useAccountPath";
 import {
   FiChevronLeft,
   FiCheckCircle,
@@ -27,6 +28,7 @@ const EMPTY_PASSWORDS = { current: "", next: "", confirm: "" };
 export default function LoginSecurity() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const { base } = useAccountPath();
 
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -216,7 +218,7 @@ export default function LoginSecurity() {
   return (
     <div className="ac-page">
       <div className="ac-container">
-        <Link to="/account" className="ac-breadcrumb">
+        <Link to={base} className="ac-breadcrumb">
           <FiChevronLeft size={18} />
           <span>Account</span>
         </Link>

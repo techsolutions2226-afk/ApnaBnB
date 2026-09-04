@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
+import useAccountPath from "../hooks/useAccountPath";
 import {
   FiUser,
   FiShield,
@@ -12,54 +13,55 @@ import {
 } from "react-icons/fi";
 import "../styles/Account.css";
 
-const cards = [
-  {
-    icon: FiUser,
-    title: "Personal info",
-    desc: "Provide personal details and how we can reach you",
-    to: "/account/personal-info",
-    enabled: true,
-  },
-  {
-    icon: FiShield,
-    title: "Login & security",
-    desc: "Update your password and secure your account",
-    to: "/account/login-security",
-    enabled: true,
-  },
-  {
-    icon: FiCreditCard,
-    title: "Payments & payouts",
-    desc: "Review payments, payouts, coupons, and gift cards",
-    to: "/account/payments",
-    enabled: true,
-  },
-  {
-    icon: FiBell,
-    title: "Notifications",
-    desc: "Choose notification preferences and how you want to be contacted",
-    to: "/account/notifications",
-    enabled: true,
-  },
-  {
-    icon: FiEye,
-    title: "Privacy & sharing",
-    desc: "Manage your personal data, connected services, and data sharing settings",
-    to: "/account/privacy",
-    enabled: true,
-  },
-  {
-    icon: FiSliders,
-    title: "Global preferences",
-    desc: "Set your default language, currency, and timezone",
-    to: "/account/preferences",
-    enabled: true,
-  },
-];
-
 export default function Account() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { cardPath } = useAccountPath();
+
+  const cards = [
+    {
+      icon: FiUser,
+      title: "Personal info",
+      desc: "Provide personal details and how we can reach you",
+      to: cardPath("personal-info"),
+      enabled: true,
+    },
+    {
+      icon: FiShield,
+      title: "Login & security",
+      desc: "Update your password and secure your account",
+      to: cardPath("login-security"),
+      enabled: true,
+    },
+    {
+      icon: FiCreditCard,
+      title: "Payments & payouts",
+      desc: "Review payments, payouts, coupons, and gift cards",
+      to: cardPath("payments"),
+      enabled: true,
+    },
+    {
+      icon: FiBell,
+      title: "Notifications",
+      desc: "Choose notification preferences and how you want to be contacted",
+      to: cardPath("notifications"),
+      enabled: true,
+    },
+    {
+      icon: FiEye,
+      title: "Privacy & sharing",
+      desc: "Manage your personal data, connected services, and data sharing settings",
+      to: cardPath("privacy"),
+      enabled: true,
+    },
+    {
+      icon: FiSliders,
+      title: "Global preferences",
+      desc: "Set your default language, currency, and timezone",
+      to: cardPath("preferences"),
+      enabled: true,
+    },
+  ];
 
   useEffect(() => {
     if (!currentUser) navigate("/login", { replace: true });

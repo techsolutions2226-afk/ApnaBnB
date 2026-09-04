@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import uploadService from "../services/uploadService";
 import Avatar from "../components/common/Avatar";
+import useAccountPath from "../hooks/useAccountPath";
 import { FiChevronLeft, FiCamera } from "react-icons/fi";
 import "../styles/Account.css";
 
@@ -21,6 +22,7 @@ const fields = [
 export default function PersonalInfo() {
   const { currentUser, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const { base } = useAccountPath();
   const fileInputRef = useRef(null);
 
   const [editingField, setEditingField] = useState(null);
@@ -129,7 +131,7 @@ export default function PersonalInfo() {
   return (
     <div className="ac-page">
       <div className="ac-container">
-        <Link to="/account" className="ac-breadcrumb">
+        <Link to={base} className="ac-breadcrumb">
           <FiChevronLeft size={18} />
           <span>Account</span>
         </Link>

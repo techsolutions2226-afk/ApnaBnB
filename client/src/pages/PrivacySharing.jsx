@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useAccountPath from "../hooks/useAccountPath";
 import {
   FiChevronLeft,
   FiDownload,
@@ -70,6 +71,7 @@ const SERVICES = [
 export default function PrivacySharing() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { base } = useAccountPath();
 
   // Local-only mirrors; these do not persist anywhere yet.
   const [prefs, setPrefs] = useState(() =>
@@ -110,7 +112,7 @@ export default function PrivacySharing() {
   return (
     <div className="ac-page">
       <div className="ac-container">
-        <Link to="/account" className="ac-breadcrumb">
+        <Link to={base} className="ac-breadcrumb">
           <FiChevronLeft size={18} />
           <span>Account</span>
         </Link>

@@ -15,9 +15,15 @@ import {
   FiPhone,
   FiX,
   FiChevronRight,
+  FiUser,
+  FiSun,
+  FiMoon,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/AdminShell.css";
+import "../../styles/AdminShell.dark.css";
+
+const THEME_KEY = "apnabnb_admin_theme";
 
 const NAV_ITEMS = [
   { to: "/admin", end: true, label: "Overview", icon: FiLayout },
@@ -41,6 +47,22 @@ export default function AdminShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) || "light";
+    } catch {
+      return "light";
+    }
+  });
+
+  const setThemePref = (value) => {
+    setTheme(value);
+    try {
+      localStorage.setItem(THEME_KEY, value);
+    } catch {
+      /* ignore quota / private-mode errors */
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -56,7 +78,7 @@ export default function AdminShell() {
   const activeLabel = crumbs.length ? crumbs[0].label : "Overview";
 
   return (
-    <div className="ash-shell">
+    <div className="ash-shell" data-theme={theme}>
       {/* ── Fixed sidebar ── */}
       <aside
         className={`ash-sidebar${navOpen ? " ash-sidebar--open" : ""}`}
@@ -110,6 +132,41 @@ export default function AdminShell() {
         </nav>
 
         <div className="ash-sidebar-foot">
+          <div className="ash-theme" role="radiogroup" aria-label="Panel theme">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "light"}
+              className={`ash-theme-opt${theme === "light" ? " ash-theme-opt--active" : ""}`}
+              onClick={() => setThemePref("light")}
+            >
+              <FiSun size={14} />
+              <span>Light</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "dark"}
+              className={`ash-theme-opt${theme === "dark" ? " ash-theme-opt--active" : ""}`}
+              onClick={() => setThemePref("dark")}
+            >
+              <FiMoon size={14} />
+              <span>Dark</span>
+            </button>
+          </div>
+
+          <Link
+            to="/admin/account"
+            className={`ash-foot-link ash-foot-account${
+              location.pathname.startsWith("/admin/account")
+                ? " ash-foot-account--active"
+                : ""
+            }`}
+            onClick={() => setNavOpen(false)}
+          >
+            <FiUser size={16} />
+            <span>Account</span>
+          </Link>
           <Link
             to="/"
             className="ash-foot-link"

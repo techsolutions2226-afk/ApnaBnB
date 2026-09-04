@@ -151,6 +151,13 @@ function App() {
                   <Route path="plans" element={<AdminPlans />} />
                   <Route path="contact" element={<AdminContact />} />
                   <Route path="logs" element={<AdminLogs />} />
+                  <Route path="account" element={<Account />} />
+                  <Route path="account/personal-info" element={<PersonalInfo />} />
+                  <Route path="account/notifications" element={<Notifications />} />
+                  <Route path="account/login-security" element={<LoginSecurity />} />
+                  <Route path="account/payments" element={<PaymentsPayouts />} />
+                  <Route path="account/privacy" element={<PrivacySharing />} />
+                  <Route path="account/preferences" element={<GlobalPreferences />} />
                 </Route>
 
                 {/* ── Auth pages with AuthLayout ── */}

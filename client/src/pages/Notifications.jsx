@@ -8,6 +8,7 @@ import { getSocket } from "../api/socket";
 import EmptyState from "../components/common/EmptyState";
 import Pagination from "../components/common/Pagination";
 import RefreshButton from "../components/common/RefreshButton";
+import useAccountPath from "../hooks/useAccountPath";
 import "../styles/Account.css";
 import "../styles/Notifications.css";
 
@@ -64,6 +65,7 @@ const timeOf = (date) =>
 export default function Notifications() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { base } = useAccountPath();
 
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -169,7 +171,7 @@ export default function Notifications() {
   return (
     <div className="ac-page">
       <div className="ac-container">
-        <Link to="/account" className="ac-breadcrumb">
+        <Link to={base} className="ac-breadcrumb">
           <FiChevronLeft size={18} />
           <span>Account</span>
         </Link>

@@ -1,0 +1,164 @@
+/* ════════════════════════════════════════════════════════════════
+   AdminShell.dark.css — dark theme for the admin panel
+   Scoped to .ash-shell[data-theme="dark"]. Flipping the shared design
+   tokens at this root recolors every admin + account page that consumes
+   var(--color-slate-*) / --color-surface(...). The hardcoded #fff surfaces
+   used by cards/inputs/tables/modals are overridden explicitly below.
+   ════════════════════════════════════════════════════════════════ */
+
+.ash-shell[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ── Core surface tokens ── */
+  --color-surface: #16203a;        /* cards / inputs */
+  --color-surface-alt: #0b1220;    /* page background */
+  --color-border: #26334d;         /* soft borders */
+  --color-border-strong: #334155;  /* stronger borders */
+  --color-overlay: rgba(2, 6, 23, 0.6);
+
+  /* Map the slate scale to dark equivalents. Light pages read
+     slate-50/100/200 as backgrounds/borders and slate-900 as ink;
+     swapping the whole scale keeps their pairing intact. */
+  --color-slate-50: #0b1220;
+  --color-slate-100: #101a30;
+  --color-slate-200: #26334d;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #a5b4c7;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-slate-950: #ffffff;
+
+  /* Semantic aliases some legacy pages still reference */
+  --brand-navy: #e2e8f0;
+  --brand-navy-light: #94a3b8;
+  --brand-navy-deep: #020617;
+  --brand-ink: #f1f5f9;
+  --surface: var(--color-surface);
+  --surface-alt: var(--color-surface-alt);
+
+  color: var(--color-slate-900);
+  background: var(--color-surface-alt);
+
+  /* ── Chart palette (dark graphs) ── */
+  --chart-track: var(--color-slate-200);
+  --chart-grid: var(--color-slate-300);
+  --chart-label: var(--color-slate-500);
+  --chart-ink: var(--color-slate-900);
+  --chart-surface: var(--color-surface);
+}
+
+/* ── Shell main column ── */
+.ash-shell[data-theme="dark"] .ash-main {
+  background: var(--color-surface-alt);
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .ash-topbar {
+  background: var(--color-surface);
+  border-bottom-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .ash-topbar-title {
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .ash-hamburger {
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .ash-topbar-badge {
+  color: var(--color-accent-300);
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* ── Scrollbars ── */
+.ash-shell[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--color-slate-500);
+}
+
+.ash-shell[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-600);
+}
+
+/* ── Shared hardcoded-#fff surfaces within the admin shell ──
+   Scope to the shell so light styling elsewhere is untouched. */
+
+/* Admin (adm-*) cards / KPIs / selects / buttons / tables */
+.ash-shell[data-theme="dark"] .adm-kpi,
+.ash-shell[data-theme="dark"] .adm-card,
+.ash-shell[data-theme="dark"] .adm-select,
+.ash-shell[data-theme="dark"] .adm-btn,
+.ash-shell[data-theme="dark"] .adm-table-wrap,
+.ash-shell[data-theme="dark"] .adm-toolbar,
+.ash-shell[data-theme="dark"] .adm-feed-item,
+.ash-shell[data-theme="dark"] .adm-action-icon,
+.ash-shell[data-theme="dark"] .adm-profile-card,
+.ash-shell[data-theme="dark"] .adm-chat-list,
+.ash-shell[data-theme="dark"] .adm-chat-thread {
+  background: var(--color-surface);
+}
+
+.ash-shell[data-theme="dark"] .adm-table th {
+  background: var(--color-slate-100);
+}
+
+/* Detail/summary panels using #fff (lines ~1429, 1573, 1961, 2052, 2152) */
+.ash-shell[data-theme="dark"] .adm-summary,
+.ash-shell[data-theme="dark"] .adm-stat,
+.ash-shell[data-theme="dark"] .adm-panel,
+.ash-shell[data-theme="dark"] .adm-detail,
+.ash-shell[data-theme="dark"] .adm-box,
+.ash-shell[data-theme="dark"] .adm-info {
+  background: var(--color-surface);
+}
+
+/* Hardcoded near-black text that sits on white cards in light mode. */
+.ash-shell[data-theme="dark"] .adm-chat-thread-title,
+.ash-shell[data-theme="dark"] .adm-feed-line,
+.ash-shell[data-theme="dark"] .adm-entity-name,
+.ash-shell[data-theme="dark"] .adm-cell-strong {
+  color: var(--color-slate-900);
+}
+
+/* Account (ac-*) cards / inputs / selects / buttons / codes */
+.ash-shell[data-theme="dark"] .ac-card,
+.ash-shell[data-theme="dark"] .ac-field-input,
+.ash-shell[data-theme="dark"] .ac-select,
+.ash-shell[data-theme="dark"] .ac-btn-outline,
+.ash-shell[data-theme="dark"] .ac-btn-danger,
+.ash-shell[data-theme="dark"] .ac-2fa-option,
+.ash-shell[data-theme="dark"] .ac-setup-qr,
+.ash-shell[data-theme="dark"] .ac-setup-secret,
+.ash-shell[data-theme="dark"] .ac-recovery-grid,
+.ash-shell[data-theme="dark"] .ac-recovery-code,
+.ash-shell[data-theme="dark"] .ac-table,
+.ash-shell[data-theme="dark"] .ac-bottom {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .ac-field-input,
+.ash-shell[data-theme="dark"] .ac-select {
+  border-color: var(--color-border-strong);
+  color: var(--color-slate-900);
+  background-color: var(--color-surface);
+}
+
+.ash-shell[data-theme="dark"] .ac-save-btn {
+  color: var(--color-slate-900);
+}
+
+/* Inline profile-photo block in PersonalInfo uses hardcoded inline styles;
+   give it a dark background so the white page doesn't flash. */
+.ash-shell[data-theme="dark"] .ac-page {
+  background: var(--color-surface-alt);
+  color: var(--color-slate-900);
+}
+
+/* Keep the toggle thumb white ("on" pill) — it sits on the dark track. */
+.ash-shell[data-theme="dark"] .ac-toggle-thumb {
+  background: #e2e8f0;
+}

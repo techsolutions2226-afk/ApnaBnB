@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import useAccountPath from "../hooks/useAccountPath";
 import {
   FiChevronLeft,
   FiCreditCard,
@@ -58,6 +59,7 @@ const HISTORY = [
 export default function PaymentsPayouts() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { base } = useAccountPath();
   const [tab, setTab] = useState("payments");
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function PaymentsPayouts() {
   return (
     <div className="ac-page">
       <div className="ac-container">
-        <Link to="/account" className="ac-breadcrumb">
+        <Link to={base} className="ac-breadcrumb">
           <FiChevronLeft size={18} />
           <span>Account</span>
         </Link>

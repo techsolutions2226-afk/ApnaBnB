@@ -16,6 +16,7 @@ export const useNotifications = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const [items, setItems] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sectionCounts, setSectionCounts] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const mounted = useRef(true);
@@ -31,18 +32,21 @@ export const useNotifications = () => {
     if (!isAuthenticated) {
       setItems([]);
       setUnreadCount(0);
+      setSectionCounts({});
       return;
     }
     setIsLoading(true);
     setError(null);
     try {
-      const [list, count] = await Promise.all([
+      const [list, count, byType] = await Promise.all([
         notificationService.list({ limit: PAGE_SIZE }),
         notificationService.unreadCount(),
+        notificationService.unreadByType(),
       ]);
       if (!mounted.current) return;
       setItems(Array.isArray(list) ? list : list?.items || []);
       setUnreadCount(count);
+      setSectionCounts(byType || {});
     } catch (err) {
       if (mounted.current) setError(err?.message || "Could not load notifications");
     } finally {
@@ -69,6 +73,13 @@ export const useNotifications = () => {
             : [payload, ...prev].slice(0, PAGE_SIZE),
         );
         setUnreadCount((c) => c + 1);
+        const entityType = payload.entityType;
+        if (entityType) {
+          setSectionCounts((prev) => ({
+            ...prev,
+            [entityType]: (prev[entityType] || 0) + 1,
+          }));
+        }
       } else {
         refetch();
       }
@@ -104,20 +115,58 @@ export const useNotifications = () => {
   const markSeen = useCallback(async (ids) => {
     const unreadIds = (ids || []).filter(Boolean);
     if (!unreadIds.length) return;
+    // Decrement the right section badges based on what was actually seen.
+    const dec = {};
+    items.forEach((n) => {
+      if (unreadIds.includes(n.id) && n.entityType) {
+        dec[n.entityType] = (dec[n.entityType] || 0) + 1;
+      }
+    });
     setItems((prev) =>
       prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: true } : n)),
     );
     setUnreadCount((c) => Math.max(0, c - unreadIds.length));
+    setSectionCounts((prev) => {
+      const next = { ...prev };
+      for (const [type, n] of Object.entries(dec)) {
+        next[type] = Math.max(0, (next[type] || 0) - n);
+      }
+      return next;
+    });
     try {
       await notificationService.markManyRead(unreadIds);
     } catch {
       refetch(); // put the truth back if the write failed
     }
-  }, [refetch]);
+  }, [items, refetch]);
+
+  /* Clear one whole section's badge (all unread of an entityType) — used when
+     the user opens the sidebar section it belongs to (e.g. the Visits tab). */
+  const markSectionRead = useCallback(
+    async (entityType) => {
+      if (!entityType) return;
+      const cleared = sectionCounts[entityType] || 0;
+      if (cleared === 0) return;
+      setItems((prev) =>
+        prev.map((n) =>
+          n.entityType === entityType ? { ...n, read: true } : n,
+        ),
+      );
+      setUnreadCount((c) => Math.max(0, c - cleared));
+      setSectionCounts((prev) => ({ ...prev, [entityType]: 0 }));
+      try {
+        await notificationService.markTypeRead(entityType);
+      } catch {
+        refetch();
+      }
+    },
+    [sectionCounts, refetch],
+  );
 
   const markAllRead = useCallback(async () => {
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
+    setSectionCounts({});
     try {
       await notificationService.markAllRead();
     } catch {
@@ -125,7 +174,17 @@ export const useNotifications = () => {
     }
   }, [refetch]);
 
-  return { items, unreadCount, isLoading, error, refetch, markSeen, markAllRead };
+  return {
+    items,
+    unreadCount,
+    sectionCounts,
+    isLoading,
+    error,
+    refetch,
+    markSeen,
+    markSectionRead,
+    markAllRead,
+  };
 };
 
 export default useNotifications;

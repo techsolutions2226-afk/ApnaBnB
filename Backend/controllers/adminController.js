@@ -1172,7 +1172,6 @@ const deleteMatch = async (req, res, next) => {
 };
 
 // ── Visit overview ─────────────────────────────────────────────────────────
-
 const VISIT_STATUSES = ['upcoming', 'checked_in', 'completed', 'cancelled'];
 
 /* Effective visit outcome — mirrors tripController.effectiveOutcome so the
@@ -1387,6 +1386,37 @@ const getUserActivity = async (req, res, next) => {
   }
 };
 
+// ── Section activity counts (admin sidebar badges) ────────────────────────
+/* The admin panel has no notification inbox, so the sidebar badges count
+   "newest unviewed items": how many rows were created in a section since the
+   admin's most recent visit to it. The `since` epoch ms comes from the client
+   (stored per-section in localStorage) and defaults to "all time" when absent.
+   Returns { visits, matches } mirrors the sidebar sections. */
+const getSectionActivityCounts = async (req, res, next) => {
+  try {
+    const sinceMatch =
+      req.query.matchesSince && !Number.isNaN(Number(req.query.matchesSince))
+        ? new Date(Number(req.query.matchesSince))
+        : undefined;
+    const sinceVisits =
+      req.query.visitsSince && !Number.isNaN(Number(req.query.visitsSince))
+        ? new Date(Number(req.query.visitsSince))
+        : undefined;
+
+    const [newMatches, newVisits] = await Promise.all([
+      prisma.match.count({
+        where: sinceMatch ? { createdAt: { gt: sinceMatch } } : {},
+      }),
+      prisma.trip.count({
+        where: sinceVisits ? { createdAt: { gt: sinceVisits } } : {},
+      }),
+    ]);
+
+    res.status(200).json({ matches: newMatches, visits: newVisits });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   getPlatformStats,
@@ -1416,4 +1446,5 @@ module.exports = {
   getAllTrips,
   getActivityLogs,
   getUserActivity,
+  getSectionActivityCounts,
 };

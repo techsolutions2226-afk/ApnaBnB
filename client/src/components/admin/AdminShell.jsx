@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   FiLayout,
@@ -21,6 +21,7 @@ import {
   FiCalendar,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useAdminSectionUnviewed } from "../../hooks/useAdminSectionUnviewed";
 import "../../styles/AdminShell.css";
 import "../../styles/AdminShell.dark.css";
 
@@ -56,6 +57,17 @@ export default function AdminShell() {
       return "light";
     }
   });
+
+  /* Admin sidebar badges: live "unviewed items" counts for Matches + Visits.
+     Each section's count clears once the admin opens that section. */
+  const { counts, markSeen } = useAdminSectionUnviewed();
+  useEffect(() => {
+    if (location.pathname.startsWith("/admin/visits")) {
+      markSeen("visits");
+    } else if (location.pathname.startsWith("/admin/matches")) {
+      markSeen("matches");
+    }
+  }, [location.pathname, markSeen]);
 
   const setThemePref = (value) => {
     setTheme(value);
@@ -116,6 +128,12 @@ export default function AdminShell() {
           <span className="ash-nav-heading">Management</span>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            const sectionBadge =
+              item.to === "/admin/visits"
+                ? counts.visits || 0
+                : item.to === "/admin/matches"
+                  ? counts.matches || 0
+                  : 0;
             return (
               <NavLink
                 key={item.to}
@@ -128,6 +146,11 @@ export default function AdminShell() {
               >
                 <Icon size={17} className="ash-navicon" />
                 <span>{item.label}</span>
+                {sectionBadge > 0 && (
+                  <span className="ash-navlink-badge">
+                    {sectionBadge > 9 ? "9+" : sectionBadge}
+                  </span>
+                )}
               </NavLink>
             );
           })}

@@ -231,6 +231,16 @@ const adminService = {
     }
   },
 
+  // Admin sidebar badges — unviewed counts per section since last visit.
+  getUnviewed: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/admin/unviewed', { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch unviewed counts' };
+    }
+  },
+
   // ── Activity logs ──
   getActivityLogs: async (filters = {}) => {
     try {

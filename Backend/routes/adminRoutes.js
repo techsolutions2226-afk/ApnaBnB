@@ -25,6 +25,7 @@ const {
   getAllMatches,
   deleteMatch,
   getAllTrips,
+  getSectionActivityCounts,
   getActivityLogs,
   getUserActivity,
 } = require('../controllers/adminController');
@@ -73,6 +74,9 @@ router.delete('/matches/:id', verifyToken, adminOnly, deleteMatch);
 
 // Visits (platform-wide, read-only oversight)
 router.get('/trips', verifyToken, adminOnly, getAllTrips);
+
+// Admin sidebar badges — unviewed counts per section since the client's last view
+router.get('/unviewed', verifyToken, adminOnly, getSectionActivityCounts);
 
 // Activity logs
 router.get('/activity', verifyToken, adminOnly, getActivityLogs);

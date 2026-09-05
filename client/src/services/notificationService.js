@@ -26,6 +26,18 @@ const notificationService = {
     }
   },
 
+  // Unread counts grouped by entityType — feeds per-section sidebar badges
+  // (e.g. trip → Visits tab, match → Matches tab). Same failure contract as
+  // unreadCount: decorative only. Returns { entityType: count, ... }.
+  unreadByType: async () => {
+    try {
+      const response = await apiClient.get('/notifications/unread-by-type');
+      return response.data?.counts || {};
+    } catch {
+      return {};
+    }
+  },
+
   markRead: async (id) => {
     const response = await apiClient.patch(`/notifications/${id}/read`);
     return response.data;
@@ -34,6 +46,13 @@ const notificationService = {
   // Marks only what the user actually saw, rather than the whole inbox.
   markManyRead: async (ids) => {
     const response = await apiClient.post('/notifications/read', { ids });
+    return response.data;
+  },
+
+  // Marks every unread notification of one section (entityType) read — used
+  // when the user opens the section the badge belongs to.
+  markTypeRead: async (entityType) => {
+    const response = await apiClient.post('/notifications/read-by-type', { entityType });
     return response.data;
   },
 

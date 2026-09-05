@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { FiChevronDown, FiSettings, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
-import { useBooking } from "../../context/BookingContext";
+import { useNotifications } from "../../hooks/useNotifications";
 import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
 
@@ -21,10 +21,22 @@ const STORAGE_KEY = "dash_view_role";
 export default function DashboardShell() {
   const { currentUser, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  /* Successful visit count for the sidebar "Visits" badge. */
-  const { getVisitCounts } = useBooking();
-  const { successful: successfulVisits } = getVisitCounts();
+  /* Per-section unread badges (Visits → trip notifications, Matches → match
+     notifications). Live over the notification socket; each badge clears when
+     its section is opened below. */
+  const { sectionCounts, markSectionRead } = useNotifications();
+
+  /* When the user opens the Matches or Visits section, mark that section's
+     notifications read so its badge clears. */
+  useEffect(() => {
+    if (location.pathname.startsWith("/trips")) {
+      markSectionRead("trip");
+    } else if (location.pathname.startsWith("/matches")) {
+      markSectionRead("match");
+    }
+  }, [location.pathname, markSectionRead]);
 
   const realRole =
     currentUser?.role && ROLES.includes(currentUser.role)
@@ -142,6 +154,12 @@ export default function DashboardShell() {
         <nav className="flex-1 px-3 py-2 overflow-y-auto" aria-label="Main navigation">
           {items.map((item) => {
             const Icon = item.icon;
+            const sectionBadge =
+              item.to === "/trips"
+                ? sectionCounts.trip || 0
+                : item.to === "/matches"
+                  ? sectionCounts.match || 0
+                  : 0;
             return (
               <NavLink
                 key={item.to + item.label}
@@ -164,9 +182,9 @@ export default function DashboardShell() {
                   aria-hidden="true"
                 />
                 <span>{item.label}</span>
-                {item.to === "/trips" && successfulVisits > 0 && (
+                {sectionBadge > 0 && (
                   <span className="ml-auto min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-white text-xs font-bold">
-                    {successfulVisits}
+                    {sectionBadge > 9 ? "9+" : sectionBadge}
                   </span>
                 )}
               </NavLink>

@@ -44,6 +44,26 @@ const getUnreadCount = async (req, res, next) => {
   }
 };
 
+// GET /api/notifications/unread-by-type — unread counts grouped by entityType,
+// so sidebar sections (Visits=trip, Matches=match, ...) can each show their own
+// dynamic badge that clears when the user views that section.
+const getUnreadByType = async (req, res, next) => {
+  try {
+    const rows = await prisma.notification.groupBy({
+      by: ['entityType'],
+      where: { recipientId: req.user.id, read: false },
+      _count: true,
+    });
+    const counts = {};
+    for (const row of rows) {
+      if (row.entityType) counts[row.entityType] = row._count;
+    }
+    res.status(200).json({ counts });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // POST /api/notifications/read-all — clears the badge in one call.
 const markAllRead = async (req, res, next) => {
   try {
@@ -68,6 +88,23 @@ const markManyRead = async (req, res, next) => {
     const { count } = await prisma.notification.updateMany({
       // recipientId in the filter is the authorization check.
       where: { id: { in: ids }, recipientId: req.user.id, read: false },
+      data: { read: true, readAt: new Date() },
+    });
+res.status(200).json({ updated: count });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/notifications/read-by-type — clears one whole section's badge
+// (e.g. all unread travel/visit notifications) when the user opens that
+// section of the sidebar.
+const markTypeRead = async (req, res, next) => {
+  try {
+    const { entityType } = req.body;
+    if (!entityType) return res.status(400).json({ message: 'entityType is required.' });
+    const { count } = await prisma.notification.updateMany({
+      where: { recipientId: req.user.id, read: false, entityType },
       data: { read: true, readAt: new Date() },
     });
     res.status(200).json({ updated: count });
@@ -106,8 +143,11 @@ const deleteNotification = async (req, res, next) => {
 module.exports = {
   getNotifications,
   getUnreadCount,
+  getUnreadByType,
   markAllRead,
+  markTypeRead,
   markManyRead,
   markRead,
   deleteNotification,
 };
+

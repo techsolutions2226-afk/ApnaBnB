@@ -71,12 +71,29 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
             <FiMapPin size={14} />
             {propertyLocation}
           </p>
-          <p className="tr-card-detail">
-            <FiUsers size={14} />
-            {guestCount} guest{guestCount !== 1 ? "s" : ""} · {trip.nights}{" "}
-            night{trip.nights !== 1 ? "s" : ""}
-          </p>
+          {trip.status === "upcoming" && (
+            <p className="tr-card-detail">
+              <FiUsers size={14} />
+              {guestCount} guest{guestCount !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
+
+        {trip.status === "upcoming" && (
+          <div className="tr-visit-state">
+            {trip.visitorConfirmed && trip.ownerConfirmed ? (
+              <span className="tr-visit-state-chip tr-visit-state-chip--done">
+                ✅ Confirmed — contact revealed
+              </span>
+            ) : (
+              <span className="tr-visit-state-chip">
+                {trip.scheduleState === "reschedule"
+                  ? "🔄 New schedule proposed — awaiting confirmation"
+                  : "⏳ Awaiting mutual confirmation"}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="tr-card-footer">
           <div className="tr-card-price">
@@ -86,12 +103,18 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
 
           <div className="tr-card-actions">
             {trip.status === "upcoming" && (
-              <button
-                className="tr-cancel-btn"
-                onClick={() => onCancel(trip.id)}
-              >
-                Cancel visit
-              </button>
+              <>
+                <Link to={`/visits/${trip.id}`} className="tr-detail-btn">
+                  <FiChevronRight size={16} />
+                  View visit
+                </Link>
+                <button
+                  className="tr-cancel-btn"
+                  onClick={() => onCancel(trip.id)}
+                >
+                  Cancel visit
+                </button>
+              </>
             )}
             {trip.status === "completed" && (
               <button className="tr-review-btn" onClick={() => onReview(trip)}>

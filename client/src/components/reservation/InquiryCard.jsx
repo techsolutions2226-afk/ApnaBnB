@@ -1,17 +1,21 @@
 import { AiFillStar } from "react-icons/ai";
-import { FiShield, FiPhone } from "react-icons/fi";
+import { FiShield, FiPhone, FiCalendar } from "react-icons/fi";
 import { formatPrice } from "../../utils/formatters";
 
-/* Sidebar card on a property page: price, rating, and the call-to-action that
-   leads to the lister. Contact details are never rendered here — the button
-   hands off to PropertyDetail, which routes to the owner profile or to /plans
-   depending on whether the viewer holds one. */
-const InquiryCard = ({ property, onMessage }) => {
+/* Sidebar card on a property page: price, rating, and two CTAs. The primary
+   action sends the viewer to the visit page to propose a schedule; the
+   secondary "Get contact info" hands off to the owner profile / plans gate,
+   as before. Contact details are never rendered here. */
+const InquiryCard = ({ property, onMessage, onVisit }) => {
   const { price, rating, reviews, listedBy, purpose } = property || {};
 
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (typeof onMessage === "function") onMessage();
+  };
+
+  const handleVisit = () => {
+    if (typeof onVisit === "function") onVisit();
   };
 
   return (
@@ -34,13 +38,23 @@ const InquiryCard = ({ property, onMessage }) => {
         </div>
       )}
 
-      <button type="button" className="rv-card-btn" onClick={handleSubmit}>
+      <button type="button" className="rv-card-btn" onClick={handleVisit}>
+        <FiCalendar size={17} />
+        Confirm visit
+      </button>
+
+      <button
+        type="button"
+        className="rv-card-btn rv-card-btn--secondary"
+        onClick={handleSubmit}
+      >
         <FiPhone size={17} />
         Get contact info
       </button>
 
       <p className="rv-card-note">
-        Phone and email are shown to members on an active plan.
+        Phone and email are revealed to you and the other side once the visit
+        is confirmed by both parties.
       </p>
 
       {listedBy && (

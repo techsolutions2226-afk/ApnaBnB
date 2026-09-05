@@ -232,6 +232,20 @@ const PropertyDetail = () => {
     navigate(`/plans?from=contact&property=${id}`);
   };
 
+  /* The "Confirm visit" primary CTA — straight to the visit scheduling page. */
+  const handleVisit = () => {
+    if (!isAuthenticated) {
+      toast.info("Please log in to confirm a visit.");
+      navigate("/login");
+      return;
+    }
+    if (isOwnListing) {
+      toast.info("This is your own listing.");
+      return;
+    }
+    navigate(`/visit/${id}`);
+  };
+
 
   const DESC_LIMIT = 280;
   const isDescLong = (description || "").length > DESC_LIMIT;
@@ -594,6 +608,7 @@ const PropertyDetail = () => {
             <InquiryCard
               property={property}
               onMessage={handleGetContact}
+              onVisit={handleVisit}
             />
           </aside>
         </div>
@@ -610,9 +625,9 @@ const PropertyDetail = () => {
           <button
             type="button"
             className="pd-mobile-cta-btn"
-            onClick={handleGetContact}
+            onClick={handleVisit}
           >
-            Get contact info
+            Confirm visit
           </button>
         )}
       </div>

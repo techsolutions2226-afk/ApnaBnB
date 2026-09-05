@@ -790,6 +790,16 @@
 .rv-card-btn:active {
   transform: scale(0.98);
 }
+.rv-card-btn--secondary {
+  background: #fff;
+  border: 1px solid var(--color-slate-200);
+  color: var(--color-slate-700);
+  margin-top: 8px;
+}
+.rv-card-btn--secondary:hover {
+  background: var(--color-slate-50);
+  border-color: var(--color-slate-300);
+}
 .rv-card-note {
   text-align: center;
   font-size: 12px;

@@ -13,6 +13,7 @@ import ConfirmDialog from "../components/common/ConfirmDialog";
 import RefreshButton from "../components/common/RefreshButton";
 import useRefresh from "../hooks/useRefresh";
 import PlanBanner from "../components/dashboard/PlanBanner";
+import UpcomingVisitsSection from "../components/dashboard/UpcomingVisitsSection";
 import {
   FiFileText,
   FiHeart,
@@ -25,7 +26,7 @@ import {
   FiEdit2,
   FiTrash2,
 } from "react-icons/fi";
-import { formatPrice, formatCity } from "../utils/formatters";
+import { formatPrice } from "../utils/formatters";
 import Breadcrumb from "../components/common/Breadcrumb";
 import StatusBadge from "../components/common/StatusBadge";
 import "../styles/Dashboard.css";
@@ -296,61 +297,11 @@ const BuyerDashboard = () => {
         />
       )}
 
-      {/* ── Upcoming Visits ── */}
-      <div className="dash-section">
-        <SectionHeader title="Upcoming Visits" to="/trips" actionIcon={FiCalendar} />
-        {upcomingList.length > 0 ? (
-          <div className="dash-table-wrap">
-            <table className="dash-table">
-              <thead>
-                <tr>
-                  <th>Property</th>
-                  <th>Check-in</th>
-                  <th>Check-out</th>
-                  <th>Guests</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcomingList.slice(0, 5).map((trip) => (
-                  <tr key={trip.id}>
-                    <td data-label="Property">
-                      <div className="dash-table-title">
-                        {trip.property?.title || "Scheduled visit"}
-                      </div>
-                      <div className="dash-table-sub">
-                        {formatCity(trip.property?.location)}
-                      </div>
-                    </td>
-                    <td data-label="Check-in">{trip.checkIn || "—"}</td>
-                    <td data-label="Check-out">{trip.checkOut || "—"}</td>
-                    <td data-label="Guests">
-                      {(trip.guests?.adults || 0) +
-                        (trip.guests?.children || 0) +
-                        (trip.guests?.infants || 0)}
-                    </td>
-                    <td data-label="Total">
-                      {formatPrice(trip.totalPrice || 0, { prefix: true })}
-                    </td>
-                    <td data-label="Status">
-                      <StatusBadge status={trip.status || "upcoming"} prefix="dash-badge" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="dash-empty">
-            <div className="dash-empty-icon">📅</div>
-            <p className="dash-empty-text">No property visits scheduled.</p>
-            <Link to="/" className="dash-empty-link">
-              Browse Properties
-            </Link>
-          </div>
-        )}
-      </div>
+      {/* ── Upcoming Visits (mutual-confirm, both sides) ── */}
+      <UpcomingVisitsSection
+        items={upcomingList}
+        onRefresh={refetchDashboardData}
+      />
 
       {/* ── Delete Confirmation Modal ── */}
       <ConfirmDialog

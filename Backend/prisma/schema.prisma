@@ -396,6 +396,17 @@ model Trip {
   cancelledAt      String?
   refundAmount     Float?
 
+  // ── Two-way mutual-visit scheduling ──
+  // The visitor proposes a preferred schedule; the property owner either
+  // confirms it or proposes their own. Contact details are only revealed to
+  // BOTH sides once BOTH have confirmed (visitorConfirmed && ownerConfirmed).
+  visitorProposal Json? // { date: 'YYYY-MM-DD', time: 'HH:mm' }
+  ownerProposal   Json? // { date: 'YYYY-MM-DD', time: 'HH:mm' }
+  visitorConfirmed Boolean @default(false)
+  ownerConfirmed   Boolean @default(false)
+  confirmedAt      String? // ISO timestamp when both sides confirmed
+  scheduleState    String  @default("pending") // pending | reschedule | agreed
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

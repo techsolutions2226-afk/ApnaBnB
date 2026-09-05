@@ -13,6 +13,8 @@ import ConfirmDialog from "../components/common/ConfirmDialog";
 import RefreshButton from "../components/common/RefreshButton";
 import useRefresh from "../hooks/useRefresh";
 import PlanBanner from "../components/dashboard/PlanBanner";
+import UpcomingVisitsSection from "../components/dashboard/UpcomingVisitsSection";
+import { useDashboardData } from "../hooks/useDashboardData";
 import {
   FiHome,
   FiEye,
@@ -50,8 +52,16 @@ const DealerDashboard = () => {
   // the user is ACTING AS so counts match what that role sees.
   const { stats, refetch: refetchStats } = useUserStats(viewRole);
 
+  // Visits (incoming + outgoing) behind the dashboard visits table
+  const { upcomingList: dealerUpcomingList, refetch: refetchDashboardData } =
+    useDashboardData();
+
   // Refresh just this tab — re-runs every fetch behind it, no browser reload.
-  const { refresh, refreshing } = useRefresh(refetchListings, refetchStats);
+  const { refresh, refreshing } = useRefresh(
+    refetchListings,
+    refetchStats,
+    refetchDashboardData
+  );
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -282,6 +292,12 @@ const DealerDashboard = () => {
       {/* ── Recent Matches (self-fetching) ── */}
       <RecentMatches
         emptyMessage="No matches yet. List a property or post a requirement and we'll surface leads as soon as the city, area, and price line up."
+      />
+
+      {/* ── Upcoming Visits (incoming + outgoing) ── */}
+      <UpcomingVisitsSection
+        items={dealerUpcomingList}
+        onRefresh={refetchDashboardData}
       />
 
       {/* ── Reviews on My Properties ── */}

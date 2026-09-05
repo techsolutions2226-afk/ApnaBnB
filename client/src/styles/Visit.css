@@ -1,0 +1,470 @@
+/* ═══════════════════════════════════════════════
+   Visit.css — visit proposal + mutual confirmation flow
+   Prefix: vs-
+   Uses the site design tokens from index.css.
+   ═══════════════════════════════════════════════ */
+
+.vs-page {
+  min-height: 60vh;
+  padding: 40px 24px 80px;
+}
+
+.vs-container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.vs-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-slate-900);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  margin-bottom: 24px;
+}
+
+.vs-breadcrumb:hover {
+  text-decoration: underline;
+}
+
+.vs-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+  margin: 0 0 8px;
+}
+
+.vs-subtitle {
+  font-size: 15px;
+  color: var(--color-slate-500);
+  margin: 0 0 32px;
+  line-height: 1.55;
+  max-width: 640px;
+}
+
+.vs-loading,
+.vs-error {
+  padding: 24px;
+  text-align: center;
+}
+
+.vs-error {
+  color: var(--color-danger-700);
+  background: var(--color-danger-50);
+  border: 1px solid var(--color-danger-100);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+/* ── Grid ── */
+.vs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .vs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card ── */
+.vs-card {
+  background: #fff;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* ── Property summary ── */
+.vs-property-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  background: var(--color-slate-100);
+}
+
+.vs-property-body {
+  padding: 18px 20px 20px;
+}
+
+.vs-property-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+  margin: 0 0 6px;
+}
+
+.vs-property-loc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-slate-500);
+  margin: 0 0 12px;
+}
+
+.vs-property-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.vs-meta-chip {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-accent-700);
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-accent-100);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.vs-meta-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+}
+
+.vs-schedule-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-slate-700);
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-slate-100);
+}
+
+/* ── Form card ── */
+.vs-form-card,
+.vs-actions-card {
+  padding: 22px;
+}
+
+.vs-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-700);
+  margin: 0 0 6px;
+}
+
+.vs-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-slate-900);
+  background: #fff;
+  outline: none;
+}
+
+.vs-input:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.vs-fee {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-accent-700);
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-accent-100);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 4px 0 16px;
+}
+
+.vs-fee svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vs-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 46px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-primary-600);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.vs-submit:hover:not(:disabled) {
+  background: var(--color-primary-700);
+}
+
+.vs-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vs-form-note {
+  font-size: 12.5px;
+  color: var(--color-slate-500);
+  text-align: center;
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+.vs-own-note {
+  font-size: 14px;
+  color: var(--color-danger-700);
+  background: var(--color-danger-50);
+  border: 1px solid var(--color-danger-100);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0;
+}
+
+/* ── Status banner ── */
+.vs-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.vs-banner strong {
+  font-size: 15px;
+  display: block;
+}
+
+.vs-banner p {
+  font-size: 13.5px;
+  margin: 2px 0 0;
+  line-height: 1.45;
+}
+
+.vs-banner--upcoming {
+  color: var(--color-slate-700);
+  background: var(--color-slate-50);
+  border: 1px solid var(--color-slate-200);
+}
+
+.vs-banner--cancelled {
+  color: var(--color-danger-700);
+  background: var(--color-danger-50);
+  border: 1px solid var(--color-danger-100);
+}
+
+/* ── Schedule rows ── */
+.vs-card-head {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+  margin: 0 0 14px;
+}
+
+.vs-schedule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+
+.vs-schedule-label {
+  font-size: 13px;
+  color: var(--color-slate-500);
+  flex-shrink: 0;
+}
+
+.vs-schedule-value {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-slate-900);
+  text-align: right;
+}
+
+.vs-conf-chips {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-slate-500);
+  background: var(--color-slate-100);
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.vs-conf-chips--done {
+  color: var(--color-accent-700);
+  background: var(--color-accent-100);
+}
+
+.vs-congrats {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-accent-700);
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-accent-100);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 16px 0 0;
+}
+
+.vs-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.vs-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--color-slate-300);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--color-slate-700);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.vs-outline:hover {
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-600);
+}
+
+.vs-propose-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--color-slate-200);
+}
+
+/* ── Lock note ── */
+.vs-lock {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-slate-600);
+  background: var(--color-slate-50);
+  border: 1px solid var(--color-slate-200);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 20px;
+}
+
+.vs-lock svg {
+  flex-shrink: 0;
+  color: var(--color-slate-400);
+  margin-top: 2px;
+}
+
+.vs-lock p {
+  margin: 0;
+}
+
+/* ── Contact reveal ── */
+.vs-contact {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border-color: var(--color-accent-200);
+}
+
+.vs-contact-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--color-accent-700);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.vs-contact-head span {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--color-slate-500);
+  margin-left: auto;
+}
+
+.vs-contact-loading {
+  font-size: 14px;
+  color: var(--color-slate-500);
+  margin: 0;
+}
+
+.vs-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 560px) {
+  .vs-contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vs-contact-person {
+  border: 1px solid var(--color-slate-200);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.vs-contact-role {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-slate-400);
+  margin: 0 0 8px;
+}
+
+.vs-contact-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+  margin: 0 0 8px;
+}
+
+.vs-contact-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-slate-700);
+  margin: 4px 0;
+}

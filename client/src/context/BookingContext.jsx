@@ -30,6 +30,13 @@ const normalizeTrip = (t) => ({
   bookedAt: t.createdAt ? t.createdAt.split("T")[0] : null,
   cancelledAt: t.cancelledAt || null,
   refundAmount: t.refundAmount || null,
+  role: t.role || null,
+  visitorProposal: t.visitorProposal || null,
+  ownerProposal: t.ownerProposal || null,
+  visitorConfirmed: !!t.visitorConfirmed,
+  ownerConfirmed: !!t.ownerConfirmed,
+  confirmedAt: t.confirmedAt || null,
+  scheduleState: t.scheduleState || "pending",
 });
 
 export function BookingProvider({ children }) {
@@ -68,6 +75,7 @@ export function BookingProvider({ children }) {
       guests: tripData.guests,
       totalPrice: tripData.totalPrice,
       serviceFee: tripData.serviceFee || 0,
+      visitorProposal: tripData.visitorProposal || null,
     };
     const created = await tripService.create(payload);
     const normalized = normalizeTrip(created);
@@ -77,6 +85,23 @@ export function BookingProvider({ children }) {
 
   const cancelTrip = useCallback(async (tripId) => {
     const updated = await tripService.cancel(tripId);
+    const normalized = normalizeTrip(updated);
+    setTrips((prev) => prev.map((t) => (t.id === tripId ? normalized : t)));
+    return normalized;
+  }, []);
+
+  const proposeSchedule = useCallback(
+    async (tripId, proposal) => {
+      const updated = await tripService.proposeSchedule(tripId, proposal);
+      const normalized = normalizeTrip(updated);
+      setTrips((prev) => prev.map((t) => (t.id === tripId ? normalized : t)));
+      return normalized;
+    },
+    []
+  );
+
+  const confirmVisit = useCallback(async (tripId) => {
+    const updated = await tripService.confirm(tripId);
     const normalized = normalizeTrip(updated);
     setTrips((prev) => prev.map((t) => (t.id === tripId ? normalized : t)));
     return normalized;
@@ -116,6 +141,8 @@ export function BookingProvider({ children }) {
         refresh,
         addTrip,
         cancelTrip,
+        proposeSchedule,
+        confirmVisit,
         getUserTrips,
         getUpcoming,
         getCompleted,

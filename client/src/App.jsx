@@ -74,6 +74,8 @@ import AdminLogs from "./pages/admin/AdminLogs";
 
 /* ── Subscription Plans ── */
 import Plans from "./pages/Plans";
+import VisitPlan from "./pages/VisitPlan";
+import VisitStatus from "./pages/VisitStatus";
 
 function App() {
   return (
@@ -108,6 +110,8 @@ function App() {
                   <Route path="/matches" element={<Matches />} />
                   <Route path="/wishlists" element={<Wishlists />} />
                   <Route path="/trips" element={<Trips />} />
+                  <Route path="/visit/:propertyId" element={<VisitPlan />} />
+                  <Route path="/visits/:tripId" element={<VisitStatus />} />
                   <Route path="/plans" element={<Plans />} />
 
                   <Route path="/account" element={<Account />} />

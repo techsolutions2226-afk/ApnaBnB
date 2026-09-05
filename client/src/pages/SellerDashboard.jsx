@@ -14,6 +14,7 @@ import ConfirmDialog from "../components/common/ConfirmDialog";
 import RefreshButton from "../components/common/RefreshButton";
 import useRefresh from "../hooks/useRefresh";
 import PlanBanner from "../components/dashboard/PlanBanner";
+import UpcomingVisitsSection from "../components/dashboard/UpcomingVisitsSection";
 import {
   FiHome,
   FiEye,
@@ -45,7 +46,8 @@ const SellerDashboard = () => {
   const { remove: deleteListing, isLoading: isDeleting } = useDeleteListing();
 
   // Live aggregate data (unread messages, wishlist, trips)
-  const { refetch: refetchDashboardData } = useDashboardData();
+  const { upcomingList: sellerUpcomingList, refetch: refetchDashboardData } =
+    useDashboardData();
 
   // Recent matches for the role the user is ACTING AS (seller side only)
   // (+ count for the stat card)
@@ -293,6 +295,12 @@ const SellerDashboard = () => {
           emptyMessage="No matches yet. As soon as a buyer or dealer posts a requirement that fits one of your listings (same city, same area, price within ±10% of their budget), it'll show up here."
         />
       )}
+
+      {/* ── Upcoming Visits (incoming visit requests on your listings) ── */}
+      <UpcomingVisitsSection
+        items={sellerUpcomingList}
+        onRefresh={refetchDashboardData}
+      />
 
       {/* ── Reviews on My Properties ── */}
       <OwnerReviewsSection userId={userId} />

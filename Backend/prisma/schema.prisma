@@ -77,6 +77,7 @@ enum ReviewTargetType {
 
 enum TripStatus {
   upcoming
+  checked_in
   completed
   cancelled
 }
@@ -406,6 +407,20 @@ model Trip {
   ownerConfirmed   Boolean @default(false)
   confirmedAt      String? // ISO timestamp when both sides confirmed
   scheduleState    String  @default("pending") // pending | reschedule | agreed
+
+  // ── On-site check-in (mutual proof of the visit) ──
+  // The owner generates a short-lived code the visitor proves they are at the
+  // property with. Only the scheduling buyer's account can verify it. The
+  // owner marks completion after they meet; `outcome` records success vs.
+  // unsuccessful visits ever after.
+  checkInCode          String?
+  checkInCodeExpiresAt DateTime? // code is valid for 10 minutes
+  checkInCodeUsed      Boolean  @default(false)
+  checkInFailedAttempts Int     @default(0)
+  checkedInAt          DateTime?
+  completedAt          DateTime?
+  completedById        String?
+  outcome              String   @default("pending") // pending | success | no_show | cancelled
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

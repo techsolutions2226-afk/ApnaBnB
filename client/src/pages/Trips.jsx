@@ -30,7 +30,7 @@ function formatDate(dateStr) {
 }
 
 function TripCard({ trip, propertyMap, onCancel, onReview }) {
-  const property = propertyMap[trip.propertyId];
+  const property = propertyMap[trip.propertyId] || trip.property;
   if (!property) return null;
   const coverImage = property.image || property.photos?.[0];
   const propertyLocation =
@@ -53,6 +53,11 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
         {trip.status === "upcoming" && (
           <span className="tr-card-badge tr-card-badge--upcoming">
             Upcoming
+          </span>
+        )}
+        {trip.status === "checked_in" && (
+          <span className="tr-card-badge tr-card-badge--checked_in">
+            Checked in
           </span>
         )}
       </Link>
@@ -79,9 +84,13 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
           )}
         </div>
 
-        {trip.status === "upcoming" && (
+        {(trip.status === "upcoming" || trip.status === "checked_in") && (
           <div className="tr-visit-state">
-            {trip.visitorConfirmed && trip.ownerConfirmed ? (
+            {trip.status === "checked_in" ? (
+              <span className="tr-visit-state-chip tr-visit-state-chip--done">
+                ✅ Visitor checked in — awaiting completion
+              </span>
+            ) : trip.visitorConfirmed && trip.ownerConfirmed ? (
               <span className="tr-visit-state-chip tr-visit-state-chip--done">
                 ✅ Confirmed — contact revealed
               </span>
@@ -102,18 +111,20 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
           </div>
 
           <div className="tr-card-actions">
-            {trip.status === "upcoming" && (
+            {(trip.status === "upcoming" || trip.status === "checked_in") && (
               <>
                 <Link to={`/visits/${trip.id}`} className="tr-detail-btn">
                   <FiChevronRight size={16} />
                   View visit
                 </Link>
-                <button
-                  className="tr-cancel-btn"
-                  onClick={() => onCancel(trip.id)}
-                >
-                  Cancel visit
-                </button>
+                {trip.status === "upcoming" && (
+                  <button
+                    className="tr-cancel-btn"
+                    onClick={() => onCancel(trip.id)}
+                  >
+                    Cancel visit
+                  </button>
+                )}
               </>
             )}
             {trip.status === "completed" && (
@@ -144,11 +155,11 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
 export default function Trips() {
   const { currentUser } = useAuth();
   const {
-    trips,
     cancelTrip,
     getUpcoming,
     getCompleted,
     getCancelled,
+    getVisitCounts,
     refresh: refreshTrips,
   } = useBooking();
   const { properties = [], refetch: refetchProperties } = useProperties();
@@ -178,9 +189,12 @@ export default function Trips() {
 
   if (!currentUser) return null;
 
-  const upcoming = getUpcoming(currentUser.id);
-  const completed = getCompleted(currentUser.id);
-  const cancelled = getCancelled(currentUser.id);
+  /* getUpcoming() (no user arg) — the trips list already only contains the
+     current user's visits: ones they proposed + ones on their own listings. */
+  const upcoming = getUpcoming();
+  const completed = getCompleted();
+  const cancelled = getCancelled();
+  const { successful, unsuccessful } = getVisitCounts();
 
   const tabTrips = {
     upcoming,
@@ -219,6 +233,22 @@ export default function Trips() {
         <div className="tr-header-row">
           <h1 className="tr-title">Visits</h1>
           <RefreshButton onRefresh={refresh} refreshing={refreshing} />
+        </div>
+
+        {/* Outcome summary — successful vs unsuccessful visits */}
+        <div className="tr-summary">
+          <div className="tr-summary-item tr-summary-item--success">
+            <span className="tr-summary-value">{successful}</span>
+            <span className="tr-summary-label">Successful visits</span>
+          </div>
+          <div className="tr-summary-item tr-summary-item--unsuccess">
+            <span className="tr-summary-value">{unsuccessful}</span>
+            <span className="tr-summary-label">Unsuccessful visits</span>
+          </div>
+          <div className="tr-summary-hint">
+            Successful = checked in and completed. Unsuccessful = cancelled or
+            no-show after the agreed date.
+          </div>
         </div>
 
         {/* Tabs */}

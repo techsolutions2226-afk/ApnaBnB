@@ -33,6 +33,8 @@ const TYPES = {
   VISIT_PROPOSED: 'visit.proposed',
   VISIT_SCHEDULE_REQUESTED: 'visit.schedule_requested',
   VISIT_CONFIRMED: 'visit.confirmed',
+  VISIT_CHECKED_IN: 'visit.checked_in',
+  VISIT_COMPLETED: 'visit.completed',
   VISIT_CANCELLED: 'visit.cancelled',
   REVIEW_RECEIVED: 'review.received',
   ACCOUNT_VERIFIED: 'account.verified',

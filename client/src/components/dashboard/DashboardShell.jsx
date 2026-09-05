@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { FiChevronDown, FiSettings, FiLogOut } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
+import { useBooking } from "../../context/BookingContext";
 import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
 
@@ -20,6 +21,10 @@ const STORAGE_KEY = "dash_view_role";
 export default function DashboardShell() {
   const { currentUser, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
+
+  /* Successful visit count for the sidebar "Visits" badge. */
+  const { getVisitCounts } = useBooking();
+  const { successful: successfulVisits } = getVisitCounts();
 
   const realRole =
     currentUser?.role && ROLES.includes(currentUser.role)
@@ -159,6 +164,11 @@ export default function DashboardShell() {
                   aria-hidden="true"
                 />
                 <span>{item.label}</span>
+                {item.to === "/trips" && successfulVisits > 0 && (
+                  <span className="ml-auto min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-white text-xs font-bold">
+                    {successfulVisits}
+                  </span>
+                )}
               </NavLink>
             );
           })}

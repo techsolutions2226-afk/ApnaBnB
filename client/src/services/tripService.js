@@ -65,6 +65,46 @@ const tripService = {
     }
   },
 
+  // Owner: generate (or regenerate) the 10-minute check-in code + QR payload
+  generateCheckinCode: async (id) => {
+    try {
+      const response = await apiClient.post(`/trips/${id}/checkin-code`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to generate check-in code' };
+    }
+  },
+
+  // Owner: fetch the still-valid check-in code for display
+  getCheckinCode: async (id) => {
+    try {
+      const response = await apiClient.get(`/trips/${id}/checkin-code`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch check-in code' };
+    }
+  },
+
+  // Visitor only: prove arrival by submitting the code from the owner's screen
+  checkIn: async (id, code) => {
+    try {
+      const response = await apiClient.post(`/trips/${id}/checkin`, { code });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to check in' };
+    }
+  },
+
+  // Owner only: mark the visit completed after a verified check-in
+  complete: async (id) => {
+    try {
+      const response = await apiClient.post(`/trips/${id}/complete`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to complete visit' };
+    }
+  },
+
   // Cancel a visit
   cancel: async (id) => {
     try {

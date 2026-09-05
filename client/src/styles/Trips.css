@@ -115,6 +115,10 @@
   background: var(--color-accent-600);
 }
 
+.tr-card-badge--checked_in {
+  background: var(--color-primary-600);
+}
+
 .tr-card-badge--cancelled {
   background: var(--color-danger-600);
 }
@@ -517,4 +521,54 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* ── Visit outcome summary (successful vs unsuccessful) ── */
+.tr-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.tr-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-slate-700);
+}
+
+.tr-summary-item--success {
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-accent-100);
+}
+
+.tr-summary-item--unsuccess {
+  background: var(--color-danger-50);
+  border: 1px solid var(--color-danger-100);
+}
+
+.tr-summary-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.tr-summary-item--success .tr-summary-value {
+  color: var(--color-accent-700);
+}
+
+.tr-summary-item--unsuccess .tr-summary-value {
+  color: var(--color-danger-600);
+}
+
+.tr-summary-hint {
+  font-size: 12.5px;
+  color: var(--color-slate-500);
+  line-height: 1.45;
+  max-width: 340px;
 }

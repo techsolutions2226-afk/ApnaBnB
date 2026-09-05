@@ -267,6 +267,18 @@
   border: 1px solid var(--color-slate-200);
 }
 
+.vs-banner--checked_in {
+  color: var(--color-primary-700);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-100);
+}
+
+.vs-banner--completed {
+  color: var(--color-accent-700);
+  background: var(--color-accent-50);
+  border: 1px solid var(--color-accent-100);
+}
+
 .vs-banner--cancelled {
   color: var(--color-danger-700);
   background: var(--color-danger-50);
@@ -467,4 +479,173 @@
   font-size: 14px;
   color: var(--color-slate-700);
   margin: 4px 0;
+}
+
+/* ── Check-in panel ── */
+.vs-submit--complete {
+  margin-top: 14px;
+  background: var(--color-accent-600);
+}
+
+.vs-submit--complete:hover:not(:disabled) {
+  background: var(--color-accent-700);
+}
+
+.vs-checkin {
+  margin-top: 20px;
+  padding: 18px 20px;
+}
+
+.vs-checkin-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.vs-checkin-head svg {
+  flex-shrink: 0;
+  color: var(--color-primary-600);
+  margin-top: 2px;
+}
+
+.vs-checkin-head strong {
+  display: block;
+  font-size: 15px;
+  color: var(--color-slate-900);
+}
+
+.vs-checkin-head p {
+  font-size: 13.5px;
+  color: var(--color-slate-500);
+  margin: 3px 0 0;
+  line-height: 1.45;
+}
+
+.vs-checkin-empty {
+  display: flex;
+  justify-content: center;
+}
+
+.vs-checkin-empty .vs-submit {
+  max-width: 300px;
+}
+
+.vs-qr-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.vs-qr-box {
+  background: #fff;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.vs-qr-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.vs-qr-code {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--color-slate-900);
+}
+
+.vs-qr-expiry {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-warning-600);
+}
+
+.vs-qr-meta .vs-outline {
+  width: auto;
+  padding: 0 16px;
+}
+
+/* Scanner + manual code entry */
+.vs-scanner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.vs-scanner {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1/1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-slate-900);
+  border: 1px solid var(--color-slate-300);
+}
+
+.vs-scanner video {
+  object-fit: cover;
+}
+
+.vs-checkin-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-slate-400);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0;
+}
+
+.vs-checkin-or::before,
+.vs-checkin-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-slate-200);
+}
+
+.vs-manual-code {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.vs-manual-code .vs-input {
+  margin-bottom: 0;
+  flex: 1;
+  text-align: center;
+  letter-spacing: 0.2em;
+  font-size: 18px;
+}
+
+.vs-manual-code .vs-submit {
+  width: auto;
+  padding: 0 20px;
+}
+
+.vs-code-input {
+  font-family: inherit;
+}
+
+@media (max-width: 460px) {
+  .vs-qr-wrap {
+    justify-content: center;
+  }
+
+  .vs-manual-code {
+    flex-direction: column;
+  }
+
+  .vs-manual-code .vs-submit {
+    width: 100%;
+  }
 }

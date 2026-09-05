@@ -31,6 +31,8 @@ const ICONS = {
   "visit.proposed": "📅",
   "visit.schedule_requested": "🔄",
   "visit.confirmed": "✅",
+  "visit.checked_in": "📍",
+  "visit.completed": "🏁",
   "visit.cancelled": "🗓️",
   "review.received": "⭐",
   "account.verified": "🛡️",

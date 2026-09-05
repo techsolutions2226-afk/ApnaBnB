@@ -37,6 +37,13 @@ const normalizeTrip = (t) => ({
   ownerConfirmed: !!t.ownerConfirmed,
   confirmedAt: t.confirmedAt || null,
   scheduleState: t.scheduleState || "pending",
+  checkInCode: t.checkInCode || null,
+  checkInCodeUsed: !!t.checkInCodeUsed,
+  checkedInAt: t.checkedInAt || null,
+  completedAt: t.completedAt || null,
+  completedById: t.completedById || null,
+  outcome: t.outcome || "pending",
+  effectiveOutcome: t.effectiveOutcome || t.outcome || "pending",
 });
 
 export function BookingProvider({ children }) {
@@ -113,7 +120,10 @@ export function BookingProvider({ children }) {
   );
 
   const getUpcoming = useCallback(
-    () => trips.filter((t) => t.status === "upcoming"),
+    () =>
+      trips.filter(
+        (t) => t.status === "upcoming" || t.status === "checked_in"
+      ),
     [trips]
   );
 
@@ -121,6 +131,19 @@ export function BookingProvider({ children }) {
     () => trips.filter((t) => t.status === "completed"),
     [trips]
   );
+
+  /* Visit outcome records — successful vs unsuccessful, both sides included
+     (visits proposed + visits on my listings). */
+  const getVisitCounts = useCallback(() => {
+    const successful = trips.filter(
+      (t) => (t.effectiveOutcome || t.outcome) === "success"
+    ).length;
+    const unsuccessful = trips.filter((t) => {
+      const o = t.effectiveOutcome || t.outcome;
+      return o === "cancelled" || o === "no_show";
+    }).length;
+    return { successful, unsuccessful };
+  }, [trips]);
 
   const getCancelled = useCallback(
     () => trips.filter((t) => t.status === "cancelled"),
@@ -147,6 +170,7 @@ export function BookingProvider({ children }) {
         getUpcoming,
         getCompleted,
         getCancelled,
+        getVisitCounts,
         getTripById,
       }}
     >

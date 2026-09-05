@@ -43,6 +43,52 @@ const actorName = async (userId) => {
   }
 };
 
+/* ── On-site check-in constants ──
+   The owner generates a 6-digit code that expires in 10 minutes. The visitor
+   proves they are physically present by entering it (typed or scanned from
+   the owner's screen). Only the BUYER who scheduled the trip can verify it. */
+const crypto = require('crypto');
+
+const CHECKIN_TTL_MS = 10 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 5;
+
+const generateCheckInCodeValue = () => String(crypto.randomInt(100000, 1000000));
+
+/* Unique payload embedded in the owner's QR. The final segment is the code the
+   visitor submits — a stranger in the room can scan it, but the server still
+   rejects anyone who is not the scheduled visitor for this trip. */
+const qrPayload = (tripId, code) => `APNABNB:VISIT:${tripId}:${code}`;
+
+/* The agreed visit date, regardless of which side proposed the final slot. */
+const agreedDate = (trip) =>
+  trip.visitorProposal?.date ||
+  trip.ownerProposal?.date ||
+  trip.checkIn ||
+  null;
+
+/* Successful vs. unsuccessful visit outcome. Computed on read so no cron or
+   background job is needed: a confirmed visit whose agreed date has passed
+   without a check-in is treated as a no-show. */
+const effectiveOutcome = (trip) => {
+  if (trip.outcome && trip.outcome !== 'pending') return trip.outcome;
+  if (trip.status === 'cancelled') return 'cancelled';
+  if (trip.status === 'completed') return 'success';
+  const date = agreedDate(trip);
+  if (trip.status === 'upcoming' && date) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (new Date(`${date}T00:00:00`) < todayStart) return 'no_show';
+  }
+  return trip.outcome || 'pending';
+};
+
+/* Attach the viewer's role + derived outcome to every trip we return. */
+const shapeTrip = (trip, userId) => ({
+  ...trip,
+  role: trip.userId === userId ? 'visitor' : 'owner',
+  effectiveOutcome: effectiveOutcome(trip),
+});
+
 // Create a trip — the visitor proposes a preferred schedule.
 const createTrip = async (req, res, next) => {
   const {
@@ -141,11 +187,9 @@ const getMyTrips = async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    /* Attach the viewer's role in the trip so the UI can pick the right actions. */
-    const shaped = trips.map((trip) => ({
-      ...trip,
-      role: trip.userId === req.user.id ? 'visitor' : 'owner',
-    }));
+    /* Attach the viewer's role + derived outcome so a single listing feeds both
+       the visit page and the success/unsuccessful dashboard counts. */
+    const shaped = trips.map((trip) => shapeTrip(trip, req.user.id));
     res.status(200).json(shaped);
   } catch (error) {
     next(error);
@@ -163,7 +207,7 @@ const getTripById = async (req, res, next) => {
     if (!trip || !isParticipant(trip, req.user.id)) {
       return res.status(404).json({ message: 'Visit not found.' });
     }
-    res.status(200).json({ ...trip, role: trip.userId === req.user.id ? 'visitor' : 'owner' });
+    res.status(200).json(shapeTrip(trip, req.user.id));
   } catch (error) {
     next(error);
   }
@@ -230,7 +274,7 @@ const proposeSchedule = async (req, res, next) => {
       },
     ]);
 
-    res.status(200).json({ ...updated, role: isOwner ? 'owner' : 'visitor' });
+    res.status(200).json(shapeTrip(updated, req.user.id));
   } catch (error) {
     next(error);
   }
@@ -288,7 +332,7 @@ const confirmVisit = async (req, res, next) => {
       },
     ]);
 
-    res.status(200).json({ ...updated, role: isOwner ? 'owner' : 'visitor' });
+    res.status(200).json(shapeTrip(updated, req.user.id));
   } catch (error) {
     next(error);
   }
@@ -360,7 +404,9 @@ const cancelTrip = async (req, res, next) => {
         status: 'cancelled',
         cancelledAt: new Date().toISOString().split('T')[0],
         refundAmount: Math.max(0, trip.totalPrice - (trip.serviceFee || 0)),
+        outcome: 'cancelled',
       },
+      include: { property: propertySelect },
     });
 
     const otherSide =
@@ -380,7 +426,245 @@ const cancelTrip = async (req, res, next) => {
       },
     ]);
 
-    res.status(200).json(updated);
+    res.status(200).json(shapeTrip(updated, req.user.id));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* ──────────────────────────────────────────────────────────────────
+   On-site check-in code (mutual proof of the visit)
+   ────────────────────────────────────────────────────────────────── */
+
+/* OWNER: generate (or regenerate) the 10-minute check-in code. Generating a
+   new code always invalidates the previous one. */
+const generateCheckInCode = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id },
+      include: { property: { select: { id: true, title: true, listedById: true } } },
+    });
+    if (!trip || !isParticipant(trip, req.user.id)) {
+      return res.status(404).json({ message: 'Visit not found.' });
+    }
+    if (trip.property.listedById !== req.user.id) {
+      return res.status(403).json({ message: 'Only the property owner can generate the check-in code.' });
+    }
+    if (trip.status !== 'upcoming') {
+      return res.status(400).json({ message: 'Check-in codes are only available while the visit is upcoming.' });
+    }
+    if (!trip.visitorConfirmed || !trip.ownerConfirmed) {
+      return res.status(400).json({ message: 'Confirm the visit schedule with the visitor first.' });
+    }
+
+    const code = generateCheckInCodeValue();
+    const expiresAt = new Date(Date.now() + CHECKIN_TTL_MS);
+
+    const updated = await prisma.trip.update({
+      where: { id: trip.id },
+      data: {
+        checkInCode: code,
+        checkInCodeExpiresAt: expiresAt,
+        checkInCodeUsed: false,
+        checkInFailedAttempts: 0,
+      },
+      include: { property: propertySelect },
+    });
+
+    res.status(200).json({
+      code,
+      qrPayload: qrPayload(trip.id, code),
+      expiresAt: expiresAt.toISOString(),
+      trip: shapeTrip(updated, req.user.id),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* OWNER: fetch the still-valid code for display (no regeneration). */
+const getCheckInCode = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id },
+      include: { property: { select: { id: true, listedById: true } } },
+    });
+    if (!trip || !isParticipant(trip, req.user.id)) {
+      return res.status(404).json({ message: 'Visit not found.' });
+    }
+    if (trip.property.listedById !== req.user.id) {
+      return res.status(403).json({ message: 'Only the property owner can view the check-in code.' });
+    }
+
+    const valid =
+      trip.checkInCode &&
+      !trip.checkInCodeUsed &&
+      trip.checkInCodeExpiresAt &&
+      trip.checkInCodeExpiresAt.getTime() > Date.now();
+
+    if (!valid) {
+      return res.status(200).json({ available: false, message: 'No active check-in code. Generate a new one.' });
+    }
+
+    res.status(200).json({
+      available: true,
+      code: trip.checkInCode,
+      qrPayload: qrPayload(trip.id, trip.checkInCode),
+      expiresAt: trip.checkInCodeExpiresAt.toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* VISITOR ONLY: prove they are on site by submitting the code the owner is
+   showing. Rejects any account other than the buyer who scheduled the trip —
+   a stranger scanning the QR still fails server-side. */
+const checkInToVisit = async (req, res, next) => {
+  const { id } = req.params;
+  const { code } = req.body || {};
+  const submitted = typeof code === 'string' ? code.trim() : '';
+
+  if (!submitted) {
+    return res.status(400).json({ message: 'Enter the check-in code.' });
+  }
+
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id },
+      include: { property: propertySelect },
+    });
+    if (!trip || !isParticipant(trip, req.user.id)) {
+      return res.status(404).json({ message: 'Visit not found.' });
+    }
+    if (trip.userId !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: 'Only the buyer who scheduled this visit can check in.' });
+    }
+    if (trip.status === 'cancelled') {
+      return res.status(400).json({ message: 'This visit was cancelled.' });
+    }
+    if (trip.status === 'completed') {
+      return res.status(400).json({ message: 'This visit is already completed.' });
+    }
+    if (trip.status === 'checked_in') {
+      return res.status(200).json({
+        message: 'You are already checked in.',
+        trip: shapeTrip(trip, req.user.id),
+      });
+    }
+    if (!trip.checkInCode || !trip.checkInCodeExpiresAt) {
+      return res.status(400).json({ message: 'No active check-in code. Ask the owner to generate one.' });
+    }
+    if (trip.checkInCodeUsed) {
+      return res.status(400).json({ message: 'This code has already been used.' });
+    }
+    if (trip.checkInCodeExpiresAt.getTime() < Date.now()) {
+      return res.status(400).json({ message: 'The check-in code expired. Ask the owner to regenerate it.' });
+    }
+
+    if (submitted !== trip.checkInCode) {
+      const attempts = trip.checkInFailedAttempts + 1;
+      await prisma.trip.update({
+        where: { id: trip.id },
+        data: { checkInFailedAttempts: attempts },
+      });
+      if (attempts >= MAX_FAILED_ATTEMPTS) {
+        return res.status(400).json({
+          message: 'Too many failed attempts. Ask the owner to regenerate the code.',
+        });
+      }
+      return res.status(400).json({
+        message: `Incorrect code. Attempt ${attempts} of ${MAX_FAILED_ATTEMPTS}.`,
+      });
+    }
+
+    const updated = await prisma.trip.update({
+      where: { id: trip.id },
+      data: {
+        status: 'checked_in',
+        checkedInAt: new Date(),
+        checkInCodeUsed: true,
+        checkInFailedAttempts: 0,
+      },
+      include: { property: propertySelect },
+    });
+
+    const ownerName = await actorName(req.user.id);
+    notifyUsersInBackground([
+      {
+        recipientId: trip.property.listedById,
+        actorId: req.user.id,
+        type: TYPES.VISIT_CHECKED_IN,
+        title: 'Visitor arrived',
+        body: `${ownerName} checked in at your property for the visit to ${trip.property.title}.`,
+        link: VISIT_LINK(trip.id),
+        entityType: 'trip',
+        entityId: trip.id,
+      },
+    ]);
+
+    res.status(200).json({ message: 'Checked in — the owner has been notified.', trip: shapeTrip(updated, req.user.id) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* OWNER: mark the visit completed after a verified check-in. This is what
+   records a SUCCESSFUL visit. */
+const completeVisit = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    const trip = await prisma.trip.findFirst({
+      where: { id },
+      include: { property: { select: { id: true, title: true, listedById: true } } },
+    });
+    if (!trip || !isParticipant(trip, req.user.id)) {
+      return res.status(404).json({ message: 'Visit not found.' });
+    }
+    if (trip.property.listedById !== req.user.id) {
+      return res.status(403).json({ message: 'Only the property owner can mark the visit completed.' });
+    }
+    if (trip.status === 'cancelled') {
+      return res.status(400).json({ message: 'This visit was cancelled.' });
+    }
+    if (trip.status === 'completed') {
+      return res.status(400).json({ message: 'This visit is already completed.' });
+    }
+    if (trip.status !== 'checked_in') {
+      return res.status(400).json({
+        message: 'The visitor must check in first before the visit can be completed.',
+      });
+    }
+
+    const updated = await prisma.trip.update({
+      where: { id: trip.id },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        completedById: req.user.id,
+        outcome: 'success',
+      },
+      include: { property: propertySelect },
+    });
+
+    notifyUsersInBackground([
+      {
+        recipientId: trip.userId,
+        actorId: req.user.id,
+        type: TYPES.VISIT_COMPLETED,
+        title: 'Visit completed',
+        body: `The visit to ${trip.property.title} has been completed successfully. Click to leave a review.`,
+        link: VISIT_LINK(trip.id),
+        entityType: 'trip',
+        entityId: trip.id,
+      },
+    ]);
+
+    res.status(200).json({ message: 'Visit completed.', trip: shapeTrip(updated, req.user.id) });
   } catch (error) {
     next(error);
   }
@@ -393,5 +677,9 @@ module.exports = {
   proposeSchedule,
   confirmVisit,
   getTripContact,
+  generateCheckInCode,
+  getCheckInCode,
+  checkInToVisit,
+  completeVisit,
   cancelTrip,
 };

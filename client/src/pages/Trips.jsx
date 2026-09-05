@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useBooking } from "../context/BookingContext";
@@ -6,6 +6,7 @@ import RefreshButton from "../components/common/RefreshButton";
 import useRefresh from "../hooks/useRefresh";
 import { useProperties } from "../hooks/useProperties";
 import { toast } from "react-toastify";
+import reviewService from "../services/reviewService";
 import EmptyState from "../components/common/EmptyState";
 import Modal from "../components/common/Modal";
 import StarRating from "../components/common/StarRating";
@@ -15,6 +16,7 @@ import {
   FiUsers,
   FiX,
   FiChevronRight,
+  FiCheckCircle,
 } from "react-icons/fi";
 import "../styles/Trips.css";
 
@@ -29,7 +31,7 @@ function formatDate(dateStr) {
   });
 }
 
-function TripCard({ trip, propertyMap, onCancel, onReview }) {
+function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
   const property = propertyMap[trip.propertyId] || trip.property;
   if (!property) return null;
   const coverImage = property.image || property.photos?.[0];
@@ -127,11 +129,16 @@ function TripCard({ trip, propertyMap, onCancel, onReview }) {
                 )}
               </>
             )}
-            {trip.status === "completed" && (
-              <button className="tr-review-btn" onClick={() => onReview(trip)}>
-                Write a review <FiChevronRight size={14} />
-              </button>
-            )}
+            {trip.status === "completed" &&
+              (reviewed ? (
+                <span className="tr-review-done">
+                  Review submitted <FiCheckCircle size={14} />
+                </span>
+              ) : (
+                <button className="tr-review-btn" onClick={() => onReview(trip)}>
+                  Write a review <FiChevronRight size={14} />
+                </button>
+              ))}
             {trip.status === "cancelled" && trip.refundAmount && (
               <p className="tr-refund">Refund: ${trip.refundAmount}</p>
             )}
@@ -182,6 +189,26 @@ export default function Trips() {
   const [reviewModal, setReviewModal] = useState(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [reviewedProps, setReviewedProps] = useState(() => new Set());
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
+  /* Which properties the user has already reviewed — those visits show a
+     "Review submitted" note instead of the button. */
+  const loadReviewed = useCallback(async () => {
+    try {
+      const data = await reviewService.getByUser(currentUser?.id);
+      const ids = (data?.reviews || [])
+        .filter((r) => r.targetType === "property")
+        .map((r) => r.target);
+      setReviewedProps(new Set(ids));
+    } catch {
+      setReviewedProps(new Set());
+    }
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    loadReviewed();
+  }, [loadReviewed]);
 
   useEffect(() => {
     if (!currentUser) navigate("/login", { replace: true });
@@ -215,16 +242,35 @@ export default function Trips() {
      }
    };
 
-  const handleReviewSubmit = () => {
+  const handleReviewSubmit = async () => {
     if (reviewRating === 0) {
       toast.error("Please select a rating");
       return;
     }
-    /* In a real app this would save to backend */
-    toast.success("Review submitted! Thank you.");
-    setReviewModal(null);
-    setReviewRating(0);
-    setReviewText("");
+    if (reviewText.trim().length < 10) {
+      toast.error("Please write at least 10 characters");
+      return;
+    }
+    const trip = reviewModal;
+    if (!trip) return;
+    setReviewSubmitting(true);
+    try {
+      await reviewService.create({
+        target: trip.propertyId,
+        targetType: "property",
+        rating: reviewRating,
+        comment: reviewText.trim(),
+      });
+      setReviewedProps((prev) => new Set(prev).add(trip.propertyId));
+      toast.success("Review submitted! It now shows on the property's reviews.");
+      setReviewModal(null);
+      setReviewRating(0);
+      setReviewText("");
+    } catch (err) {
+      toast.error(err?.message || "Failed to submit review");
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   return (
@@ -299,6 +345,7 @@ export default function Trips() {
                 propertyMap={propertyMap}
                 onCancel={(id) => setCancelConfirm(id)}
                 onReview={(t) => setReviewModal(t)}
+                reviewed={reviewedProps.has(trip.propertyId)}
               />
             ))}
           </div>
@@ -384,9 +431,9 @@ export default function Trips() {
             <button
               className="tr-review-submit"
               onClick={handleReviewSubmit}
-              disabled={reviewRating === 0}
+              disabled={reviewRating === 0 || reviewSubmitting}
             >
-              Submit review
+              {reviewSubmitting ? "Submitting…" : "Submit review"}
             </button>
           </div>
         </Modal>

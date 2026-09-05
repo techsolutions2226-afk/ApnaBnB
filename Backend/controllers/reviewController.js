@@ -59,6 +59,21 @@ const createReview = async (req, res, next) => {
       return res.status(400).json({ message: 'You have already reviewed this target.' });
     }
 
+    /* Property reviews are only allowed after a completed visit — the writer
+       must actually have been a buyer on this property. The frontend only
+       offers the write flow from a completed visit on the Visits page, and
+       this keeps the guarantee server-side too. */
+    if (targetType === 'property') {
+      const completedVisit = await prisma.trip.findFirst({
+        where: { userId: req.user.id, propertyId: target, status: 'completed' },
+      });
+      if (!completedVisit) {
+        return res.status(403).json({
+          message: 'You can only review a property after your visit is completed.',
+        });
+      }
+    }
+
     const review = await prisma.review.create({
       data: {
         reviewerId: req.user.id,

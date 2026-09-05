@@ -229,6 +229,16 @@
   background: var(--color-danger-600);
 }
 
+.tr-review-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent-600);
+}
+
 .tr-refund {
   font-size: 14px;
   color: var(--color-accent-600);

@@ -23,8 +23,8 @@ const todayISO = () => {
 };
 
 export default function VisitPlan({ propertyId }) {
-  const { id } = useParams();
-  const actualId = propertyId || id;
+  const { propertyId: routeId } = useParams();
+  const actualId = propertyId || routeId;
   const { property, isLoading, error } = useProperty(actualId);
   const { currentUser } = useAuth();
   const { addTrip } = useBooking();

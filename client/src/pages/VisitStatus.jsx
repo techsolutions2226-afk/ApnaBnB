@@ -28,7 +28,8 @@ import "../styles/Visit.css";
 const fmt = (p) => (p ? `${p.date} at ${p.time}` : "—");
 
 export default function VisitStatus() {
-  const { id } = useParams();
+  const { tripId } = useParams();
+  const id = tripId;
 
   const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -18,6 +18,7 @@ import {
   FiUser,
   FiSun,
   FiMoon,
+  FiCalendar,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import "../../styles/AdminShell.css";
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { to: "/admin/listings", label: "Listings", icon: FiHome },
   { to: "/admin/requirements", label: "Requirements", icon: FiFileText },
   { to: "/admin/matches", label: "Matches", icon: FiLink },
+  { to: "/admin/visits", label: "Visits", icon: FiCalendar },
   { to: "/admin/payments", label: "Payments", icon: FiCreditCard },
   { to: "/admin/plans", label: "Plans", icon: FiTag },
   { to: "/admin/contact", label: "Contact Page", icon: FiPhone },

@@ -221,6 +221,16 @@ const adminService = {
     }
   },
 
+  // ── Visits (platform-wide oversight) ──
+  getVisits: async (filters = {}) => {
+    try {
+      const response = await apiClient.get('/admin/trips', { params: filters });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch visits' };
+    }
+  },
+
   // ── Activity logs ──
   getActivityLogs: async (filters = {}) => {
     try {

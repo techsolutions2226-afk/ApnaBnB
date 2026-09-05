@@ -1171,6 +1171,146 @@ const deleteMatch = async (req, res, next) => {
   }
 };
 
+// ── Visit overview ─────────────────────────────────────────────────────────
+
+const VISIT_STATUSES = ['upcoming', 'checked_in', 'completed', 'cancelled'];
+
+/* Effective visit outcome — mirrors tripController.effectiveOutcome so the
+   admin sees the same classification the user-facing Visits pages apply:
+   success after a completed visit, no_show when a confirmed past date passed
+   without a check-in, cancelled otherwise. */
+const visitOutcome = (trip) => {
+  if (trip.outcome && trip.outcome !== 'pending') return trip.outcome;
+  if (trip.status === 'cancelled') return 'cancelled';
+  if (trip.status === 'completed') return 'success';
+  const date =
+    trip.visitorProposal?.date || trip.ownerProposal?.date || trip.checkIn || null;
+  if (trip.status === 'upcoming' && date) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (new Date(`${date}T00:00:00`) < todayStart) return 'no_show';
+  }
+  return trip.outcome || 'pending';
+};
+
+/* Global platform visit counts (across ALL visits, not just the current page),
+   chipped into the summary cards on the admin Visits page. */
+const summarizeVisits = (rows) => {
+  const counts = {
+    total: rows.length,
+    success: 0,
+    unsuccessful: 0,
+    upcoming: 0,
+    checked_in: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+  rows.forEach((trip) => {
+    if (trip.status === 'upcoming') counts.upcoming += 1;
+    else if (trip.status === 'checked_in') counts.checked_in += 1;
+    else if (trip.status === 'completed') counts.completed += 1;
+    else if (trip.status === 'cancelled') counts.cancelled += 1;
+
+    const outcome = visitOutcome(trip);
+    if (outcome === 'success') counts.success += 1;
+    else if (outcome === 'cancelled' || outcome === 'no_show') counts.unsuccessful += 1;
+  });
+  return counts;
+};
+
+// Platform-wide visits — every trip with its buyer (who scheduled the visit),
+// the property owner, the property itself, status, schedule and check-in trail.
+// Searchable by buyer/owner/property/code, paged, filterable by status.
+const getAllTrips = async (req, res, next) => {
+  try {
+    const { status, q } = req.query;
+    const where = {};
+
+    if (status && VISIT_STATUSES.includes(status)) where.status = status;
+
+    if (q && String(q).trim()) {
+      const term = String(q).trim();
+      where.OR = [
+        { user: { name: { contains: term, mode: 'insensitive' } } },
+        { user: { email: { contains: term, mode: 'insensitive' } } },
+        { user: { phone: { contains: term, mode: 'insensitive' } } },
+        { property: { title: { contains: term, mode: 'insensitive' } } },
+        { property: { listedBy: { name: { contains: term, mode: 'insensitive' } } } },
+        { property: { listedBy: { email: { contains: term, mode: 'insensitive' } } } },
+        { confirmationCode: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const { page, limit, skip, take } = parseAdminPagination(req);
+
+    const [trips, total, countRows] = await Promise.all([
+      prisma.trip.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              role: true,
+              avatar: true,
+            },
+          },
+          property: {
+            select: {
+              id: true,
+              title: true,
+              photos: true,
+              location: true,
+              price: true,
+              listedById: true,
+              listedBy: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                  role: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      prisma.trip.count({ where }),
+      prisma.trip.findMany({
+        select: {
+          status: true,
+          outcome: true,
+          visitorProposal: true,
+          ownerProposal: true,
+          checkIn: true,
+        },
+      }),
+    ]);
+
+    const shaped = trips.map((trip) => ({
+      ...trip,
+      effectiveOutcome: visitOutcome(trip),
+    }));
+
+    res.status(200).json({
+      trips: shaped,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      counts: summarizeVisits(countRows),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ── Activity logs ─────────────────────────────────────────────────────────
 // Full platform activity feed — paged, filterable.
 const getActivityLogs = async (req, res, next) => {
@@ -1273,6 +1413,7 @@ module.exports = {
   deleteRequirement,
   getAllMatches,
   deleteMatch,
+  getAllTrips,
   getActivityLogs,
   getUserActivity,
 };

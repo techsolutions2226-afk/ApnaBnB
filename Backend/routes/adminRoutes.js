@@ -24,6 +24,7 @@ const {
   deleteRequirement,
   getAllMatches,
   deleteMatch,
+  getAllTrips,
   getActivityLogs,
   getUserActivity,
 } = require('../controllers/adminController');
@@ -69,6 +70,9 @@ router.delete('/requirements/:id', verifyToken, adminOnly, deleteRequirement);
 // Matches (platform-wide, view + delete only)
 router.get('/matches', verifyToken, adminOnly, getAllMatches);
 router.delete('/matches/:id', verifyToken, adminOnly, deleteMatch);
+
+// Visits (platform-wide, read-only oversight)
+router.get('/trips', verifyToken, adminOnly, getAllTrips);
 
 // Activity logs
 router.get('/activity', verifyToken, adminOnly, getActivityLogs);

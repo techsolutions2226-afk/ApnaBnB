@@ -67,6 +67,7 @@ import AdminUserDetail from "./pages/admin/AdminUserDetail";
 import AdminListings from "./pages/admin/AdminListings";
 import AdminRequirements from "./pages/admin/AdminRequirements";
 import AdminMatches from "./pages/admin/AdminMatches";
+import AdminVisits from "./pages/admin/AdminVisits";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPlans from "./pages/admin/AdminPlans";
 import AdminContact from "./pages/admin/AdminContact";
@@ -151,6 +152,7 @@ function App() {
                   <Route path="listings" element={<AdminListings />} />
                   <Route path="requirements" element={<AdminRequirements />} />
                   <Route path="matches" element={<AdminMatches />} />
+                  <Route path="visits" element={<AdminVisits />} />
                   <Route path="payments" element={<AdminPayments />} />
                   <Route path="plans" element={<AdminPlans />} />
                   <Route path="contact" element={<AdminContact />} />

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import adminService from "../../services/adminService";
+import StatusBadge from "../../components/common/StatusBadge";
 import RefreshButton from "../../components/common/RefreshButton";
 import { DonutChart, BarChart } from "../../components/admin/AdminCharts";
 import {
@@ -12,6 +13,9 @@ import {
   FiStar,
   FiShieldOff,
   FiLayers,
+  FiCalendar,
+  FiCheckCircle,
+  FiXCircle,
 } from "react-icons/fi";
 import "../../styles/Admin.css";
 
@@ -45,6 +49,7 @@ const STATUS_META = [
 const AdminOverview = () => {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [visits, setVisits] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -53,12 +58,14 @@ const AdminOverview = () => {
     if (isRefresh) setRefreshing(true);
     setError(null);
     try {
-      const [s, a] = await Promise.all([
+      const [s, a, v] = await Promise.all([
         adminService.getStats({ fresh: isRefresh }),
         adminService.getActivityLogs({ limit: 8 }),
+        adminService.getVisits({ page: 1, limit: 5 }).catch(() => null),
       ]);
       setStats(s);
       setRecent(Array.isArray(a?.logs) ? a.logs : []);
+      setVisits(v || null);
     } catch (err) {
       if (isRefresh) toast.error(err.message || "Failed to refresh");
       else setError(err.message || "Failed to load admin data");
@@ -176,34 +183,90 @@ const AdminOverview = () => {
         </div>
       </div>
 
-      {/* Recent activity */}
-      <div className="adm-card">
-        <div className="adm-card-head">
-          <h3 className="adm-card-title">Recent activity</h3>
-          <Link to="/admin/logs" className="adm-card-link">
-            View all logs →
-          </Link>
-        </div>
-        {recent.length === 0 ? (
-          <p className="adm-empty">No activity recorded yet.</p>
-        ) : (
-          <div className="adm-feed">
-            {recent.map((log) => (
-              <div className="adm-feed-item" key={log._id || log.id}>
-                <div className="adm-feed-action">{log.action}</div>
-                <div className="adm-feed-meta">
-                  {log.userName || log.userEmail || "System"}
-                  {log.entityType ? ` · ${log.entityType}` : ""}
+      {/* Recent activity + recent visits */}
+      <div className="adm-overview-grid adm-overview-grid--two">
+        <div className="adm-card">
+          <div className="adm-card-head">
+            <h3 className="adm-card-title">Recent activity</h3>
+            <Link to="/admin/logs" className="adm-card-link">
+              View all logs →
+            </Link>
+          </div>
+          {recent.length === 0 ? (
+            <p className="adm-empty">No activity recorded yet.</p>
+          ) : (
+            <div className="adm-feed">
+              {recent.map((log) => (
+                <div className="adm-feed-item" key={log._id || log.id}>
+                  <div className="adm-feed-action">{log.action}</div>
+                  <div className="adm-feed-meta">
+                    {log.userName || log.userEmail || "System"}
+                    {log.entityType ? ` · ${log.entityType}` : ""}
+                  </div>
+                  <div className="adm-feed-time">
+                    {log.createdAt
+                      ? new Date(log.createdAt).toLocaleString()
+                      : "—"}
+                  </div>
                 </div>
-                <div className="adm-feed-time">
-                  {log.createdAt
-                    ? new Date(log.createdAt).toLocaleString()
-                    : "—"}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="adm-card">
+          <div className="adm-card-head">
+            <h3 className="adm-card-title">Visits</h3>
+            <Link to="/admin/visits" className="adm-card-link">
+              View all visits →
+            </Link>
+          </div>
+          {!visits ? (
+            <p className="adm-empty">No visit data.</p>
+          ) : (
+            <div className="adm-visits-card">
+              <div className="adm-visits-card-totals">
+                <div className="adm-visits-card-total">
+                  <div className="adm-visits-card-total-num">
+                    {visits.counts?.total || 0}
+                  </div>
+                  <div className="adm-visits-card-total-label">Total visits</div>
+                </div>
+                <div className="adm-visits-card-chips">
+                  <span className="adm-visits-card-chip adm-visits-card-chip--ok">
+                    <FiCheckCircle size={13} />
+                    {visits.counts?.success || 0} successful
+                  </span>
+                  <span className="adm-visits-card-chip adm-visits-card-chip--bad">
+                    <FiXCircle size={13} />
+                    {visits.counts?.unsuccessful || 0} unsuccessful
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              {Array.isArray(visits.trips) && visits.trips.length === 0 ? (
+                <p className="adm-empty">No visits recorded yet.</p>
+              ) : (
+                <div className="adm-visits-card-list">
+                  {(visits.trips || []).slice(0, 4).map((trip) => (
+                    <div className="adm-visits-card-row" key={trip._id || trip.id}>
+                      <FiCalendar size={14} className="adm-visits-card-row-icon" />
+                      <div className="adm-visits-card-row-body">
+                        <div className="adm-visits-card-row-title">
+                          {trip.property?.title || "Property visit"}
+                        </div>
+                        <div className="adm-visits-card-row-sub">
+                          {trip.user?.name || "Buyer"} ·{" "}
+                          {trip.property?.listedBy?.name || "Owner"}
+                        </div>
+                      </div>
+                      <StatusBadge status={trip.status} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

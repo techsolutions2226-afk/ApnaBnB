@@ -114,7 +114,7 @@ const generateMatchesForRequirement = async (requirement, userId, { notify = fal
           title: `${pairs.length} new match${pairs.length === 1 ? '' : 'es'}`,
           body: `We found ${pairs.length} propert${pairs.length === 1 ? 'y' : 'ies'} matching your requirement.`,
           link: '/matches',
-          entityType: 'requirement',
+          entityType: 'match',
           entityId: requirement.id,
         },
         ...pairs.map(({ match, property }) => ({

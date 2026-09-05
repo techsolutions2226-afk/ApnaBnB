@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import adminService from "../services/adminService";
+import { getSocket } from "../api/socket";
 
 /* ─── useAdminSectionUnviewed ───
    Admin sidebar badges (Matches / Visits). The admin panel has no personal
@@ -59,6 +60,22 @@ export const useAdminSectionUnviewed = () => {
     const onFocus = () => {
       if (document.visibilityState === "visible") fetchCounts();
     };
+
+    /* Live badge updates: the backend pushes `admin:data-changed` whenever a
+       new match or visit notification is written. Calling getSocket() here is
+       what guarantees this admin actually has a socket to receive it — the
+       admin panel itself renders no bell, so nothing else would connect. */
+    let socket = null;
+    try {
+      socket = getSocket();
+    } catch {
+      socket = null; // polling + focus refresh still cover a missing socket
+    }
+    const onDataChanged = () => fetchCounts();
+    if (socket) {
+      socket.on("admin:data-changed", onDataChanged);
+    }
+
     document.addEventListener("visibilitychange", onFocus);
     window.addEventListener("focus", onFocus);
     return () => {
@@ -66,6 +83,7 @@ export const useAdminSectionUnviewed = () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
+      if (socket) socket.off("admin:data-changed", onDataChanged);
     };
   }, []);
 

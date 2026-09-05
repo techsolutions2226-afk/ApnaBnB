@@ -35,6 +35,7 @@ const initSockets = (server) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       socket.userId = decoded.id;
+      socket.role = decoded.role || null;
       return next();
     } catch {
       return next(new Error('Invalid token'));
@@ -43,6 +44,9 @@ const initSockets = (server) => {
 
   io.on('connection', (socket) => {
     socket.join(roomFor(socket.userId));
+    /* Admins get a shared room so badge counts can be pushed to the panel
+       the moment a new match/visit is written. */
+    if (socket.role === 'admin') socket.join('admins');
   });
 
   console.log('Socket.IO ready (notifications)');
@@ -63,6 +67,20 @@ const emitToUser = (userId, event, payload) => {
   }
 };
 
+/* Push to every connected admin (the `admins` room). Null-guarded the same
+   way as emitToUser: fires only when sockets are initialised, so a delivery
+   failure can never fail the request that triggered it. */
+const emitToAdmins = (event, payload) => {
+  if (!io) return false;
+  try {
+    io.to('admins').emit(event, payload);
+    return true;
+  } catch (err) {
+    console.error('Socket emit to admins failed:', err.message);
+    return false;
+  }
+};
+
 const getIO = () => io;
 
-module.exports = { initSockets, emitToUser, getIO };
+module.exports = { initSockets, emitToUser, emitToAdmins, getIO };

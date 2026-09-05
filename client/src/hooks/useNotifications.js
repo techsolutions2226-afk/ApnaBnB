@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import notificationService from "../services/notificationService";
 import { getSocket } from "../api/socket";
 import { useAuth } from "../context/AuthContext";
@@ -174,10 +174,30 @@ export const useNotifications = () => {
     }
   }, [refetch]);
 
+  /* Sidebar section badges (Visits / Matches). The server counts from
+     unreadByType are the source of truth; as a safety net we also derive
+     counts from the loaded items, so a failed or empty by-type response can
+     never leave the bell glowing on a row the sidebar badge ignores. The
+     merge takes the higher value per type — that keeps the extra items above
+     the visible 15-row window counted while staying right when both agree. */
+  const effectiveSectionCounts = useMemo(() => {
+    const derived = {};
+    items.forEach((n) => {
+      if (!n.read && n.entityType) {
+        derived[n.entityType] = (derived[n.entityType] || 0) + 1;
+      }
+    });
+    const out = { ...sectionCounts };
+    for (const [type, count] of Object.entries(derived)) {
+      out[type] = Math.max(out[type] || 0, count);
+    }
+    return out;
+  }, [items, sectionCounts]);
+
   return {
     items,
     unreadCount,
-    sectionCounts,
+    sectionCounts: effectiveSectionCounts,
     isLoading,
     error,
     refetch,

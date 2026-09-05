@@ -154,7 +154,7 @@ const generateMatchesForProperty = async (property, userId, { notify = false } =
           title: `${pairs.length} new match${pairs.length === 1 ? '' : 'es'}`,
           body: `${property.title} matched ${pairs.length} buyer requirement${pairs.length === 1 ? '' : 's'}.`,
           link: '/matches',
-          entityType: 'property',
+          entityType: 'match',
           entityId: property.id,
         },
         ...pairs.map(({ match, requirement }) => ({

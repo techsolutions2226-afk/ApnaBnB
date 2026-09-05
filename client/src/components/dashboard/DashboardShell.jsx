@@ -29,9 +29,14 @@ export default function DashboardShell() {
   const { sectionCounts, markSectionRead } = useNotifications();
 
   /* When the user opens the Matches or Visits section, mark that section's
-     notifications read so its badge clears. */
+     notifications read so its badge clears. The Visits list lives at /trips,
+     but visit notifications link to /visits/:tripId (the status page), so
+     reading one there must clear the badge too. */
   useEffect(() => {
-    if (location.pathname.startsWith("/trips")) {
+    if (
+      location.pathname.startsWith("/trips") ||
+      location.pathname.startsWith("/visits")
+    ) {
       markSectionRead("trip");
     } else if (location.pathname.startsWith("/matches")) {
       markSectionRead("match");

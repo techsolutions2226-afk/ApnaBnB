@@ -13,7 +13,7 @@
 
 const prisma = require('../db/prisma');
 const { appUrl } = require('./matchNotifier');
-const { emitToUser } = require('../sockets');
+const { emitToUser, emitToAdmins } = require('../sockets');
 
 /* Notification types. Keeping them in one place stops the client and server
    drifting on string literals, and gives the bell a known icon per type. */
@@ -41,6 +41,11 @@ const TYPES = {
   ACCOUNT_SUSPENDED: 'account.suspended',
   ACCOUNT_REACTIVATED: 'account.reactivated',
 };
+
+/* Which entityTypes should refresh the admin panel's sidebar badges. Matches
+   and visits are the two sections with live counts on the admin nav. */
+const ADMIN_BADGE_TYPES = new Set(['trip', 'match']);
+const isAdminBadgeType = (entityType) => ADMIN_BADGE_TYPES.has(entityType);
 
 /* Build one row. Returns null when the notification should be skipped, which is
    how self-notification is suppressed — you are never told about your own
@@ -79,6 +84,9 @@ const notifyUser = async (input) => {
   if (!row) return null;
   const created = await prisma.notification.create({ data: row });
   emitToUser(row.recipientId, 'notification:new', created);
+  if (isAdminBadgeType(row.entityType)) {
+    emitToAdmins('admin:data-changed', { entityType: row.entityType });
+  }
   return created;
 };
 
@@ -91,6 +99,10 @@ const notifyUsers = async (inputs = []) => {
   await prisma.notification.createMany({ data: rows });
   for (const recipientId of new Set(rows.map((r) => r.recipientId))) {
     emitToUser(recipientId, 'notification:refresh', { reason: 'batch' });
+  }
+  const badgeTypes = [...new Set(rows.map((r) => r.entityType))].filter(isAdminBadgeType);
+  if (badgeTypes.length) {
+    emitToAdmins('admin:data-changed', { entityTypes: badgeTypes });
   }
   return rows.length;
 };

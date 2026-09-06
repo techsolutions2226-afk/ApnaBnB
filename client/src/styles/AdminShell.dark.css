@@ -97,11 +97,57 @@
 .ash-shell[data-theme="dark"] .adm-action-icon,
 .ash-shell[data-theme="dark"] .adm-profile-card,
 .ash-shell[data-theme="dark"] .adm-chat-list,
-.ash-shell[data-theme="dark"] .adm-chat-thread {
+.ash-shell[data-theme="dark"] .adm-chat-thread,
+.ash-shell[data-theme="dark"] .cm-pagination-footer,
+.ash-shell[data-theme="dark"] .cm-pagination-btn {
   background: var(--color-surface);
 }
 
 .ash-shell[data-theme="dark"] .adm-table th {
+  background: var(--color-slate-100);
+}
+
+.ash-shell[data-theme="dark"] .adm-select {
+  background-color: var(--color-slate-100);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .adm-select:hover,
+.ash-shell[data-theme="dark"] .adm-select:focus {
+  background-color: var(--color-surface);
+}
+
+.ash-shell[data-theme="dark"] .adm-table--users .adm-action-icon {
+  background: transparent;
+}
+
+.ash-shell[data-theme="dark"] .adm-table--users .adm-action-icon:hover {
+  background: var(--color-slate-100);
+}
+
+.ash-shell[data-theme="dark"] .adm-phone-chip,
+.ash-shell[data-theme="dark"] .cm-search-shortcut,
+.ash-shell[data-theme="dark"] .cm-pagination-size select {
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
+  color: var(--color-slate-700);
+}
+
+.ash-shell[data-theme="dark"] .cm-search-input {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .adm-user-name {
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .adm-sticky-col {
+  background: var(--color-surface);
+}
+
+.ash-shell[data-theme="dark"] .adm-table--dense thead .adm-sticky-col {
   background: var(--color-slate-100);
 }
 
@@ -158,7 +204,26 @@
   color: var(--color-slate-900);
 }
 
-/* Keep the toggle thumb white ("on" pill) — it sits on the dark track. */
-.ash-shell[data-theme="dark"] .ac-toggle-thumb {
-  background: #e2e8f0;
+.ash-shell[data-theme="dark"] .aud-header,
+.ash-shell[data-theme="dark"] .aud-metric,
+.ash-shell[data-theme="dark"] .aud-tabs-wrap,
+.ash-shell[data-theme="dark"] .aud-entity-card,
+.ash-shell[data-theme="dark"] .aud-feed-item,
+.ash-shell[data-theme="dark"] .aud-table-scroll,
+.ash-shell[data-theme="dark"] .aud-subtab {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .aud-panel {
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .aud-name,
+.ash-shell[data-theme="dark"] .aud-metric-value,
+.ash-shell[data-theme="dark"] .aud-panel-title,
+.ash-shell[data-theme="dark"] .aud-entity-title,
+.ash-shell[data-theme="dark"] .aud-cell-strong {
+  color: var(--color-slate-900);
 }

@@ -32,9 +32,11 @@ const RESET_RESEND_COOLDOWN_MS = 60 * 1000;     // 60 seconds
 const hashResetToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
-// Generate JWT
-const generateToken = (id, role) =>
-  jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+// Generate JWT. The version is the user's current session-invalidation counter,
+// baked in so a token minted before a logout/password change/2FA toggle is
+// rejected by verifyToken the instant the account row is re-read.
+const generateToken = (id, role, tokenVersion = 0) =>
+  jwt.sign({ id, role, tokenVersion }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
 // 6-digit numeric OTP as a zero-padded string.
 const generateOtp = () => String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
@@ -240,7 +242,7 @@ const verifyOtp = async (req, res, next) => {
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
       verified: true,
-      token: generateToken(user.id, user.role),
+      token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
       message: 'Email verified successfully.',
     });
   } catch (error) {
@@ -372,7 +374,7 @@ const loginUser = async (req, res, next) => {
       phone: user.phone || '',
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
-      token: generateToken(user.id, user.role),
+      token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
     });
   } catch (error) {
     next(error);
@@ -543,7 +545,7 @@ const verifyTwoFactor = async (req, res, next) => {
       phone: user.phone || '',
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
-      token: generateToken(user.id, user.role),
+      token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
       usedRecoveryCode,
       recoveryCodesRemaining: usedRecoveryCode
         ? user.twoFactorRecoveryCodes.length - 1
@@ -613,6 +615,26 @@ const getMe = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// POST /api/auth/logout — revoke the current session server-side.
+// Bumping tokenVersion invalidates every JWT minted at or before this moment,
+// including copies of this token still sitting in localStorage/sessionStorage
+// or on a stolen device. verifyToken compares the claim to the row on every
+// request, so the revocation takes effect immediately.
+const logoutUser = async (req, res) => {
+  try {
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    res.status(200).json({ message: 'Logged out successfully.' });
+  } catch (error) {
+    // Even if the DB write fails, the client still clears its local copy; a
+    // 500 here should not block the user's ability to leave. Keep the error
+    // path explicit but non-fatal from the client's perspective.
+    res.status(500).json({ message: 'Could not revoke the session remotely.' });
   }
 };
 
@@ -848,7 +870,7 @@ const googleUserPayload = (user) => ({
   longitude: user.longitude ?? null,
   emergencyContact: user.emergencyContact || '',
   verified: true,
-  token: generateToken(user.id, user.role),
+  token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
 });
 
 // POST /api/auth/google — exchange a Google ID token for a session.
@@ -974,4 +996,5 @@ module.exports = {
   resetPassword,
   googleAuth,
   googleComplete,
+  logoutUser,
 };

@@ -308,6 +308,7 @@ export function AuthProvider({ children }) {
   /* ── Logout ── */
   const logout = () => {
     authService.logout();
+    disconnectSocket();
     setCurrentUser(null);
     setSubscription(EMPTY_SUBSCRIPTION);
     setError(null);

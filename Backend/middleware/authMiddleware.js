@@ -5,13 +5,22 @@ const prisma = require('../db/prisma');
 // valid token until it expires. The only way to make a deletion take effect
 // immediately is to re-verify the account against the DB on EVERY protected
 // request — a missing row (admin deleted the user) or a row that is no longer
-// usable (suspended / unverified) rejects the token on the spot.
+// usable (suspended / unverified) rejects the token on the spot. The same
+// row also carries tokenVersion so a revoked session (logout / password change
+// / 2FA toggle) is rejected the moment it is next used.
 const loadActiveUser = async (userId) =>
   prisma.user.findUnique({
     where: { id: userId },
     // viewRole = the hat the user is currently wearing; plan purchases and
     // the subscription gate key off it, not the account role.
-    select: { id: true, role: true, viewRole: true, verified: true, suspended: true },
+    select: {
+      id: true,
+      role: true,
+      viewRole: true,
+      verified: true,
+      suspended: true,
+      tokenVersion: true,
+    },
   });
 
 // Middleware to verify user token AND that the account still exists/usable.
@@ -56,6 +65,18 @@ const verifyToken = async (req, res, next) => {
       return res.status(403).json({
         code: 'EMAIL_NOT_VERIFIED',
         message: 'Please verify your email first.',
+      });
+    }
+
+    // A token minted before the account's last logout / password change /
+    // 2FA toggle carries an older tokenVersion than the row now holds — treat
+    // it as revoked. Tokens minted before this feature existed have no claim,
+    // so `decoded.tokenVersion` is undefined; only reject when the row has
+    // actually been bumped past 0.
+    if (user.tokenVersion > 0 && (decoded.tokenVersion ?? 0) !== user.tokenVersion) {
+      return res.status(401).json({
+        code: 'SESSION_REVOKED',
+        message: 'Your session has expired. Please log in again.',
       });
     }
 

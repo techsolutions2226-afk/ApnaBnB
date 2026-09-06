@@ -7,8 +7,10 @@
      placeholder  — input placeholder text
      className    — optional extra class on the wrapper
      rawEvent     — if true, passes the raw event; otherwise passes e.target.value
+     shortcut     — when true, shows ⌘K / Ctrl+K and focuses on that key combo
    ─────────────────────────────────────────────── */
 
+import { useEffect, useMemo, useRef } from "react";
 import "../../styles/Common.css";
 
 export default function SearchInput({
@@ -17,7 +19,31 @@ export default function SearchInput({
   placeholder = "Search...",
   className = "",
   rawEvent = true,
+  shortcut = false,
 }) {
+  const inputRef = useRef(null);
+
+  const shortcutLabel = useMemo(() => {
+    if (typeof navigator === "undefined") return "Ctrl+K";
+    const platform = navigator.platform || "";
+    const ua = navigator.userAgent || "";
+    const isMac = /Mac|iPhone|iPad|iPod/i.test(platform) || /Mac OS X/i.test(ua);
+    return isMac ? "⌘K" : "Ctrl+K";
+  }, []);
+
+  useEffect(() => {
+    if (!shortcut) return undefined;
+    const onKey = (e) => {
+      if (!(e.key === "k" || e.key === "K")) return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+      inputRef.current?.select?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [shortcut]);
+
   const handleChange = (e) => {
     if (rawEvent) {
       onChange(e);
@@ -27,7 +53,7 @@ export default function SearchInput({
   };
 
   return (
-    <div className={`cm-search-wrap ${className}`.trim()}>
+    <div className={`cm-search-wrap ${shortcut ? "cm-search-wrap--shortcut" : ""} ${className}`.trim()}>
       <svg
         className="cm-search-icon"
         width="16"
@@ -38,17 +64,25 @@ export default function SearchInput({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        aria-hidden="true"
       >
         <circle cx="11" cy="11" r="8" />
         <path d="M21 21l-4.35-4.35" />
       </svg>
       <input
-        type="text"
+        ref={inputRef}
+        type="search"
         className="cm-search-input"
         placeholder={placeholder}
         value={value}
         onChange={handleChange}
+        aria-label={placeholder}
       />
+      {shortcut && (
+        <kbd className="cm-search-shortcut" aria-hidden="true">
+          {shortcutLabel}
+        </kbd>
+      )}
     </div>
   );
 }

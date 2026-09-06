@@ -128,6 +128,9 @@ const changePassword = async (req, res, next) => {
         // A password change invalidates any in-flight reset link.
         resetPasswordTokenHash: null,
         resetPasswordExpiresAt: null,
+        // …and every session minted with the old password, including copies
+        // on other devices: bump tokenVersion so stale JWTs are rejected.
+        tokenVersion: { increment: 1 },
       },
     });
 
@@ -292,6 +295,8 @@ const enableTwoFactor = async (req, res, next) => {
         twoFactorRecoveryCodes: hashed,
         twoFactorCodeHash: null,
         twoFactorCodeExpiresAt: null,
+        // Enabling 2FA changes the trust boundary of every existing session.
+        tokenVersion: { increment: 1 },
       },
     });
 
@@ -343,6 +348,9 @@ const disableTwoFactor = async (req, res, next) => {
         twoFactorChallengeAttempts: 0,
         twoFactorCodeHash: null,
         twoFactorCodeExpiresAt: null,
+        // With 2FA off, sessions minted under the stricter guarantee (or while
+        // the previous mode was active) should not silently keep working.
+        tokenVersion: { increment: 1 },
       },
     });
 

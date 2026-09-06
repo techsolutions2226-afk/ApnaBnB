@@ -18,14 +18,16 @@ import { FiEye, FiEdit2, FiTrash2, FiCheckCircle, FiShieldOff, FiUserPlus, FiShi
 import "../../styles/Admin.css";
 
 const ROLES = ["seller", "buyer", "dealer"];
+const ROLE_FILTERS = ["admin", ...ROLES];
+const PAGE_SIZE_OPTIONS = [10, 15, 25, 50];
 
-const COLS_STORAGE_KEY = "adm_user_columns_v1";
+const COLS_STORAGE_KEY = "adm_user_columns_v2";
 
 /* Roughly how wide each column needs to be readable. Used only to give the
    table a sensible min-width so columns don't crush together when many are
    shown; the browser still does the real layout. */
 const COL_WIDTH = 150;
-const FIXED_WIDTH = 44 + 190; // checkbox + actions
+const FIXED_WIDTH = 44 + 168; // checkbox + actions
 
 const EMPTY_FORM = {
   name: "",
@@ -42,6 +44,7 @@ const AdminUsers = () => {
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("");
   const [verified, setVerified] = useState("");
@@ -108,7 +111,9 @@ const AdminUsers = () => {
     [visibleCols],
   );
 
-  const tableMinWidth = FIXED_WIDTH + shownColumns.length * COL_WIDTH;
+  const tableMinWidth =
+    FIXED_WIDTH +
+    shownColumns.reduce((sum, col) => sum + (col.minWidth || COL_WIDTH), 0);
 
   // The frozen Name column is offset by the checkbox column's measured
   // width; a constant drifts by the collapsed border (see the hook).
@@ -124,7 +129,7 @@ const AdminUsers = () => {
     try {
       const data = await adminService.getUsers({
         page,
-        limit: 15,
+        limit: pageSize,
         q: query || undefined,
         role: role || undefined,
         verified: verified ? verified : undefined,
@@ -145,7 +150,7 @@ const AdminUsers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, query, role, verified, accountState]);
+  }, [page, pageSize, query, role, verified, accountState]);
 
   useEffect(() => {
     fetchUsers();
@@ -316,7 +321,12 @@ const AdminUsers = () => {
     return "Activate — lifts the admin suspension";
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / 15));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const handlePageSizeChange = (next) => {
+    setPageSize(next);
+    setPage(1);
+  };
 
   return (
     <div className="adm-page">
@@ -333,8 +343,10 @@ const AdminUsers = () => {
         <SearchInput
           value={query}
           onChange={handleSearch}
-          placeholder="Search by name or email…"
+          placeholder="Search by name, email, phone..."
           rawEvent={false}
+          shortcut
+          className="adm-users-search"
         />
         <div className="adm-select-row">
           <select
@@ -346,7 +358,7 @@ const AdminUsers = () => {
             }}
           >
             <option value="">All roles</option>
-            {ROLES.map((r) => (
+            {ROLE_FILTERS.map((r) => (
               <option key={r} value={r}>
                 {r.charAt(0).toUpperCase() + r.slice(1)}
               </option>
@@ -422,7 +434,7 @@ const AdminUsers = () => {
         ) : (
           <table
             ref={tableRef}
-            className="adm-table adm-table--dense"
+            className="adm-table adm-table--dense adm-table--users"
             style={{ minWidth: tableMinWidth, "--adm-check-col": `${stickyOffset}px` }}
           >
             <thead>
@@ -441,6 +453,7 @@ const AdminUsers = () => {
                     className={`${col.sticky ? "adm-sticky-col adm-sticky-name" : ""}${
                       col.numeric ? " adm-th-num" : ""
                     }`}
+                    style={col.minWidth ? { minWidth: col.minWidth, width: col.minWidth } : undefined}
                   >
                     {col.label}
                   </th>
@@ -480,6 +493,7 @@ const AdminUsers = () => {
                           className={`${col.sticky ? "adm-sticky-col adm-sticky-name" : ""}${
                             col.numeric ? " adm-td-num" : ""
                           }`}
+                          style={col.minWidth ? { minWidth: col.minWidth, width: col.minWidth } : undefined}
                         >
                           {col.render ? (
                             custom || <span className="adm-muted">—</span>
@@ -570,7 +584,17 @@ const AdminUsers = () => {
         )}
       </div>
 
-      <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+      <Pagination
+        className="adm-users-pagination"
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+        total={total}
+        pageSize={pageSize}
+        onPageSizeChange={handlePageSizeChange}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        alwaysShow
+      />
 
       {/* Add / edit modal */}
       <Modal

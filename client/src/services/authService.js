@@ -76,8 +76,19 @@ const authService = {
     }
   },
 
-  // Logout user
+  // Logout user. Fires a best-effort server-side revocation so the token is
+  // invalidated immediately (not merely removed from this browser), then clears
+  // local storage either way. The API call is never awaited by callers — local
+  // cleanup must succeed even if the network is down or the token already died.
   logout: () => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      apiClient
+        .post('/auth/logout')
+        .catch(() => {
+          /* token may already be revoked or expired — local cleanup proceeds. */
+        });
+    }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('current_user');
   },

@@ -303,6 +303,7 @@ const getAllUsers = async (req, res, next) => {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
         { email: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
       ];
     }
 
@@ -330,7 +331,7 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-// Get single user by ID (with resource counts + recent activity timeline)
+// Get single user by ID with deep profile relations for the admin detail page.
 const getUserById = async (req, res, next) => {
   const { id } = req.params;
 
@@ -339,10 +340,9 @@ const getUserById = async (req, res, next) => {
       where: { id },
       select: {
         ...adminUserListSelect,
-        // Their listings with enough property context to identify each row.
-        // IDs are rendered as clickable links to /listing/:id on the client.
         listings: {
           orderBy: { createdAt: 'desc' },
+          take: 100,
           select: {
             id: true,
             status: true,
@@ -357,12 +357,15 @@ const getUserById = async (req, res, next) => {
                 category: true,
                 price: true,
                 photos: true,
+                status: true,
+                location: true,
               },
             },
           },
         },
         requirements: {
           orderBy: { createdAt: 'desc' },
+          take: 100,
           select: {
             id: true,
             title: true,
@@ -371,6 +374,8 @@ const getUserById = async (req, res, next) => {
             propertyType: true,
             budget: true,
             location: true,
+            bedrooms: true,
+            bathrooms: true,
             createdAt: true,
           },
         },
@@ -380,22 +385,182 @@ const getUserById = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const [matchesCount, activity] = await Promise.all([
-      prisma.match.count({ where: { initiatorId: id } }),
-      prisma.activityLog.findMany({
+    const propertyIds = (
+      await prisma.property.findMany({
+        where: { listedById: id },
+        select: { id: true },
+      })
+    ).map((p) => p.id);
+
+    const tripInclude = {
+      user: { select: { id: true, name: true, email: true, avatar: true } },
+      property: {
+        select: {
+          id: true,
+          title: true,
+          photos: true,
+          listedById: true,
+          listedBy: { select: { id: true, name: true, email: true } },
+        },
+      },
+    };
+
+    const [
+      matches,
+      visitsScheduled,
+      visitsReceived,
+      reviewsGiven,
+      reviewsOnUser,
+      reviewsOnProperties,
+      activeRequirements,
+      matchesCount,
+      visitsCount,
+      reviewsGivenCount,
+      reviewsReceivedCount,
+    ] = await Promise.all([
+      prisma.match.findMany({
+        where: {
+          OR: [
+            { initiatorId: id },
+            { property: { listedById: id } },
+            { requirement: { requiredById: id } },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          id: true,
+          score: true,
+          type: true,
+          status: true,
+          aiScore: true,
+          aiReason: true,
+          createdAt: true,
+          initiator: { select: { id: true, name: true, email: true } },
+          property: {
+            select: { id: true, title: true, purpose: true, price: true, photos: true },
+          },
+          requirement: {
+            select: { id: true, title: true, purpose: true, budget: true, status: true },
+          },
+        },
+      }),
+      prisma.trip.findMany({
         where: { userId: id },
         orderBy: { createdAt: 'desc' },
-        take: 30,
+        take: 100,
+        include: tripInclude,
+      }),
+      prisma.trip.findMany({
+        where: { property: { listedById: id } },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: tripInclude,
+      }),
+      prisma.review.findMany({
+        where: { reviewerId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: {
+          reviewer: { select: { id: true, name: true, email: true, avatar: true } },
+        },
+      }),
+      prisma.review.findMany({
+        where: { target: id, targetType: 'user' },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        include: {
+          reviewer: { select: { id: true, name: true, email: true, avatar: true } },
+        },
+      }),
+      propertyIds.length
+        ? prisma.review.findMany({
+            where: { target: { in: propertyIds }, targetType: 'property' },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+            include: {
+              reviewer: { select: { id: true, name: true, email: true, avatar: true } },
+            },
+          })
+        : Promise.resolve([]),
+      prisma.requirement.count({ where: { requiredById: id, status: 'active' } }),
+      prisma.match.count({
+        where: {
+          OR: [
+            { initiatorId: id },
+            { property: { listedById: id } },
+            { requirement: { requiredById: id } },
+          ],
+        },
+      }),
+      prisma.trip.count({
+        where: {
+          OR: [{ userId: id }, { property: { listedById: id } }],
+        },
+      }),
+      prisma.review.count({ where: { reviewerId: id } }),
+      prisma.review.count({
+        where: {
+          OR: [
+            { target: id, targetType: 'user' },
+            ...(propertyIds.length
+              ? [{ target: { in: propertyIds }, targetType: 'property' }]
+              : []),
+          ],
+        },
       }),
     ]);
 
+    // Attach property titles onto property-targeted reviews for the Activity tab.
+    const propsById = new Map(
+      (
+        await prisma.property.findMany({
+          where: { id: { in: [...new Set(reviewsOnProperties.map((r) => r.target))] } },
+          select: { id: true, title: true },
+        })
+      ).map((p) => [p.id, p]),
+    );
+    const reviewsReceived = [
+      ...reviewsOnUser.map((r) => ({ ...r, targetLabel: 'User profile' })),
+      ...reviewsOnProperties.map((r) => ({
+        ...r,
+        property: propsById.get(r.target) || null,
+        targetLabel: propsById.get(r.target)?.title || 'Property',
+      })),
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const { listings, requirements, ...profile } = user;
+    const enrichedUser = withSecretStatus(withPlan(profile));
+
     res.status(200).json({
-      user: withPlan(user),
-      activity: {
-        listings: user.listings.length,
-        requirements: user.requirements.length,
+      user: enrichedUser,
+      listings,
+      requirements,
+      visits: {
+        scheduled: visitsScheduled,
+        received: visitsReceived,
+      },
+      matches,
+      reviews: {
+        given: reviewsGiven,
+        received: reviewsReceived,
+      },
+      counts: {
+        listings: listings.length,
+        activeRequirements,
+        visits: visitsCount,
         matches: matchesCount,
-        logs: activity,
+        reviews: reviewsGivenCount + reviewsReceivedCount,
+        requirements: requirements.length,
+      },
+      // Kept for older clients that still read activity.* counts.
+      activity: {
+        listings: listings.length,
+        requirements: requirements.length,
+        matches: matchesCount,
+        visits: visitsCount,
+        reviews: reviewsGivenCount + reviewsReceivedCount,
+        activeRequirements,
       },
     });
   } catch (error) {

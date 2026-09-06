@@ -12,6 +12,7 @@
 
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const prisma = require('../db/prisma');
 
 let io = null;
 
@@ -26,19 +27,36 @@ const initSockets = (server) => {
   });
 
   /* Authenticate the handshake. An unauthenticated socket is refused outright
-     rather than connected-then-idle, so a bad token can never sit in a room. */
-  io.use((socket, next) => {
+     rather than connected-then-idle, so a bad token can never sit in a room.
+     The account is re-checked against the DB so a revoked/suspended/deleted
+     session (see authMiddleware.verifyToken) cannot keep a live socket. */
+  io.use(async (socket, next) => {
     const token =
       socket.handshake.auth?.token ||
       socket.handshake.headers?.authorization?.split(' ')[1];
     if (!token) return next(new Error('Authentication required'));
+    let decoded;
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      socket.userId = decoded.id;
-      socket.role = decoded.role || null;
-      return next();
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch {
       return next(new Error('Invalid token'));
+    }
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, role: true, verified: true, suspended: true, tokenVersion: true },
+      });
+      if (!user || !user.verified || user.suspended) {
+        return next(new Error('Session no longer valid'));
+      }
+      if (user.tokenVersion > 0 && (decoded.tokenVersion ?? 0) !== user.tokenVersion) {
+        return next(new Error('Session revoked'));
+      }
+      socket.userId = user.id;
+      socket.role = user.role;
+      return next();
+    } catch {
+      return next(new Error('Session check failed'));
     }
   });
 

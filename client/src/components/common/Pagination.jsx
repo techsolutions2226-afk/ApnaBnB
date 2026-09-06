@@ -1,25 +1,25 @@
-/* ─── Pagination — Simple page navigation ───
+/* ─── Pagination — Page navigation with optional summary footer ───
    Renders Previous / page numbers / Next.
-   Frontend-only pagination for lists that grow large.
+   When `total` is provided, also shows "Showing X to Y of Z entries"
+   and an optional page-size selector.
 
    Props:
-     currentPage  — 1-indexed page number
-     totalPages   — total number of pages
-     onPageChange — callback(pageNumber)
-     className    — optional extra class
+     currentPage       — 1-indexed page number
+     totalPages        — total number of pages
+     onPageChange      — callback(pageNumber)
+     className         — optional extra class
+     total             — total entry count (enables summary bar)
+     pageSize          — rows per page
+     onPageSizeChange  — callback(newSize)
+     pageSizeOptions   — array of sizes for the selector
+     alwaysShow        — show even when totalPages <= 1 (useful with summary)
    ─────────────────────────────────────────────── */
 
 import "../../styles/Common.css";
 
-export default function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-  className = "",
-}) {
-  if (totalPages <= 1) return null;
+const DEFAULT_SIZES = [10, 15, 25, 50];
 
-  /* Build an array of page numbers with ellipsis */
+function buildPages(currentPage, totalPages) {
   const pages = [];
   const maxVisible = 5;
 
@@ -34,15 +34,42 @@ export default function Pagination({
     if (end < totalPages - 1) pages.push("...");
     pages.push(totalPages);
   }
+  return pages;
+}
 
-  return (
-    <nav className={`cm-pagination ${className}`.trim()}>
+export default function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+  className = "",
+  total,
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions = DEFAULT_SIZES,
+  alwaysShow = false,
+}) {
+  const showSummary = typeof total === "number";
+  if (!alwaysShow && !showSummary && totalPages <= 1) return null;
+
+  const safeTotalPages = Math.max(1, totalPages || 1);
+  const pages = buildPages(currentPage, safeTotalPages);
+  const size = pageSize || 10;
+  const from = total > 0 ? (currentPage - 1) * size + 1 : 0;
+  const to = total > 0 ? Math.min(currentPage * size, total) : 0;
+  const totalLabel = Number(total || 0).toLocaleString();
+
+  const controls = (
+    <nav
+      className={`cm-pagination ${showSummary ? "cm-pagination--controls" : ""}`.trim()}
+      aria-label="Pagination"
+    >
       <button
+        type="button"
         className="cm-pagination-btn"
-        disabled={currentPage === 1}
+        disabled={currentPage <= 1}
         onClick={() => onPageChange(currentPage - 1)}
       >
-        Previous
+        &lt; Previous
       </button>
 
       <div className="cm-pagination-pages">
@@ -53,23 +80,57 @@ export default function Pagination({
             </span>
           ) : (
             <button
+              type="button"
               key={page}
               className={`cm-pagination-page${page === currentPage ? " cm-pagination-page--active" : ""}`}
               onClick={() => onPageChange(page)}
+              aria-current={page === currentPage ? "page" : undefined}
             >
               {page}
             </button>
-          )
+          ),
         )}
       </div>
 
       <button
+        type="button"
         className="cm-pagination-btn"
-        disabled={currentPage === totalPages}
+        disabled={currentPage >= safeTotalPages}
         onClick={() => onPageChange(currentPage + 1)}
       >
-        Next
+        Next &gt;
       </button>
     </nav>
+  );
+
+  if (!showSummary) {
+    return <div className={className}>{controls}</div>;
+  }
+
+  return (
+    <div className={`cm-pagination-footer ${className}`.trim()}>
+      <div className="cm-pagination-meta">
+        <span className="cm-pagination-summary">
+          Showing {from.toLocaleString()} to {to.toLocaleString()} of {totalLabel} entries
+        </span>
+        {typeof onPageSizeChange === "function" && (
+          <label className="cm-pagination-size">
+            Show
+            <select
+              value={size}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              aria-label="Rows per page"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+      {controls}
+    </div>
   );
 }

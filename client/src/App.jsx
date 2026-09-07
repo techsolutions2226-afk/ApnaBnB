@@ -7,6 +7,7 @@ import { WishlistProvider } from "./context/WishlistContext";
 import { BookingProvider } from "./context/BookingContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import RouteErrorBoundary from "./components/common/RouteErrorBoundary";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 /* ── New Layouts ── */
 import PublicLayout from "./components/layout/PublicLayout";
@@ -84,6 +85,7 @@ function App() {
       <WishlistProvider>
         <BookingProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <RouteErrorBoundary>
               <Routes>
                 {/* ── Dashboard app shell ── */}

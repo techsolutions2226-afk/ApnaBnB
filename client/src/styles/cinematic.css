@@ -1,65 +1,665 @@
 /* ====================================================
-   cinematic.css — additive scroll-animation layer for the
-   landing page. Transforms, perspective, shadow and Lenis
-   plumbing ONLY. No layout, colour, typography or spacing
-   changes — the design stays exactly as authored.
+   cinematic.css — the pinned "walkthrough the house"
+   banner experience. This file owns the visual scaffolding of
+   the scroll stage AND the header's stage-live variant;
+   the content below the stage keeps its existing Tailwind styles.
+
+   Layer plan (bottom → top):
+     1. .cin-stage          — fixed-height pinned stage
+     2. .cin-backdrop       — shared atmospheric colour
+     3. .cin-scene          — one per walkthrough frame (stacked)
+     4. .cin-scene__bg      — crossfade still layer
+     5. .cin-scene__fg      — optional parallax foreground
+     6. .cin-scene__shade   — legibility scrim
+     7. .cin-scene__copy    — per-scene caption (walkthrough frames)
+     8. .cin-hero           — first-frame marketplace hero + search
+     9. .cin-rail           — scene index progress rail
    ==================================================== */
 
-/* 3D context + compositor hints, only when motion is welcome. */
-@media (prefers-reduced-motion: no-preference) {
-  /* GSAP drives the hero reveal now — silence the CSS keyframe so the two
-     don't fight over the grid's opacity/transform (that fight was what left
-     the hero hidden until the first scroll). Reduced-motion users, who skip
-     GSAP entirely, keep the original CSS fade below. */
-  .home-landing-grid {
-    animation: none !important;
-  }
-
-  .home-landing-right {
-    perspective: 1200px;
-  }
-  .home-featured-grid {
-    perspective: 1400px;
-  }
-  .home-feature-card,
-  .home-featured-grid .prop-card {
-    transform-style: preserve-3d;
-    will-change: transform;
-    backface-visibility: hidden;
-  }
+/* ── Stage: a fixed 100vh block the Storyline pins ── */
+.cin-stage {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: #0b1020;
+  color: #fff;
 }
 
-/* Premium hover depth — box-shadow only, so it composes cleanly with the
-   GSAP-driven transforms (which own the `transform` property). */
-.home-feature-card {
-  transition: box-shadow 0.3s ease;
-}
-.home-feature-card:hover {
-  box-shadow: 0 30px 60px -22px rgba(15, 29, 20, 0.45);
-}
-.home-featured-grid .prop-card {
-  transition: box-shadow 0.3s ease;
-  border-radius: 12px;
-}
-.home-featured-grid .prop-card:hover {
-  box-shadow: 0 24px 48px -18px rgba(15, 29, 20, 0.32);
+.cin-stage--short {
+  height: 88vh;
+  height: 88svh;
 }
 
-/* ── Lenis smooth-scroll plumbing (scoped by the `lenis` class Lenis adds to
-   <html> only while the landing page is mounted) ── */
-html.lenis,
-html.lenis body {
-  height: auto;
+/* ── Shared atmospheric backdrop sits behind every scene ── */
+.cin-backdrop {
+  position: absolute;
+  inset: -6% 0;
+  z-index: 0;
+  background: linear-gradient(180deg, #131a2e 0%, #0b1020 60%, #060913 100%);
 }
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
+
+/* ── Scenes: absolutely stacked, one visible at a time ── */
+.cin-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
+
+.cin-scene__bg {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: -12%;
+  bottom: -12%;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  will-change: transform, opacity;
 }
-.lenis.lenis-stopped {
+
+/* Scene 0 (the marketplace hero frame) is the visible default — pre-JS,
+   reduced-motion, or if GSAP never fires, it stays on screen. */
+.cin-scene:first-child .cin-scene__bg {
+  opacity: 1;
+}
+
+/* Foreground layer — reserved even when a scene has none, so scenes with and
+   without an fg never pop. */
+.cin-scene__fg {
+  position: absolute;
+  inset: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: 50% 110%;
+  opacity: 0;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* Legibility scrim — strongest at the copy end (bottom-left) and over the
+   hero's centre-top so the headline always reads. */
+.cin-scene__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      130% 90% at 50% 108%,
+      rgba(6, 9, 19, 0.8) 0%,
+      rgba(6, 9, 19, 0.44) 42%,
+      rgba(6, 9, 19, 0.14) 66%,
+      transparent 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(6, 9, 19, 0.52) 0%,
+      transparent 30%,
+      rgba(6, 9, 19, 0.24) 100%
+    );
+}
+
+/* ── Walkthrough caption (per-scene, bottom-left) ── */
+.cin-scene__copy {
+  position: absolute;
+  left: clamp(24px, 6vw, 96px);
+  bottom: clamp(28px, 7vh, 72px);
+  z-index: 3;
+  max-width: min(520px, 82vw);
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.cin-copy__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #c7d2fe;
+}
+
+.cin-copy__eyebrow::before {
+  content: "";
+  width: 26px;
+  height: 1px;
+  background: rgba(199, 210, 254, 0.5);
+}
+
+.cin-copy__title {
+  margin-top: 12px;
+  font-family: var(--font-heading);
+  font-size: clamp(1.9rem, 4.4vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cin-copy__title em {
+  font-style: normal;
+  color: #a5b4fc;
+}
+
+.cin-copy__body {
+  margin-top: 12px;
+  max-width: 420px;
+  font-size: clamp(0.95rem, 1.4vw, 1.05rem);
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+/* ── First-frame marketplace hero: centered, full-bleed ── */
+.cin-hero {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 clamp(16px, 4vw, 32px);
+  pointer-events: auto;
+  will-change: transform, opacity;
+}
+
+.cin-hero__eyebrow {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #c7d2fe;
+  margin-bottom: 14px;
+}
+
+.cin-hero__title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.3rem, 6vw, 4.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.cin-hero__title em {
+  font-style: normal;
+  color: #a5b4fc;
+}
+
+.cin-hero__subtitle {
+  margin-top: 14px;
+  max-width: 540px;
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.86);
+}
+
+.cin-hero .search-panel {
+  margin-top: 30px;
+}
+
+/* ── Category pills under the hero search ── */
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.hero-pill:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+/* ── Scene index rail: minimal, bottom-right ── */
+.cin-rail {
+  position: absolute;
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(28px, 7vh, 72px);
+  z-index: 3;
+  width: clamp(110px, 15vw, 190px);
+  display: grid;
+  gap: 9px;
+  pointer-events: none;
+}
+
+.cin-rail__item {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  position: relative;
+  transform-origin: left center;
+  scale: 1; /* normalize GSAP's transform off the item */
+  will-change: transform;
+}
+
+.cin-rail__label {
+  display: none;
+}
+
+.cin-rail__idx {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: rgba(226, 232, 240, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── "Scroll to explore" cue — inside the hero, so it fades with it ── */
+.cin-scroll-cue {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 40px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.cin-scroll-cue .cin-scroll-line {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.35);
+  position: relative;
   overflow: hidden;
 }
-.lenis.lenis-smooth iframe {
-  pointer-events: none;
+
+.cin-scroll-cue .cin-scroll-line::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -50%;
+  width: 100%;
+  height: 50%;
+  background: #fff;
+  animation: cin-scroll-drip 1.9s ease-in-out infinite;
+}
+
+@keyframes cin-scroll-drip {
+  0% { top: -50%; }
+  60%, 100% { top: 110%; }
+}
+
+/* ── Skip intro ── */
+.cin-skip {
+  position: absolute;
+  top: 14px;
+  z-index: 20;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.cin-skip:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.44);
+}
+
+/* ══════════════════════ SEARCH PANEL (hero + marketplace) ══════════════════════
+   The dropdown components self-style via .abn-s2-field; this layer only
+   positions them and dresses the toggle rail + CTA. */
+.search-panel {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.search-panel__toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.search-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 9999px;
+}
+
+.search-panel--card .search-toggle {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.search-panel--light .search-toggle {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-toggle__btn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  min-height: 42px;
+  padding: 0 30px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.search-panel--light .search-toggle__btn {
+  color: var(--color-slate-500);
+}
+
+.search-toggle__btn--active {
+  color: #0f172a;
+}
+
+.search-panel--light .search-toggle__btn--active {
+  color: var(--color-primary-700);
+}
+
+.search-toggle__pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.22);
+}
+
+.search-panel--light .search-toggle__pill {
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+}
+
+.search-toggle__label {
+  position: relative;
+  z-index: 1;
+}
+
+.search-panel__fields {
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.search-panel--card .search-panel__fields {
+  background: #fff;
+  box-shadow: 0 30px 70px -24px rgba(2, 6, 23, 0.55);
+}
+
+.search-panel--light .search-panel__fields {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 24px 60px -28px rgba(15, 23, 42, 0.3);
+}
+
+.search-fields-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.search-cell {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-primary-600);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-cta:hover {
+  background: var(--color-primary-700);
+}
+
+.search-cta__ico {
+  font-size: 1.05rem;
+}
+
+.search-cta--block {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Location field (plain input + collapsed trigger) reuses the field look. */
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 0.75rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.search-input-wrap:focus-within {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-input-wrap--button {
+  cursor: pointer;
+  background: white;
+  font: inherit;
+}
+
+.search-input-wrap--button:hover {
+  border-color: var(--color-primary-400);
+}
+
+.search-input-ico {
+  color: var(--color-slate-400);
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 0.9rem;
+  color: var(--color-slate-900);
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: var(--color-slate-400);
+}
+
+.search-input-placeholder {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--color-slate-400);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-input-chev {
+  color: var(--color-slate-400);
+  flex-shrink: 0;
+}
+
+/* Advanced row (expanded search) */
+.search-advanced__inner {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.search-advanced__inner .search-cta {
+  height: 48px;
+}
+
+/* ══════════════════════ HEADER: stage-live variant ══════════════════════
+   While the cinematic stage is on screen the public header goes transparent
+   and its text goes light (set via classes on .app-header). The class is
+   toggled by the story hook on <html>. */
+html.abn-stage-live .app-header {
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* ══════════════════════ PORTRAIT / SHORT COMPOSITION ══════════════════════ */
+.cin-stage.is-portrait .cin-scene__copy {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-width: none;
+  padding: 16px clamp(20px, 6vw, 32px)
+    calc(env(safe-area-inset-bottom, 0px) + 84px);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(6, 9, 19, 0.55) 46%,
+    rgba(6, 9, 19, 0.88) 100%
+  );
+}
+
+.cin-stage.is-portrait .cin-rail {
+  display: none;
+}
+
+.cin-stage.is-portrait .cin-scene__fg {
+  top: 14%;
+  bottom: -15%;
+}
+
+.cin-stage.is-portrait .cin-copy__title {
+  font-size: clamp(1.5rem, 8vw, 2rem);
+}
+
+.cin-stage.is-portrait .cin-copy__body {
+  max-width: none;
+  font-size: 0.9rem;
+}
+
+/* Short-height landscape screens: tighten the hero to fit. */
+.cin-stage.cin-stage--short .cin-hero__title {
+  font-size: clamp(1.9rem, 4.6vw, 2.8rem);
+}
+
+.cin-stage.cin-stage--short .cin-hero .search-panel {
+  margin-top: 18px;
+}
+
+.cin-stage.cin-stage--short .cin-scroll-cue {
+  margin-top: 20px;
+}
+
+/* ══════════════════════ RESPONSIVE ══════════════════════ */
+@media (max-width: 900px) {
+  .search-fields-row {
+    flex-wrap: wrap;
+  }
+
+  .search-cell {
+    flex: 1 1 48%;
+  }
+
+  .search-cell--city {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .search-advanced__inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ══════════════════════ REDUCED MOTION ══════════════════════
+   The stage renders as a static marketplace hero; walkthrough frames stay
+   hidden (scene 0 remains), no cue, no rail, no entrance animation. */
+@media (prefers-reduced-motion: reduce) {
+  .cin-scroll-cue {
+    display: none;
+  }
+
+  .cin-scroll-line::after {
+    animation: none;
+    display: none;
+  }
+
+  .cin-rail {
+    display: none;
+  }
+
+  .cin-scene__copy {
+    opacity: 0;
+  }
+
+  .cin-stage .cin-scene:first-child .cin-scene__bg {
+    opacity: 1;
+  }
+
+  .cin-stage .cin-scene:not(:first-child) .cin-scene__bg {
+    opacity: 0;
+  }
 }

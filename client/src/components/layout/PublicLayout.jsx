@@ -34,6 +34,7 @@ function AnnouncementBanner() {
 
 export default function PublicLayout() {
   const [scrolled, setScrolled] = useState(false);
+  const [stageLive, setStageLive] = useState(false);
   const headerRef = useRef(null);
   const { currentUser, isAuthenticated, getDashboardPath } = useAuth();
   const location = useLocation();
@@ -63,7 +64,14 @@ export default function PublicLayout() {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 8);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 8);
+      const live = document.documentElement.classList.contains(
+        "abn-stage-live",
+      );
+      setStageLive((prev) => (prev === live ? prev : live));
+    };
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -78,22 +86,28 @@ export default function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AnnouncementBanner />
+      {location.pathname !== "/" && <AnnouncementBanner />}
 
       {/* Header */}
       <header
         ref={headerRef}
-        className={`sticky top-0 z-40 transition-all duration-200 ${
-          scrolled
-            ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100"
-            : "bg-white border-b border-slate-200"
+        className={`app-header sticky top-0 z-40 transition-all duration-300 ${
+          stageLive
+            ? "bg-transparent border-b border-transparent"
+            : scrolled
+              ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100"
+              : "bg-white border-b border-slate-200"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
-              <span className="text-xl font-bold text-slate-900 font-heading">
+              <span
+                className={`text-xl font-bold font-heading transition-colors duration-300 ${
+                  stageLive ? "text-white" : "text-slate-900"
+                }`}
+              >
                 Apna<span className="text-primary-600">BnB</span>
               </span>
             </Link>
@@ -106,8 +120,12 @@ export default function PublicLayout() {
                   to={link.to}
                   className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                     location.pathname === link.to
-                      ? "text-primary-600 bg-primary-50"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                      ? stageLive
+                        ? "text-primary-300 bg-white/10"
+                        : "text-primary-600 bg-primary-50"
+                      : stageLive
+                        ? "text-slate-200 hover:text-white hover:bg-white/10"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
                   {link.label}
@@ -121,12 +139,20 @@ export default function PublicLayout() {
                 <>
                   <Link
                     to={dashboardPath}
-                    className="px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      stageLive
+                        ? "text-primary-300 hover:bg-white/10"
+                        : "text-primary-600 hover:bg-primary-50"
+                    }`}
                   >
                     Dashboard
                   </Link>
                   <button
-                    className="h-9 w-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors relative"
+                    className={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
+                      stageLive
+                        ? "text-slate-200 hover:bg-white/10"
+                        : "text-slate-500 hover:bg-slate-100"
+                    }`}
                     aria-label="Notifications"
                   >
                     <FiBell className="h-4.5 w-4.5" />
@@ -143,7 +169,11 @@ export default function PublicLayout() {
                 <>
                   <Link
                     to="/login"
-                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      stageLive
+                        ? "text-white hover:text-white hover:bg-white/10"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
                   >
                     Log in
                   </Link>
@@ -171,7 +201,11 @@ export default function PublicLayout() {
               {!isAuthenticated && (
                 <Link
                   to="/login"
-                  className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    stageLive
+                      ? "text-white hover:bg-white/10"
+                      : "text-primary-600 hover:bg-primary-50"
+                  }`}
                 >
                   Log in
                 </Link>

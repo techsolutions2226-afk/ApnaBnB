@@ -5,6 +5,7 @@ export const useProperties = (filters = {}, initialFetch = true) => {
   const [properties, setProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState(null);
 
   const fetchProperties = async () => {
     setIsLoading(true);
@@ -12,7 +13,20 @@ export const useProperties = (filters = {}, initialFetch = true) => {
 
     try {
       const data = await propertyService.getAll(filters);
-      setProperties(data);
+      // The backend returns a flat array until `page`/`limit` are passed, then a
+      // { items, total, page, pages } object. Normalize both into `properties`
+      // so callers keep consuming the same shape; `pagination` is only the
+      // populated metadata for server-side paging (null otherwise).
+      if (Array.isArray(data)) {
+        setProperties(data);
+        setPagination(null);
+      } else if (data && Array.isArray(data.items)) {
+        setProperties(data.items);
+        setPagination({ total: data.total, page: data.page, pages: data.pages });
+      } else {
+        setProperties([]);
+        setPagination(null);
+      }
     } catch (err) {
       setError(err.message || 'Failed to fetch properties');
     } finally {
@@ -32,7 +46,7 @@ export const useProperties = (filters = {}, initialFetch = true) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtersKey]);
 
-  return { properties, isLoading, error, refetch: fetchProperties };
+  return { properties, isLoading, error, refetch: fetchProperties, pagination };
 };
 
 export const useProperty = (id) => {

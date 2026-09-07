@@ -113,7 +113,7 @@ const AdminContact = () => {
             live as soon as you save.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div className="adm-header-actions">
           <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
           <a
             href="/contact"

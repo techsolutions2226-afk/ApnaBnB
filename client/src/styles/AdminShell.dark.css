@@ -94,6 +94,7 @@
 .ash-shell[data-theme="dark"] .adm-table-wrap,
 .ash-shell[data-theme="dark"] .adm-toolbar,
 .ash-shell[data-theme="dark"] .adm-feed-item,
+.ash-shell[data-theme="dark"] .adm-activity-slide,
 .ash-shell[data-theme="dark"] .adm-action-icon,
 .ash-shell[data-theme="dark"] .adm-profile-card,
 .ash-shell[data-theme="dark"] .adm-chat-list,
@@ -131,6 +132,10 @@
   background: var(--color-slate-100);
   border-color: var(--color-border);
   color: var(--color-slate-700);
+}
+
+.ash-shell[data-theme="dark"] .adm-activity-slide {
+  border-color: var(--color-border);
 }
 
 .ash-shell[data-theme="dark"] .cm-search-input {

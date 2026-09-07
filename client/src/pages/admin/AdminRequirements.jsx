@@ -126,7 +126,9 @@ const AdminRequirements = () => {
           <h1 className="adm-title">Requirements</h1>
           <p className="adm-subtitle">Manage all buyer/dealer requirements on the platform.</p>
         </div>
-        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        </div>
       </div>
 
       <div className="adm-toolbar">

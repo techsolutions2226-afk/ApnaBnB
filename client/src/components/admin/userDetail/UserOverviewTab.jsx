@@ -1,5 +1,4 @@
 import { FiCheck, FiLock, FiShield } from "react-icons/fi";
-import RefreshButton from "../../common/RefreshButton";
 import { fmtDate, fmtDateTime, titleCase } from "./userDetailUtils";
 
 function InfoRow({ label, children }) {
@@ -12,15 +11,11 @@ function InfoRow({ label, children }) {
 }
 
 /** Overview tab — personal info, security, verification, registration. */
-export default function UserOverviewTab({ user, onRefresh, refreshing }) {
+export default function UserOverviewTab({ user }) {
   if (!user) return null;
 
   return (
-    <div>
-      <div className="aud-section-tools">
-        <RefreshButton onRefresh={onRefresh} refreshing={refreshing} />
-      </div>
-      <div className="aud-overview">
+    <div className="aud-overview">
       <section className="aud-panel">
         <h3 className="aud-panel-title">Personal info</h3>
         <dl className="aud-info-grid">
@@ -90,7 +85,6 @@ export default function UserOverviewTab({ user, onRefresh, refreshing }) {
           platform activity log.
         </p>
       </section>
-      </div>
     </div>
   );
 }

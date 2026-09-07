@@ -22,6 +22,7 @@ import {
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { useAdminSectionUnviewed } from "../../hooks/useAdminSectionUnviewed";
+import MobileBottomNav from "../layout/MobileBottomNav";
 import "../../styles/AdminShell.css";
 import "../../styles/AdminShell.dark.css";
 
@@ -239,6 +240,12 @@ export default function AdminShell() {
           <Outlet />
         </div>
       </div>
+
+      <MobileBottomNav
+        hidden={navOpen}
+        dashboardPath="/admin"
+        profilePath="/admin/account"
+      />
     </div>
   );
 }

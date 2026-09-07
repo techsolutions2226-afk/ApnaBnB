@@ -54,6 +54,23 @@
   gap: 16px;
 }
 
+/* Right-side slot for Refresh (+ optional page actions). Same place on every
+   admin page: Overview, lists, user detail, etc. */
+.adm-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-left: auto;
+  min-height: 40px;
+  flex-wrap: wrap;
+}
+
+.adm-header-actions .refresh-btn {
+  flex-shrink: 0;
+}
+
 /* Refresh button (top-right of every admin tab header). */
 /* The Refresh button moved to components/common/RefreshButton.jsx, which ships
    its own stylesheet so it also works on pages that don't load Admin.css. */
@@ -82,6 +99,13 @@
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
   margin-bottom: 22px;
+}
+
+/* Prefer two columns as soon as the viewport can't fit 3+ full cards */
+@media (max-width: 1100px) {
+  .adm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .adm-kpi {
@@ -502,25 +526,50 @@
   color: var(--color-slate-500);
 }
 
-/* ── Toolbar ── */
+/* ── Toolbar ──
+   Filters always sit 2-per-row (search, selects, actions) on every admin page. */
 .adm-toolbar {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 10px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
 .adm-toolbar--wrap {
   margin-bottom: 8px;
 }
 
+/* Flatten nested filter groups so every control joins the 2-col grid */
 .adm-select-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-left: auto;
+  display: contents;
+}
+
+.adm-toolbar > .cm-search-wrap,
+.adm-toolbar > .adm-users-search,
+.adm-toolbar > .adm-select,
+.adm-toolbar > .adm-input,
+.adm-toolbar > .adm-btn,
+.adm-toolbar > .adm-colpick,
+.adm-toolbar .adm-select,
+.adm-toolbar .adm-input,
+.adm-toolbar .adm-colpick,
+.adm-toolbar .cm-search-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  flex: none;
+}
+
+.adm-toolbar .adm-colpick .adm-btn,
+.adm-toolbar > .adm-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Primary actions (e.g. Add User) span the full filter row */
+.adm-toolbar .adm-btn--primary {
+  grid-column: 1 / -1;
 }
 
 .adm-select {
@@ -1114,6 +1163,12 @@
   margin-bottom: 16px;
 }
 
+@media (max-width: 720px) {
+  .adm-userstats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .adm-userstat {
   background: #fff;
   border: 1px solid var(--color-slate-200);
@@ -1307,17 +1362,6 @@ textarea.adm-form-input {
 @media (max-width: 720px) {
   .adm-form-row {
     grid-template-columns: 1fr;
-  }
-  .adm-select-row {
-    margin-left: 0;
-    width: 100%;
-  }
-  .adm-select-row .adm-select {
-    flex: 1;
-    min-width: 0;
-  }
-  .adm-toolbar .adm-select {
-    width: 100%;
   }
 }
 
@@ -2170,8 +2214,8 @@ textarea.adm-form-input {
 }
 
 .adm-users-search {
-  flex: 1 1 280px;
-  max-width: 420px;
+  width: 100%;
+  max-width: none;
 }
 
 .adm-users-pagination {
@@ -2468,6 +2512,12 @@ tr:hover .adm-trunc-btn,
   margin-bottom: 20px;
 }
 
+@media (max-width: 720px) {
+  .adm-visit-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .adm-visit-summary-item {
   display: flex;
   flex-direction: column;
@@ -2492,7 +2542,8 @@ tr:hover .adm-trunc-btn,
 }
 
 .adm-input--search {
-  min-width: 260px;
+  min-width: 0;
+  width: 100%;
 }
 
 .adm-visit-outcome {
@@ -2525,6 +2576,75 @@ tr:hover .adm-trunc-btn,
   .adm-overview-grid--two {
     grid-template-columns: 1fr;
   }
+}
+
+/* Recent activity — horizontal slider */
+.adm-activity-slider {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  padding: 2px 2px 10px;
+  margin: 0 -2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+
+.adm-activity-slider::-webkit-scrollbar {
+  height: 6px;
+}
+
+.adm-activity-slider::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.adm-activity-slider::-webkit-scrollbar-thumb {
+  background: var(--color-slate-300);
+  border-radius: 999px;
+}
+
+.adm-activity-slide {
+  flex: 0 0 min(240px, 78%);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 12px;
+  background: var(--color-slate-50);
+}
+
+.adm-activity-slide-action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-900);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.adm-activity-slide-meta {
+  font-size: 12.5px;
+  color: var(--color-slate-500);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.adm-activity-slide-time {
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--color-slate-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Visits summary card on the platform overview. */
@@ -2627,25 +2747,17 @@ tr:hover .adm-trunc-btn,
   max-width: 1200px;
 }
 
-.aud-topbar {
-  margin-bottom: 12px;
+.aud-page .adm-back-link {
+  display: inline-flex;
+  margin-bottom: 8px;
 }
 
-.aud-topbar .adm-back-link {
-  margin-bottom: 0;
-}
-
-.aud-section-tools,
 .aud-activity-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 10px;
   margin-bottom: 12px;
-}
-
-.aud-activity-toolbar {
-  justify-content: space-between;
   flex-wrap: wrap;
 }
 
@@ -3119,7 +3231,7 @@ tr:hover .adm-trunc-btn,
 
 @media (max-width: 960px) {
   .aud-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -3171,11 +3283,266 @@ tr:hover .adm-trunc-btn,
 }
 
 @media (max-width: 480px) {
-  .aud-metrics {
-    grid-template-columns: 1fr;
+  .aud-metric {
+    padding: 12px;
+    gap: 10px;
   }
 
-  .aud-metric {
-    width: 100%;
+  .aud-metric-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .aud-metric-value {
+    font-size: 18px;
+  }
+
+  .aud-metric-label {
+    font-size: 11px;
+    line-height: 1.25;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Admin panel — mobile layout polish
+   Keep stats/KPI cards at 2-per-row, tighten toolbars/tables,
+   and stop horizontal page overflow on small screens.
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .adm-page {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .adm-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .adm-header-actions {
+    width: auto;
+    margin-left: auto;
+  }
+
+  .adm-title {
+    font-size: 20px;
+  }
+
+  .adm-subtitle {
+    font-size: 13px;
+  }
+
+  /* Stats / KPI cards: always two across on tablets & phones */
+  .adm-kpis,
+  .adm-userstats,
+  .adm-visit-summary,
+  .aud-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .adm-kpi {
+    padding: 12px;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .adm-kpi-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .adm-kpi-value {
+    font-size: 18px;
+  }
+
+  .adm-kpi-label {
+    font-size: 11.5px;
+    line-height: 1.25;
+  }
+
+  .adm-userstat,
+  .adm-visit-summary-item {
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .adm-userstat-value,
+  .adm-visit-summary-value {
+    font-size: 18px;
+  }
+
+  .adm-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .adm-toolbar .cm-search-wrap,
+  .adm-toolbar .adm-users-search,
+  .adm-toolbar .adm-select,
+  .adm-toolbar .adm-input {
+    max-width: none;
+    width: 100%;
+  }
+
+  .adm-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .adm-overview-grid,
+  .adm-overview-grid--charts,
+  .adm-overview-grid--two {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .adm-table-wrap,
+  .adm-table-wrap--sticky {
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cm-pagination-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .cm-pagination-meta {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .cm-pagination-summary {
+    white-space: normal;
+    font-size: 12.5px;
+  }
+
+  .cm-pagination--controls,
+  .cm-pagination-footer .cm-pagination {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .cm-pagination-btn {
+    padding: 8px 10px;
+    font-size: 12.5px;
+  }
+
+  .adm-profile-card {
+    padding: 16px;
+  }
+
+  .adm-profile-actions {
+    width: 100%;
+  }
+
+  .adm-profile-actions .adm-btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+
+  .adm-bulkbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .adm-kpis,
+  .adm-userstats,
+  .adm-visit-summary,
+  .aud-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Keep filters at 2-per-row on phones too */
+  .adm-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .cm-search-wrap--shortcut .cm-search-input {
+    padding-right: 12px;
+  }
+
+  .cm-search-shortcut {
+    display: none;
+  }
+
+  .refresh-btn {
+    padding: 8px 10px;
+  }
+
+  .refresh-btn-label {
+    display: none;
+  }
+
+  .adm-actions {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .adm-table--users .adm-action-icon,
+  .adm-action-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .aud-actions .adm-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 12.5px;
+  }
+
+  .aud-tabs {
+    padding: 8px 8px 0;
+  }
+
+  .aud-tab {
+    padding: 10px 10px;
+    font-size: 12.5px;
+  }
+
+  .cm-pagination-page {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .adm-form-actions {
+    flex-wrap: wrap;
+  }
+
+  .adm-form-actions .adm-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .adm-kpi {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .adm-kpi-value {
+    font-size: 16px;
+  }
+
+  .adm-kpi-label,
+  .aud-metric-label,
+  .adm-userstat-label,
+  .adm-visit-summary-label {
+    font-size: 11px;
+  }
+}
+

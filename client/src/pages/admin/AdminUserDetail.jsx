@@ -161,11 +161,19 @@ export default function AdminUserDetail() {
 
   return (
     <div className="adm-page aud-page">
-      <div className="adm-header aud-topbar">
-        <Link to="/admin/users" className="adm-back-link">
-          <FiArrowLeft size={14} /> Back to users
-        </Link>
-        <RefreshButton onRefresh={load} refreshing={isLoading} />
+      <div className="adm-header">
+        <div>
+          <Link to="/admin/users" className="adm-back-link">
+            <FiArrowLeft size={14} /> Back to users
+          </Link>
+          <h1 className="adm-title">User Detail</h1>
+          <p className="adm-subtitle">
+            Full profile, activity, and account controls for this user.
+          </p>
+        </div>
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={load} refreshing={isLoading} />
+        </div>
       </div>
 
       <UserProfileHeader
@@ -199,15 +207,11 @@ export default function AdminUserDetail() {
         </div>
 
         <div className="aud-tab-panel" role="tabpanel">
-          {tab === "overview" && (
-            <UserOverviewTab user={user} onRefresh={load} refreshing={isLoading} />
-          )}
+          {tab === "overview" && <UserOverviewTab user={user} />}
           {tab === "listings" && (
             <UserListingsTab
               listings={data?.listings || user?.listings || []}
               requirements={data?.requirements || user?.requirements || []}
-              onRefresh={load}
-              refreshing={isLoading}
             />
           )}
           {tab === "activity" && (
@@ -215,8 +219,6 @@ export default function AdminUserDetail() {
               visits={data?.visits || { scheduled: [], received: [] }}
               matches={data?.matches || []}
               reviews={data?.reviews || { given: [], received: [] }}
-              onRefresh={load}
-              refreshing={isLoading}
             />
           )}
         </div>

@@ -335,7 +335,9 @@ const AdminUsers = () => {
           <h1 className="adm-title">Users</h1>
           <p className="adm-subtitle">Manage every account on the platform.</p>
         </div>
-        <RefreshButton onRefresh={fetchUsers} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchUsers} refreshing={isLoading} />
+        </div>
       </div>
 
       {/* Toolbar */}

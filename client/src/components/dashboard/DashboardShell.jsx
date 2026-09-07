@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { FiChevronDown, FiSettings, FiLogOut } from "react-icons/fi";
+import { FiChevronDown, FiSettings, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
 import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
+import MobileBottomNav from "../layout/MobileBottomNav";
 
 const STORAGE_KEY = "dash_view_role";
+const THEME_KEY = "apnabnb_admin_theme";
 
 /**
  * DashboardShell — standalone dashboard app shell with a FIXED left sidebar and
@@ -23,15 +25,8 @@ export default function DashboardShell() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* Per-section unread badges (Visits → trip notifications, Matches → match
-     notifications). Live over the notification socket; each badge clears when
-     its section is opened below. */
   const { sectionCounts, markSectionRead } = useNotifications();
 
-  /* When the user opens the Matches or Visits section, mark that section's
-     notifications read so its badge clears. The Visits list lives at /trips,
-     but visit notifications link to /visits/:tripId (the status page), so
-     reading one there must clear the badge too. */
   useEffect(() => {
     if (
       location.pathname.startsWith("/trips") ||
@@ -48,8 +43,6 @@ export default function DashboardShell() {
       ? currentUser.role
       : "buyer";
 
-  /* Initial hat: DB-persisted viewRole wins, then the local cache, then the
-     account role. */
   const [viewRole, setViewRoleState] = useState(() => {
     if (currentUser?.viewRole && ROLES.includes(currentUser.viewRole)) {
       return currentUser.viewRole;
@@ -68,22 +61,34 @@ export default function DashboardShell() {
     try {
       localStorage.setItem(STORAGE_KEY, role);
     } catch {
-      /* ignore quota / private-mode errors */
+      /* ignore */
     }
-    // Persist the chosen hat to the user record so it follows them across
-    // devices and sessions (fire-and-forget; local state is already updated).
     if (currentUser?.viewRole !== role) {
-      updateProfile({ viewRole: role }).catch(() => {
-        /* non-fatal — localStorage keeps the pick for this device */
-      });
+      updateProfile({ viewRole: role }).catch(() => {});
     }
   };
 
-  const [menuOpen, setMenuOpen] = useState(false); // role selector dropdown
-  const [navOpen, setNavOpen] = useState(false); // mobile drawer
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) || "light";
+    } catch {
+      return "light";
+    }
+  });
   const selectRef = useRef(null);
+  const isDark = theme === "dark";
 
-  /* Close the role dropdown on outside click. */
+  const setThemePref = (value) => {
+    setTheme(value);
+    try {
+      localStorage.setItem(THEME_KEY, value);
+    } catch {
+      /* ignore */
+    }
+  };
+
   useEffect(() => {
     const onDown = (e) => {
       if (selectRef.current && !selectRef.current.contains(e.target)) {
@@ -102,7 +107,6 @@ export default function DashboardShell() {
     setViewRole(role);
     setMenuOpen(false);
     setNavOpen(false);
-    // Land on the role-agnostic dashboard surface so the body reflects the pick.
     navigate("/dashboard");
   };
 
@@ -112,16 +116,17 @@ export default function DashboardShell() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans">
-      {/* ── Fixed sidebar (dark theme) ── */}
+    <div
+      className={`flex h-screen font-sans ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
+      data-theme={theme}
+    >
       <aside
-        className={`fixed left-0 top-0 z-[50] h-full w-72 flex flex-col bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-[60] h-full w-72 flex flex-col bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ "--role-accent": meta.accent }}
         aria-label="Dashboard navigation"
       >
-        {/* apnabnb logo → home */}
         <Link
           to="/"
           className="flex items-center gap-2 px-5 py-5 border-b border-white/[0.08]"
@@ -133,7 +138,6 @@ export default function DashboardShell() {
           </span>
         </Link>
 
-        {/* User profile */}
         <div className="flex items-center gap-3 mx-3 mt-4 mb-3 px-3 py-3 bg-white/[0.05] border border-white/[0.07] rounded-xl">
           {currentUser?.avatar ? (
             <img
@@ -150,9 +154,7 @@ export default function DashboardShell() {
             <p className="truncate text-sm font-medium text-white">
               {currentUser?.name || "My Account"}
             </p>
-            <p className="text-xs text-slate-400">
-              {meta.label} workspace
-            </p>
+            <p className="text-xs text-slate-400">{meta.label} workspace</p>
           </div>
         </div>
 
@@ -179,13 +181,7 @@ export default function DashboardShell() {
                 }
                 onClick={() => setNavOpen(false)}
               >
-                <Icon
-                  size={17}
-                  className={({ isActive }) =>
-                    isActive ? "text-white" : "text-slate-500"
-                  }
-                  aria-hidden="true"
-                />
+                <Icon size={17} aria-hidden="true" />
                 <span>{item.label}</span>
                 {sectionBadge > 0 && (
                   <span className="ml-auto min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-white text-xs font-bold">
@@ -197,8 +193,41 @@ export default function DashboardShell() {
           })}
         </nav>
 
-        {/* Account + logout */}
-        <div className="p-3 border-t border-white/[0.08] space-y-1">
+        <div className="p-3 border-t border-white/[0.08] space-y-1 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-3">
+          <div
+            className="flex flex-nowrap items-stretch gap-1 p-[3px] mb-2 rounded-[10px] border border-white/12 bg-black/35"
+            role="radiogroup"
+            aria-label="Panel theme"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "light"}
+              className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[7px] text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
+                theme === "light"
+                  ? "bg-primary-600 text-white"
+                  : "bg-transparent text-slate-500 hover:text-slate-300"
+              }`}
+              onClick={() => setThemePref("light")}
+            >
+              <FiSun size={14} />
+              <span>Light</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "dark"}
+              className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[7px] text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
+                theme === "dark"
+                  ? "bg-primary-600 text-white"
+                  : "bg-transparent text-slate-500 hover:text-slate-300"
+              }`}
+              onClick={() => setThemePref("dark")}
+            >
+              <FiMoon size={14} />
+              <span>Dark</span>
+            </button>
+          </div>
           <Link
             to="/account"
             className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/[0.08] hover:text-white rounded-lg transition-colors"
@@ -218,12 +247,21 @@ export default function DashboardShell() {
         </div>
       </aside>
 
-      {/* ── Scrolling main column ── */}
       <div className="flex-1 flex flex-col min-w-0 lg:ml-72">
-        <header className="flex h-14 sm:h-16 items-center gap-3 px-4 sm:px-6 border-b border-slate-200 bg-white sticky top-0 z-[40]">
+        <header
+          className={`flex h-14 sm:h-16 items-center gap-3 px-4 sm:px-6 border-b sticky top-0 z-[40] ${
+            isDark
+              ? "bg-slate-900 border-slate-800"
+              : "bg-white border-slate-200"
+          }`}
+        >
           <button
             type="button"
-            className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+            className={`lg:hidden p-2 rounded-lg ${
+              isDark
+                ? "text-slate-400 hover:bg-slate-800"
+                : "text-slate-500 hover:bg-slate-100"
+            }`}
             aria-label="Toggle menu"
             onClick={() => setNavOpen((v) => !v)}
           >
@@ -234,16 +272,17 @@ export default function DashboardShell() {
 
           <div className="flex-1" />
 
-          {/* Notifications were only reachable from the public navbar, which the
-              dashboard shell doesn't render. The bell is self-contained (it
-              carries its own styling), so it drops in as-is. */}
           {currentUser && <NotificationBell />}
 
           <div className="relative" ref={selectRef}>
             <span className="sr-only">Viewing as</span>
             <button
               type="button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
+              className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
+                isDark
+                  ? "text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700"
+                  : "text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
+              }`}
               style={{ "--role-accent": meta.accent }}
               onClick={() => setMenuOpen((v) => !v)}
               aria-haspopup="listbox"
@@ -253,7 +292,10 @@ export default function DashboardShell() {
                 className="h-2 w-2 rounded-full"
                 style={{ backgroundColor: meta.accent }}
               />
-              <RoleIcon size={15} className="text-slate-600" />
+              <RoleIcon
+                size={15}
+                className={isDark ? "text-slate-300" : "text-slate-600"}
+              />
               <span>{meta.label}</span>
               <FiChevronDown
                 size={15}
@@ -265,7 +307,11 @@ export default function DashboardShell() {
 
             {menuOpen && (
               <ul
-                className="absolute right-0 mt-1.5 w-48 origin-top-right rounded-lg bg-white border border-slate-200 shadow-lg ring-1 ring-slate-100 overflow-hidden animate-slide-down"
+                className={`absolute right-0 mt-1.5 w-48 origin-top-right rounded-lg border shadow-lg overflow-hidden animate-slide-down ${
+                  isDark
+                    ? "bg-slate-900 border-slate-700 ring-1 ring-slate-800"
+                    : "bg-white border-slate-200 ring-1 ring-slate-100"
+                }`}
                 role="listbox"
               >
                 {ROLES.map((role) => {
@@ -280,7 +326,9 @@ export default function DashboardShell() {
                         className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
                           role === viewRole
                             ? "bg-primary-50 text-primary-700"
-                            : "text-slate-700 hover:bg-slate-50"
+                            : isDark
+                              ? "text-slate-200 hover:bg-slate-800"
+                              : "text-slate-700 hover:bg-slate-50"
                         }`}
                         style={{ "--role-accent": m.accent }}
                         onClick={() => pickRole(role)}
@@ -309,10 +357,16 @@ export default function DashboardShell() {
           />
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main
+          className={`flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6 ${
+            isDark ? "bg-slate-950 text-slate-100" : ""
+          }`}
+        >
           <Outlet context={{ viewRole, setViewRole, realRole }} />
         </main>
       </div>
+
+      <MobileBottomNav hidden={navOpen} />
     </div>
   );
 }

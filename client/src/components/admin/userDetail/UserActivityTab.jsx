@@ -1,6 +1,5 @@
 import { useState } from "react";
 import StatusBadge from "../../common/StatusBadge";
-import RefreshButton from "../../common/RefreshButton";
 import { FiMapPin, FiLink, FiStar } from "react-icons/fi";
 import { fmtDate, fmtDateTime, formatPrice, titleCase } from "./userDetailUtils";
 
@@ -29,8 +28,6 @@ export default function UserActivityTab({
   visits = { scheduled: [], received: [] },
   matches = [],
   reviews = { given: [], received: [] },
-  onRefresh,
-  refreshing,
 }) {
   const [sub, setSub] = useState("visits");
   const scheduled = visits.scheduled || [];
@@ -56,7 +53,6 @@ export default function UserActivityTab({
             </button>
           ))}
         </div>
-        <RefreshButton onRefresh={onRefresh} refreshing={refreshing} />
       </div>
 
       {sub === "visits" && (

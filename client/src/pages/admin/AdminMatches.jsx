@@ -78,7 +78,9 @@ const AdminMatches = () => {
             deleting a match never touches the matching engine.
           </p>
         </div>
-        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        </div>
       </div>
 
       <div className="adm-toolbar">

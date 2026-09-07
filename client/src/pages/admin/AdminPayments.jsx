@@ -112,7 +112,9 @@ const AdminPayments = () => {
             rejecting locks it.
           </p>
         </div>
-        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        </div>
       </div>
 
       <div className="adm-toolbar adm-toolbar--wrap">

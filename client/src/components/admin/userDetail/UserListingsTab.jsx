@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import StatusBadge from "../../common/StatusBadge";
-import RefreshButton from "../../common/RefreshButton";
 import { FiExternalLink, FiHome, FiFileText } from "react-icons/fi";
 import { fmtDate, formatBudget, formatPrice, locationLabel, titleCase } from "./userDetailUtils";
 
@@ -16,15 +15,9 @@ function Empty({ icon: Icon, label }) {
 export default function UserListingsTab({
   listings = [],
   requirements = [],
-  onRefresh,
-  refreshing,
 }) {
   return (
-    <div>
-      <div className="aud-section-tools">
-        <RefreshButton onRefresh={onRefresh} refreshing={refreshing} />
-      </div>
-      <div className="aud-listings">
+    <div className="aud-listings">
       <section className="aud-panel">
         <div className="aud-panel-head">
           <h3 className="aud-panel-title">
@@ -135,7 +128,6 @@ export default function UserListingsTab({
           </div>
         )}
       </section>
-      </div>
     </div>
   );
 }

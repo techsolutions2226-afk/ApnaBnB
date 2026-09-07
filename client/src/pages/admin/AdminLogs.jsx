@@ -99,7 +99,9 @@ const AdminLogs = () => {
             Every action recorded on the platform — who did what, when, and where.
           </p>
         </div>
-        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        </div>
       </div>
 
       <div className="adm-toolbar adm-toolbar--wrap">

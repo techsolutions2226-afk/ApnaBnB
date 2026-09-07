@@ -141,7 +141,9 @@ const AdminOverview = () => {
             ) : null}
           </p>
         </div>
-        <RefreshButton onRefresh={() => loadData(true)} refreshing={refreshing} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={() => loadData(true)} refreshing={refreshing} />
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -195,20 +197,28 @@ const AdminOverview = () => {
           {recent.length === 0 ? (
             <p className="adm-empty">No activity recorded yet.</p>
           ) : (
-            <div className="adm-feed">
+            <div
+              className="adm-activity-slider"
+              role="list"
+              aria-label="Recent activity"
+            >
               {recent.map((log) => (
-                <div className="adm-feed-item" key={log._id || log.id}>
-                  <div className="adm-feed-action">{log.action}</div>
-                  <div className="adm-feed-meta">
+                <article
+                  className="adm-activity-slide"
+                  role="listitem"
+                  key={log._id || log.id}
+                >
+                  <div className="adm-activity-slide-action">{log.action}</div>
+                  <div className="adm-activity-slide-meta">
                     {log.userName || log.userEmail || "System"}
                     {log.entityType ? ` · ${log.entityType}` : ""}
                   </div>
-                  <div className="adm-feed-time">
+                  <div className="adm-activity-slide-time">
                     {log.createdAt
                       ? new Date(log.createdAt).toLocaleString()
                       : "—"}
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}

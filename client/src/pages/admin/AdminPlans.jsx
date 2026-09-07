@@ -156,7 +156,7 @@ const AdminPlans = () => {
             instantly.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="adm-header-actions">
           <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
           <button className="adm-primary-btn" onClick={openCreate}>
             <FiPlusSquare size={15} /> New Plan

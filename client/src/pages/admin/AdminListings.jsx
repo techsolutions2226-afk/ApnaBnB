@@ -220,7 +220,9 @@ const AdminListings = () => {
             Manage every property and its analytics listing on the platform.
           </p>
         </div>
-        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        </div>
       </div>
 
       {/* Tab switch */}

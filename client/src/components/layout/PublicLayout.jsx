@@ -2,15 +2,11 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   FiBell,
-  FiHome,
-  FiSearch,
-  FiPlus,
-  FiGrid,
-  FiUser,
   FiX,
 } from "react-icons/fi";
 import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
+import MobileBottomNav from "./MobileBottomNav";
 
 function AnnouncementBanner() {
   const [visible, setVisible] = useState(true);
@@ -39,14 +35,6 @@ export default function PublicLayout() {
   const { currentUser, isAuthenticated, getDashboardPath } = useAuth();
   const location = useLocation();
   const dashboardPath = isAuthenticated ? getDashboardPath() : "/login";
-
-  const mobileNavItems = [
-    { to: "/", icon: FiHome, label: "Home" },
-    { to: "/search", icon: FiSearch, label: "Search" },
-    { to: "/listing/new", icon: FiPlus, label: "List", isCenter: true },
-    { to: dashboardPath, icon: FiGrid, label: "Dashboard" },
-    { to: "/account", icon: FiUser, label: "Profile" },
-  ];
 
   useLayoutEffect(() => {
     const updateHeight = () => {
@@ -292,51 +280,11 @@ export default function PublicLayout() {
       </footer>
 
       {/* Mobile Bottom Nav */}
-      {!hasOwnBottomCta && (
-        <nav
-          className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 safe-bottom"
-          aria-label="Mobile navigation"
-        >
-        <div className="flex items-center justify-around h-16">
-          {mobileNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.to === dashboardPath
-                ? location.pathname === dashboardPath ||
-                  location.pathname.startsWith(`${dashboardPath}/`)
-                : location.pathname === item.to;
-            if (item.isCenter) {
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className="flex flex-col items-center justify-center -mt-3"
-                >
-                  <div className="h-11 w-11 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg">
-                    <FiPlus className="h-5 w-5" />
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-500 mt-0.5">
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            }
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 min-w-[48px] ${
-                  isActive ? "text-primary-600" : "text-slate-400"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-        </nav>
-      )}
+      <MobileBottomNav
+        hidden={hasOwnBottomCta}
+        dashboardPath={dashboardPath}
+        profilePath="/account"
+      />
     </div>
   );
 }

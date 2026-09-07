@@ -1,8 +1,7 @@
-import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect, Fragment } from "react";
+import { Outlet, Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   FiHome,
-  FiPlus,
   FiSearch,
   FiUser,
   FiBell,
@@ -12,20 +11,12 @@ import {
   FiCalendar,
   FiSettings,
   FiLogOut,
-  FiChevronLeft,
   FiMenu,
   FiX,
 } from "react-icons/fi";
 import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
-
-const bottomNavItems = [
-  { to: "/", icon: FiHome, label: "Home" },
-  { to: "/search", icon: FiSearch, label: "Search" },
-  { to: "/listing/new", icon: FiPlus, label: "List", isCenter: true },
-  { to: "/dashboard", icon: FiGrid, label: "Dashboard" },
-  { to: "/account", icon: FiUser, label: "Profile" },
-];
+import MobileBottomNav from "./MobileBottomNav";
 
 const sidebarNavItems = [
   { section: "Main", items: [
@@ -82,7 +73,6 @@ function DesktopSidebar({ navOpen, onClose }) {
 
   return (
     <>
-      {/* Scrim */}
       {navOpen && (
         <div
           className="fixed inset-0 bg-overlay z-40 lg:hidden"
@@ -90,16 +80,14 @@ function DesktopSidebar({ navOpen, onClose }) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200
+          fixed inset-y-0 left-0 z-[60] w-64 bg-white border-r border-slate-200
           flex flex-col transition-transform duration-200
           lg:translate-x-0 lg:static lg:z-auto
           ${navOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        {/* Logo */}
         <div className="flex items-center justify-between h-16 px-5 border-b border-slate-200">
           <Link to="/" className="flex items-center gap-2">
             <span className="text-lg font-bold text-slate-900 font-heading">
@@ -115,7 +103,6 @@ function DesktopSidebar({ navOpen, onClose }) {
           </button>
         </div>
 
-        {/* User */}
         <div className="px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <Avatar src={currentUser?.avatar} name={currentUser?.name} size="sm" />
@@ -130,7 +117,6 @@ function DesktopSidebar({ navOpen, onClose }) {
           </div>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-3" aria-label="Dashboard navigation">
           {sidebarNavItems.map((group) => (
             <div key={group.section} className="mb-4">
@@ -159,8 +145,15 @@ function DesktopSidebar({ navOpen, onClose }) {
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="px-3 py-3 border-t border-slate-200">
+        <div className="px-3 py-3 border-t border-slate-200 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-3">
+          <Link
+            to="/account"
+            className="flex items-center gap-2.5 w-full px-2.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors mb-0.5"
+            onClick={onClose}
+          >
+            <FiSettings className="h-4.5 w-4.5 shrink-0" />
+            Account
+          </Link>
           <button
             onClick={logout}
             className="flex items-center gap-2.5 w-full px-2.5 py-2 text-sm font-medium text-slate-600 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"
@@ -185,65 +178,19 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Desktop sidebar */}
       <div className="hidden lg:block">
         <DesktopSidebar navOpen={false} onClose={() => {}} />
       </div>
 
-      {/* Mobile layout */}
       <div className="lg:hidden flex flex-col min-h-screen">
         <MobileTopBar onMenuToggle={() => setNavOpen(!navOpen)} />
-
-        {/* Mobile sidebar drawer */}
         <DesktopSidebar navOpen={navOpen} onClose={() => setNavOpen(false)} />
-
-        {/* Content */}
         <main className="flex-1 pb-20">
           <Outlet />
         </main>
-
-        {/* Bottom Nav */}
-        {!isDetailPage && (
-          <nav className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 safe-bottom" aria-label="Mobile navigation">
-            <div className="flex items-center justify-around h-16">
-              {bottomNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.to;
-                if (item.isCenter) {
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className="flex flex-col items-center justify-center -mt-4"
-                    >
-                      <div className="h-11 w-11 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-lg">
-                        <FiPlus className="h-5 w-5" />
-                      </div>
-                      <span className="text-[10px] font-medium text-slate-500 mt-1">
-                        {item.label}
-                      </span>
-                    </Link>
-                  );
-                }
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 ${
-                      isActive ? "text-primary-600" : "text-slate-400"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="text-[10px] font-medium">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-        )}
+        <MobileBottomNav hidden={isDetailPage || navOpen} />
       </div>
 
-      {/* Desktop layout */}
       <div className="hidden lg:flex lg:flex-1 lg:pl-64">
         <main className="flex-1 min-w-0">
           <Outlet />

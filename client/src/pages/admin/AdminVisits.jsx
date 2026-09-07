@@ -82,7 +82,9 @@ const AdminVisits = () => {
             property, status, schedule and check-in trail. Read-only oversight.
           </p>
         </div>
-        <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        <div className="adm-header-actions">
+          <RefreshButton onRefresh={fetchData} refreshing={isLoading} />
+        </div>
       </div>
 
       {/* Summary strip */}

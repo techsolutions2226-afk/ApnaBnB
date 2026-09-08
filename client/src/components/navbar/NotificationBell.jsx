@@ -75,6 +75,18 @@ const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
 
+  /* On small screens the bell sits next to the avatar, so a bell-anchored
+     right-aligned panel reaches past the viewport's left edge. Pin it to the
+     viewport instead, edge to edge with a small margin. */
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setIsMobile(mq.matches);
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
+
   /* Close on outside click. */
   useEffect(() => {
     if (!open) return;
@@ -170,18 +182,33 @@ const NotificationBell = () => {
 
       {open && (
         <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 8px)",
-            right: 0,
-            width: 360,
-            maxWidth: "calc(100vw - 32px)",
-            background: "#fff",
-            borderRadius: 12,
-            boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
-            zIndex: 200,
-            overflow: "hidden",
-          }}
+          style={
+            isMobile
+              ? {
+                  position: "fixed",
+                  top: 64,
+                  left: 16,
+                  right: 16,
+                  maxHeight: "calc(100vh - 88px)",
+                  background: "#fff",
+                  borderRadius: 12,
+                  boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
+                  zIndex: 300,
+                  overflow: "hidden",
+                }
+              : {
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  width: 360,
+                  maxWidth: "calc(100vw - 32px)",
+                  background: "#fff",
+                  borderRadius: 12,
+                  boxShadow: "0 6px 24px rgba(0,0,0,0.12)",
+                  zIndex: 200,
+                  overflow: "hidden",
+                }
+          }
         >
           <div
             style={{
@@ -214,7 +241,13 @@ const NotificationBell = () => {
             )}
           </div>
 
-          <div style={{ maxHeight: 420, overflowY: "auto" }}>
+          <div
+            style={
+              isMobile
+                ? { maxHeight: "calc(100vh - 160px)", overflowY: "auto" }
+                : { maxHeight: 420, overflowY: "auto" }
+            }
+          >
             {/* Loading and error used to be swallowed here — a failed fetch
                 rendered as "you're all caught up", which is a lie. */}
             {isLoading && items.length === 0 ? (

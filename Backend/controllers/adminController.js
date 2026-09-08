@@ -4,6 +4,10 @@ const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
 const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 const cache = require('../utils/cache');
+const {
+  buildPropertyData,
+  validatePropertyData,
+} = require('../utils/propertyData');
 
 const STATS_CACHE_KEY = 'admin:stats:v3';
 const STATS_TTL_MS = 60_000;
@@ -159,38 +163,8 @@ const buildUserData = (body) => {
   return data;
 };
 
-// Whitelist + coerce writable Property fields (mirrors propertyController).
-const buildPropertyData = (body) => {
-  const data = {};
-  const set = (key, val) => {
-    if (val !== undefined) data[key] = val;
-  };
-
-  set('title', body.title);
-  set('description', body.description);
-  set('photos', Array.isArray(body.photos) ? body.photos : undefined);
-  set('location', body.location);
-  set('price', num(body.price));
-  set('purpose', body.purpose);
-  set('category', body.category);
-  set('propertyType', body.propertyType);
-  set('size', num(body.size));
-  set('sizeUnit', body.sizeUnit);
-  set('bedrooms', num(body.bedrooms));
-  set('bathrooms', num(body.bathrooms));
-  set('amenities', Array.isArray(body.amenities) ? body.amenities : undefined);
-  set('securityDeposit', num(body.securityDeposit));
-  set('leaseTerm', num(body.leaseTerm));
-  set('furnished', body.furnished);
-  set('contactName', body.contactName);
-  set('contactEmail', body.contactEmail);
-  set('contactPhone', body.contactPhone);
-  set('status', body.status);
-  if ('availableFrom' in body)
-    set('availableFrom', body.availableFrom ? new Date(body.availableFrom) : null);
-
-  return data;
-};
+// Whitelist + coerce writable Property fields — shared with propertyController
+// via utils/propertyData.js so admin and user edits accept the same fields.
 
 // Whitelist writable Requirement fields (mirrors requirementController).
 const buildRequirementData = (body) => {
@@ -931,9 +905,13 @@ const updateProperty = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const data = buildPropertyData(req.body);
+    const data = buildPropertyData(req.body, { partial: true });
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ message: 'Nothing to update.' });
+    }
+    const validationError = validatePropertyData(data, { partial: true });
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
     }
 
     const property = await prisma.property.findUnique({ where: { id } });
@@ -946,6 +924,26 @@ const updateProperty = async (req, res, next) => {
       data,
       include: { listedBy: listedBySelect },
     });
+
+    // When admin changes moderation status, mirror onto linked listings where
+    // the listing enum supports it (no "rejected" / "rented" on listings).
+    if (data.status) {
+      const listingStatusByProperty = {
+        active: 'active',
+        pending: 'pending',
+        sold: 'sold',
+        featured: 'featured',
+        rented: 'sold',
+        rejected: 'pending',
+      };
+      const listingStatus = listingStatusByProperty[data.status];
+      if (listingStatus) {
+        await prisma.listing.updateMany({
+          where: { propertyId: id },
+          data: { status: listingStatus },
+        });
+      }
+    }
 
     cache.del(STATS_CACHE_KEY);
 
@@ -1001,6 +999,13 @@ const approveProperty = async (req, res, next) => {
       include: { listedBy: { select: { id: true, name: true, email: true } } },
     });
 
+    // Keep listing status in sync so dashboards that still read listing.status
+    // don't keep showing "pending" after an admin approval.
+    await prisma.listing.updateMany({
+      where: { propertyId: id },
+      data: { status: 'active' },
+    });
+
     cache.del(STATS_CACHE_KEY);
 
     notifyUserInBackground({
@@ -1039,6 +1044,12 @@ const rejectProperty = async (req, res, next) => {
       where: { id },
       data: { status: 'rejected' },
       include: { listedBy: { select: { id: true, name: true, email: true } } },
+    });
+
+    // ListingStatus has no "rejected" — park related listings as pending.
+    await prisma.listing.updateMany({
+      where: { propertyId: id },
+      data: { status: 'pending' },
     });
 
     cache.del(STATS_CACHE_KEY);

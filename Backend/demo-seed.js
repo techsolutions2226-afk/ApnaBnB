@@ -16,6 +16,7 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const prisma = require('./db/prisma');
 const { generateMatchesForProperty } = require('./controllers/propertyController');
+const { toPropertyCreateData } = require('./utils/seedPropertyFields');
 
 const TEST_EMAILS = [
   'ahmed.seller@apnabnb.test',
@@ -79,19 +80,19 @@ async function main() {
 
   /* ── 3. Listings designed so requirements below produce matches ── */
   const sellerPropsData = [
-    { title: '10 Marla House in Gulberg III', city: 'Lahore', area: 'Gulberg', price: 50000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 4, bathrooms: 4, size: 10, sizeUnit: 'Marla' },
-    { title: '3 Bedroom Apartment near Sea View', city: 'Karachi', area: 'Clifton', price: 18000000, propertyType: 'apartment', category: 'home', purpose: 'sale', bedrooms: 3, bathrooms: 3, size: 1800, sizeUnit: 'sq ft' },
-    { title: 'Residential plot in F-11', city: 'Islamabad', area: 'F-11', price: 25000000, propertyType: 'residential-plot', category: 'plot', purpose: 'sale', bedrooms: 0, bathrooms: 0, size: 10, sizeUnit: 'Marla' },
-    { title: '1 Kanal House in DHA Phase 5', city: 'Lahore', area: 'DHA', price: 80000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 5, bathrooms: 5, size: 1, sizeUnit: 'Kanal' },
-    { title: '2 BR Apartment in Clifton Block 5', city: 'Karachi', area: 'Clifton', price: 12000000, propertyType: 'apartment', category: 'home', purpose: 'sale', bedrooms: 2, bathrooms: 2, size: 1200, sizeUnit: 'sq ft' },
+    { title: '10 Marla House in Gulberg III', city: 'Lahore', area: 'Gulberg', locality: 'Gulberg III', block: 'Block C', lat: 31.5204, lng: 74.3587, price: 50000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 4, bathrooms: 4, size: 10, sizeUnit: 'Marla', condition: 'good', amenities: ['Parking', 'Security', 'Lawn', 'Drawing room'] },
+    { title: '3 Bedroom Apartment near Sea View', city: 'Karachi', area: 'Clifton', locality: 'Block 2', buildingName: 'Sea View Residences', floorNumber: 8, totalFloors: 14, lat: 24.8138, lng: 67.0300, price: 18000000, propertyType: 'apartment', category: 'home', purpose: 'sale', bedrooms: 3, bathrooms: 3, size: 1800, sizeUnit: 'Sq Ft', condition: 'like-new', amenities: ['Lift / Elevator', 'Security', 'Parking', 'Balcony'] },
+    { title: 'Residential plot in F-11', city: 'Islamabad', area: 'F-11', locality: 'F-11/2', plotNumber: '118', corner: true, lat: 33.6844, lng: 72.9992, price: 25000000, propertyType: 'residential-plot', category: 'plot', purpose: 'sale', bedrooms: 0, bathrooms: 0, size: 10, sizeUnit: 'Marla', amenities: ['Boundary wall', 'Electricity', 'Gas', 'Water', 'Sewerage'] },
+    { title: '1 Kanal House in DHA Phase 5', city: 'Lahore', area: 'DHA', locality: 'Phase 5', block: 'XX', lat: 31.4697, lng: 74.4131, price: 80000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 5, bathrooms: 5, size: 1, sizeUnit: 'Kanal', condition: 'good', amenities: ['Parking', 'Security', 'Lawn', 'Servant quarter'] },
+    { title: '2 BR Apartment in Clifton Block 5', city: 'Karachi', area: 'Clifton', locality: 'Block 5', buildingName: 'Clifton Arcade', floorNumber: 3, totalFloors: 7, lat: 24.8200, lng: 67.0350, price: 12000000, propertyType: 'apartment', category: 'home', purpose: 'sale', bedrooms: 2, bathrooms: 2, size: 1200, sizeUnit: 'Sq Ft', condition: 'good', amenities: ['Lift / Elevator', 'Security', 'Parking'] },
   ];
 
   const dealerPropsData = [
-    { title: 'Spacious House in Gulberg II', city: 'Lahore', area: 'Gulberg', price: 45000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 5, bathrooms: 4, size: 12, sizeUnit: 'Marla' },
-    { title: 'Furnished 3 Bed Flat for Rent — DHA', city: 'Karachi', area: 'DHA', price: 150000, propertyType: 'flat', category: 'home', purpose: 'rent', bedrooms: 3, bathrooms: 3, size: 1800, sizeUnit: 'sq ft', furnished: 'furnished', securityDeposit: 300000, leaseTerm: 12 },
-    { title: '2 Bed Apartment in F-10 Markaz', city: 'Islamabad', area: 'F-10', price: 9000000, propertyType: 'apartment', category: 'home', purpose: 'sale', bedrooms: 2, bathrooms: 2, size: 1100, sizeUnit: 'sq ft' },
-    { title: 'Brand New House in Rawalpindi DHA', city: 'Rawalpindi', area: 'DHA', price: 60000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 4, bathrooms: 4, size: 1, sizeUnit: 'Kanal' },
-    { title: 'Studio Apartment for Rent — Clifton', city: 'Karachi', area: 'Clifton', price: 80000, propertyType: 'apartment', category: 'home', purpose: 'rent', bedrooms: 2, bathrooms: 2, size: 950, sizeUnit: 'sq ft', furnished: 'semi-furnished', securityDeposit: 160000, leaseTerm: 12 },
+    { title: 'Spacious House in Gulberg II', city: 'Lahore', area: 'Gulberg', locality: 'Gulberg II', street: 'Main Boulevard', lat: 31.5100, lng: 74.3500, price: 45000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 5, bathrooms: 4, size: 12, sizeUnit: 'Marla', condition: 'good', amenities: ['Parking', 'Security', 'Generator', 'Lawn'] },
+    { title: 'Furnished 3 Bed Flat for Rent — DHA', city: 'Karachi', area: 'DHA', locality: 'Phase 6', buildingName: 'DHA Towers', floorNumber: 6, totalFloors: 12, lat: 24.8008, lng: 67.0691, price: 150000, propertyType: 'flat', category: 'home', purpose: 'rent', bedrooms: 3, bathrooms: 3, size: 1800, sizeUnit: 'Sq Ft', condition: 'like-new', furnished: 'furnished', securityDeposit: 300000, advanceRent: 150000, leaseTerm: 12, amenities: ['Lift / Elevator', 'Security', 'Parking', 'Community gym'] },
+    { title: '2 Bed Apartment in F-10 Markaz', city: 'Islamabad', area: 'F-10', locality: 'Markaz', buildingName: 'F-10 Plaza Residences', floorNumber: 5, totalFloors: 9, lat: 33.6930, lng: 73.0130, price: 9000000, propertyType: 'apartment', category: 'home', purpose: 'sale', bedrooms: 2, bathrooms: 2, size: 1100, sizeUnit: 'Sq Ft', condition: 'good', amenities: ['Lift / Elevator', 'Security', 'Parking'] },
+    { title: 'Brand New House in Rawalpindi DHA', city: 'Rawalpindi', area: 'DHA', locality: 'Phase 1', block: 'Block A', lat: 33.5600, lng: 73.0800, price: 60000000, propertyType: 'house', category: 'home', purpose: 'sale', bedrooms: 4, bathrooms: 4, size: 1, sizeUnit: 'Kanal', condition: 'brand-new', amenities: ['Parking', 'Security', 'Lawn', 'Gated community'] },
+    { title: 'Studio Apartment for Rent — Clifton', city: 'Karachi', area: 'Clifton', locality: 'Block 4', buildingName: 'Clifton Suites', floorNumber: 2, totalFloors: 5, lat: 24.8150, lng: 67.0280, price: 80000, propertyType: 'apartment', category: 'home', purpose: 'rent', bedrooms: 2, bathrooms: 2, size: 950, sizeUnit: 'Sq Ft', condition: 'good', furnished: 'semi-furnished', securityDeposit: 160000, advanceRent: 80000, leaseTerm: 12, amenities: ['Lift / Elevator', 'Security', 'Balcony'] },
   ];
 
   /* Each property gets its own distinct photo set (Unsplash IDs) so listings
@@ -110,29 +111,13 @@ async function main() {
   ];
   const img = (id) => `https://images.unsplash.com/${id}?w=900&q=80&auto=format&fit=crop`;
 
-  const buildProp = (data, owner, idx) => ({
-    title: data.title,
-    description: `Demo property listed under ${owner.name}. ${data.purpose === 'rent' ? 'Monthly rent in PKR.' : 'Sale price in PKR.'}`,
-    photos: (data.photos || PHOTO_SETS[idx % PHOTO_SETS.length]).map(img),
-    location: { city: data.city, area: data.area },
-    price: data.price,
-    purpose: data.purpose,
-    category: data.category,
-    propertyType: data.propertyType,
-    size: data.size,
-    sizeUnit: data.sizeUnit,
-    bedrooms: data.bedrooms,
-    bathrooms: data.bathrooms,
-    amenities: ['Parking', 'Security'],
-    securityDeposit: data.securityDeposit || 0,
-    leaseTerm: data.leaseTerm || 12,
-    furnished: data.furnished || 'unfurnished',
-    contactName: owner.name,
-    contactEmail: owner.email,
-    contactPhone: owner.phone,
-    status: 'active',
-    listedById: owner.id,
-  });
+  const buildProp = (data, owner, idx) =>
+    toPropertyCreateData(data, {
+      owner,
+      photos: (data.photos || PHOTO_SETS[idx % PHOTO_SETS.length]).map(img),
+      actingRole: owner.role,
+      index: idx,
+    });
 
   let propIdx = 0;
   const allPropsData = [

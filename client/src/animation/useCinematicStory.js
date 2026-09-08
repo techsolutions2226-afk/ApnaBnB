@@ -15,12 +15,14 @@ const smooth = (t) => t * t * (3 - 2 * t);
  * Scenes live in `.cin-stage .cin-scene`; each scene's `.cin-scene__bg` fades
  * in/out with a hand-rolled intensity profile (overlapping bumps, so seams
  * crossfade instead of cutting). The hero overlay `.cin-hero` fades away once
- * the walkthrough starts. Lenis is created + destroyed here so only the
+ * the walkthrough takes over. Lenis is created + destroyed here so only the
  * landing page smooth-scrolls (dashboards keep native scrolling).
  *
  * Everything is scoped to the returned rootRef and torn down on unmount.
- * Under prefers-reduced-motion the hook returns immediately: the page renders
- * static, fully visible and functional.
+ * Under prefers-reduced-motion the SMOOTH scroll (Lenis) and the entrance
+ * animation are skipped — scrolling is native — but the scroll-scrubbed
+ * video and scenes still run, since they are scroll-driven, not autonomous
+ * animation.
  */
 export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
   const lenisRef = useRef(null);
@@ -32,9 +34,12 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
     const reduce = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    if (reduce) return;
 
-    const stage = root.querySelector(".cin-stage");
+    /* rootRef is bound to the .cin-stage element itself, so qre reject
+       itself before falling back to a descendant search. */
+    const stage = root.classList.contains("cin-stage")
+      ? root
+      : root.querySelector(".cin-stage");
     if (!stage) return;
 
     const sceneEls = Array.from(stage.querySelectorAll(".cin-scene"));
@@ -44,6 +49,15 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
     const heroUI = stage.querySelector(".cin-hero");
     const RAIL = stage.querySelector(".cin-rail");
     const videoEl = stage.querySelector("video.cin-video");
+    const videoScrollAt = { value: Date.now() };
+    if (videoEl) {
+      /* Start frozen at frame 0. The clip autoplayed once to force decode;
+         play() is re-armed from ScrollTrigger.onUpdate, so scrolling is the
+         only thing that runs it — pause keeps the exact frame, and resuming
+         picks up right there. */
+      videoEl.pause();
+      videoEl.muted = true;
+    }
 
     let normalized = 0;
 
@@ -64,36 +78,51 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
       return smooth(4 * t * (1 - t));
     };
 
-    /* ── Lenis smooth scroll, driven by the GSAP ticker (one rAF loop) ── */
-    const lenis = new Lenis({
-      lerp: 0.1,
-      wheelMultiplier: 1,
-      smoothWheel: true,
-      touchMultiplier: 1.6,
-    });
-    lenisRef.current = lenis;
-    lenis.on("scroll", ScrollTrigger.update);
-    const tick = (time) => lenis.raf(time * 1000);
-    gsap.ticker.add(tick);
-    gsap.ticker.lagSmoothing(0);
+    /* ── Lenis smooth scroll (skipped under reduced motion → native scroll). */
+    let ctxLenis = null;
+    if (!reduce) {
+      const lenis = new Lenis({
+        lerp: 0.1,
+        wheelMultiplier: 1,
+        smoothWheel: true,
+        touchMultiplier: 1.6,
+      });
+      lenisRef.current = lenis;
+      lenis.on("scroll", ScrollTrigger.update);
+      const tick = (time) => lenis.raf(time * 1000);
+      gsap.ticker.add(tick);
+      gsap.ticker.lagSmoothing(0);
+      ctxLenis = { lenis, tick };
+    }
+
+    /* Per-frame renderer lives in the effect scope so the cleanup can
+       detach it without referencing `ctx` from inside its own callback. */
+    let renderFn = null;
 
     const ctx = gsap.context(() => {
-      /* Entrance — the stage settles in on load. */
-      const entrance = gsap.fromTo(
-        stage,
-        { yPercent: 4, autoAlpha: 0 },
-        {
-          yPercent: 0,
-          autoAlpha: 1,
-          duration: 1.1,
-          ease: "power2.out",
-          clearProps: "all",
-          onComplete: () => ScrollTrigger.refresh(),
-        },
-      );
-      ctx.add(() => entrance.kill());
+      /* Entrance — the stage settles in on load (skipped under reduced
+         motion; the page is just there). ctx.revert() kills this tween, so
+         no manual cleanup is needed (and nothing may reference `ctx` inside
+         this callback — it is still in the temporal dead zone). */
+      if (!reduce) {
+        gsap.fromTo(
+          stage,
+          { yPercent: 4, autoAlpha: 0 },
+          {
+            yPercent: 0,
+            autoAlpha: 1,
+            duration: 1.1,
+            ease: "power2.out",
+            clearProps: "all",
+            onComplete: () => ScrollTrigger.refresh(),
+          },
+        );
+      }
 
-      /* Pin — the stage holds its viewport while the story scrubs. */
+      /* Scroll driver — the banner is pinned, so scroll input drives the walk
+         through the property (the video + captions) while the page holds
+         still. Only after the story ends (the pin releases) does the page
+         continue scrolling normally. */
       ScrollTrigger.create({
         trigger: stage,
         start: "top top",
@@ -104,6 +133,12 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           normalized = self.progress;
+          /* Active scrolling (any input) plays the clip; render() pauses it
+             again the moment the scroll goes idle. */
+          videoScrollAt.value = Date.now();
+          if (videoEl && videoEl.paused) {
+            videoEl.play().catch(() => {});
+          }
           document.documentElement.classList.toggle(
             "abn-stage-live",
             self.progress < 1,
@@ -111,7 +146,8 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
         },
       });
 
-      /* The exit: as the pin releases, the stage dissolves into the page. */
+      /* The exit dissolve fades the stage away as it releases, so the page
+         below takes over cleanly. */
       gsap.to(stage, {
         autoAlpha: 0,
         yPercent: -6,
@@ -129,35 +165,37 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
       const render = () => {
         const pr = normalized;
 
-        /* Hero UI fades away as the walkthrough takes over. */
+        /* Hero UI fades as the walkthrough takes over. */
         if (heroUI) {
-          const hf = pr < 0.03 ? 1 : clamp(1 - smooth((pr - 0.03) / 0.06), 0, 1);
+          const hf = pr < 0.05 ? 1 : clamp(1 - smooth((pr - 0.05) / 0.18), 0, 1);
           gsap.set(heroUI, { autoAlpha: hf, y: -18 * (1 - hf) });
         }
 
         for (let i = 0; i < n; i++) {
           const el = sceneEls[i];
-          const bg = el.querySelector(".cin-scene__bg");
-          if (!bg) continue;
-
           const inten = sceneIntensity(i, pr);
           const t = clamp(inten, 0, 1);
           /* within-band parallax drift: rise as a scene approaches, fall as
              it passes — a subtle continuous camera feel, not a slide. */
           const drift = (pr - sceneProgress(i)) * 1.1;
 
-          gsap.set(bg, {
-            opacity: inten,
-            scale: 1.08,
-            yPercent: clamp(-drift * 2, -3, 3),
-            force3D: true,
-          });
+          const bg = el.querySelector(".cin-scene__bg");
+          if (bg) {
+            /* With a live video the stills are poster-only — never paint over
+               the clip. */
+            gsap.set(bg, {
+              opacity: videoEl ? 0 : inten,
+              scale: 1.08,
+              yPercent: clamp(-drift * 2, -3, 3),
+              force3D: true,
+            });
+          }
           gsap.set(el, { autoAlpha: inten > 0.002 ? 1 : 0 });
 
           const fg = el.querySelector(".cin-scene__fg");
           if (fg) {
             gsap.set(fg, {
-              opacity: 0.55 + 0.2 * t,
+              opacity: videoEl ? 0 : 0.55 + 0.2 * t,
               xPercent: clamp(-drift * 3.4, -4, 4),
               yPercent: clamp(-drift * 1.4, -2, 2),
               force3D: true,
@@ -199,22 +237,18 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
           }
         }
 
-        /* Video scrubbing (only when a clip is configured — none ships yet):
-           coalesce seeks to the innermost 30ms so a fast flick never queues
-           dozens of currentTime calls. */
-        if (videoEl) {
-          const d = videoEl.duration;
-          if (Number.isFinite(d) && d > 0 && videoEl.readyState >= 1) {
-            const target = pr * (d - 0.06);
-            if (Math.abs(target - videoEl.currentTime) > 0.03) {
-              videoEl.currentTime = target;
-            }
+        /* Video pace — play is driven by scroll (onUpdate above); pause the
+         moment scrolling stops (~250ms of idle) so the frame freezes and a
+         later scroll resumes from that exact frame. */
+        if (videoEl && !videoEl.paused) {
+          if (Date.now() - videoScrollAt.value > 250) {
+            videoEl.pause();
           }
         }
       };
 
+      renderFn = render;
       gsap.ticker.add(render);
-      ctx.add(() => gsap.ticker.remove(render));
     }, stage);
 
     /* Recalculate trigger positions once fonts/images have settled. */
@@ -225,10 +259,13 @@ export default function useCinematicStory(rootRef, { roomPx = 600 } = {}) {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("load", refresh);
-      gsap.ticker.remove(tick);
+      if (ctxLenis) {
+        gsap.ticker.remove(ctxLenis.tick);
+        ctxLenis.lenis.destroy();
+      }
+      if (renderFn) gsap.ticker.remove(renderFn);
       document.documentElement.classList.remove("abn-stage-live");
       ctx.revert(); // kills tweens + ScrollTriggers, restores inline styles
-      lenis.destroy();
       lenisRef.current = null;
     };
   }, [rootRef, roomPx]);

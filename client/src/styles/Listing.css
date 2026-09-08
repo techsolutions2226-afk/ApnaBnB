@@ -86,6 +86,43 @@
   margin-left: 4px;
 }
 
+.lst-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+  cursor: pointer;
+}
+
+.lst-check-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary-600, #4f46e5);
+}
+
+.lst-check-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+
+.lst-char-count {
+  margin-top: 4px;
+  text-align: right;
+  font-size: 12px;
+  color: #717171;
+}
+
+@media (max-width: 560px) {
+  .lst-check-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .lst-input,
 .lst-select,
 .lst-textarea {

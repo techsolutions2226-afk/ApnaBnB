@@ -53,9 +53,26 @@ export default function UserListingsTab({
                     </div>
                     <p className="aud-entity-meta">
                       {titleCase(prop.purpose)} · {formatPrice(prop.price)}
+                      {prop.priceNegotiable ? " (Negotiable)" : ""}
                       {prop.category ? ` · ${titleCase(prop.category)}` : ""}
+                      {prop.propertyType ? ` · ${titleCase(prop.propertyType)}` : ""}
                     </p>
                     <p className="aud-entity-meta">{locationLabel(prop.location)}</p>
+                    <p className="aud-entity-meta">
+                      {[
+                        prop.size
+                          ? `${prop.size} ${prop.sizeUnit || ""}`.trim()
+                          : null,
+                        prop.bedrooms != null && prop.bedrooms > 0
+                          ? `${prop.bedrooms} bed`
+                          : null,
+                        prop.bathrooms != null && prop.bathrooms > 0
+                          ? `${prop.bathrooms} bath`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "No size / room details"}
+                    </p>
                     <p className="aud-entity-meta">
                       {listing.views ?? 0} views · {listing.inquiries ?? 0} inquiries · Posted{" "}
                       {fmtDate(listing.createdAt)}

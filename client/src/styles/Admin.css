@@ -1464,6 +1464,97 @@ textarea.adm-form-input {
   white-space: nowrap;
 }
 
+/* ── System logs table — layout pass ──
+   Fixed column shares plus a width floor so long actions, entities and meta
+   wrap cleanly across the available width instead of crushing into narrow
+   vertical lines. The floor engages .adm-table-wrap's horizontal scroll on
+   narrow viewports. Data, colors, filters and row states are untouched. */
+.adm-log-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.adm-log-table th {
+  padding: 12px 16px;
+  white-space: nowrap;
+}
+
+.adm-log-table td {
+  padding: 16px;
+  vertical-align: top;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Column shares — sum to 100%. */
+.adm-log-table th:nth-child(1),
+.adm-log-table td:nth-child(1) { width: 24%; } /* What happened */
+.adm-log-table th:nth-child(2),
+.adm-log-table td:nth-child(2) { width: 13%; } /* Entity */
+.adm-log-table th:nth-child(3),
+.adm-log-table td:nth-child(3) { width: 19%; } /* Who did */
+.adm-log-table th:nth-child(4),
+.adm-log-table td:nth-child(4) { width: 30%; } /* Details */
+.adm-log-table th:nth-child(5),
+.adm-log-table td:nth-child(5) { width: 14%; } /* When */
+
+/* What happened — badge stays on one line; mono action wraps only if it
+   genuinely exceeds the column. */
+.adm-log-table .adm-log-action {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.adm-log-table .adm-log-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Entity — short vertical rhythm: type on top, truncated id below. */
+.adm-log-table .adm-log-entity {
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.adm-log-table .adm-log-entity + .adm-table-sub {
+  margin-top: 4px;
+}
+
+/* Who did — name + email · role stack reads better with extra leading. */
+.adm-log-table .adm-log-actor .adm-table-title {
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.adm-log-table .adm-log-actor .adm-table-sub {
+  margin-top: 3px;
+  line-height: 1.45;
+}
+
+/* Details — keep k/v pairs wrapping inside their fixed column. */
+.adm-log-detail .adm-timeline-meta {
+  max-width: 100%;
+}
+
+.adm-log-detail .adm-timeline-kv {
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.5;
+}
+
+/* When — let the timestamp wrap, IP timestamped on its own line. */
+.adm-log-table .adm-log-when {
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.adm-log-table .adm-feed-ip {
+  display: block;
+  margin-top: 4px;
+}
+
 /* ══════════════════════════════════════════════════════════════
    WhatsApp-style message review
    ══════════════════════════════════════════════════════════════ */
@@ -2742,6 +2833,55 @@ tr:hover .adm-trunc-btn,
   text-overflow: ellipsis;
 }
 
+/* Visits overview card — full-width compact table, scroll only inside */
+.adm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adm-visits-table-wrap {
+  margin-top: 14px;
+}
+
+/* Keep a reasonable column floor so the wrap scrolls instead of crushing.
+   The table stays full-bleed on desktop; tighter cells below. */
+.adm-visits-table-wrap .adm-table {
+  min-width: 560px;
+  margin-top: 0;
+}
+
+.adm-visits-table-wrap .adm-table td,
+.adm-visits-table-wrap .adm-table th {
+  vertical-align: middle;
+}
+
+.adm-visits-card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 8px;
+  background: var(--color-slate-50);
+  color: var(--color-primary-600);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.adm-visits-card-action:hover {
+  background: #fff;
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-700);
+}
+
 /* --- Admin User Detail (aud-*) --- */
 .aud-page {
   max-width: 1200px;
@@ -3525,6 +3665,32 @@ tr:hover .adm-trunc-btn,
     flex: 1 1 auto;
     justify-content: center;
   }
+
+  /* Visits overview card on phones — keep totals tight, let the table
+     scroll horizontally ONLY inside the card so the page never overflows. */
+  .adm-visits-card-totals {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .adm-visits-card-chips {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .adm-visits-table-wrap {
+    margin-top: 10px;
+    border-radius: 10px;
+  }
+
+  .adm-visits-table-wrap .adm-table {
+    min-width: 540px;
+  }
+
+  .adm-visits-table-wrap .adm-table th,
+  .adm-visits-table-wrap .adm-table td {
+    padding: 10px 12px;
+  }
 }
 
 @media (max-width: 380px) {
@@ -3543,6 +3709,433 @@ tr:hover .adm-trunc-btn,
   .adm-userstat-label,
   .adm-visit-summary-label {
     font-size: 11px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   System Maintenance & Platform Health (AdminHealth page)
+   Prefix: adm-h-*. Reuses the adm-* card/table/token language.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Hero status banner ── */
+.adm-h-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 20px 24px;
+  background: #fff;
+  border: 1px solid var(--color-slate-200);
+  border-left-width: 6px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.adm-h-hero--ok { border-left-color: var(--color-accent-500); }
+.adm-h-hero--warn { border-left-color: var(--color-warning-500); }
+.adm-h-hero--bad { border-left-color: var(--color-danger-500); background: var(--color-danger-50); }
+
+.adm-h-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.adm-h-hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-h-hero-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-slate-300);
+}
+
+.adm-h-hero--ok .adm-h-hero-dot { background: var(--color-accent-500); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14); }
+.adm-h-hero--warn .adm-h-hero-dot { background: var(--color-warning-500); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16); }
+.adm-h-hero--bad .adm-h-hero-dot { background: var(--color-danger-500); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.16); }
+
+.adm-h-hero-status-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.adm-h-hero-status-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+}
+
+.adm-h-hero-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--color-slate-400);
+}
+
+.adm-h-hero-right {
+  margin-left: auto;
+}
+
+.adm-h-hero-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--color-slate-50);
+  border: 1px solid var(--color-slate-200);
+}
+
+.adm-h-hero-score-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-slate-900);
+}
+
+.adm-h-hero-score-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-slate-500);
+}
+
+.adm-h-hero-reason {
+  flex: 1 1 100%;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-slate-100);
+  font-size: 13px;
+  color: var(--color-slate-600);
+}
+
+/* ── Metric cards ── */
+.adm-h-kpis {
+  margin-bottom: 24px;
+}
+
+.adm-h-metric {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--color-slate-200);
+  border-radius: 14px;
+  min-width: 0;
+}
+
+.adm-h-metric-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--color-slate-500);
+  background: var(--color-slate-100);
+}
+
+.adm-h-metric--ok .adm-h-metric-icon { color: var(--color-accent-700); background: rgba(16, 185, 129, 0.12); }
+.adm-h-metric--warn .adm-h-metric-icon { color: var(--color-warning-500); background: rgba(245, 158, 11, 0.14); }
+.adm-h-metric--bad .adm-h-metric-icon { color: var(--color-danger-600); background: rgba(239, 68, 68, 0.12); }
+
+.adm-h-metric-body {
+  min-width: 0;
+}
+
+.adm-h-metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 3px;
+}
+
+.adm-h-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.adm-h-metric-sub {
+  font-size: 12px;
+  color: var(--color-slate-400);
+  margin-top: 3px;
+  line-height: 1.3;
+}
+
+/* ── Sections ── */
+.adm-h-section {
+  margin-bottom: 26px;
+}
+
+.adm-h-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.adm-h-section-head .adm-card-title {
+  margin: 0;
+}
+
+.adm-h-section-sub {
+  flex: 1 1 100%;
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--color-slate-500);
+}
+
+.adm-h-section-action {
+  margin-left: auto;
+}
+
+/* ── Grids & panels ── */
+.adm-h-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+.adm-h-grid--4 { grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); }
+.adm-h-grid--5 { grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); }
+
+.adm-h-panel-group {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+@media (max-width: 960px) {
+  .adm-h-panel-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+.adm-h-panel {
+  padding: 18px;
+}
+
+.adm-h-panel-title {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-slate-800);
+}
+
+/* ── Gauges ── */
+.adm-h-gauges {
+  display: grid;
+  gap: 16px;
+}
+
+.adm-h-gauge-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.adm-h-gauge-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-600);
+}
+
+.adm-h-gauge-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+}
+
+.adm-h-gauge-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-slate-100);
+  overflow: hidden;
+}
+
+.adm-h-gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.adm-h-gauge-fill--ok { background: var(--color-accent-500); }
+.adm-h-gauge-fill--warn { background: var(--color-warning-500); }
+.adm-h-gauge-fill--bad { background: var(--color-danger-500); }
+.adm-h-gauge-fill--muted { background: var(--color-slate-300); }
+
+/* ── Requests-per-minute spark ── */
+.adm-h-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 110px;
+}
+
+.adm-h-spark-col {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.adm-h-spark-track {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.adm-h-spark-bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: var(--color-primary-600);
+  opacity: 0.75;
+}
+
+.adm-h-spark-bar--err {
+  background: var(--color-danger-500);
+  opacity: 1;
+}
+
+.adm-h-spark-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-slate-400);
+}
+
+/* ── Status / severity pills ── */
+.adm-h-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  background: var(--color-slate-100);
+  color: var(--color-slate-600);
+}
+
+.adm-h-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.adm-h-pill--ok { background: rgba(16, 185, 129, 0.14); color: #047857; }
+.adm-h-pill--warn { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+.adm-h-pill--bad { background: rgba(239, 68, 68, 0.14); color: #b91c1c; }
+.adm-h-pill--muted { background: var(--color-slate-100); color: var(--color-slate-500); }
+
+.adm-h-pill--flat {
+  padding: 3px 8px;
+  letter-spacing: 0.1px;
+}
+
+/* ── Filters ── */
+.adm-h-filter {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 14px;
+  background: var(--color-slate-100);
+  border: 1px solid var(--color-slate-200);
+  border-radius: 10px;
+}
+
+.adm-h-filter-btn {
+  padding: 7px 14px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-slate-600);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.adm-h-filter-btn--active {
+  background: #fff;
+  color: var(--color-primary-700);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.adm-h-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  word-break: break-all;
+}
+
+.adm-h-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--color-slate-50);
+  border: 1px solid var(--color-slate-200);
+  font-size: 13px;
+  color: var(--color-slate-600);
+}
+
+.adm-h-note--ok {
+  color: #047857;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.adm-h-box .adm-table-wrap {
+  border-radius: 12px;
+}
+
+/* ── Health responsiveness ── */
+@media (max-width: 640px) {
+  .adm-h-hero {
+    padding: 16px;
+  }
+
+  .adm-h-hero-status-value {
+    font-size: 16px;
+  }
+
+  .adm-h-hero-right {
+    margin-left: 0;
+  }
+
+  .adm-h-metric {
+    padding: 12px;
+  }
+
+  .adm-h-metric-value {
+    font-size: 17px;
   }
 }
 

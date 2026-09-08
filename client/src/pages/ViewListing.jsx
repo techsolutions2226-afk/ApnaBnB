@@ -11,6 +11,11 @@ import { useUpdateProperty } from "../hooks/useProperties";
 import { FiMapPin, FiHome, FiDollarSign, FiCalendar, FiEye, FiEdit2, FiArrowLeft, FiMaximize, FiImage, FiCheckCircle, FiXCircle, FiTrash2, FiStar } from "react-icons/fi";
 import StatusBadge from "../components/common/StatusBadge";
 import MapView from "../components/common/MapView";
+import {
+  buildPropertyOverviewRows,
+  buildContactRows,
+  formatPropertyLocation,
+} from "../utils/propertyDisplay";
 import "../styles/Requirement.css";
 import "../styles/ViewListing.css";
 
@@ -151,6 +156,12 @@ const ViewListing = () => {
     featured: { bg: "#fff8e1", fg: "#f9a825" },
   };
   const statusColor = STATUS_COLORS[propStatus] || STATUS_COLORS.pending;
+  const overviewRows = buildPropertyOverviewRows(property || {});
+  const contactRows = buildContactRows(property || {});
+  const locationLine =
+    formatPropertyLocation(property?.location) ||
+    [property?.location?.area, property?.location?.city].filter(Boolean).join(", ") ||
+    "—";
 
   return (
     <div className="req-page">
@@ -272,22 +283,16 @@ const ViewListing = () => {
             </div>
             <div className="req-view-card-body">
               <div className="req-view-detail-grid">
-                <div className="req-view-detail-item">
-                  <label className="req-view-label">Property Type</label>
-                  <p className="req-view-value req-view-value--highlight">{property?.propertyType || "—"}</p>
-                </div>
-                <div className="req-view-detail-item">
-                  <label className="req-view-label">Size</label>
-                  <p className="req-view-value">{property?.size ? `${property.size} ${property?.sizeUnit || "Marla"}` : "Not specified"}</p>
-                </div>
-                <div className="req-view-detail-item">
-                  <label className="req-view-label">Bedrooms</label>
-                  <p className="req-view-value">{property?.bedrooms ? `${property.bedrooms} beds` : "Not specified"}</p>
-                </div>
-                <div className="req-view-detail-item">
-                  <label className="req-view-label">Bathrooms</label>
-                  <p className="req-view-value">{property?.bathrooms ? `${property.bathrooms} baths` : "Not specified"}</p>
-                </div>
+                {overviewRows.length > 0 ? (
+                  overviewRows.map((row) => (
+                    <div key={row.label} className="req-view-detail-item">
+                      <label className="req-view-label">{row.label}</label>
+                      <p className="req-view-value">{row.value}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="req-view-value">No details available</p>
+                )}
               </div>
             </div>
           </div>
@@ -300,8 +305,10 @@ const ViewListing = () => {
             </div>
             <div className="req-view-card-body">
               <div className="req-view-location" style={{ marginBottom: 16 }}>
-                <div className="req-view-location-main">{property?.location?.city || property?.city || "—"}</div>
-                <div className="req-view-location-sub">{property?.location?.area || property?.area || "—"}</div>
+                <div className="req-view-location-main">
+                  {property?.location?.city || property?.city || "—"}
+                </div>
+                <div className="req-view-location-sub">{locationLine}</div>
               </div>
               <MapView coordinates={property?.location?.coordinates} height={320} />
             </div>
@@ -350,13 +357,16 @@ const ViewListing = () => {
           <div className="req-view-card">
             <div className="req-view-card-header">
               <FiDollarSign className="req-view-icon" />
-              <h3 className="req-view-card-title">Price</h3>
+              <h3 className="req-view-card-title">
+                {property?.purpose === "rent" ? "Rent" : "Price"}
+              </h3>
             </div>
             <div className="req-view-card-body">
               {property?.price ? (
                 <div className="req-view-budget">
                   <div className="req-view-budget-amount">
-                    PKR {property.price.toLocaleString()}
+                    PKR {Number(property.price).toLocaleString()}
+                    {property.priceNegotiable ? " (Negotiable)" : ""}
                   </div>
                 </div>
               ) : (
@@ -374,6 +384,56 @@ const ViewListing = () => {
               </div>
               <div className="req-view-card-body">
                 <p className="req-view-notes">{property.description}</p>
+              </div>
+            </div>
+          )}
+
+          {property?.notes && (
+            <div className="req-view-card">
+              <div className="req-view-card-header">
+                <FiHome className="req-view-icon" />
+                <h3 className="req-view-card-title">Additional Notes</h3>
+              </div>
+              <div className="req-view-card-body">
+                <p className="req-view-notes">{property.notes}</p>
+              </div>
+            </div>
+          )}
+
+          {property?.videoUrl && (
+            <div className="req-view-card">
+              <div className="req-view-card-header">
+                <FiHome className="req-view-icon" />
+                <h3 className="req-view-card-title">Video</h3>
+              </div>
+              <div className="req-view-card-body">
+                <a
+                  href={property.videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="req-view-value req-view-value--highlight"
+                >
+                  Watch property video
+                </a>
+              </div>
+            </div>
+          )}
+
+          {contactRows.length > 0 && (
+            <div className="req-view-card">
+              <div className="req-view-card-header">
+                <FiHome className="req-view-icon" />
+                <h3 className="req-view-card-title">Contact</h3>
+              </div>
+              <div className="req-view-card-body">
+                <div className="req-view-detail-grid">
+                  {contactRows.map((row) => (
+                    <div key={row.label} className="req-view-detail-item">
+                      <label className="req-view-label">{row.label}</label>
+                      <p className="req-view-value">{row.value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

@@ -13,9 +13,9 @@ import {
   FiStar,
   FiShieldOff,
   FiLayers,
-  FiCalendar,
   FiCheckCircle,
   FiXCircle,
+  FiArrowRight,
 } from "react-icons/fi";
 import "../../styles/Admin.css";
 
@@ -185,97 +185,148 @@ const AdminOverview = () => {
         </div>
       </div>
 
-      {/* Recent activity + recent visits */}
-      <div className="adm-overview-grid adm-overview-grid--two">
+      <div className="adm-stack">
+        {/* Recent activity — full width, aligned with the other analytics cards */}
         <div className="adm-card">
-          <div className="adm-card-head">
-            <h3 className="adm-card-title">Recent activity</h3>
-            <Link to="/admin/logs" className="adm-card-link">
-              View all logs →
-            </Link>
-          </div>
-          {recent.length === 0 ? (
-            <p className="adm-empty">No activity recorded yet.</p>
-          ) : (
-            <div
-              className="adm-activity-slider"
-              role="list"
-              aria-label="Recent activity"
-            >
-              {recent.map((log) => (
-                <article
-                  className="adm-activity-slide"
-                  role="listitem"
-                  key={log._id || log.id}
-                >
-                  <div className="adm-activity-slide-action">{log.action}</div>
-                  <div className="adm-activity-slide-meta">
-                    {log.userName || log.userEmail || "System"}
-                    {log.entityType ? ` · ${log.entityType}` : ""}
-                  </div>
-                  <div className="adm-activity-slide-time">
-                    {log.createdAt
-                      ? new Date(log.createdAt).toLocaleString()
-                      : "—"}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+        <div className="adm-card-head">
+          <h3 className="adm-card-title">Recent activity</h3>
+          <Link to="/admin/logs" className="adm-card-link">
+            View all logs →
+          </Link>
         </div>
-
-        <div className="adm-card">
-          <div className="adm-card-head">
-            <h3 className="adm-card-title">Visits</h3>
-            <Link to="/admin/visits" className="adm-card-link">
-              View all visits →
-            </Link>
+        {recent.length === 0 ? (
+          <p className="adm-empty">No activity recorded yet.</p>
+        ) : (
+          <div
+            className="adm-activity-slider"
+            role="list"
+            aria-label="Recent activity"
+          >
+            {recent.map((log) => (
+              <article
+                className="adm-activity-slide"
+                role="listitem"
+                key={log._id || log.id}
+              >
+                <div className="adm-activity-slide-action">{log.action}</div>
+                <div className="adm-activity-slide-meta">
+                  {log.userName || log.userEmail || "System"}
+                  {log.entityType ? ` · ${log.entityType}` : ""}
+                </div>
+                <div className="adm-activity-slide-time">
+                  {log.createdAt
+                    ? new Date(log.createdAt).toLocaleString()
+                    : "—"}
+                </div>
+              </article>
+            ))}
           </div>
-          {!visits ? (
-            <p className="adm-empty">No visit data.</p>
-          ) : (
-            <div className="adm-visits-card">
-              <div className="adm-visits-card-totals">
-                <div className="adm-visits-card-total">
-                  <div className="adm-visits-card-total-num">
-                    {visits.counts?.total || 0}
-                  </div>
-                  <div className="adm-visits-card-total-label">Total visits</div>
+        )}
+      </div>
+
+      {/* Recent visits — compact table card, scroll/pagination only inside */}
+      <div className="adm-card">
+        <div className="adm-card-head">
+          <h3 className="adm-card-title">Visits</h3>
+          <Link to="/admin/visits" className="adm-card-link">
+            View all visits →
+          </Link>
+        </div>
+        {!visits ? (
+          <p className="adm-empty">No visit data.</p>
+        ) : (
+          <>
+            <div className="adm-visits-card-totals">
+              <div className="adm-visits-card-total">
+                <div className="adm-visits-card-total-num">
+                  {visits.counts?.total || 0}
                 </div>
-                <div className="adm-visits-card-chips">
-                  <span className="adm-visits-card-chip adm-visits-card-chip--ok">
-                    <FiCheckCircle size={13} />
-                    {visits.counts?.success || 0} successful
-                  </span>
-                  <span className="adm-visits-card-chip adm-visits-card-chip--bad">
-                    <FiXCircle size={13} />
-                    {visits.counts?.unsuccessful || 0} unsuccessful
-                  </span>
-                </div>
+                <div className="adm-visits-card-total-label">Total visits</div>
               </div>
+              <div className="adm-visits-card-chips">
+                <span className="adm-visits-card-chip adm-visits-card-chip--ok">
+                  <FiCheckCircle size={13} />
+                  {visits.counts?.success || 0} successful
+                </span>
+                <span className="adm-visits-card-chip adm-visits-card-chip--bad">
+                  <FiXCircle size={13} />
+                  {visits.counts?.unsuccessful || 0} unsuccessful
+                </span>
+              </div>
+            </div>
+
+            <div className="adm-table-wrap adm-visits-table-wrap">
               {Array.isArray(visits.trips) && visits.trips.length === 0 ? (
                 <p className="adm-empty">No visits recorded yet.</p>
               ) : (
-                <div className="adm-visits-card-list">
-                  {(visits.trips || []).slice(0, 4).map((trip) => (
-                    <div className="adm-visits-card-row" key={trip._id || trip.id}>
-                      <FiCalendar size={14} className="adm-visits-card-row-icon" />
-                      <div className="adm-visits-card-row-body">
-                        <div className="adm-visits-card-row-title">
-                          {trip.property?.title || "Property visit"}
-                        </div>
-                        <div className="adm-visits-card-row-sub">
-                          {trip.user?.name || "Buyer"} ·{" "}
-                          {trip.property?.listedBy?.name || "Owner"}
-                        </div>
-                      </div>
-                      <StatusBadge status={trip.status} />
-                    </div>
-                  ))}
-                </div>
+                <table className="adm-table adm-table--dense">
+                  <thead>
+                    <tr>
+                      <th>Property</th>
+                      <th>Visitor</th>
+                      <th>Date / Time</th>
+                      <th>Status</th>
+                      <th className="adm-th-actions">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(visits.trips || []).slice(0, 6).map((trip) => {
+                      const tid = trip._id || trip.id;
+                      const schedule =
+                        trip.visitorProposal?.date ||
+                        trip.ownerProposal?.date ||
+                        trip.checkIn ||
+                        "—";
+                      const scheduledTime =
+                        trip.visitorProposal?.time ||
+                        trip.ownerProposal?.time ||
+                        "";
+                      return (
+                        <tr key={tid}>
+                          <td>
+                            <div className="adm-table-title">
+                              {trip.property?.title || "—"}
+                            </div>
+                            <div className="adm-table-sub">
+                              {trip.property?.location
+                                ? `${trip.property.location.area || ""}, ${trip.property.location.city || ""}`
+                                : "—"}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="adm-table-title">
+                              {trip.user?.name || "—"}
+                            </div>
+                            <div className="adm-table-sub">
+                              {trip.user?.email || "—"}
+                            </div>
+                          </td>
+                          <td>
+                            <div className="adm-table-title">{schedule}</div>
+                            {scheduledTime ? (
+                              <div className="adm-table-sub">{scheduledTime}</div>
+                            ) : null}
+                          </td>
+                          <td>
+                            <StatusBadge status={trip.status} />
+                          </td>
+                          <td className="adm-th-actions">
+                            <Link
+                              to="/admin/visits"
+                              className="adm-visits-card-action"
+                            >
+                              View <FiArrowRight size={13} />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               )}
             </div>
-          )}
+          </>
+        )}
         </div>
       </div>
     </div>

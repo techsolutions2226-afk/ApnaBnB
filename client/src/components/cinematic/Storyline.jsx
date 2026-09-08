@@ -3,7 +3,7 @@ import { useReducedMotion } from "framer-motion";
 import useCinematicStory from "../../animation/useCinematicStory";
 import HeroBand from "./HeroBand";
 import StorylineSkip from "./StorylineSkip";
-import { CINEMATIC_SCENES } from "../../config/cinematic";
+import { CINEMATIC_SCENES, CINEMATIC_VIDEO } from "../../config/cinematic";
 
 /**
  * Storyline — the pinned cinematic walkthrough.
@@ -34,6 +34,12 @@ export default function Storyline({
   const rootRef = useRef(null);
   const reduce = useReducedMotion();
   const lenisRef = useCinematicStory(rootRef, { roomPx });
+
+  /* The Kling clip is the banner background whenever it's configured. It's
+     intentionally NOT autoplayed — GSAP scrubs its currentTime from scroll,
+     so scroll runs it, stopping freezes the frame, and scrolling again
+     resumes from exactly where you stopped. */
+  const videoOn = Boolean(CINEMATIC_VIDEO);
 
   /* Portrait + short-height composition classes. */
   useLayoutEffect(() => {
@@ -66,10 +72,26 @@ export default function Storyline({
     <section
       ref={rootRef}
       data-room-px={roomPx}
-      className="cin-stage"
+      className={`cin-stage${videoOn ? " has-video" : ""}`}
       aria-label="A cinematic walkthrough of a featured property"
     >
       <div className="cin-backdrop" aria-hidden="true" />
+
+      {/* The scrubbed Kling walkthrough clip fills the banner. */}
+      {videoOn && (
+        <video
+          className="cin-video"
+          src={CINEMATIC_VIDEO.src}
+          poster={CINEMATIC_VIDEO.poster}
+          preload="auto"
+          autoPlay
+          loop
+          muted
+          playsInline
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Scene frames — still layers, crossfaded by scroll. */}
       {CINEMATIC_SCENES.map((scene, i) => (

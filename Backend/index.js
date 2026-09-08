@@ -8,6 +8,7 @@ const limiter = require("./middleware/rateLimitMiddleware");
 const securityHeaders = require("./middleware/securityHeaders");
 const cacheHeaders = require("./middleware/cacheHeaders");
 const auditActivity = require("./middleware/activityMiddleware");
+const { middleware: requestMetrics } = require("./middleware/requestMetrics");
 const { withIds } = require("./utils/serializeIds");
 
 const app = express();
@@ -40,6 +41,10 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
+
+// Request metrics — mounted BEFORE the rate limiter so 429 responses are
+// observed too. Powers the admin "System Health" dashboards with real data.
+app.use(requestMetrics);
 
 app.use(limiter); // Apply rate limiting globally
 

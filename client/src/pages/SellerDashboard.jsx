@@ -88,7 +88,9 @@ const SellerDashboard = () => {
   };
 
   const stats = {
-    activeListings: listings?.filter((l) => l.status === "active").length || 0,
+    activeListings:
+      listings?.filter((l) => (l.property?.status || l.status) === "active")
+        .length || 0,
     totalViews: listings?.reduce((sum, l) => sum + (l.views || 0), 0) || 0,
     totalInquiries: listings?.reduce((sum, l) => sum + (l.inquiries || 0), 0) || 0,
   };
@@ -222,6 +224,9 @@ const SellerDashboard = () => {
               <tbody>
                 {listings.map((listing) => {
                   const property = listing.property;
+                  // Property moderation status is authoritative (admin approve
+                  // flips property.status; listing.status can lag as pending).
+                  const status = property?.status || listing.status || "pending";
                   return (
                     <tr key={listing._id}>
                       <td data-label="Property">
@@ -230,7 +235,7 @@ const SellerDashboard = () => {
                         </div>
                         <div className="dash-table-sub">
                           {formatLocation(property?.location)}
-                          {listing.status === "featured" && (
+                          {status === "featured" && (
                             <>
                               {" "}
                               · <StatusBadge status="featured" prefix="dash-badge" />
@@ -239,7 +244,7 @@ const SellerDashboard = () => {
                         </div>
                       </td>
                       <td data-label="Status">
-                        <StatusBadge status={listing.status} prefix="dash-badge" />
+                        <StatusBadge status={status} prefix="dash-badge" />
                       </td>
                       <td data-label="Views">{(listing.views || 0).toLocaleString()}</td>
                       <td data-label="Inquiries">{listing.inquiries || 0}</td>

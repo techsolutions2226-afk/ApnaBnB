@@ -16,6 +16,7 @@ import { clearListingDraft } from "../utils/listingDraft";
 import { FiArrowLeft, FiPlusCircle } from "react-icons/fi";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
 import ListingForm from "../components/listing/ListingForm";
+import { formToPropertyPayload } from "../utils/propertyPayload";
 import "../styles/Listing.css";
 
 const CreateListing = () => {
@@ -33,40 +34,9 @@ const CreateListing = () => {
       setIsSubmitting(true);
 
       try {
-        // First create the property
-        const propertyData = {
-          title: formData.title,
-          description: formData.description,
-          price: formData.price,
-          purpose: formData.purpose || "sale",
-          category: formData.category || "home",
-          location: {
-            city: formData.city,
-            area: formData.area,
-            ...(formData.coordinates ? { coordinates: formData.coordinates } : {}),
-          },
-          bedrooms: formData.bedrooms,
-          bathrooms: formData.bathrooms,
-          size: formData.size,
-          sizeUnit: formData.sizeUnit,
-          // propertyType already in kebab-case from the form (e.g. "upper-portion").
-          // Avoid blindly toLowerCase()-ing legacy values — they're already lowercase too.
-          propertyType: formData.propertyType,
-          amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
-          photos: formData.images || [],
-          // Rental-specific (passed through regardless; backend ignores when purpose === 'sale').
-          securityDeposit: formData.securityDeposit,
-          leaseTerm: formData.leaseTerm,
-          furnished: formData.furnished,
-          availableFrom: formData.availableFrom,
-          // Per-listing contact info.
-          contactName: formData.contactName,
-          contactEmail: formData.contactEmail,
-          contactPhone: formData.contactPhone,
-          // The role the user is acting as (from the dashboard role selector).
-          // Backend clamps this to seller|dealer and stores it on the property.
+        const propertyData = formToPropertyPayload(formData, {
           actingRole: viewRole,
-        };
+        });
 
         const createdProperty = await createProperty(propertyData);
         console.log("Created property:", createdProperty);

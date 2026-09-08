@@ -29,6 +29,7 @@ const {
   getActivityLogs,
   getUserActivity,
 } = require('../controllers/adminController');
+const { getHealth } = require('../controllers/healthController');
 const verifyToken = require('../middleware/authMiddleware');
 const adminOnly = require('../middleware/adminMiddleware');
 
@@ -36,6 +37,9 @@ const router = express.Router();
 
 // Platform stats
 router.get('/stats', verifyToken, adminOnly, getPlatformStats);
+
+// System Maintenance & Platform Health
+router.get('/health', verifyToken, adminOnly, getHealth);
 
 // User management
 router.get('/users', verifyToken, adminOnly, getAllUsers);

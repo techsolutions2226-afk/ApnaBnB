@@ -7,7 +7,9 @@
 //   area      20   (exact) or 10 (substring)
 //   bedrooms  20   (or 10 if off by 1)
 //   bathrooms 10   (or  5 if off by 1)
-//   size      10   (matchController only; ignored if either side missing)
+//   size      10   (optional; units converted to sq ft before compare)
+
+const { scoreSizePoints } = require('./sizeUnits');
 
 const calculateMatchScore = (property, requirement) => {
   let score = 0;
@@ -47,15 +49,9 @@ const calculateMatchScore = (property, requirement) => {
     score += 5;
   }
 
-  // Size (optional — both sides numeric)
-  if (typeof property.size === 'number' && typeof requirement.size === 'number' && requirement.size > 0) {
-    const sizeDiff = Math.abs(property.size - requirement.size) / requirement.size;
-    if (sizeDiff <= 0.1) {
-      score += 10;
-    } else if (sizeDiff <= 0.2) {
-      score += 5;
-    }
-  }
+  // Size — convert Marla / Kanal / Sq. Ft. / Sq. Yd. / Sq. M. to sq ft
+  // so "272 Sq. Ft." and "1 Marla" score as a match.
+  score += scoreSizePoints(property, requirement);
 
   return Math.min(score, 100);
 };

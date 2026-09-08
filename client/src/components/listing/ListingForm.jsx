@@ -72,11 +72,13 @@ const SUBTYPES_BY_CATEGORY = {
     { value: "plot-file", label: "Plot File", icon: FiFolder },
   ],
   commercial: [
-    { value: "shop", label: "Shop", icon: FiShoppingBag },
     { value: "office", label: "Office", icon: FiMonitor },
+    { value: "shop", label: "Shop", icon: FiShoppingBag },
     { value: "warehouse", label: "Warehouse", icon: FiBox },
-    { value: "factory", label: "Factory", icon: FiTool },
     { value: "building", label: "Building", icon: FiHome },
+    { value: "factory", label: "Factory", icon: FiTool },
+    { value: "plaza", label: "Plaza", icon: FiLayers },
+    { value: "commercial-building", label: "Commercial Building", icon: FiBriefcase },
     { value: "other", label: "Other", icon: FiGrid },
   ],
 };
@@ -102,7 +104,32 @@ const FURNISHED_OPTIONS = [
   { value: "furnished", label: "Furnished" },
 ];
 
-const LEASE_TERMS = [6, 12, 24, 36];
+const CONDITION_OPTIONS = [
+  { value: "brand-new", label: "Brand New" },
+  { value: "like-new", label: "Like New" },
+  { value: "good", label: "Good" },
+  { value: "needs-renovation", label: "Needs Renovation" },
+  { value: "under-construction", label: "Under Construction" },
+];
+
+const FACING_OPTIONS = [
+  "North",
+  "South",
+  "East",
+  "West",
+  "North-East",
+  "North-West",
+  "South-East",
+  "South-West",
+];
+
+const LEASE_TERMS = [1, 3, 6, 12, 24, 36];
+
+const DESC_MAX = 2000;
+const NOTES_MAX = 1000;
+const MAX_IMAGES = 6;
+
+const PK_PHONE = /^(?:\+92|0)?3\d{9}$/;
 
 const SIZE_UNITS = [
   { value: "Sq. Ft.", label: "Square Feet" },
@@ -178,35 +205,79 @@ const ALL_AMENITIES = AMENITY_GROUPS.flatMap((g) => g.items);
 /* ── Default blank form state ── */
 const EMPTY_FORM = {
   title: "",
-  // New purpose toggle: 'sale' (default) or 'rent'.
   purpose: "sale",
-  // Top-level category: home / plot / commercial.
   category: "home",
-  // Leaf subtype (changes when category changes).
   propertyType: "",
   price: "",
+  priceNegotiable: false,
   size: "",
   sizeUnit: "Marla",
+  condition: "",
   city: "",
   customCity: "",
   area: "",
   customArea: "",
+  locality: "",
+  block: "",
+  street: "",
+  landmark: "",
   bedrooms: "",
   bathrooms: "",
+  kitchens: "",
+  drawingRooms: "",
+  diningRooms: "",
+  livingRooms: "",
+  studyRooms: "",
+  storeRooms: "",
+  powderRooms: "",
+  servantQuarters: "",
+  floorNumber: "",
+  totalFloors: "",
+  constructionYear: "",
+  facing: "",
+  buildingName: "",
+  apartmentNumber: "",
+  parkingSpaces: "",
   description: "",
+  notes: "",
+  videoUrl: "",
   amenities: [],
   images: [],
   featured: false,
   coordinates: null,
-  // Rental-specific. Used only when purpose === 'rent'.
   securityDeposit: "",
+  advanceRent: "",
   leaseTerm: 12,
   furnished: "unfurnished",
   availableFrom: "",
-  // Per-listing contact info — prefilled from the logged-in user's profile.
   contactName: "",
   contactEmail: "",
   contactPhone: "",
+  contactWhatsapp: "",
+  contactAltPhone: "",
+  showWhatsapp: true,
+  // Plot-specific
+  plotNumber: "",
+  plotCorner: false,
+  plotParkFacing: false,
+  plotMainBoulevard: false,
+  plotPossession: "",
+  plotDevelopment: "",
+  plotBoundaryWall: false,
+  plotElectricity: false,
+  plotGas: false,
+  plotWater: false,
+  plotSewerage: false,
+  // Commercial-specific
+  commWashrooms: "",
+  commReception: false,
+  commConference: false,
+  commOfficeRooms: "",
+  commGenerator: false,
+  commElevator: false,
+  commFrontage: "",
+  commMainRoad: false,
+  commCorner: false,
 };
 
 /* ── Validation ── */
@@ -216,12 +287,13 @@ const validate = (data) => {
   if (!data.title.trim()) errors.title = "Title is required";
   else if (data.title.trim().length < 10)
     errors.title = "Title must be at least 10 characters";
+  else if (data.title.trim().length > 120)
+    errors.title = "Title must be at most 120 characters";
 
   if (!data.purpose) errors.purpose = "Choose Sale or Rent";
   if (!data.category) errors.category = "Pick a property category";
   if (!data.propertyType) errors.propertyType = "Select a property type";
   else {
-    // Subtype must belong to the chosen category (prevents bypass via stale state).
     const validForCategory = (SUBTYPES_BY_CATEGORY[data.category] || []).some(
       (s) => s.value === data.propertyType,
     );
@@ -233,8 +305,6 @@ const validate = (data) => {
       ? "Enter a monthly rent"
       : "Enter a valid price";
 
-  // Plot-only listings don't really have bedrooms/bathrooms — only enforce
-  // size for plots; size + beds + baths for everything else.
   if (!data.size || Number(data.size) <= 0) errors.size = "Enter a valid size";
   if (!data.sizeUnit) errors.sizeUnit = "Select a size unit";
 
@@ -244,8 +314,6 @@ const validate = (data) => {
     errors.customCity = "Enter your city";
   }
 
-  // Area rules: if city is "Other", only customArea matters; otherwise the
-  // dropdown must be set and — if "Other" was picked — customArea is required.
   if (data.city === "Other") {
     if (!data.customArea.trim()) errors.customArea = "Enter your area";
   } else if (data.city) {
@@ -254,7 +322,6 @@ const validate = (data) => {
       errors.customArea = "Enter your area";
   }
 
-  // Beds/baths only meaningful for Home category. Plot + Commercial skip them.
   if (data.category === "home") {
     if (data.bedrooms === "" || Number(data.bedrooms) < 0)
       errors.bedrooms = "Enter bedrooms count";
@@ -265,12 +332,22 @@ const validate = (data) => {
   if (!data.description.trim()) errors.description = "Description is required";
   else if (data.description.trim().length < 20)
     errors.description = "Description must be at least 20 characters";
+  else if (data.description.trim().length > DESC_MAX)
+    errors.description = `Description must be at most ${DESC_MAX} characters`;
+
+  if (data.notes && data.notes.length > NOTES_MAX)
+    errors.notes = `Notes must be at most ${NOTES_MAX} characters`;
+
+  if (data.videoUrl?.trim() && !/^https?:\/\//i.test(data.videoUrl.trim()))
+    errors.videoUrl = "Video URL must start with http:// or https://";
 
   if (!Array.isArray(data.amenities) || data.amenities.length === 0) {
     errors.amenities = "Select at least one amenity";
   }
   if (!Array.isArray(data.images) || data.images.length === 0) {
     errors.images = "Upload at least one property image";
+  } else if (data.images.length > MAX_IMAGES) {
+    errors.images = `Maximum ${MAX_IMAGES} images allowed`;
   }
   if (
     !data.coordinates ||
@@ -280,20 +357,32 @@ const validate = (data) => {
     errors.coordinates = "Drop a pin on the map for this property";
   }
 
-  // Rental-only validation. Security deposit / lease term required when renting.
   if (data.purpose === "rent") {
     if (data.securityDeposit === "" || Number(data.securityDeposit) < 0)
       errors.securityDeposit = "Enter a security deposit (0 if none)";
     if (!data.leaseTerm || Number(data.leaseTerm) < 1)
-      errors.leaseTerm = "Pick a lease term";
+      errors.leaseTerm = "Pick a minimum rental period";
   }
 
-  // Contact details — mandatory so buyers know who to reach.
   if (!data.contactName?.trim()) errors.contactName = "Contact name is required";
   if (!data.contactEmail?.trim()) errors.contactEmail = "Contact email is required";
   else if (!/\S+@\S+\.\S+/.test(data.contactEmail))
     errors.contactEmail = "Enter a valid email";
   if (!data.contactPhone?.trim()) errors.contactPhone = "Contact phone is required";
+  else if (!PK_PHONE.test(String(data.contactPhone).replace(/[\s-]/g, "")))
+    errors.contactPhone = "Enter a valid Pakistani mobile (03XXXXXXXXX)";
+  if (
+    data.contactWhatsapp?.trim() &&
+    !PK_PHONE.test(String(data.contactWhatsapp).replace(/[\s-]/g, ""))
+  ) {
+    errors.contactWhatsapp = "Enter a valid WhatsApp number";
+  }
+  if (
+    data.contactAltPhone?.trim() &&
+    !PK_PHONE.test(String(data.contactAltPhone).replace(/[\s-]/g, ""))
+  ) {
+    errors.contactAltPhone = "Enter a valid alternate phone";
+  }
 
   return errors;
 };
@@ -375,22 +464,46 @@ const ListingForm = ({
       CATEGORY_OF_SUBTYPE[incomingPropertyType] || "home";
 
     return {
+      ...EMPTY_FORM,
       title: initialData.title || "",
       purpose: initialData.purpose || "sale",
       category: initialData.category || derivedCategory,
       propertyType: incomingPropertyType,
       price: initialData.price ? String(initialData.price) : "",
+      priceNegotiable: Boolean(initialData.priceNegotiable),
       size: initialData.size ? String(initialData.size) : "",
       sizeUnit: normalizeUnit(initialData.sizeUnit),
+      condition: initialData.condition || "",
       city,
       customCity,
       area,
       customArea,
+      locality: initialData.locality || initialData.location?.locality || "",
+      block: initialData.block || initialData.location?.block || "",
+      street: initialData.street || initialData.location?.street || "",
+      landmark: initialData.landmark || initialData.location?.landmark || "",
       bedrooms:
         initialData.bedrooms != null ? String(initialData.bedrooms) : "",
       bathrooms:
         initialData.bathrooms != null ? String(initialData.bathrooms) : "",
+      kitchens: initialData.kitchens != null ? String(initialData.kitchens) : "",
+      drawingRooms: initialData.drawingRooms != null ? String(initialData.drawingRooms) : "",
+      diningRooms: initialData.diningRooms != null ? String(initialData.diningRooms) : "",
+      livingRooms: initialData.livingRooms != null ? String(initialData.livingRooms) : "",
+      studyRooms: initialData.studyRooms != null ? String(initialData.studyRooms) : "",
+      storeRooms: initialData.storeRooms != null ? String(initialData.storeRooms) : "",
+      powderRooms: initialData.powderRooms != null ? String(initialData.powderRooms) : "",
+      servantQuarters: initialData.servantQuarters != null ? String(initialData.servantQuarters) : "",
+      floorNumber: initialData.floorNumber != null ? String(initialData.floorNumber) : "",
+      totalFloors: initialData.totalFloors != null ? String(initialData.totalFloors) : "",
+      constructionYear: initialData.constructionYear != null ? String(initialData.constructionYear) : "",
+      facing: initialData.facing || "",
+      buildingName: initialData.buildingName || "",
+      apartmentNumber: initialData.apartmentNumber || "",
+      parkingSpaces: initialData.parkingSpaces != null ? String(initialData.parkingSpaces) : "",
       description: initialData.description || "",
+      notes: initialData.notes || "",
+      videoUrl: initialData.videoUrl || "",
       amenities: initialData.amenities || [],
       images: images.length > 0 ? images : [],
       featured: initialData.featured != null ? initialData.featured : false,
@@ -402,6 +515,8 @@ const ListingForm = ({
         initialData.securityDeposit != null
           ? String(initialData.securityDeposit)
           : "",
+      advanceRent:
+        initialData.advanceRent != null ? String(initialData.advanceRent) : "",
       leaseTerm: initialData.leaseTerm || 12,
       furnished: initialData.furnished || "unfurnished",
       availableFrom: initialData.availableFrom
@@ -410,6 +525,29 @@ const ListingForm = ({
       contactName: initialData.contactName || "",
       contactEmail: initialData.contactEmail || "",
       contactPhone: initialData.contactPhone || "",
+      contactWhatsapp: initialData.contactWhatsapp || "",
+      contactAltPhone: initialData.contactAltPhone || "",
+      showWhatsapp: initialData.showWhatsapp !== false,
+      plotNumber: initialData.plotNumber || "",
+      plotCorner: Boolean(initialData.plotCorner),
+      plotParkFacing: Boolean(initialData.plotParkFacing),
+      plotMainBoulevard: Boolean(initialData.plotMainBoulevard),
+      plotPossession: initialData.plotPossession || "",
+      plotDevelopment: initialData.plotDevelopment || "",
+      plotBoundaryWall: Boolean(initialData.plotBoundaryWall),
+      plotElectricity: Boolean(initialData.plotElectricity),
+      plotGas: Boolean(initialData.plotGas),
+      plotWater: Boolean(initialData.plotWater),
+      plotSewerage: Boolean(initialData.plotSewerage),
+      commWashrooms: initialData.commWashrooms != null ? String(initialData.commWashrooms) : "",
+      commReception: Boolean(initialData.commReception),
+      commConference: Boolean(initialData.commConference),
+      commOfficeRooms: initialData.commOfficeRooms != null ? String(initialData.commOfficeRooms) : "",
+      commGenerator: Boolean(initialData.commGenerator),
+      commElevator: Boolean(initialData.commElevator),
+      commFrontage: initialData.commFrontage || "",
+      commMainRoad: Boolean(initialData.commMainRoad),
+      commCorner: Boolean(initialData.commCorner),
     };
   }, [initialData]);
 
@@ -756,33 +894,61 @@ const ListingForm = ({
           : form.area;
 
       const output = {
+        ...form,
         title: form.title.trim(),
         purpose: form.purpose,
         category: form.category,
         propertyType: form.propertyType,
         price: Number(form.price),
+        priceNegotiable: Boolean(form.priceNegotiable),
         size: Number(form.size),
         sizeUnit: form.sizeUnit,
+        condition: form.condition || "",
         city: finalCity,
         area: finalArea,
-        // Plot + commercial don't have beds/baths — submit 0 instead of NaN.
+        locality: form.locality?.trim() || "",
+        block: form.block?.trim() || "",
+        street: form.street?.trim() || "",
+        landmark: form.landmark?.trim() || "",
         bedrooms: form.category === "home" ? Number(form.bedrooms) || 0 : 0,
         bathrooms: form.category === "home" ? Number(form.bathrooms) || 0 : 0,
+        kitchens: form.kitchens !== "" ? Number(form.kitchens) : "",
+        drawingRooms: form.drawingRooms !== "" ? Number(form.drawingRooms) : "",
+        diningRooms: form.diningRooms !== "" ? Number(form.diningRooms) : "",
+        livingRooms: form.livingRooms !== "" ? Number(form.livingRooms) : "",
+        studyRooms: form.studyRooms !== "" ? Number(form.studyRooms) : "",
+        storeRooms: form.storeRooms !== "" ? Number(form.storeRooms) : "",
+        powderRooms: form.powderRooms !== "" ? Number(form.powderRooms) : "",
+        servantQuarters: form.servantQuarters !== "" ? Number(form.servantQuarters) : "",
+        floorNumber: form.floorNumber !== "" ? Number(form.floorNumber) : "",
+        totalFloors: form.totalFloors !== "" ? Number(form.totalFloors) : "",
+        constructionYear: form.constructionYear !== "" ? Number(form.constructionYear) : "",
+        facing: form.facing || "",
+        buildingName: form.buildingName?.trim() || "",
+        apartmentNumber: form.apartmentNumber?.trim() || "",
+        parkingSpaces: form.parkingSpaces !== "" ? Number(form.parkingSpaces) : "",
         description: form.description.trim(),
+        notes: form.notes?.trim() || "",
+        videoUrl: form.videoUrl?.trim() || "",
         amenities: form.amenities,
         images: form.images.map((img) => img.url),
         featured: form.featured,
         coordinates: form.coordinates,
-        // Rental fields — only meaningful when purpose === 'rent', but always
-        // serialise so backend doesn't have to guess.
         securityDeposit:
           form.purpose === "rent" ? Number(form.securityDeposit) || 0 : 0,
+        advanceRent:
+          form.purpose === "rent" && form.advanceRent !== ""
+            ? Number(form.advanceRent) || 0
+            : "",
         leaseTerm: form.purpose === "rent" ? Number(form.leaseTerm) || 12 : 12,
-        furnished: form.purpose === "rent" ? form.furnished : "unfurnished",
+        furnished: form.furnished || "unfurnished",
         availableFrom: form.availableFrom || undefined,
         contactName: form.contactName.trim(),
         contactEmail: form.contactEmail.trim(),
         contactPhone: form.contactPhone.trim(),
+        contactWhatsapp: form.contactWhatsapp?.trim() || "",
+        contactAltPhone: form.contactAltPhone?.trim() || "",
+        showWhatsapp: form.showWhatsapp !== false,
       };
 
       onSubmit(output);
@@ -920,6 +1086,15 @@ const ListingForm = ({
           )}
         </div>
 
+        <label className="lst-check-row">
+          <input
+            type="checkbox"
+            checked={Boolean(form.priceNegotiable)}
+            onChange={(e) => handleChange("priceNegotiable", e.target.checked)}
+          />
+          <span>Price negotiable</span>
+        </label>
+
         {/* Rental-only fields */}
         {form.purpose === "rent" && (
           <>
@@ -947,28 +1122,36 @@ const ListingForm = ({
                 )}
               </div>
               <div className="lst-field">
-                <label className="lst-label">Lease Term</label>
+                <label className="lst-label">
+                  Advance Rent
+                  <span className="lst-label-hint">(PKR)</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="lst-input"
+                  placeholder="e.g. 65,000"
+                  value={
+                    form.advanceRent
+                      ? Number(form.advanceRent).toLocaleString("en-US")
+                      : ""
+                  }
+                  onChange={(e) =>
+                    handleChange("advanceRent", e.target.value.replace(/[^\d]/g, ""))
+                  }
+                />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Minimum Rental Period</label>
                 <select
                   className="lst-select"
                   value={form.leaseTerm}
                   onChange={(e) => handleChange("leaseTerm", Number(e.target.value))}
                 >
                   {LEASE_TERMS.map((m) => (
-                    <option key={m} value={m}>{m} months</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="lst-row">
-              <div className="lst-field">
-                <label className="lst-label">Furnishing</label>
-                <select
-                  className="lst-select"
-                  value={form.furnished}
-                  onChange={(e) => handleChange("furnished", e.target.value)}
-                >
-                  {FURNISHED_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
+                    <option key={m} value={m}>{m} month{m > 1 ? "s" : ""}</option>
                   ))}
                 </select>
               </div>
@@ -1026,6 +1209,36 @@ const ListingForm = ({
               <div className="lst-error">{errors.sizeUnit}</div>
             )}
           </div>
+        </div>
+
+        <div className="lst-row">
+          <div className="lst-field">
+            <label className="lst-label">Property Condition</label>
+            <select
+              className="lst-select"
+              value={form.condition}
+              onChange={(e) => handleChange("condition", e.target.value)}
+            >
+              <option value="">Select condition</option>
+              {CONDITION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          {(form.category === "home" || form.category === "commercial") && (
+            <div className="lst-field">
+              <label className="lst-label">Furnishing</label>
+              <select
+                className="lst-select"
+                value={form.furnished}
+                onChange={(e) => handleChange("furnished", e.target.value)}
+              >
+                {FURNISHED_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1131,6 +1344,52 @@ const ListingForm = ({
               )}
             </div>
           )}
+        </div>
+
+        <div className="lst-row">
+          <div className="lst-field">
+            <label className="lst-label">Locality / Sub-area</label>
+            <input
+              type="text"
+              className="lst-input"
+              placeholder="e.g. Block B, Phase 5"
+              value={form.locality}
+              onChange={(e) => handleChange("locality", e.target.value)}
+              disabled={!form.city}
+            />
+          </div>
+          <div className="lst-field">
+            <label className="lst-label">Block</label>
+            <input
+              type="text"
+              className="lst-input"
+              placeholder="e.g. Block C"
+              value={form.block}
+              onChange={(e) => handleChange("block", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="lst-row">
+          <div className="lst-field">
+            <label className="lst-label">Street</label>
+            <input
+              type="text"
+              className="lst-input"
+              placeholder="e.g. Street 12"
+              value={form.street}
+              onChange={(e) => handleChange("street", e.target.value)}
+            />
+          </div>
+          <div className="lst-field">
+            <label className="lst-label">Nearby Landmark</label>
+            <input
+              type="text"
+              className="lst-input"
+              placeholder="e.g. Near Metro Station"
+              value={form.landmark}
+              onChange={(e) => handleChange("landmark", e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Map pin — three input modes */}
@@ -1328,52 +1587,225 @@ const ListingForm = ({
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Property Details</h3>
 
-        {/* Beds + Baths — only meaningful for Home category. Plots and commercial
-            properties don't need them, so we hide the row entirely. */}
         {form.category === "home" && (
-          <div className="lst-row">
-            <div className="lst-field">
-              <label className="lst-label" htmlFor="lst-bedrooms">
-                Bedrooms
-              </label>
-              <input
-                id="lst-bedrooms"
-                type="number"
-                className={fieldClass("lst-input", "bedrooms")}
-                placeholder="e.g. 4"
-                value={form.bedrooms}
-                onChange={(e) => handleChange("bedrooms", e.target.value)}
-                onBlur={() => handleBlur("bedrooms")}
-                min="0"
-                max="20"
-              />
-              {showError("bedrooms") && (
-                <div className="lst-error">{errors.bedrooms}</div>
-              )}
+          <>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label" htmlFor="lst-bedrooms">Bedrooms</label>
+                <input
+                  id="lst-bedrooms"
+                  type="number"
+                  className={fieldClass("lst-input", "bedrooms")}
+                  placeholder="e.g. 4"
+                  value={form.bedrooms}
+                  onChange={(e) => handleChange("bedrooms", e.target.value)}
+                  onBlur={() => handleBlur("bedrooms")}
+                  min="0"
+                  max="20"
+                />
+                {showError("bedrooms") && <div className="lst-error">{errors.bedrooms}</div>}
+              </div>
+              <div className="lst-field">
+                <label className="lst-label" htmlFor="lst-bathrooms">Bathrooms</label>
+                <input
+                  id="lst-bathrooms"
+                  type="number"
+                  className={fieldClass("lst-input", "bathrooms")}
+                  placeholder="e.g. 4"
+                  value={form.bathrooms}
+                  onChange={(e) => handleChange("bathrooms", e.target.value)}
+                  onBlur={() => handleBlur("bathrooms")}
+                  min="0"
+                  max="20"
+                />
+                {showError("bathrooms") && <div className="lst-error">{errors.bathrooms}</div>}
+              </div>
             </div>
-
-            <div className="lst-field">
-              <label className="lst-label" htmlFor="lst-bathrooms">
-                Bathrooms
-              </label>
-              <input
-                id="lst-bathrooms"
-                type="number"
-                className={fieldClass("lst-input", "bathrooms")}
-                placeholder="e.g. 4"
-                value={form.bathrooms}
-                onChange={(e) => handleChange("bathrooms", e.target.value)}
-                onBlur={() => handleBlur("bathrooms")}
-                min="0"
-                max="20"
-              />
-              {showError("bathrooms") && (
-                <div className="lst-error">{errors.bathrooms}</div>
-              )}
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Kitchens</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.kitchens} onChange={(e) => handleChange("kitchens", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Drawing Rooms</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.drawingRooms} onChange={(e) => handleChange("drawingRooms", e.target.value)} />
+              </div>
             </div>
-          </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Dining Rooms</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.diningRooms} onChange={(e) => handleChange("diningRooms", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Living Rooms</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.livingRooms} onChange={(e) => handleChange("livingRooms", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Study Rooms</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.studyRooms} onChange={(e) => handleChange("studyRooms", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Store Rooms</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.storeRooms} onChange={(e) => handleChange("storeRooms", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Powder Rooms</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.powderRooms} onChange={(e) => handleChange("powderRooms", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Servant Quarters</label>
+                <input type="number" className="lst-input" min="0" max="10" value={form.servantQuarters} onChange={(e) => handleChange("servantQuarters", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Floor Number</label>
+                <input type="number" className="lst-input" min="0" max="100" value={form.floorNumber} onChange={(e) => handleChange("floorNumber", e.target.value)} placeholder="0 = Ground" />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Total Floors</label>
+                <input type="number" className="lst-input" min="0" max="100" value={form.totalFloors} onChange={(e) => handleChange("totalFloors", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Construction Year</label>
+                <input type="number" className="lst-input" min="1950" max="2100" value={form.constructionYear} onChange={(e) => handleChange("constructionYear", e.target.value)} placeholder="e.g. 2018" />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Property Facing</label>
+                <select className="lst-select" value={form.facing} onChange={(e) => handleChange("facing", e.target.value)}>
+                  <option value="">Select facing</option>
+                  {FACING_OPTIONS.map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {(form.propertyType === "flat" || form.propertyType === "penthouse") && (
+              <>
+                <div className="lst-row">
+                  <div className="lst-field">
+                    <label className="lst-label">Building Name</label>
+                    <input type="text" className="lst-input" value={form.buildingName} onChange={(e) => handleChange("buildingName", e.target.value)} />
+                  </div>
+                  <div className="lst-field">
+                    <label className="lst-label">Apartment Number</label>
+                    <input type="text" className="lst-input" value={form.apartmentNumber} onChange={(e) => handleChange("apartmentNumber", e.target.value)} />
+                  </div>
+                </div>
+                <div className="lst-field">
+                  <label className="lst-label">Parking Spaces</label>
+                  <input type="number" className="lst-input" min="0" max="20" value={form.parkingSpaces} onChange={(e) => handleChange("parkingSpaces", e.target.value)} />
+                </div>
+              </>
+            )}
+          </>
         )}
 
+        {form.category === "plot" && (
+          <>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Plot Number</label>
+                <input type="text" className="lst-input" value={form.plotNumber} onChange={(e) => handleChange("plotNumber", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Possession</label>
+                <select className="lst-select" value={form.plotPossession} onChange={(e) => handleChange("plotPossession", e.target.value)}>
+                  <option value="">Select</option>
+                  <option value="immediate">Immediate</option>
+                  <option value="soon">Coming soon</option>
+                  <option value="under-development">Under development</option>
+                </select>
+              </div>
+            </div>
+            <div className="lst-field">
+              <label className="lst-label">Development Status</label>
+              <select className="lst-select" value={form.plotDevelopment} onChange={(e) => handleChange("plotDevelopment", e.target.value)}>
+                <option value="">Select</option>
+                <option value="developed">Developed</option>
+                <option value="semi-developed">Semi-developed</option>
+                <option value="raw">Raw</option>
+              </select>
+            </div>
+            <div className="lst-check-grid">
+              {[
+                ["plotCorner", "Corner plot"],
+                ["plotParkFacing", "Park facing"],
+                ["plotMainBoulevard", "Main boulevard"],
+                ["plotBoundaryWall", "Boundary wall"],
+                ["plotElectricity", "Electricity"],
+                ["plotGas", "Gas"],
+                ["plotWater", "Water"],
+                ["plotSewerage", "Sewerage"],
+              ].map(([key, label]) => (
+                <label key={key} className="lst-check-row">
+                  <input type="checkbox" checked={Boolean(form[key])} onChange={(e) => handleChange(key, e.target.checked)} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
+
+        {form.category === "commercial" && (
+          <>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Floor Number</label>
+                <input type="number" className="lst-input" min="0" value={form.floorNumber} onChange={(e) => handleChange("floorNumber", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Total Floors</label>
+                <input type="number" className="lst-input" min="0" value={form.totalFloors} onChange={(e) => handleChange("totalFloors", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Building Name</label>
+                <input type="text" className="lst-input" value={form.buildingName} onChange={(e) => handleChange("buildingName", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Parking Spaces</label>
+                <input type="number" className="lst-input" min="0" value={form.parkingSpaces} onChange={(e) => handleChange("parkingSpaces", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-row">
+              <div className="lst-field">
+                <label className="lst-label">Washrooms</label>
+                <input type="number" className="lst-input" min="0" value={form.commWashrooms} onChange={(e) => handleChange("commWashrooms", e.target.value)} />
+              </div>
+              <div className="lst-field">
+                <label className="lst-label">Office Rooms</label>
+                <input type="number" className="lst-input" min="0" value={form.commOfficeRooms} onChange={(e) => handleChange("commOfficeRooms", e.target.value)} />
+              </div>
+            </div>
+            <div className="lst-field">
+              <label className="lst-label">Frontage</label>
+              <input type="text" className="lst-input" placeholder="e.g. 30 ft front" value={form.commFrontage} onChange={(e) => handleChange("commFrontage", e.target.value)} />
+            </div>
+            <div className="lst-check-grid">
+              {[
+                ["commReception", "Reception"],
+                ["commConference", "Conference room"],
+                ["commGenerator", "Generator"],
+                ["commElevator", "Elevator"],
+                ["commMainRoad", "Main road"],
+                ["commCorner", "Corner property"],
+              ].map(([key, label]) => (
+                <label key={key} className="lst-check-row">
+                  <input type="checkbox" checked={Boolean(form[key])} onChange={(e) => handleChange(key, e.target.checked)} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Features & Amenities (grouped, zameen-style) ── */}
@@ -1525,13 +1957,13 @@ const ListingForm = ({
           </div>
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-phone">
-              Phone
+              Mobile
             </label>
             <input
               id="lst-contact-phone"
               type="tel"
               className={fieldClass("lst-input", "contactPhone")}
-              placeholder="+92 300 1234567"
+              placeholder="03XXXXXXXXX"
               value={form.contactPhone}
               onChange={(e) => handleChange("contactPhone", e.target.value)}
               onBlur={() => handleBlur("contactPhone")}
@@ -1541,30 +1973,100 @@ const ListingForm = ({
             )}
           </div>
         </div>
+
+        <div className="lst-row">
+          <div className="lst-field">
+            <label className="lst-label" htmlFor="lst-contact-wa">
+              WhatsApp
+            </label>
+            <input
+              id="lst-contact-wa"
+              type="tel"
+              className={fieldClass("lst-input", "contactWhatsapp")}
+              placeholder="03XXXXXXXXX"
+              value={form.contactWhatsapp}
+              onChange={(e) => handleChange("contactWhatsapp", e.target.value)}
+              onBlur={() => handleBlur("contactWhatsapp")}
+            />
+            {showError("contactWhatsapp") && (
+              <div className="lst-error">{errors.contactWhatsapp}</div>
+            )}
+          </div>
+          <div className="lst-field">
+            <label className="lst-label" htmlFor="lst-contact-alt">
+              Alternate Phone
+            </label>
+            <input
+              id="lst-contact-alt"
+              type="tel"
+              className={fieldClass("lst-input", "contactAltPhone")}
+              placeholder="03XXXXXXXXX"
+              value={form.contactAltPhone}
+              onChange={(e) => handleChange("contactAltPhone", e.target.value)}
+              onBlur={() => handleBlur("contactAltPhone")}
+            />
+            {showError("contactAltPhone") && (
+              <div className="lst-error">{errors.contactAltPhone}</div>
+            )}
+          </div>
+        </div>
+
+        <label className="lst-check-row">
+          <input
+            type="checkbox"
+            checked={form.showWhatsapp !== false}
+            onChange={(e) => handleChange("showWhatsapp", e.target.checked)}
+          />
+          <span>Show WhatsApp on listing</span>
+        </label>
       </div>
 
       {/* ── Images ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Images</h3>
+        <h3 className="lst-form-section-title">Photos & Media</h3>
+        <p className="lst-form-section-sub">
+          Upload 1–{MAX_IMAGES} photos (JPG, PNG, WEBP). First image is the cover — drag to reorder.
+        </p>
 
         <div className="lst-field">
           <ImageUpload
             images={form.images || []}
             onChange={(newImages) => handleChange("images", newImages)}
-            maxImages={10}
+            maxImages={MAX_IMAGES}
             label="Property Images"
-            helperText="Drag & drop images here or click to browse (Max 10)"
+            helperText={`Drag & drop or browse (Max ${MAX_IMAGES}, 5MB each)`}
           />
+          {showError("images") && (
+            <div className="lst-error">{errors.images}</div>
+          )}
+        </div>
+
+        <div className="lst-field">
+          <label className="lst-label" htmlFor="lst-video">
+            Video URL <span className="lst-label-hint">(optional)</span>
+          </label>
+          <input
+            id="lst-video"
+            type="url"
+            className={fieldClass("lst-input", "videoUrl")}
+            placeholder="https://…"
+            value={form.videoUrl}
+            onChange={(e) => handleChange("videoUrl", e.target.value)}
+            onBlur={() => handleBlur("videoUrl")}
+          />
+          {showError("videoUrl") && (
+            <div className="lst-error">{errors.videoUrl}</div>
+          )}
         </div>
       </div>
 
-      {/* ── Description (last, so the AI writer has the full form to work from) ── */}
+      {/* ── Description ── */}
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Description</h3>
 
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-desc">
-            Description
+            Property Description
           </label>
           <AiDescriptionBadge
             loading={ai.loading}
@@ -1577,6 +2079,7 @@ const ListingForm = ({
             className={fieldClass("lst-textarea", "description")}
             placeholder="Click here and AI will draft this from the details above — or write your own."
             value={form.description}
+            maxLength={DESC_MAX}
             onFocus={() => ai.handleFocus(form.description)}
             onChange={(e) => {
               ai.markEdited();
@@ -1584,8 +2087,33 @@ const ListingForm = ({
             }}
             onBlur={() => handleBlur("description")}
           />
+          <div className="lst-char-count">
+            {form.description.length}/{DESC_MAX}
+          </div>
           {showError("description") && (
             <div className="lst-error">{errors.description}</div>
+          )}
+        </div>
+
+        <div className="lst-field">
+          <label className="lst-label" htmlFor="lst-notes">
+            Additional Notes <span className="lst-label-hint">(optional)</span>
+          </label>
+          <textarea
+            id="lst-notes"
+            className={fieldClass("lst-textarea", "notes")}
+            placeholder="Anything else buyers should know…"
+            value={form.notes}
+            maxLength={NOTES_MAX}
+            onChange={(e) => handleChange("notes", e.target.value)}
+            onBlur={() => handleBlur("notes")}
+            rows={4}
+          />
+          <div className="lst-char-count">
+            {form.notes.length}/{NOTES_MAX}
+          </div>
+          {showError("notes") && (
+            <div className="lst-error">{errors.notes}</div>
           )}
         </div>
       </div>

@@ -202,6 +202,7 @@ export default function PublicLayout() {
           </div>
         </div>
       </header>
+      <div className="app-header-spacer" aria-hidden="true" />
 
       {/* Main Content */}
       <main className={`flex-1 ${!hasOwnBottomCta ? "pb-20 md:pb-0" : ""}`}>

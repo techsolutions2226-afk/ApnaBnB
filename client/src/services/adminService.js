@@ -12,6 +12,17 @@ const adminService = {
     }
   },
 
+  // ── System Health ──
+  getHealth: async (opts = {}) => {
+    try {
+      const params = opts.fresh ? { fresh: 1 } : undefined;
+      const response = await apiClient.get('/admin/health', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch system health' };
+    }
+  },
+
   // ── Users ──
   getUsers: async (filters = {}) => {
     try {

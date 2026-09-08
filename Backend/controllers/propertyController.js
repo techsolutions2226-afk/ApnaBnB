@@ -16,49 +16,7 @@ const {
   notifyInBackground,
   appUrl,
 } = require('../utils/matchNotifier');
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-const num = (v) =>
-  v === undefined || v === null || v === '' ? undefined : Number(v);
-
-// Whitelist + coerce the writable Property fields. Prisma rejects unknown keys
-// (so raw req.body would throw on stray `_id`/`listedBy`), and it won't coerce
-// string→number the way Mongoose did — so we normalise here. `partial` keeps
-// only the keys present in the body (for updates).
-const buildPropertyData = (body, { partial = false } = {}) => {
-  const data = {};
-  const set = (key, val) => {
-    if (val !== undefined) data[key] = val;
-  };
-
-  if (!partial || 'title' in body) set('title', body.title);
-  if (!partial || 'description' in body) set('description', body.description);
-  if (!partial || 'photos' in body)
-    set('photos', Array.isArray(body.photos) ? body.photos : undefined);
-  if (!partial || 'location' in body) set('location', body.location);
-  if (!partial || 'price' in body) set('price', num(body.price));
-  if (!partial || 'purpose' in body) set('purpose', body.purpose);
-  if (!partial || 'category' in body) set('category', body.category);
-  if (!partial || 'propertyType' in body) set('propertyType', body.propertyType);
-  if (!partial || 'size' in body) set('size', num(body.size));
-  if (!partial || 'sizeUnit' in body) set('sizeUnit', body.sizeUnit);
-  if (!partial || 'bedrooms' in body) set('bedrooms', num(body.bedrooms));
-  if (!partial || 'bathrooms' in body) set('bathrooms', num(body.bathrooms));
-  if (!partial || 'amenities' in body)
-    set('amenities', Array.isArray(body.amenities) ? body.amenities : undefined);
-  if (!partial || 'securityDeposit' in body)
-    set('securityDeposit', num(body.securityDeposit));
-  if (!partial || 'leaseTerm' in body) set('leaseTerm', num(body.leaseTerm));
-  if (!partial || 'furnished' in body) set('furnished', body.furnished);
-  if ('availableFrom' in body)
-    set('availableFrom', body.availableFrom ? new Date(body.availableFrom) : null);
-  if (!partial || 'contactName' in body) set('contactName', body.contactName);
-  if (!partial || 'contactEmail' in body) set('contactEmail', body.contactEmail);
-  if (!partial || 'contactPhone' in body) set('contactPhone', body.contactPhone);
-  if ('status' in body) set('status', body.status);
-
-  return data;
-};
+const { buildPropertyData, validatePropertyData } = require('../utils/propertyData');
 
 // Deliberately NO email/phone here: contact details are a paid reveal and are
 // served only by getPropertyContact below. Returning them on every property
@@ -194,28 +152,41 @@ const createProperty = async (req, res, next) => {
       typeof location.coordinates.lat === 'number' &&
       typeof location.coordinates.lng === 'number';
     if (!hasCoords) {
-      const addressParts = [location?.area, location?.city, 'Pakistan'].filter(Boolean);
+      const addressParts = [
+        location?.landmark,
+        location?.street,
+        location?.block,
+        location?.locality,
+        location?.area,
+        location?.city,
+        'Pakistan',
+      ].filter(Boolean);
       const coords = await geocodeAddress(addressParts.join(', '));
       if (coords) {
         resolvedLocation = { ...location, coordinates: coords };
       }
     }
 
-    const data = buildPropertyData(req.body);
+    const data = buildPropertyData({ ...req.body, location: resolvedLocation });
     data.location = resolvedLocation;
-    data.purpose = req.body.purpose || 'sale';
-    data.category = req.body.category || 'home';
-    data.sizeUnit = req.body.sizeUnit || 'Marla';
-    data.furnished = req.body.furnished || 'unfurnished';
-    data.securityDeposit = num(req.body.securityDeposit) || 0;
-    data.leaseTerm = num(req.body.leaseTerm) || 12;
-    data.photos = Array.isArray(req.body.photos) ? req.body.photos : [];
-    data.amenities = Array.isArray(req.body.amenities) ? req.body.amenities : [];
+    data.purpose = data.purpose || 'sale';
+    data.category = data.category || 'home';
+    data.sizeUnit = data.sizeUnit || 'Marla';
+    data.furnished = data.furnished || 'unfurnished';
+    data.securityDeposit = data.securityDeposit ?? 0;
+    data.leaseTerm = data.leaseTerm || 12;
+    data.photos = Array.isArray(data.photos) ? data.photos : [];
+    data.amenities = Array.isArray(data.amenities) ? data.amenities : [];
     data.listedById = req.user.id;
     // Record the hat the user wore when listing (supply side). Uses the role
     // they selected in the dashboard, clamped to seller|dealer; falls back to
     // their account role.
     data.actingRole = normalizeSupply(req.body.actingRole || req.user.role);
+
+    const validationError = validatePropertyData(data);
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
 
     const property = await prisma.property.create({ data });
 
@@ -314,6 +285,10 @@ const updateProperty = async (req, res, next) => {
 
   try {
     const data = buildPropertyData(req.body, { partial: true });
+    const validationError = validatePropertyData(data, { partial: true });
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
 
     // Ownership-scoped update.
     const result = await prisma.property.updateMany({

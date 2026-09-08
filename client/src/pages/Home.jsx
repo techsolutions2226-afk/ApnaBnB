@@ -6,8 +6,10 @@ import { useProperties } from "../hooks/useProperties";
 import PropertyCard from "../components/property/PropertyCard";
 import Pagination from "../components/common/Pagination";
 import { SkeletonCard } from "../components/ui/Skeleton";
-import Storyline from "../components/cinematic/Storyline";
+import SearchPanel from "../components/cinematic/SearchPanel";
 import "../styles/cinematic.css";
+import "../styles/SearchFields.css";
+import "../styles/SearchDropdowns.css";
 
 const CTA_CARDS = [
   {
@@ -61,12 +63,6 @@ export default function Home() {
   const popularSectionRef = useRef(null);
   const ctaSectionRef = useRef(null);
   const prevPageRef = useRef(page);
-
-  /* Portrait walkthrough is lighter — shorter pin = less scroll before the
-     content resumes. Locked once on mount. */
-  const [roomPx] = useState(
-    () => (typeof window !== "undefined" && window.innerWidth <= 768 ? 260 : 340),
-  );
 
   const reduce = useReducedMotion();
   const inView = reduce
@@ -151,17 +147,51 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* ══ CINEMATIC BANNER (pinned). The first frame IS the hero:
-          headline + functional search + category pills. Scroll drives the
-          camera through the property — the full visit happens right here in
-          the banner. Skip jumps straight to the content below. */}
-      <Storyline
-        roomPx={roomPx}
-        scrollTargetRef={ctaSectionRef}
-        {...searchProps}
-      />
+      {/* ══ HERO BANNER (static image) — simple full-width banner with
+          headline over an image. No scroll-driven behavior. ══ */}
+      <section className="relative w-full h-[420px] sm:h-[520px] lg:h-[620px] overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=2000&q=80&auto=format&fit=crop')",
+          }}
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent"
+          aria-hidden="true"
+        />
+        <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+          <motion.h1
+            className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white font-heading text-wrap-balance"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE }}
+          >
+            Discover Your Next <em className="not-italic text-indigo-300">Chapter</em>
+          </motion.h1>
+          <motion.p
+            className="mt-4 max-w-xl text-white/90 text-base sm:text-lg"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1, ease: EASE }}
+          >
+            Find the property that fits your life — buy, rent or sell across
+            Pakistan.
+          </motion.p>
+          <motion.div
+            className="mt-6 w-full max-w-3xl"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: EASE }}
+          >
+            <SearchPanel {...searchProps} variant="card" />
+          </motion.div>
+        </div>
+      </section>
 
-      {/* ══ BUY / RENT CARDS — the only content under the banner ══ */}
+      {/* ══ BUY / RENT CARDS ══ */}
       <motion.section
         ref={ctaSectionRef}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-2 sm:pt-14"

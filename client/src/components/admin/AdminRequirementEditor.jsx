@@ -20,7 +20,7 @@ const CATEGORIES = [
 const SUBTYPES_BY_CATEGORY = {
   home: ["house", "flat", "upper-portion", "lower-portion", "farm-house", "room", "penthouse", "apartment"],
   plot: ["residential-plot", "commercial-plot", "agricultural-land", "industrial-land", "plot-form", "plot-file"],
-  commercial: ["shop", "office", "warehouse", "factory", "building", "other"],
+  commercial: ["shop", "office", "warehouse", "building", "factory", "plaza", "commercial-building", "other"],
 };
 const SIZE_UNITS = ["Marla", "Kanal", "Sq. Ft.", "Sq. Yd.", "Sq. M."];
 

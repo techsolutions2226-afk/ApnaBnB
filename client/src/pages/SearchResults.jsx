@@ -47,6 +47,9 @@ const TYPE_LABEL = {
   warehouse: "Warehouse",
   factory: "Factory",
   building: "Building",
+  plaza: "Plaza",
+  "commercial-building": "Commercial Building",
+  other: "Other",
 };
 
 

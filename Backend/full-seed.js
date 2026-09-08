@@ -23,6 +23,7 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const prisma = require('./db/prisma');
+const { toPropertyCreateData } = require('./utils/seedPropertyFields');
 
 const PASS = 'Test@1234';
 const DOMAIN = '@apnabnb.seed';
@@ -65,22 +66,22 @@ const img = (id) => `https://images.unsplash.com/${id}?w=1000&q=80&auto=format&f
    Coordinates are real city/area centroids so map views render sensibly.
    Buyer requirements below are tuned to match several of these. */
 const PROPERTIES = [
-  { owner: 'ahmed', title: '10 Marla House in Gulberg III',        city: 'Lahore',     area: 'Gulberg',      lat: 31.5204, lng: 74.3587, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 48000000, size: 10, unit: 'Marla', bed: 4, bath: 4, status: 'active',   amenities: ['Parking', 'Security', 'Backup Generator', 'Lawn'] },
-  { owner: 'ahmed', title: '1 Kanal Corner House, DHA Phase 5',     city: 'Lahore',     area: 'DHA',          lat: 31.4697, lng: 74.4131, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 92000000, size: 1,  unit: 'Kanal', bed: 6, bath: 6, status: 'featured', amenities: ['Parking', 'Security', 'Swimming Pool', 'Servant Quarter'] },
-  { owner: 'ahmed', title: '5 Marla Upper Portion, Johar Town',     city: 'Lahore',     area: 'Johar Town',   lat: 31.4697, lng: 74.2728, purpose: 'rent', category: 'home',       propertyType: 'upper-portion', price: 65000, size: 5, unit: 'Marla', bed: 2, bath: 2, status: 'active',   amenities: ['Parking', 'Security'], deposit: 130000, furnished: 'semi-furnished' },
-  { owner: 'ahmed', title: 'Commercial Shop on Main Boulevard',     city: 'Lahore',     area: 'Gulberg',      lat: 31.5150, lng: 74.3450, purpose: 'rent', category: 'commercial', propertyType: 'shop',       price: 180000,   size: 4,  unit: 'Marla', bed: 0, bath: 1, status: 'active',   amenities: ['Security', 'Parking'], deposit: 540000 },
-  { owner: 'sana',  title: '7 Marla House in F-8',                  city: 'Islamabad',  area: 'F-8',          lat: 33.7005, lng: 73.0553, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 78000000, size: 7,  unit: 'Marla', bed: 4, bath: 5, status: 'active',   amenities: ['Parking', 'Security', 'Central Heating'] },
-  { owner: 'sana',  title: '2 Bed Apartment, F-11 Markaz',          city: 'Islamabad',  area: 'F-11',         lat: 33.6844, lng: 72.9992, purpose: 'rent', category: 'home',       propertyType: 'flat',       price: 95000,    size: 1200, unit: 'Sq Ft', bed: 2, bath: 2, status: 'active', amenities: ['Elevator', 'Security', 'Parking'], deposit: 190000, furnished: 'furnished' },
-  { owner: 'sana',  title: '5 Marla Plot in G-13',                  city: 'Islamabad',  area: 'G-13',         lat: 33.6376, lng: 72.9310, purpose: 'sale', category: 'plot',       propertyType: 'residential-plot', price: 21000000, size: 5, unit: 'Marla', bed: 0, bath: 0, status: 'pending', amenities: [] },
-  { owner: 'bilal', title: 'Furnished 3 Bed Flat, DHA Phase 6',     city: 'Karachi',    area: 'DHA',          lat: 24.8008, lng: 67.0691, purpose: 'rent', category: 'home',       propertyType: 'flat',       price: 150000,   size: 1800, unit: 'Sq Ft', bed: 3, bath: 3, status: 'featured', amenities: ['Elevator', 'Security', 'Parking', 'Gym'], deposit: 300000, furnished: 'furnished' },
-  { owner: 'bilal', title: '500 Sq Yd Bungalow in Clifton',         city: 'Karachi',    area: 'Clifton',      lat: 24.8138, lng: 67.0300, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 135000000, size: 500, unit: 'Sq Yd', bed: 6, bath: 7, status: 'active', amenities: ['Parking', 'Security', 'Swimming Pool', 'Lawn'] },
-  { owner: 'bilal', title: 'Office Floor in Shahrah-e-Faisal',      city: 'Karachi',    area: 'Shahrah-e-Faisal', lat: 24.8607, lng: 67.0641, purpose: 'rent', category: 'commercial', propertyType: 'office', price: 420000, size: 3000, unit: 'Sq Ft', bed: 0, bath: 4, status: 'active', amenities: ['Elevator', 'Security', 'Parking', 'Backup Generator'], deposit: 1260000 },
-  { owner: 'bilal', title: '4 Marla Shop, Tariq Road',              city: 'Karachi',    area: 'Tariq Road',   lat: 24.8700, lng: 67.0600, purpose: 'sale', category: 'commercial', propertyType: 'shop',       price: 55000000, size: 4,  unit: 'Marla', bed: 0, bath: 1, status: 'sold',     amenities: ['Security'] },
-  { owner: 'hina',  title: '10 Marla House in Bahria Town',         city: 'Rawalpindi', area: 'Bahria Town',  lat: 33.5651, lng: 73.0169, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 42000000, size: 10, unit: 'Marla', bed: 5, bath: 5, status: 'active',   amenities: ['Parking', 'Security', 'Lawn'] },
-  { owner: 'hina',  title: '3 Bed Flat in Askari 14',               city: 'Rawalpindi', area: 'Askari',       lat: 33.5900, lng: 73.0700, purpose: 'rent', category: 'home',       propertyType: 'flat',       price: 72000,    size: 1400, unit: 'Sq Ft', bed: 3, bath: 2, status: 'active', amenities: ['Security', 'Parking'], deposit: 144000, furnished: 'semi-furnished' },
-  { owner: 'hina',  title: '1 Kanal Plot in Bahria Phase 8',        city: 'Rawalpindi', area: 'Bahria Town',  lat: 33.5340, lng: 73.0900, purpose: 'sale', category: 'plot',       propertyType: 'residential-plot', price: 38000000, size: 1, unit: 'Kanal', bed: 0, bath: 0, status: 'active', amenities: [] },
-  { owner: 'hina',  title: '5 Marla House, Sadiqabad',              city: 'Rawalpindi', area: 'Satellite Town', lat: 33.5973, lng: 73.0433, purpose: 'rent', category: 'home',     propertyType: 'house',      price: 55000,    size: 5,  unit: 'Marla', bed: 3, bath: 3, status: 'active',   amenities: ['Parking'], deposit: 110000 },
-  { owner: 'sana',  title: '8 Marla House in Wapda Town',           city: 'Lahore',     area: 'Wapda Town',   lat: 31.4300, lng: 74.2500, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 36000000, size: 8,  unit: 'Marla', bed: 4, bath: 3, status: 'rejected', amenities: ['Parking', 'Security'] },
+  { owner: 'ahmed', title: '10 Marla House in Gulberg III',        city: 'Lahore',     area: 'Gulberg',      locality: 'Gulberg III', block: 'Block C', lat: 31.5204, lng: 74.3587, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 48000000, size: 10, unit: 'Marla', bed: 4, bath: 4, status: 'active',   condition: 'good', amenities: ['Parking', 'Security', 'Generator', 'Lawn', 'Drawing room'] },
+  { owner: 'ahmed', title: '1 Kanal Corner House, DHA Phase 5',     city: 'Lahore',     area: 'DHA',          locality: 'Phase 5', block: 'XX', lat: 31.4697, lng: 74.4131, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 92000000, size: 1,  unit: 'Kanal', bed: 6, bath: 6, status: 'featured', condition: 'brand-new', servantQuarters: 1, amenities: ['Parking', 'Security', 'Swimming pool', 'Servant quarter'] },
+  { owner: 'ahmed', title: '5 Marla Upper Portion, Johar Town',     city: 'Lahore',     area: 'Johar Town',   locality: 'Phase 1', lat: 31.4697, lng: 74.2728, purpose: 'rent', category: 'home',       propertyType: 'upper-portion', price: 65000, size: 5, unit: 'Marla', bed: 2, bath: 2, status: 'active',   condition: 'like-new', amenities: ['Parking', 'Security', 'Balcony'], deposit: 130000, advanceRent: 65000, furnished: 'semi-furnished' },
+  { owner: 'ahmed', title: 'Commercial Shop on Main Boulevard',     city: 'Lahore',     area: 'Gulberg',      locality: 'MM Alam Road', buildingName: 'Gulberg Plaza', lat: 31.5150, lng: 74.3450, purpose: 'rent', category: 'commercial', propertyType: 'shop',       price: 180000,   size: 4,  unit: 'Marla', bed: 0, bath: 1, status: 'active',   condition: 'good', amenities: ['Security', 'Parking'], deposit: 540000, advanceRent: 180000, corner: true },
+  { owner: 'sana',  title: '7 Marla House in F-8',                  city: 'Islamabad',  area: 'F-8',          locality: 'F-8/1', street: 'Street 12', lat: 33.7005, lng: 73.0553, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 78000000, size: 7,  unit: 'Marla', bed: 4, bath: 5, status: 'active',   condition: 'good', amenities: ['Parking', 'Security', 'Central heating'] },
+  { owner: 'sana',  title: '2 Bed Apartment, F-11 Markaz',          city: 'Islamabad',  area: 'F-11',         locality: 'Markaz', buildingName: 'F-11 Heights', floorNumber: 4, totalFloors: 8, lat: 33.6844, lng: 72.9992, purpose: 'rent', category: 'home',       propertyType: 'flat',       price: 95000,    size: 1200, unit: 'Sq Ft', bed: 2, bath: 2, status: 'active', condition: 'like-new', amenities: ['Lift / Elevator', 'Security', 'Parking'], deposit: 190000, advanceRent: 95000, furnished: 'furnished' },
+  { owner: 'sana',  title: '5 Marla Plot in G-13',                  city: 'Islamabad',  area: 'G-13',         locality: 'G-13/1', plotNumber: '312', parkFacing: true, lat: 33.6376, lng: 72.9310, purpose: 'sale', category: 'plot',       propertyType: 'residential-plot', price: 21000000, size: 5, unit: 'Marla', bed: 0, bath: 0, status: 'pending', amenities: ['Boundary wall', 'Electricity', 'Gas', 'Water'] },
+  { owner: 'bilal', title: 'Furnished 3 Bed Flat, DHA Phase 6',     city: 'Karachi',    area: 'DHA',          locality: 'Phase 6', buildingName: 'DHA Towers', floorNumber: 7, totalFloors: 12, lat: 24.8008, lng: 67.0691, purpose: 'rent', category: 'home',       propertyType: 'flat',       price: 150000,   size: 1800, unit: 'Sq Ft', bed: 3, bath: 3, status: 'featured', condition: 'like-new', amenities: ['Lift / Elevator', 'Security', 'Parking', 'Community gym'], deposit: 300000, advanceRent: 150000, furnished: 'furnished' },
+  { owner: 'bilal', title: '500 Sq Yd Bungalow in Clifton',         city: 'Karachi',    area: 'Clifton',      locality: 'Block 5', street: 'Sea View Road', lat: 24.8138, lng: 67.0300, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 135000000, size: 500, unit: 'Sq Yd', bed: 6, bath: 7, status: 'active', condition: 'good', amenities: ['Parking', 'Security', 'Swimming pool', 'Lawn'] },
+  { owner: 'bilal', title: 'Office Floor in Shahrah-e-Faisal',      city: 'Karachi',    area: 'Shahrah-e-Faisal', locality: 'PECHS', buildingName: 'Business Hub', floorNumber: 5, totalFloors: 15, lat: 24.8607, lng: 67.0641, purpose: 'rent', category: 'commercial', propertyType: 'office', price: 420000, size: 3000, unit: 'Sq Ft', bed: 0, bath: 4, status: 'active', condition: 'good', amenities: ['Lift / Elevator', 'Security', 'Parking', 'Generator', 'Reception'], deposit: 1260000, advanceRent: 420000 },
+  { owner: 'bilal', title: '4 Marla Shop, Tariq Road',              city: 'Karachi',    area: 'Tariq Road',   locality: 'Tariq Road', lat: 24.8700, lng: 67.0600, purpose: 'sale', category: 'commercial', propertyType: 'shop',       price: 55000000, size: 4,  unit: 'Marla', bed: 0, bath: 1, status: 'sold',     condition: 'good', amenities: ['Security', 'Parking'] },
+  { owner: 'hina',  title: '10 Marla House in Bahria Town',         city: 'Rawalpindi', area: 'Bahria Town',  locality: 'Phase 7', block: 'Block E', lat: 33.5651, lng: 73.0169, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 42000000, size: 10, unit: 'Marla', bed: 5, bath: 5, status: 'active',   condition: 'good', amenities: ['Parking', 'Security', 'Lawn', 'Gated community'] },
+  { owner: 'hina',  title: '3 Bed Flat in Askari 14',               city: 'Rawalpindi', area: 'Askari',       locality: 'Askari 14', buildingName: 'Askari Towers', floorNumber: 2, totalFloors: 6, lat: 33.5900, lng: 73.0700, purpose: 'rent', category: 'home',       propertyType: 'flat',       price: 72000,    size: 1400, unit: 'Sq Ft', bed: 3, bath: 2, status: 'active', condition: 'good', amenities: ['Security', 'Parking', 'Lift / Elevator'], deposit: 144000, advanceRent: 72000, furnished: 'semi-furnished' },
+  { owner: 'hina',  title: '1 Kanal Plot in Bahria Phase 8',        city: 'Rawalpindi', area: 'Bahria Town',  locality: 'Phase 8', plotNumber: '77', mainBoulevard: true, lat: 33.5340, lng: 73.0900, purpose: 'sale', category: 'plot',       propertyType: 'residential-plot', price: 38000000, size: 1, unit: 'Kanal', bed: 0, bath: 0, status: 'active', amenities: ['Boundary wall', 'Electricity', 'Gas', 'Water', 'Sewerage'] },
+  { owner: 'hina',  title: '5 Marla House, Sadiqabad',              city: 'Rawalpindi', area: 'Satellite Town', locality: 'Sadiqabad', lat: 33.5973, lng: 73.0433, purpose: 'rent', category: 'home',     propertyType: 'house',      price: 55000,    size: 5,  unit: 'Marla', bed: 3, bath: 3, status: 'active',   condition: 'good', amenities: ['Parking'], deposit: 110000, advanceRent: 55000 },
+  { owner: 'sana',  title: '8 Marla House in Wapda Town',           city: 'Lahore',     area: 'Wapda Town',   locality: 'Phase 1', lat: 31.4300, lng: 74.2500, purpose: 'sale', category: 'home',       propertyType: 'house',      price: 36000000, size: 8,  unit: 'Marla', bed: 4, bath: 3, status: 'rejected', condition: 'needs-renovation', amenities: ['Parking', 'Security'] },
 ];
 
 /* ── Requirements (buyers) ── */
@@ -203,32 +204,13 @@ async function main() {
     const owner = U[d.owner];
     const created = ago(int(2, 60) * DAY);
     const prop = await prisma.property.create({
-      data: {
-        title: d.title,
-        description: `${d.title}. ${d.purpose === 'rent' ? 'Monthly rent' : 'Sale price'} in PKR. Well-maintained ${d.propertyType.replace(/-/g, ' ')} in ${d.area}, ${d.city}, close to main access roads, markets and schools.`,
+      data: toPropertyCreateData(d, {
+        owner,
         photos: PHOTO_SETS[i].map(img),
-        location: { city: d.city, area: d.area, coordinates: { lat: d.lat, lng: d.lng } },
-        purpose: d.purpose,
-        price: d.price,
-        category: d.category,
-        propertyType: d.propertyType,
-        size: d.size,
-        sizeUnit: d.unit,
-        bedrooms: d.bed,
-        bathrooms: d.bath,
-        amenities: d.amenities,
-        securityDeposit: d.deposit || 0,
-        leaseTerm: d.purpose === 'rent' ? 12 : 12,
-        furnished: d.furnished || 'unfurnished',
-        availableFrom: d.purpose === 'rent' ? ago(-7 * DAY) : null,
-        contactName: owner.name,
-        contactEmail: owner.email,
-        contactPhone: owner.phone,
-        status: d.status,
-        actingRole: owner.role,
-        listedById: owner.id,
         createdAt: created,
-      },
+        actingRole: owner.role,
+        index: i,
+      }),
     });
     const listing = await prisma.listing.create({
       data: {

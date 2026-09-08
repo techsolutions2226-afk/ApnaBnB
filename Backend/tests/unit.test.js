@@ -10,6 +10,11 @@ const {
   normalizeSupply,
   normalizeDemand,
 } = require('../utils/matchScore');
+const {
+  resolveSizeSqFt,
+  scoreSizePoints,
+  MARLA_TO_SQFT,
+} = require('../utils/sizeUnits');
 const { withIds } = require('../utils/serializeIds');
 const { parsePagination, paginated } = require('../utils/pagination');
 
@@ -20,15 +25,63 @@ test('matchScore: perfect pair scores 100', () => {
     bedrooms: 4,
     bathrooms: 3,
     size: 10,
+    sizeUnit: 'Marla',
   };
   const requirement = {
     budget: { min: 9000000, max: 11000000 },
     location: { area: 'Gulberg' },
     bedrooms: 4,
     bathrooms: 3,
-    size: 10,
+    size: '10 Marla',
   };
   assert.equal(calculateMatchScore(property, requirement), 100);
+});
+
+test('sizeUnits: 272 Sq. Ft. equals 1 Marla (Rawalpindi standard)', () => {
+  const listingSqFt = resolveSizeSqFt(272, 'Sq. Ft.');
+  const requirementMarla = resolveSizeSqFt('1 Marla');
+  assert.ok(listingSqFt);
+  assert.ok(requirementMarla);
+  // Federal / ISB-RWP marla is 272.25 sq ft — 272 is within 0.1%.
+  assert.ok(Math.abs(listingSqFt - requirementMarla) / requirementMarla < 0.01);
+  assert.equal(scoreSizePoints(
+    { size: 272, sizeUnit: 'Sq. Ft.' },
+    { size: '1 Marla' },
+  ), 10);
+  assert.equal(MARLA_TO_SQFT, 272.25);
+});
+
+test('sizeUnits: legacy aliases normalize (sq ft, Sq Ft)', () => {
+  assert.equal(resolveSizeSqFt(272, 'sq ft'), 272);
+  assert.equal(resolveSizeSqFt(272, 'Sq Ft'), 272);
+  assert.equal(resolveSizeSqFt('1 kanal'), resolveSizeSqFt(20, 'Marla'));
+});
+
+test('matchScore: Rawalpindi commercial shop — 272 sq ft listing ↔ 1 marla requirement', () => {
+  const property = {
+    price: 5000000,
+    purpose: 'sale',
+    propertyType: 'shop',
+    location: { city: 'Rawalpindi', area: 'Commercial Market' },
+    bedrooms: 0,
+    bathrooms: 0,
+    size: 272,
+    sizeUnit: 'Sq. Ft.',
+  };
+  const requirement = {
+    purpose: 'sale',
+    propertyType: 'shop',
+    budget: { min: 4000000, max: 6000000 },
+    location: { city: 'Rawalpindi', area: 'Commercial Market' },
+    bedrooms: 0,
+    bathrooms: 0,
+    size: '1 Marla',
+  };
+
+  assert.equal(isMatchCandidate(property, requirement), true);
+  const score = calculateMatchScore(property, requirement);
+  // budget 40 + area 20 + beds 20 + baths 10 + size 10 = 100
+  assert.equal(score, 100);
 });
 
 test('matchScore: budget outside band but within 10% still scores', () => {

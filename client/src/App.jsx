@@ -73,6 +73,7 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import AdminPlans from "./pages/admin/AdminPlans";
 import AdminContact from "./pages/admin/AdminContact";
 import AdminLogs from "./pages/admin/AdminLogs";
+import AdminHealth from "./pages/admin/AdminHealth";
 
 /* ── Subscription Plans ── */
 import Plans from "./pages/Plans";
@@ -159,6 +160,7 @@ function App() {
                   <Route path="plans" element={<AdminPlans />} />
                   <Route path="contact" element={<AdminContact />} />
                   <Route path="logs" element={<AdminLogs />} />
+                  <Route path="health" element={<AdminHealth />} />
                   <Route path="account" element={<Account />} />
                   <Route path="account/personal-info" element={<PersonalInfo />} />
                   <Route path="account/notifications" element={<Notifications />} />

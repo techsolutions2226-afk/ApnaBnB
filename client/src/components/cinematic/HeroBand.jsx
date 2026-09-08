@@ -75,17 +75,6 @@ export default function HeroBand(props) {
           })}
         </motion.div>
       </motion.div>
-
-      <motion.div
-        className="cin-scroll-cue"
-        initial={reduce ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut", delay: 1.2 }}
-        aria-hidden="true"
-      >
-        <span>Scroll to explore</span>
-        <span className="cin-scroll-line" />
-      </motion.div>
     </div>
   );
 }

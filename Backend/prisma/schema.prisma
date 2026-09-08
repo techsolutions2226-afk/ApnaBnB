@@ -230,29 +230,57 @@ model Property {
   id          String   @id @default(uuid())
   title       String
   description String?
+  notes       String?  // Extra notes (separate from main description)
   photos      String[] @default([])
-  location    Json // { city, area, coordinates: { lat, lng } }
+  videoUrl    String?
+  // { city, area, locality?, block?, street?, landmark?, coordinates: { lat, lng } }
+  location    Json
   purpose     Purpose  @default(sale)
   price       Float
+  priceNegotiable Boolean @default(false)
   category    Category @default(home)
 
   // Leaf-level type — String (values are hyphenated, e.g. upper-portion).
   propertyType String
   size         Float?
   sizeUnit     String   @default("Marla")
+  condition    String?  // brand-new | like-new | good | needs-renovation | under-construction
   bedrooms     Int?
   bathrooms    Int?
+  kitchens     Int?
+  drawingRooms Int?
+  diningRooms  Int?
+  livingRooms  Int?
+  studyRooms   Int?
+  storeRooms   Int?
+  powderRooms  Int?
+  servantQuarters Int?
+  floorNumber  Int?
+  totalFloors  Int?
+  constructionYear Int?
+  facing       String?
+  buildingName String?
+  apartmentNumber String?
+  parkingSpaces Int?
   amenities    String[] @default([])
 
   // Rental-specific fields.
   securityDeposit Float     @default(0)
-  leaseTerm       Int       @default(12)
+  advanceRent     Float?
+  leaseTerm       Int       @default(12) // minimum rental period (months)
   furnished       String    @default("unfurnished")
   availableFrom   DateTime?
 
-  contactName  String @default("")
-  contactEmail String @default("")
-  contactPhone String @default("")
+  // Category-specific bags — matching engine does not read these.
+  plotDetails       Json?
+  commercialDetails Json?
+
+  contactName     String  @default("")
+  contactEmail    String  @default("")
+  contactPhone    String  @default("")
+  contactWhatsapp String  @default("")
+  contactAltPhone String  @default("")
+  showWhatsapp    Boolean @default(true)
 
   status PropertyStatus @default(active)
 

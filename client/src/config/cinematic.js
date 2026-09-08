@@ -18,7 +18,18 @@
    interior photography (public images.unsplash.com URLs) as placeholder
    property footage. When the product gets its own footage, replace the URLs
    here — nothing else changes.
+
+   VIDEO — when CINEMATIC_VIDEO is set, the banner renders that clip full-bleed
+   behind the hero UI and the engine scrubs `currentTime` to scroll progress
+   (the "camera" is the video). The still scenes then serve only as the poster
+   fallback, so the page still works if the clip can't play.
    ==================================================== */
+
+/* The Kling AI walkthrough clip provided for the banner (converted to a
+   browser-safe H.264 MP4 with a moov atom up front for smooth scrubbing).
+   Currently DISABLED — the banner runs the scroll-scrubbed still scene
+   crossfade instead. Set to { src, poster } to re-enable the clip. */
+export const CINEMATIC_VIDEO = null;
 
 export const CINEMATIC_SCENES = [
   {

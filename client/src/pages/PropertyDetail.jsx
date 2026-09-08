@@ -40,7 +40,11 @@ import {
 } from "react-icons/fa";
 import InquiryCard from "../components/reservation/InquiryCard";
 import MapView from "../components/common/MapView";
-import { formatPrice, formatDate } from "../utils/formatters";
+import { formatPrice } from "../utils/formatters";
+import {
+  buildPropertyOverviewRows,
+  formatPropertyLocation,
+} from "../utils/propertyDisplay";
 import "../styles/PropertyDetail.css";
 
 /* ─── Amenity icon map ─── */
@@ -155,14 +159,13 @@ const PropertyDetail = () => {
     bedrooms,
     bathrooms,
     description = "",
+    notes = "",
+    videoUrl,
     amenities = [],
     price,
     size,
     sizeUnit,
     purpose,
-    furnished,
-    createdAt,
-    category,
   } = property;
 
   const hostInfo = {
@@ -179,9 +182,10 @@ const PropertyDetail = () => {
   const cancellationPolicy = property?.cancellationPolicy || null;
 
   const locationString =
-    typeof location === "object" && location !== null
+    formatPropertyLocation(location) ||
+    (typeof location === "object" && location !== null
       ? [location.area, location.city].filter(Boolean).join(", ")
-      : location || "Unknown location";
+      : location || "Unknown location");
   const cityString =
     typeof location === "object" && location !== null
       ? location.city || ""
@@ -274,30 +278,7 @@ const PropertyDetail = () => {
       : null,
   ].filter(Boolean);
 
-  const overviewRows = [
-    propertyType ? { label: "Type", value: capitalize(propertyType) } : null,
-    purpose ? { label: "Purpose", value: capitalize(purpose) } : null,
-    price != null
-      ? { label: "Price", value: formatPrice(price, { prefix: true }) }
-      : null,
-    bedrooms != null && bedrooms > 0
-      ? { label: "Bedrooms", value: String(bedrooms) }
-      : null,
-    bathrooms != null && bathrooms > 0
-      ? { label: "Bathrooms", value: String(bathrooms) }
-      : null,
-    size
-      ? { label: "Area", value: `${size} ${sizeUnit || ""}`.trim() }
-      : null,
-    locationString ? { label: "Location", value: locationString } : null,
-    createdAt ? { label: "Added", value: formatDate(createdAt) } : null,
-    furnished && furnished !== "unfurnished"
-      ? { label: "Furnished", value: capitalize(furnished) }
-      : furnished === "unfurnished"
-        ? { label: "Furnished", value: "Unfurnished" }
-        : null,
-    category ? { label: "Category", value: capitalize(category) } : null,
-  ].filter(Boolean);
+  const overviewRows = buildPropertyOverviewRows(property);
 
   const AMENITY_INITIAL = 8;
   const visibleAmenities = amenities.slice(0, AMENITY_INITIAL);
@@ -519,6 +500,29 @@ const PropertyDetail = () => {
                     </button>
                   )}
                 </div>
+              </section>
+            )}
+
+            {notes && (
+              <section className="pd-card">
+                <h2 className="pd-section-heading">Additional Notes</h2>
+                <div className="pd-description">
+                  <p>{notes}</p>
+                </div>
+              </section>
+            )}
+
+            {videoUrl && (
+              <section className="pd-card">
+                <h2 className="pd-section-heading">Video</h2>
+                <a
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="pd-show-more"
+                >
+                  Watch property video
+                </a>
               </section>
             )}
 

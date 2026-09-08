@@ -138,6 +138,18 @@
   border-color: var(--color-border);
 }
 
+.ash-shell[data-theme="dark"] .adm-visits-card-action {
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
+  color: var(--color-primary-300);
+}
+
+.ash-shell[data-theme="dark"] .adm-visits-card-action:hover {
+  background: var(--color-slate-200);
+  border-color: var(--color-primary-500);
+  color: var(--color-primary-200);
+}
+
 .ash-shell[data-theme="dark"] .cm-search-input {
   background: var(--color-surface);
   border-color: var(--color-border);
@@ -231,4 +243,63 @@
 .ash-shell[data-theme="dark"] .aud-entity-title,
 .ash-shell[data-theme="dark"] .aud-cell-strong {
   color: var(--color-slate-900);
+}
+
+/* System Health (adm-h-*) — surface cards, tracks and text */
+.ash-shell[data-theme="dark"] .adm-h-hero,
+.ash-shell[data-theme="dark"] .adm-h-metric,
+.ash-shell[data-theme="dark"] .adm-h-panel,
+.ash-shell[data-theme="dark"] .adm-h-hero-score {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-hero--bad {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-hero-reason,
+.ash-shell[data-theme="dark"] .adm-h-hero-status-value,
+.ash-shell[data-theme="dark"] .adm-h-metric-value,
+.ash-shell[data-theme="dark"] .adm-h-gauge-value,
+.ash-shell[data-theme="dark"] .adm-h-panel-title {
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-hero-reason {
+  border-top-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-metric-icon {
+  background: var(--color-slate-100);
+  color: var(--color-slate-400);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-gauge-track,
+.ash-shell[data-theme="dark"] .adm-h-spark-track {
+  background: var(--color-slate-100);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-filter {
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-filter-btn {
+  color: var(--color-slate-400);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-filter-btn--active {
+  background: var(--color-surface);
+  color: var(--color-slate-900);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-note {
+  background: var(--color-slate-100);
+  border-color: var(--color-border);
+}
+
+.ash-shell[data-theme="dark"] .adm-h-note--ok {
+  background: rgba(5, 150, 105, 0.12);
+  border-color: rgba(16, 185, 129, 0.25);
 }

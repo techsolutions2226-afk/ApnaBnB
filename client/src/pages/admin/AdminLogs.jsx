@@ -173,7 +173,7 @@ const AdminLogs = () => {
           <p className="adm-empty">No activity logged yet.</p>
         ) : (
           <div className="adm-table-wrap">
-            <table className="adm-table">
+            <table className="adm-table adm-log-table">
               <thead>
                 <tr>
                   <th>What happened</th>

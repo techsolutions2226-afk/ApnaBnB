@@ -170,14 +170,23 @@ const getUserStats = async (req, res, next) => {
     const [listings, matchCount] = await Promise.all([
       prisma.listing.findMany({
         where: listingWhere,
-        select: { status: true, views: true, inquiries: true },
+        select: {
+          status: true,
+          views: true,
+          inquiries: true,
+          property: { select: { status: true } },
+        },
       }),
       prisma.match.count({ where: matchWhere }),
     ]);
 
+    // Active count follows property moderation status (admin approve flips
+    // property.status; listing.status can lag behind as pending).
     res.status(200).json({
       totalListings: listings.length,
-      activeListings: listings.filter((l) => l.status === 'active').length,
+      activeListings: listings.filter(
+        (l) => (l.property?.status || l.status) === 'active',
+      ).length,
       totalViews: listings.reduce((sum, l) => sum + (l.views || 0), 0),
       totalInquiries: listings.reduce((sum, l) => sum + (l.inquiries || 0), 0),
       matches: matchCount,

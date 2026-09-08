@@ -8,6 +8,8 @@ import {
   FiSend,
   FiMessageCircle,
   FiChevronDown,
+  FiCheck,
+  FiArrowUpRight,
 } from "react-icons/fi";
 import Breadcrumb from "../components/common/Breadcrumb";
 import contactService from "../services/contactService";
@@ -16,9 +18,7 @@ import "../styles/Contact.css";
 import "../styles/Common.css";
 
 /* ─── Contact Us ───
-   Content is admin-editable: everything below the form comes from
-   GET /api/contact, which admins manage at /admin/contact. The page renders
-   whatever is filled in and quietly skips whatever isn't. */
+   Content is admin-editable via GET /api/contact. */
 
 const EMPTY_FORM = { name: "", email: "", subject: "", message: "" };
 
@@ -50,7 +50,6 @@ const Contact = () => {
     };
   }, []);
 
-  /* Prefill from the signed-in account so members don't retype it. */
   useEffect(() => {
     if (!currentUser) return;
     setForm((prev) => ({
@@ -103,10 +102,40 @@ const Contact = () => {
   );
   const faqs = Array.isArray(page?.faqs) ? page.faqs : [];
 
+  const channels = [
+    page?.email && {
+      key: "email",
+      href: `mailto:${page.email}`,
+      icon: FiMail,
+      label: "Email",
+      value: page.email,
+      external: false,
+    },
+    page?.phone && {
+      key: "phone",
+      href: `tel:${page.phone.replace(/\s+/g, "")}`,
+      icon: FiPhone,
+      label: "Call",
+      value: page.phone,
+      external: false,
+    },
+    page?.whatsapp && {
+      key: "whatsapp",
+      href: `https://wa.me/${page.whatsapp.replace(/[^\d]/g, "")}`,
+      icon: FiMessageCircle,
+      label: "WhatsApp",
+      value: page.whatsapp,
+      external: true,
+      accent: true,
+    },
+  ].filter(Boolean);
+
   if (loading) {
     return (
       <div className="cnt-page">
-        <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
+        <div className="cnt-crumb">
+          <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
+        </div>
         <div className="cnt-loading">
           <div className="cm-spinner" />
           <p>Loading contact details…</p>
@@ -117,71 +146,60 @@ const Contact = () => {
 
   return (
     <div className="cnt-page">
-      <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
+      <div className="cnt-crumb">
+        <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
+      </div>
 
-      {/* ── Hero ── */}
-      <section className="cnt-hero">
-        <h1 className="cnt-hero-title">{page?.heading || "Get in touch"}</h1>
-        {page?.subheading && <p className="cnt-hero-sub">{page.subheading}</p>}
-      </section>
+      {/* Split desk: dark rail + form canvas */}
+      <div className="cnt-desk">
+        <aside className="cnt-rail">
+          <p className="cnt-brand">ApnaBnB</p>
+          <span className="cnt-eyebrow">Contact</span>
+          <h1 className="cnt-rail-title">{page?.heading || "Get in touch"}</h1>
+          {page?.subheading && <p className="cnt-rail-lead">{page.subheading}</p>}
 
-      <div className="cnt-layout">
-        {/* ── Details column ── */}
-        <aside className="cnt-details">
-          {page?.email && (
-            <a href={`mailto:${page.email}`} className="cnt-card cnt-card--link">
-              <span className="cnt-card-icon"><FiMail size={18} /></span>
-              <div>
-                <div className="cnt-card-label">Email us</div>
-                <div className="cnt-card-value">{page.email}</div>
-              </div>
-            </a>
-          )}
-
-          {page?.phone && (
-            <a href={`tel:${page.phone.replace(/\s+/g, "")}`} className="cnt-card cnt-card--link">
-              <span className="cnt-card-icon"><FiPhone size={18} /></span>
-              <div>
-                <div className="cnt-card-label">Call us</div>
-                <div className="cnt-card-value">{page.phone}</div>
-              </div>
-            </a>
-          )}
-
-          {page?.whatsapp && (
-            <a
-              href={`https://wa.me/${page.whatsapp.replace(/[^\d]/g, "")}`}
-              target="_blank"
-              rel="noreferrer"
-              className="cnt-card cnt-card--link"
-            >
-              <span className="cnt-card-icon"><FiMessageCircle size={18} /></span>
-              <div>
-                <div className="cnt-card-label">WhatsApp</div>
-                <div className="cnt-card-value">{page.whatsapp}</div>
-              </div>
-            </a>
-          )}
+          <div className="cnt-rail-channels">
+            {channels.map((ch) => {
+              const Icon = ch.icon;
+              return (
+                <a
+                  key={ch.key}
+                  href={ch.href}
+                  className={`cnt-channel${ch.accent ? " cnt-channel--accent" : ""}`}
+                  {...(ch.external
+                    ? { target: "_blank", rel: "noreferrer" }
+                    : {})}
+                >
+                  <span className="cnt-channel-icon" aria-hidden="true">
+                    <Icon size={18} />
+                  </span>
+                  <span className="cnt-channel-text">
+                    <small>{ch.label}</small>
+                    <strong>{ch.value}</strong>
+                  </span>
+                  <FiArrowUpRight className="cnt-channel-arrow" size={16} aria-hidden="true" />
+                </a>
+              );
+            })}
+          </div>
 
           {(page?.address || page?.city) && (
-            <div className="cnt-card">
-              <span className="cnt-card-icon"><FiMapPin size={18} /></span>
-              <div>
-                <div className="cnt-card-label">Visit us</div>
-                <div className="cnt-card-value">
-                  {page.address}
-                  {page.address && page.city ? <br /> : null}
-                  {page.city}
-                </div>
+            <div className="cnt-rail-block">
+              <div className="cnt-rail-block-label">
+                <FiMapPin size={14} aria-hidden="true" /> Visit
               </div>
+              <p>
+                {page.address}
+                {page.address && page.city ? <br /> : null}
+                {page.city}
+              </p>
             </div>
           )}
 
           {hours.length > 0 && (
-            <div className="cnt-card cnt-card--block">
-              <div className="cnt-card-head">
-                <span className="cnt-card-icon"><FiClock size={18} /></span>
-                <div className="cnt-card-label">Office hours</div>
+            <div className="cnt-rail-block">
+              <div className="cnt-rail-block-label">
+                <FiClock size={14} aria-hidden="true" /> Hours
               </div>
               <ul className="cnt-hours">
                 {hours.map((h, i) => (
@@ -197,7 +215,13 @@ const Contact = () => {
           {socials.length > 0 && (
             <div className="cnt-socials">
               {socials.map((s, i) => (
-                <a key={i} href={s.url} target="_blank" rel="noreferrer" className="cnt-social">
+                <a
+                  key={i}
+                  href={s.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="cnt-social"
+                >
                   {s.label}
                 </a>
               ))}
@@ -205,92 +229,98 @@ const Contact = () => {
           )}
         </aside>
 
-        {/* ── Form column ── */}
-        <section className="cnt-form-wrap">
+        <section className="cnt-canvas" aria-labelledby="cnt-form-title">
           {page?.formEnabled === false ? (
-            <div className="cnt-form-off">
-              <h2 className="cnt-form-title">Send us a message</h2>
-              <p className="cnt-form-note">
+            <div className="cnt-panel cnt-panel--center">
+              <h2 id="cnt-form-title">Send us a message</h2>
+              <p>
                 Our message form is temporarily unavailable. Please reach us on
-                the email or phone number listed here and we'll get right back
-                to you.
+                the email or phone listed here.
               </p>
             </div>
           ) : sent ? (
-            <div className="cnt-sent">
-              <div className="cnt-sent-tick">✓</div>
-              <h2 className="cnt-form-title">Message sent</h2>
-              <p className="cnt-form-note">
-                Thanks for reaching out — {page?.responseNote || "we'll reply as soon as we can."}
+            <div className="cnt-panel cnt-panel--center">
+              <div className="cnt-sent-mark" aria-hidden="true">
+                <FiCheck size={28} strokeWidth={2.5} />
+              </div>
+              <h2 id="cnt-form-title">Message sent</h2>
+              <p>
+                Thanks for reaching out —{" "}
+                {page?.responseNote || "we'll reply as soon as we can."}
               </p>
               <button
                 type="button"
                 className="cnt-btn cnt-btn--ghost"
                 onClick={() => setSent(false)}
               >
-                Send another message
+                Send another
               </button>
             </div>
           ) : (
-            <form className="cnt-form" onSubmit={handleSubmit} noValidate>
-              <h2 className="cnt-form-title">Send us a message</h2>
-              {page?.responseNote && (
-                <p className="cnt-form-note">{page.responseNote}</p>
-              )}
+            <form className="cnt-panel" onSubmit={handleSubmit} noValidate>
+              <div className="cnt-panel-head">
+                <h2 id="cnt-form-title">Write to us</h2>
+                {page?.responseNote && <p>{page.responseNote}</p>}
+              </div>
 
-              <div className="cnt-row">
+              <div className="cnt-fields">
                 <div className="cnt-field">
-                  <label className="cnt-label" htmlFor="cnt-name">Your name</label>
+                  <label htmlFor="cnt-name">Your name</label>
                   <input
                     id="cnt-name"
-                    className={`cnt-input${errors.name ? " cnt-input--error" : ""}`}
+                    className={errors.name ? "cnt-error-field" : undefined}
                     value={form.name}
                     onChange={(e) => handleChange("name", e.target.value)}
                     placeholder="e.g. Ayesha Khan"
+                    autoComplete="name"
                   />
-                  {errors.name && <div className="cnt-error">{errors.name}</div>}
+                  {errors.name && <span className="cnt-error">{errors.name}</span>}
                 </div>
 
                 <div className="cnt-field">
-                  <label className="cnt-label" htmlFor="cnt-email">Email address</label>
+                  <label htmlFor="cnt-email">Email</label>
                   <input
                     id="cnt-email"
                     type="email"
-                    className={`cnt-input${errors.email ? " cnt-input--error" : ""}`}
+                    className={errors.email ? "cnt-error-field" : undefined}
                     value={form.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     placeholder="you@example.com"
+                    autoComplete="email"
                   />
-                  {errors.email && <div className="cnt-error">{errors.email}</div>}
+                  {errors.email && <span className="cnt-error">{errors.email}</span>}
+                </div>
+
+                <div className="cnt-field cnt-field--full">
+                  <label htmlFor="cnt-subject">
+                    Subject <em>(optional)</em>
+                  </label>
+                  <input
+                    id="cnt-subject"
+                    value={form.subject}
+                    onChange={(e) => handleChange("subject", e.target.value)}
+                    placeholder="What is this about?"
+                  />
+                </div>
+
+                <div className="cnt-field cnt-field--full">
+                  <label htmlFor="cnt-message">Message</label>
+                  <textarea
+                    id="cnt-message"
+                    rows={7}
+                    className={errors.message ? "cnt-error-field" : undefined}
+                    value={form.message}
+                    onChange={(e) => handleChange("message", e.target.value)}
+                    placeholder="Tell us how we can help…"
+                  />
+                  {errors.message && (
+                    <span className="cnt-error">{errors.message}</span>
+                  )}
                 </div>
               </div>
 
-              <div className="cnt-field">
-                <label className="cnt-label" htmlFor="cnt-subject">Subject</label>
-                <input
-                  id="cnt-subject"
-                  className="cnt-input"
-                  value={form.subject}
-                  onChange={(e) => handleChange("subject", e.target.value)}
-                  placeholder="What is this about?"
-                />
-              </div>
-
-              <div className="cnt-field">
-                <label className="cnt-label" htmlFor="cnt-message">Message</label>
-                <textarea
-                  id="cnt-message"
-                  rows={7}
-                  className={`cnt-textarea${errors.message ? " cnt-input--error" : ""}`}
-                  value={form.message}
-                  onChange={(e) => handleChange("message", e.target.value)}
-                  placeholder="Tell us how we can help…"
-                />
-                {errors.message && <div className="cnt-error">{errors.message}</div>}
-              </div>
-
               <button type="submit" className="cnt-btn cnt-btn--primary" disabled={sending}>
-                <FiSend size={16} />
+                <FiSend size={16} aria-hidden="true" />
                 {sending ? "Sending…" : "Send message"}
               </button>
             </form>
@@ -298,9 +328,8 @@ const Contact = () => {
         </section>
       </div>
 
-      {/* ── Map ── */}
       {page?.mapEmbedUrl && (
-        <section className="cnt-map">
+        <section className="cnt-map" aria-label="Our location on the map">
           <iframe
             title="Our location"
             src={page.mapEmbedUrl}
@@ -311,13 +340,18 @@ const Contact = () => {
         </section>
       )}
 
-      {/* ── FAQs ── */}
       {faqs.length > 0 && (
-        <section className="cnt-faq-section">
-          <h2 className="cnt-faq-heading">Frequently asked</h2>
+        <section className="cnt-faq-wrap" aria-labelledby="cnt-faq-heading">
+          <div className="cnt-faq-intro">
+            <p className="cnt-faq-kicker">FAQ</p>
+            <h2 id="cnt-faq-heading">Questions we hear often</h2>
+          </div>
           <div className="cnt-faqs">
             {faqs.map((f, i) => (
-              <div key={i} className={`cnt-faq${openFaq === i ? " cnt-faq--open" : ""}`}>
+              <div
+                key={i}
+                className={`cnt-faq${openFaq === i ? " cnt-faq--open" : ""}`}
+              >
                 <button
                   type="button"
                   className="cnt-faq-q"
@@ -325,7 +359,7 @@ const Contact = () => {
                   aria-expanded={openFaq === i}
                 >
                   <span>{f.question}</span>
-                  <FiChevronDown size={18} className="cnt-faq-chev" />
+                  <FiChevronDown size={18} aria-hidden="true" />
                 </button>
                 {openFaq === i && <div className="cnt-faq-a">{f.answer}</div>}
               </div>

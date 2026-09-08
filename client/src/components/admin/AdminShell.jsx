@@ -19,6 +19,7 @@ import {
   FiSun,
   FiMoon,
   FiCalendar,
+  FiServer,
 } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { useAdminSectionUnviewed } from "../../hooks/useAdminSectionUnviewed";
@@ -39,6 +40,7 @@ const NAV_ITEMS = [
   { to: "/admin/plans", label: "Plans", icon: FiTag },
   { to: "/admin/contact", label: "Contact Page", icon: FiPhone },
   { to: "/admin/logs", label: "System Logs", icon: FiActivity },
+  { to: "/admin/health", label: "System Health", icon: FiServer },
 ];
 
 /* ─── AdminShell — standalone admin management panel.

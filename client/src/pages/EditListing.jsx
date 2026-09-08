@@ -10,6 +10,10 @@ import { useAuth } from "../context/AuthContext";
 import { useListing, useUpdateListing } from "../hooks/useListings";
 import { useProperties, useUpdateProperty } from "../hooks/useProperties";
 import ListingForm from "../components/listing/ListingForm";
+import {
+  formToPropertyPayload,
+  propertyToFormInitial,
+} from "../utils/propertyPayload";
 import { FiArrowLeft, FiHome } from "react-icons/fi";
 import "../styles/Dashboard.css";
 import "../styles/Listing.css";
@@ -51,30 +55,8 @@ const EditListing = () => {
 
     if (propData) {
       setProperty(propData);
-
       setInitialData({
-        title: propData.title || "",
-        purpose: propData.purpose || "sale",
-        category: propData.category || "home",
-        propertyType: propData.propertyType || "",
-        price: propData.price || "",
-        size: propData.size || "",
-        sizeUnit: propData.sizeUnit || "Marla",
-        city: propData.location?.city || propData.city || "",
-        area: propData.location?.area || propData.area || "",
-        coordinates: propData.location?.coordinates || propData.coordinates || null,
-        bedrooms: propData.bedrooms ?? "",
-        bathrooms: propData.bathrooms ?? "",
-        description: propData.description || "",
-        amenities: propData.amenities || [],
-        gallery: propData.photos || propData.gallery || [],
-        securityDeposit: propData.securityDeposit ?? "",
-        leaseTerm: propData.leaseTerm || 12,
-        furnished: propData.furnished || "unfurnished",
-        availableFrom: propData.availableFrom || "",
-        contactName: propData.contactName || "",
-        contactEmail: propData.contactEmail || "",
-        contactPhone: propData.contactPhone || "",
+        ...propertyToFormInitial(propData),
         status: listing.status || "active",
       });
     }
@@ -95,33 +77,7 @@ const EditListing = () => {
       setIsSubmitting(true);
 
       try {
-        const propertyUpdates = {
-          title: formData.title,
-          description: formData.description,
-          purpose: formData.purpose || "sale",
-          category: formData.category || "home",
-          propertyType: formData.propertyType,
-          price: Number(formData.price),
-          size: Number(formData.size) || undefined,
-          sizeUnit: formData.sizeUnit,
-          location: {
-            city: formData.city,
-            area: formData.area,
-            ...(formData.coordinates ? { coordinates: formData.coordinates } : {}),
-          },
-          bedrooms: Number(formData.bedrooms) || undefined,
-          bathrooms: Number(formData.bathrooms) || undefined,
-          amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
-          photos: Array.isArray(formData.images) ? formData.images : undefined,
-          securityDeposit: formData.securityDeposit,
-          leaseTerm: formData.leaseTerm,
-          furnished: formData.furnished,
-          availableFrom: formData.availableFrom,
-          contactName: formData.contactName,
-          contactEmail: formData.contactEmail,
-          contactPhone: formData.contactPhone,
-        };
-
+        const propertyUpdates = formToPropertyPayload(formData);
         await updateProperty(propertyId, propertyUpdates);
 
         // Listing row only stores status/views/inquiries — skip when the form

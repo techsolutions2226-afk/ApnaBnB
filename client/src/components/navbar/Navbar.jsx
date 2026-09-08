@@ -97,7 +97,7 @@ const Navbar = () => {
           ) : (
             <Link to="/login" className="become-host-btn">List a property</Link>
           )}
-          {currentUser && <NotificationBell />}
+          <NotificationBell />
           <button className="icon-btn nav-desktop-only" aria-label="Language">
             <FiGlobe size={18} />
           </button>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiBell } from "react-icons/fi";
+import { toast } from "react-toastify";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useAuth } from "../../context/AuthContext";
 
@@ -96,7 +97,16 @@ const NotificationBell = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  if (!currentUser) return null;
+  /* Guests still see the bell, but tapping it points them at login instead of
+     rendering an empty/unauthorized panel the dashboards show. */
+  const handleToggle = () => {
+    if (!currentUser) {
+      toast.info("Please login first to view your notifications.");
+      navigate("/login");
+      return;
+    }
+    setOpen((o) => !o);
+  };
 
   const handleItemClick = (n) => {
     setOpen(false);
@@ -111,7 +121,7 @@ const NotificationBell = () => {
           unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"
         }
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         style={{
           position: "relative",
           width: 38,

@@ -4,7 +4,6 @@ import {
   FiHome,
   FiSearch,
   FiUser,
-  FiBell,
   FiGrid,
   FiList,
   FiHeart,
@@ -17,6 +16,7 @@ import {
 import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import MobileBottomNav from "./MobileBottomNav";
+import NotificationBell from "../navbar/NotificationBell";
 
 const sidebarNavItems = [
   { section: "Main", items: [
@@ -45,12 +45,7 @@ function MobileTopBar({ onMenuToggle }) {
           </span>
         </Link>
         <div className="flex items-center gap-2">
-          <button
-            className="h-9 w-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-colors relative"
-            aria-label="Notifications"
-          >
-            <FiBell className="h-4.5 w-4.5" />
-          </button>
+          <NotificationBell />
           <Link to="/account" className="shrink-0">
             <Avatar src={currentUser?.avatar} name={currentUser?.name} size="sm" />
           </Link>

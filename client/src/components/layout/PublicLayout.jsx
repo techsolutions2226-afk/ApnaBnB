@@ -1,12 +1,12 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
-  FiBell,
   FiX,
 } from "react-icons/fi";
 import Avatar from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import MobileBottomNav from "./MobileBottomNav";
+import NotificationBell from "../navbar/NotificationBell";
 
 function AnnouncementBanner() {
   const [visible, setVisible] = useState(true);
@@ -121,8 +121,9 @@ export default function PublicLayout() {
               ))}
             </nav>
 
-            {/* Desktop Actions */}
+{/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-2">
+              <NotificationBell />
               {isAuthenticated ? (
                 <>
                   <Link
@@ -135,16 +136,6 @@ export default function PublicLayout() {
                   >
                     Dashboard
                   </Link>
-                  <button
-                    className={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
-                      stageLive
-                        ? "text-slate-200 hover:bg-white/10"
-                        : "text-slate-500 hover:bg-slate-100"
-                    }`}
-                    aria-label="Notifications"
-                  >
-                    <FiBell className="h-4.5 w-4.5" />
-                  </button>
                   <Link to="/account" className="shrink-0">
                     <Avatar
                       src={currentUser?.avatar}
@@ -177,6 +168,7 @@ export default function PublicLayout() {
 
             {/* Mobile: Avatar/notifications (no hamburger — bottom nav handles primary nav) */}
             <div className="md:hidden flex items-center gap-2">
+              <NotificationBell />
               {isAuthenticated && (
                 <Link to="/account" className="shrink-0">
                   <Avatar

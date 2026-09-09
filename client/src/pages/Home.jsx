@@ -7,6 +7,8 @@ import PropertyCard from "../components/property/PropertyCard";
 import Pagination from "../components/common/Pagination";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import SearchPanel from "../components/cinematic/SearchPanel";
+import Seo, { buildOrganizationJsonLd } from "../components/seo/Seo";
+import { PAGE_SEO } from "../config/seo";
 import "../styles/cinematic.css";
 import "../styles/SearchFields.css";
 import "../styles/SearchDropdowns.css";
@@ -147,6 +149,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <Seo
+        title={PAGE_SEO.home.title}
+        description={PAGE_SEO.home.description}
+        path={PAGE_SEO.home.path}
+        jsonLd={buildOrganizationJsonLd()}
+      />
       {/* ══ HERO BANNER (static image) — simple full-width banner with
           headline over an image. No scroll-driven behavior. ══ */}
       <section className="relative w-full min-h-[420px] sm:min-h-[520px] lg:min-h-[620px] overflow-x-hidden">

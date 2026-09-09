@@ -7,6 +7,8 @@ import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
+import Seo from "../seo/Seo";
+import { privateAreaTitle } from "../../config/seo";
 
 const STORAGE_KEY = "dash_view_role";
 const THEME_KEY = "apnabnb_admin_theme";
@@ -121,6 +123,12 @@ export default function DashboardShell() {
       className={`flex h-screen font-sans ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
       data-theme={theme}
     >
+      <Seo
+        title={privateAreaTitle(location.pathname)}
+        description="Private ApnaBnB workspace. Sign in required."
+        path={location.pathname}
+        noindex
+      />
       <aside
         className={`fixed left-0 top-0 z-[60] h-full w-72 flex flex-col bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
           navOpen ? "translate-x-0" : "-translate-x-full"

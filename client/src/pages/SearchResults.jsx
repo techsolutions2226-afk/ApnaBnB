@@ -15,6 +15,8 @@ import {
   FiList,
 } from "react-icons/fi";
 import "../styles/SearchDropdowns.css";
+import Seo from "../components/seo/Seo";
+import { PAGE_SEO } from "../config/seo";
 
 /* ─── Constants ─── */
 const PER_PAGE = 12;
@@ -391,8 +393,24 @@ const SearchResults = () => {
           ? `Properties in ${dest}`
           : "All properties";
 
+  const seoPreset =
+    purpose === "sale"
+      ? PAGE_SEO.sale
+      : purpose === "rent"
+        ? PAGE_SEO.rent
+        : PAGE_SEO.search;
+
+  const seoDescription = dest
+    ? `Browse ${filteredProperties.length} properties in ${dest} on ApnaBnB.`
+    : seoPreset.description;
+
   return (
     <div className="min-h-screen bg-slate-50">
+      <Seo
+        title={dest ? `Properties in ${dest}` : seoPreset.title}
+        description={seoDescription}
+        path={location.pathname}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* ═══ Top Bar: search summary + sort + filter button ═══ */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">

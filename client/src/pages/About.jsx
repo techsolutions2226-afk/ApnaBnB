@@ -16,6 +16,8 @@ import {
 } from "react-icons/fi";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Logo from "../components/common/Logo";
+import Seo from "../components/seo/Seo";
+import { PAGE_SEO } from "../config/seo";
 import "../styles/About.css";
 
 /* ─── About Us ───
@@ -137,6 +139,11 @@ const VALUES = [
 const About = () => {
   return (
     <div className="abt-page">
+      <Seo
+        title={PAGE_SEO.about.title}
+        description={PAGE_SEO.about.description}
+        path={PAGE_SEO.about.path}
+      />
       <div className="abt-crumb">
         <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "About Us" }]} />
       </div>

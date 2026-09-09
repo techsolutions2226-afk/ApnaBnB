@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useEffect } from "react";
+import Seo from "../components/seo/Seo";
 
 /* Legal document pages (Terms, Payments, Nondiscrimination, Privacy).
    Linked from the signup terms notice and opened in a new tab. Content is a
@@ -33,16 +33,13 @@ const Legal = () => {
   const { slug } = useParams();
   const doc = DOCS[slug];
 
-  useEffect(() => {
-    document.title = doc ? `${doc.title} — ApnaBnB` : "Not found — ApnaBnB";
-  }, [doc]);
-
   if (!doc) {
     return (
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px" }}>
+        <Seo title="Document not found" path={`/legal/${slug || ""}`} noindex />
         <h1 style={{ fontSize: 24, fontWeight: 800 }}>Document not found</h1>
         <p style={{ color: "#666", marginTop: 8 }}>
-          The page you're looking for doesn't exist.
+          The page you&apos;re looking for doesn&apos;t exist.
         </p>
         <Link to="/" style={{ color: "#134e2c", fontWeight: 700 }}>
           Return home
@@ -53,13 +50,21 @@ const Legal = () => {
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px" }}>
+      <Seo
+        title={doc.title}
+        description={doc.intro}
+        path={`/legal/${slug}`}
+      />
       <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>
         {doc.title}
       </h1>
       <p style={{ color: "#444", lineHeight: 1.6 }}>{doc.intro}</p>
       <p style={{ color: "#777", lineHeight: 1.6, marginTop: 16, fontSize: 14 }}>
         For questions in the meantime, contact us at{" "}
-        <a href="mailto:support@apnabnb.com" style={{ color: "#134e2c", fontWeight: 600 }}>
+        <a
+          href="mailto:support@apnabnb.com"
+          style={{ color: "#134e2c", fontWeight: 600 }}
+        >
           support@apnabnb.com
         </a>
         .

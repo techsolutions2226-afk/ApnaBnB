@@ -14,6 +14,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
+import Seo from "../components/seo/Seo";
+import { PAGE_SEO } from "../config/seo";
 import {
   validateSignupForm,
   passwordChecks,
@@ -226,6 +228,12 @@ const Signup = () => {
 
   return (
     <div className="h-screen h-[100dvh] overflow-hidden grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[minmax(0,46%)_minmax(0,54%)] md:h-screen md:h-[100dvh] font-body text-slate-900 bg-white">
+      <Seo
+        title={PAGE_SEO.signup.title}
+        description={PAGE_SEO.signup.description}
+        path={PAGE_SEO.signup.path}
+        noindex={PAGE_SEO.signup.noindex}
+      />
       {/* ── Left Panel: brand / house imagery ── */}
       <div
         className="relative overflow-hidden flex flex-col p-6 md:p-11 text-white bg-cover bg-center min-h-[300px] md:min-h-0 md:h-screen md:h-[100dvh] md:sticky md:top-0 shrink-0"
@@ -235,7 +243,7 @@ const Signup = () => {
         }}
       >
         <Link to="/" className="relative inline-flex w-fit" aria-label="apnabnb home">
-          <Logo size={40} />
+          <Logo size={50} />
         </Link>
       </div>
 

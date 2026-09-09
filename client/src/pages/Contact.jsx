@@ -13,6 +13,8 @@ import {
 } from "react-icons/fi";
 import Breadcrumb from "../components/common/Breadcrumb";
 import Logo from "../components/common/Logo";
+import Seo from "../components/seo/Seo";
+import { PAGE_SEO } from "../config/seo";
 import contactService from "../services/contactService";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Contact.css";
@@ -134,6 +136,11 @@ const Contact = () => {
   if (loading) {
     return (
       <div className="cnt-page">
+        <Seo
+          title={PAGE_SEO.contact.title}
+          description={PAGE_SEO.contact.description}
+          path={PAGE_SEO.contact.path}
+        />
         <div className="cnt-crumb">
           <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
         </div>
@@ -147,6 +154,11 @@ const Contact = () => {
 
   return (
     <div className="cnt-page">
+      <Seo
+        title={PAGE_SEO.contact.title}
+        description={PAGE_SEO.contact.description}
+        path={PAGE_SEO.contact.path}
+      />
       <div className="cnt-crumb">
         <Breadcrumb items={[{ label: "Home", to: "/" }, { label: "Contact Us" }]} />
       </div>

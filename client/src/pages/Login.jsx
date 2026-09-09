@@ -5,6 +5,8 @@ import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
+import Seo from "../components/seo/Seo";
+import { PAGE_SEO } from "../config/seo";
 import { getLastLogin } from "../utils/lastLogin";
 
 const Login = () => {
@@ -103,6 +105,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen md:min-h-screen flex flex-col md:flex-row bg-white">
+      <Seo
+        title={PAGE_SEO.login.title}
+        description={PAGE_SEO.login.description}
+        path={PAGE_SEO.login.path}
+        noindex={PAGE_SEO.login.noindex}
+      />
       {/* ── Left Panel: brand / imagery ── */}
       <div
         className="relative flex flex-col text-white

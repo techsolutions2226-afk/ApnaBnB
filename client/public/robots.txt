@@ -1,0 +1,26 @@
+# ApnaBnB robots.txt
+# Replace production host via VITE_SITE_URL; sitemap uses relative discovery.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /account
+Disallow: /listing/
+Disallow: /my-listings
+Disallow: /my-requirements
+Disallow: /requirements/new
+Disallow: /requirements/*/edit
+Disallow: /matches
+Disallow: /wishlists
+Disallow: /trips
+Disallow: /visits/
+Disallow: /visit/
+Disallow: /plans
+Disallow: /login
+Disallow: /signup
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: /sitemap.xml

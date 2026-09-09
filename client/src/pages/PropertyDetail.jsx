@@ -45,6 +45,7 @@ import {
   buildPropertyOverviewRows,
   formatPropertyLocation,
 } from "../utils/propertyDisplay";
+import Seo, { buildPropertyJsonLd } from "../components/seo/Seo";
 import "../styles/PropertyDetail.css";
 
 /* ─── Amenity icon map ─── */
@@ -128,6 +129,7 @@ const PropertyDetail = () => {
   if (isLoading) {
     return (
       <div className="pd-wrapper">
+        <Seo title="Loading property" path={`/property/${id}`} noindex />
         <div className="pd-container">
           <Skeleton count={10} />
         </div>
@@ -138,6 +140,7 @@ const PropertyDetail = () => {
   if (!property || error) {
     return (
       <div className="pd-not-found">
+        <Seo title="Property not found" path={`/property/${id}`} noindex />
         <h2>Property not found</h2>
         <p>{error || "The property you are looking for does not exist."}</p>
         <Link to="/" className="pd-back-home">
@@ -286,6 +289,17 @@ const PropertyDetail = () => {
 
   return (
     <div className="pd-wrapper">
+      <Seo
+        title={title}
+        description={
+          (description || "").replace(/\s+/g, " ").trim().slice(0, 160) ||
+          `${title} — ${purpose === "rent" ? "For rent" : "For sale"} in ${locationString}`
+        }
+        path={`/property/${id}`}
+        image={actualGallery[0] || "/logo.png"}
+        type="article"
+        jsonLd={buildPropertyJsonLd(property, `/property/${id}`)}
+      />
       {showStickyNav && (
         <div className="pd-sticky-nav">
           <div className="pd-sticky-nav-inner">

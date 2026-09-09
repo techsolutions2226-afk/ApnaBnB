@@ -25,6 +25,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useAdminSectionUnviewed } from "../../hooks/useAdminSectionUnviewed";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
+import Seo from "../seo/Seo";
+import { privateAreaTitle } from "../../config/seo";
 import "../../styles/AdminShell.css";
 import "../../styles/AdminShell.dark.css";
 
@@ -97,6 +99,12 @@ export default function AdminShell() {
 
   return (
     <div className="ash-shell" data-theme={theme}>
+      <Seo
+        title={privateAreaTitle(location.pathname)}
+        description="ApnaBnB admin panel. Authorized administrators only."
+        path={location.pathname}
+        noindex
+      />
       {/* ── Fixed sidebar ── */}
       <aside
         className={`ash-sidebar${navOpen ? " ash-sidebar--open" : ""}`}

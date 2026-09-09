@@ -42,6 +42,14 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Public liveness probe — no auth, no DB, no heavy work.
+// Mounted BEFORE the rate limiter / audit / metrics consumers so an external
+// keep-alive (e.g. every 10 min on Render Free Tier) never burns quota or
+// writes ActivityLog rows. Distinct from the admin /api/admin/health checks.
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Request metrics — mounted BEFORE the rate limiter so 429 responses are
 // observed too. Powers the admin "System Health" dashboards with real data.
 app.use(requestMetrics);

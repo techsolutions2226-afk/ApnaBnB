@@ -20,6 +20,7 @@ router.post('/profile', verifyToken, profileUpload.single('image'), uploadImage)
 
 // Chat attachments → messages/images · messages/documents · messages/voice.
 
-router.delete('/image/:publicId', verifyToken, deleteImage);
+// publicId is a query param so folder slashes (apnaBnB/properties/…) survive.
+router.delete('/image', verifyToken, deleteImage);
 
 module.exports = router;

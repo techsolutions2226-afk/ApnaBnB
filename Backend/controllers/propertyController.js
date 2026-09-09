@@ -17,6 +17,7 @@ const {
   appUrl,
 } = require('../utils/matchNotifier');
 const { buildPropertyData, validatePropertyData } = require('../utils/propertyData');
+const { isAllowedViewRole, viewRoleDeniedMessage } = require('../utils/roles');
 
 // Deliberately NO email/phone here: contact details are a paid reveal and are
 // served only by getPropertyContact below. Returning them on every property
@@ -178,10 +179,13 @@ const createProperty = async (req, res, next) => {
     data.photos = Array.isArray(data.photos) ? data.photos : [];
     data.amenities = Array.isArray(data.amenities) ? data.amenities : [];
     data.listedById = req.user.id;
-    // Record the hat the user wore when listing (supply side). Uses the role
-    // they selected in the dashboard, clamped to seller|dealer; falls back to
-    // their account role.
-    data.actingRole = normalizeSupply(req.body.actingRole || req.user.role);
+    // Record the hat the user wore when listing (supply side). Must be a hat
+    // this account is allowed to wear, then clamped to seller|dealer.
+    const supplyHat = req.body.actingRole || req.user.viewRole || req.user.role;
+    if (!isAllowedViewRole(req.user.role, supplyHat)) {
+      return res.status(400).json({ message: viewRoleDeniedMessage(req.user.role) });
+    }
+    data.actingRole = normalizeSupply(supplyHat);
 
     const validationError = validatePropertyData(data);
     if (validationError) {

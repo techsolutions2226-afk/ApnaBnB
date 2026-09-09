@@ -29,6 +29,27 @@ export const ROLE_META = {
   dealer: { label: "Dealer", icon: FiBriefcase, accent: "#8b5cf6" },
 };
 
+/**
+ * Hats a member may wear in the dashboard "Viewing as" switcher.
+ * Permanent account `role` is set at signup; this only constrains viewRole.
+ *   seller | buyer → may view as seller or buyer (not dealer)
+ *   dealer         → dealer only
+ */
+export function allowedViewRoles(accountRole) {
+  if (accountRole === "dealer") return ["dealer"];
+  if (accountRole === "seller" || accountRole === "buyer") {
+    return ["seller", "buyer"];
+  }
+  return [];
+}
+
+export function clampViewRole(accountRole, viewRole) {
+  const allowed = allowedViewRoles(accountRole);
+  if (allowed.includes(viewRole)) return viewRole;
+  if (allowed.includes(accountRole)) return accountRole;
+  return allowed[0] || null;
+}
+
 /* Shared items reused across roles. */
 const DASH = { to: "/dashboard", label: "Dashboard", icon: FiGrid, end: true };
 const MATCHES = { to: "/matches", label: "Matches", icon: FiGitMerge };

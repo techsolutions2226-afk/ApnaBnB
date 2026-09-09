@@ -115,6 +115,11 @@ const registerUser = async (req, res, next) => {
     return res.status(400).json({ message: 'Please provide a valid mobile number.' });
   }
 
+  const VALID_ROLES = ['seller', 'buyer', 'dealer'];
+  if (!VALID_ROLES.includes(role)) {
+    return res.status(400).json({ message: 'Please select a valid role.' });
+  }
+
   try {
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },

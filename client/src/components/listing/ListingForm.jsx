@@ -348,6 +348,15 @@ const validate = (data) => {
     errors.images = "Upload at least one property image";
   } else if (data.images.length > MAX_IMAGES) {
     errors.images = `Maximum ${MAX_IMAGES} images allowed`;
+  } else if (data.images.some((img) => img?.isUploading)) {
+    errors.images = "Wait for all images to finish uploading";
+  } else if (
+    data.images.some((img) => {
+      const url = typeof img === "string" ? img : img?.url;
+      return !url || String(url).startsWith("blob:");
+    })
+  ) {
+    errors.images = "One or more images failed to upload — please re-add them";
   }
   if (
     !data.coordinates ||
@@ -912,14 +921,6 @@ const ListingForm = ({
         landmark: form.landmark?.trim() || "",
         bedrooms: form.category === "home" ? Number(form.bedrooms) || 0 : 0,
         bathrooms: form.category === "home" ? Number(form.bathrooms) || 0 : 0,
-        kitchens: form.kitchens !== "" ? Number(form.kitchens) : "",
-        drawingRooms: form.drawingRooms !== "" ? Number(form.drawingRooms) : "",
-        diningRooms: form.diningRooms !== "" ? Number(form.diningRooms) : "",
-        livingRooms: form.livingRooms !== "" ? Number(form.livingRooms) : "",
-        studyRooms: form.studyRooms !== "" ? Number(form.studyRooms) : "",
-        storeRooms: form.storeRooms !== "" ? Number(form.storeRooms) : "",
-        powderRooms: form.powderRooms !== "" ? Number(form.powderRooms) : "",
-        servantQuarters: form.servantQuarters !== "" ? Number(form.servantQuarters) : "",
         floorNumber: form.floorNumber !== "" ? Number(form.floorNumber) : "",
         totalFloors: form.totalFloors !== "" ? Number(form.totalFloors) : "",
         constructionYear: form.constructionYear !== "" ? Number(form.constructionYear) : "",
@@ -931,7 +932,7 @@ const ListingForm = ({
         notes: form.notes?.trim() || "",
         videoUrl: form.videoUrl?.trim() || "",
         amenities: form.amenities,
-        images: form.images.map((img) => img.url),
+        images: form.images,
         featured: form.featured,
         coordinates: form.coordinates,
         securityDeposit:
@@ -1619,46 +1620,6 @@ const ListingForm = ({
                   max="20"
                 />
                 {showError("bathrooms") && <div className="lst-error">{errors.bathrooms}</div>}
-              </div>
-            </div>
-            <div className="lst-row">
-              <div className="lst-field">
-                <label className="lst-label">Kitchens</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.kitchens} onChange={(e) => handleChange("kitchens", e.target.value)} />
-              </div>
-              <div className="lst-field">
-                <label className="lst-label">Drawing Rooms</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.drawingRooms} onChange={(e) => handleChange("drawingRooms", e.target.value)} />
-              </div>
-            </div>
-            <div className="lst-row">
-              <div className="lst-field">
-                <label className="lst-label">Dining Rooms</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.diningRooms} onChange={(e) => handleChange("diningRooms", e.target.value)} />
-              </div>
-              <div className="lst-field">
-                <label className="lst-label">Living Rooms</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.livingRooms} onChange={(e) => handleChange("livingRooms", e.target.value)} />
-              </div>
-            </div>
-            <div className="lst-row">
-              <div className="lst-field">
-                <label className="lst-label">Study Rooms</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.studyRooms} onChange={(e) => handleChange("studyRooms", e.target.value)} />
-              </div>
-              <div className="lst-field">
-                <label className="lst-label">Store Rooms</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.storeRooms} onChange={(e) => handleChange("storeRooms", e.target.value)} />
-              </div>
-            </div>
-            <div className="lst-row">
-              <div className="lst-field">
-                <label className="lst-label">Powder Rooms</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.powderRooms} onChange={(e) => handleChange("powderRooms", e.target.value)} />
-              </div>
-              <div className="lst-field">
-                <label className="lst-label">Servant Quarters</label>
-                <input type="number" className="lst-input" min="0" max="10" value={form.servantQuarters} onChange={(e) => handleChange("servantQuarters", e.target.value)} />
               </div>
             </div>
             <div className="lst-row">

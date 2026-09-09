@@ -20,12 +20,22 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add JWT token
+// Request interceptor to add JWT token.
+// FormData must NOT carry a manual Content-Type — the browser has to set
+// multipart/form-data with the correct boundary, or multer never sees the file.
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      if (config.headers && typeof config.headers.delete === 'function') {
+        config.headers.delete('Content-Type');
+      } else if (config.headers) {
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+      }
     }
     return config;
   },

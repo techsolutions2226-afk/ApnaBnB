@@ -3,7 +3,13 @@ import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-do
 import { FiChevronDown, FiSettings, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
-import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
+import {
+  NAV_BY_ROLE,
+  ROLE_META,
+  ROLES,
+  allowedViewRoles,
+  clampViewRole,
+} from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
@@ -18,10 +24,8 @@ const THEME_KEY = "apnabnb_admin_theme";
  * a scrolling content area on the right. It renders no global navbar/footer —
  * the sidebar (with the apnabnb logo linking home) is the only chrome.
  *
- * Purely presentational: it wraps the existing routed pages via <Outlet/> and
- * changes none of their logic. The top-right "Viewing as" selector is a
- * CLIENT-ONLY view switch (sidebar + dashboard body); it never touches the
- * backend or the account's real role, and is persisted to localStorage.
+ * The top-right "Viewing as" selector is constrained by permanent account role:
+ * sellers/buyers may switch between those two hats; dealers stay dealer-only.
  */
 export default function DashboardShell() {
   const { currentUser, logout, updateProfile } = useAuth();
@@ -46,20 +50,28 @@ export default function DashboardShell() {
       ? currentUser.role
       : "buyer";
 
-  const [viewRole, setViewRoleState] = useState(() => {
+  const switchableRoles = allowedViewRoles(realRole);
+  const canSwitchRoles = switchableRoles.length > 1;
+
+  const resolveInitialView = () => {
+    let candidate = null;
     if (currentUser?.viewRole && ROLES.includes(currentUser.viewRole)) {
-      return currentUser.viewRole;
+      candidate = currentUser.viewRole;
+    } else {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored && ROLES.includes(stored)) candidate = stored;
+      } catch {
+        /* ignore */
+      }
     }
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored && ROLES.includes(stored) ? stored : realRole;
-    } catch {
-      return realRole;
-    }
-  });
+    return clampViewRole(realRole, candidate) || realRole;
+  };
+
+  const [viewRole, setViewRoleState] = useState(resolveInitialView);
 
   const setViewRole = (role) => {
-    if (!ROLES.includes(role)) return;
+    if (!switchableRoles.includes(role)) return;
     setViewRoleState(role);
     try {
       localStorage.setItem(STORAGE_KEY, role);
@@ -70,6 +82,22 @@ export default function DashboardShell() {
       updateProfile({ viewRole: role }).catch(() => {});
     }
   };
+
+  // Clamp illegal DB/localStorage hats (e.g. buyer with viewRole=dealer) and persist.
+  useEffect(() => {
+    const clamped = clampViewRole(realRole, viewRole) || realRole;
+    if (clamped !== viewRole) {
+      setViewRole(clamped);
+      return;
+    }
+    if (
+      currentUser?.viewRole &&
+      !switchableRoles.includes(currentUser.viewRole)
+    ) {
+      updateProfile({ viewRole: clamped }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realRole, currentUser?.id]);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -103,7 +131,7 @@ export default function DashboardShell() {
   }, []);
 
   const items = NAV_BY_ROLE[viewRole] || [];
-  const meta = ROLE_META[viewRole];
+  const meta = ROLE_META[viewRole] || ROLE_META[realRole];
   const RoleIcon = meta.icon;
 
   const pickRole = (role) => {
@@ -283,75 +311,99 @@ export default function DashboardShell() {
 
           <div className="relative" ref={selectRef}>
             <span className="sr-only">Viewing as</span>
-            <button
-              type="button"
-              className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
-                isDark
-                  ? "text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700"
-                  : "text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
-              }`}
-              style={{ "--role-accent": meta.accent }}
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-haspopup="listbox"
-              aria-expanded={menuOpen}
-            >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: meta.accent }}
-              />
-              <RoleIcon
-                size={15}
-                className={isDark ? "text-slate-300" : "text-slate-600"}
-              />
-              <span>{meta.label}</span>
-              <FiChevronDown
-                size={15}
-                className={`transition-transform ${
-                  menuOpen ? "rotate-180" : "rotate-0"
-                }`}
-              />
-            </button>
+            {canSwitchRoles ? (
+              <>
+                <button
+                  type="button"
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
+                    isDark
+                      ? "text-slate-200 bg-slate-800 border-slate-700 hover:bg-slate-700"
+                      : "text-slate-700 bg-white border-slate-200 hover:bg-slate-50"
+                  }`}
+                  style={{ "--role-accent": meta.accent }}
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={menuOpen}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: meta.accent }}
+                  />
+                  <RoleIcon
+                    size={15}
+                    className={isDark ? "text-slate-300" : "text-slate-600"}
+                  />
+                  <span>{meta.label}</span>
+                  <FiChevronDown
+                    size={15}
+                    className={`transition-transform ${
+                      menuOpen ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
 
-            {menuOpen && (
-              <ul
-                className={`absolute right-0 mt-1.5 w-48 origin-top-right rounded-lg border shadow-lg overflow-hidden animate-slide-down ${
+                {menuOpen && (
+                  <ul
+                    className={`absolute right-0 mt-1.5 w-48 origin-top-right rounded-lg border shadow-lg overflow-hidden animate-slide-down ${
+                      isDark
+                        ? "bg-slate-900 border-slate-700 ring-1 ring-slate-800"
+                        : "bg-white border-slate-200 ring-1 ring-slate-100"
+                    }`}
+                    role="listbox"
+                  >
+                    {switchableRoles.map((role) => {
+                      const m = ROLE_META[role];
+                      const Icon = m.icon;
+                      return (
+                        <li key={role}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={role === viewRole}
+                            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                              role === viewRole
+                                ? "bg-primary-50 text-primary-700"
+                                : isDark
+                                  ? "text-slate-200 hover:bg-slate-800"
+                                  : "text-slate-700 hover:bg-slate-50"
+                            }`}
+                            style={{ "--role-accent": m.accent }}
+                            onClick={() => pickRole(role)}
+                          >
+                            <Icon size={15} className="text-slate-500" />
+                            <span>{m.label}</span>
+                            {role === realRole && (
+                              <span className="ml-auto text-xs text-slate-400">
+                                your role
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg border ${
                   isDark
-                    ? "bg-slate-900 border-slate-700 ring-1 ring-slate-800"
-                    : "bg-white border-slate-200 ring-1 ring-slate-100"
+                    ? "text-slate-200 bg-slate-800 border-slate-700"
+                    : "text-slate-700 bg-white border-slate-200"
                 }`}
-                role="listbox"
+                style={{ "--role-accent": meta.accent }}
+                aria-label={`Role: ${meta.label}`}
               >
-                {ROLES.map((role) => {
-                  const m = ROLE_META[role];
-                  const Icon = m.icon;
-                  return (
-                    <li key={role}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={role === viewRole}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-                          role === viewRole
-                            ? "bg-primary-50 text-primary-700"
-                            : isDark
-                              ? "text-slate-200 hover:bg-slate-800"
-                              : "text-slate-700 hover:bg-slate-50"
-                        }`}
-                        style={{ "--role-accent": m.accent }}
-                        onClick={() => pickRole(role)}
-                      >
-                        <Icon size={15} className="text-slate-500" />
-                        <span>{m.label}</span>
-                        {role === realRole && (
-                          <span className="ml-auto text-xs text-slate-400">
-                            your role
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: meta.accent }}
+                />
+                <RoleIcon
+                  size={15}
+                  className={isDark ? "text-slate-300" : "text-slate-600"}
+                />
+                <span>{meta.label}</span>
+              </div>
             )}
           </div>
         </header>

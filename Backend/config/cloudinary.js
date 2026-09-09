@@ -18,6 +18,8 @@ cloudinary.config({
 
 const storageParams = {
   // apnaBnB/properties — property & listing images.
+  // Signed uploads (API key + secret) do NOT use upload presets. A bad
+  // CLOUDINARY_UPLOAD_PRESET value caused Cloudinary "Upload preset not found".
   folder: process.env.CLOUDINARY_FOLDER || 'apnaBnB/properties',
   allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
   transformation: [
@@ -25,9 +27,6 @@ const storageParams = {
     { quality: 'auto:good', fetch_format: 'auto' },
   ],
 };
-if (process.env.CLOUDINARY_UPLOAD_PRESET) {
-  storageParams.upload_preset = process.env.CLOUDINARY_UPLOAD_PRESET;
-}
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,

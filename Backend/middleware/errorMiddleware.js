@@ -6,7 +6,8 @@
 // server-side and reply with a generic message. Errors that carry an explicit
 // `status` below 500 (set by our own code) keep their safe message.
 const errorHandler = (err, req, res, next) => {
-  const status = err.status || err.statusCode || 500;
+  // Cloudinary SDK errors expose `http_code` (e.g. 400 Upload preset not found).
+  const status = err.status || err.statusCode || err.http_code || 500;
 
   if (status >= 500) {
     console.error(err.stack || err);
@@ -14,7 +15,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // 4xx errors thrown by our code (e.g. validate/not-found helpers) already
-  // carry a client-safe message.
+  // carry a client-safe message. Cloudinary 4xx messages are also safe to show.
   console.error(`${status}: ${err.message}`);
   return res.status(status).json({ message: err.message || 'Request failed.' });
 };

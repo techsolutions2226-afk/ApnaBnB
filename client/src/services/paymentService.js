@@ -8,8 +8,7 @@ const paymentService = {
   submit: async (formData) => {
     try {
       const response = await apiClient.post('/payments', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 30000, // image upload can take longer than the default 10s
+        timeout: 60000, // image upload can take longer than the default 10s
       });
       return response.data;
     } catch (error) {

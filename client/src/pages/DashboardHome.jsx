@@ -3,7 +3,7 @@ import { Navigate, useParams, useOutletContext } from "react-router-dom";
 import SellerDashboard from "./SellerDashboard";
 import BuyerDashboard from "./BuyerDashboard";
 import DealerDashboard from "./DealerDashboard";
-import { ROLES } from "../components/dashboard/dashboardNav";
+import { ROLES, allowedViewRoles } from "../components/dashboard/dashboardNav";
 import { useAuth } from "../context/AuthContext";
 
 const BODY = {
@@ -17,15 +17,18 @@ const BODY = {
  * view role. It keeps the shell's `viewRole` in sync with the URL:
  *   • /dashboard/:role  (e.g. login redirect lands here) → adopt that role
  *   • /dashboard        → use the currently-selected view role
- * The underlying dashboard components and their data hooks are untouched.
+ * URL roles outside the account's allowed hats are ignored.
  */
 export default function DashboardHome() {
   const { role } = useParams();
-  const { viewRole, setViewRole } = useOutletContext();
+  const { viewRole, setViewRole, realRole } = useOutletContext();
   const { currentUser } = useAuth();
 
   const isAdmin = currentUser?.role === "admin";
-  const urlRole = role && ROLES.includes(role) ? role : null;
+  const accountRole = realRole || currentUser?.role;
+  const allowed = allowedViewRoles(accountRole);
+  const urlRole =
+    role && ROLES.includes(role) && allowed.includes(role) ? role : null;
 
   /* When arriving via /dashboard/:role, adopt that role as the view. */
   useEffect(() => {

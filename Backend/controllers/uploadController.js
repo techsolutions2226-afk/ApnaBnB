@@ -66,7 +66,7 @@ const uploadMultipleImages = async (req, res, next) => {
 // Delete image from Cloudinary
 const deleteImage = async (req, res, next) => {
   try {
-    const { publicId } = req.params;
+    const publicId = req.query.publicId || req.params.publicId;
 
     if (!publicId) {
       return res.status(400).json({ message: 'Public ID is required' });

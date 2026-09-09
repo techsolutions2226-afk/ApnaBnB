@@ -14,6 +14,7 @@ const {
   notifyInBackground,
   appUrl,
 } = require('../utils/matchNotifier');
+const { isAllowedViewRole, viewRoleDeniedMessage } = require('../utils/roles');
 
 const num = (v) =>
   v === undefined || v === null || v === '' ? undefined : Number(v);
@@ -146,6 +147,11 @@ const createRequirement = async (req, res, next) => {
   }
 
   try {
+    const demandHat = req.body.actingRole || req.user.viewRole || req.user.role;
+    if (!isAllowedViewRole(req.user.role, demandHat)) {
+      return res.status(400).json({ message: viewRoleDeniedMessage(req.user.role) });
+    }
+
     const requirement = await prisma.requirement.create({
       data: {
         requiredById: req.user.id,
@@ -163,9 +169,9 @@ const createRequirement = async (req, res, next) => {
         notes: notes || '',
         urgency: urgency || '',
         status: 'active',
-        // Hat the user wore when posting (demand side). Selected role clamped
-        // to buyer|dealer; falls back to their account role.
-        actingRole: normalizeDemand(req.body.actingRole || req.user.role),
+        // Hat the user wore when posting (demand side). Must be allowed for
+        // this account, then clamped to buyer|dealer.
+        actingRole: normalizeDemand(demandHat),
       },
     });
 

@@ -35,7 +35,7 @@ export const formToPropertyPayload = (form, extras = {}) => {
   const photos = Array.isArray(form.images)
     ? form.images
         .map((img) => (typeof img === "string" ? img : img?.url))
-        .filter(Boolean)
+        .filter((url) => url && !String(url).startsWith("blob:"))
         .slice(0, 6)
     : [];
 
@@ -55,14 +55,6 @@ export const formToPropertyPayload = (form, extras = {}) => {
     location: buildLocation(form),
     bedrooms: numOrUndef(form.bedrooms),
     bathrooms: numOrUndef(form.bathrooms),
-    kitchens: numOrUndef(form.kitchens),
-    drawingRooms: numOrUndef(form.drawingRooms),
-    diningRooms: numOrUndef(form.diningRooms),
-    livingRooms: numOrUndef(form.livingRooms),
-    studyRooms: numOrUndef(form.studyRooms),
-    storeRooms: numOrUndef(form.storeRooms),
-    powderRooms: numOrUndef(form.powderRooms),
-    servantQuarters: numOrUndef(form.servantQuarters),
     floorNumber: numOrUndef(form.floorNumber),
     totalFloors: numOrUndef(form.totalFloors),
     constructionYear: numOrUndef(form.constructionYear),

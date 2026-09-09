@@ -1,24 +1,25 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
-import {
-  FiX,
-} from "react-icons/fi";
+import { FiX } from "react-icons/fi";
 import Avatar from "../ui/Avatar";
+import Logo from "../common/Logo";
 import { useAuth } from "../../context/AuthContext";
 import MobileBottomNav from "./MobileBottomNav";
 import NotificationBell from "../navbar/NotificationBell";
+import "../../styles/PublicNav.css";
 
 function AnnouncementBanner() {
   const [visible, setVisible] = useState(true);
   if (!visible) return null;
   return (
-    <div className="bg-primary-600 text-white text-center py-2 px-4 text-sm">
-      <span className="inline-flex items-center gap-2">
+    <div className="pub-announce">
+      <span className="pub-announce__row">
         <span className="hidden sm:inline">Welcome to ApnaBnB</span>
         <span className="sm:hidden">Welcome!</span>
         <button
+          type="button"
           onClick={() => setVisible(false)}
-          className="ml-2 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+          className="pub-announce__close"
           aria-label="Dismiss"
         >
           <FiX className="h-3.5 w-3.5" />
@@ -41,7 +42,7 @@ export default function PublicLayout() {
       if (headerRef.current) {
         document.documentElement.style.setProperty(
           "--app-header-h",
-          `${headerRef.current.offsetHeight}px`
+          `${headerRef.current.offsetHeight}px`,
         );
       }
     };
@@ -54,9 +55,7 @@ export default function PublicLayout() {
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 8);
-      const live = document.documentElement.classList.contains(
-        "abn-stage-live",
-      );
+      const live = document.documentElement.classList.contains("abn-stage-live");
       setStageLive((prev) => (prev === live ? prev : live));
     };
     handleScroll();
@@ -70,133 +69,89 @@ export default function PublicLayout() {
     { to: "/contact", label: "Contact" },
   ];
 
+  const isActive = (to) =>
+    to === "/"
+      ? location.pathname === "/"
+      : location.pathname === to || location.pathname.startsWith(`${to}/`);
+
   const hasOwnBottomCta = /^\/(property|listing)\//.test(location.pathname);
+
+  const headerMod = stageLive
+    ? "pub-header--stage"
+    : scrolled
+      ? "pub-header--scrolled"
+      : "pub-header--rest";
 
   return (
     <div className="min-h-screen flex flex-col">
       {location.pathname !== "/" && <AnnouncementBanner />}
 
-      {/* Header */}
-      <header
-        ref={headerRef}
-        className={`app-header sticky top-0 z-40 transition-all duration-300 ${
-          stageLive
-            ? "bg-transparent border-b border-transparent"
-            : scrolled
-              ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-slate-100"
-              : "bg-white border-b border-slate-200"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <span
-                className={`text-xl font-bold font-heading transition-colors duration-300 ${
-                  stageLive ? "text-white" : "text-slate-900"
+      <header ref={headerRef} className={`pub-header app-header ${headerMod}`}>
+        <div className="pub-header__inner">
+          <Link to="/" className="pub-brand" aria-label="ApnaBnB home">
+            <Logo size={44} />
+          </Link>
+
+          <nav className="pub-nav" aria-label="Main navigation">
+            {navLinks.map((link) => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`pub-nav__link${
+                  isActive(link.to) ? " pub-nav__link--active" : ""
                 }`}
               >
-                Apna<span className="text-primary-600">BnB</span>
-              </span>
-            </Link>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    location.pathname === link.to
-                      ? stageLive
-                        ? "text-primary-300 bg-white/10"
-                        : "text-primary-600 bg-primary-50"
-                      : stageLive
-                        ? "text-slate-200 hover:text-white hover:bg-white/10"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                >
-                  {link.label}
+          <div className="pub-actions">
+            <NotificationBell />
+            {isAuthenticated ? (
+              <>
+                <Link to={dashboardPath} className="pub-btn pub-btn--soft">
+                  Dashboard
                 </Link>
-              ))}
-            </nav>
-
-{/* Desktop Actions */}
-            <div className="hidden md:flex items-center gap-2">
-              <NotificationBell />
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    to={dashboardPath}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      stageLive
-                        ? "text-primary-300 hover:bg-white/10"
-                        : "text-primary-600 hover:bg-primary-50"
-                    }`}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link to="/account" className="shrink-0">
-                    <Avatar
-                      src={currentUser?.avatar}
-                      name={currentUser?.name}
-                      size="sm"
-                    />
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      stageLive
-                        ? "text-white hover:text-white hover:bg-white/10"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    Log in
-                  </Link>
-                  <Link
-                    to="/signup"
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors shadow-sm"
-                  >
-                    Sign up
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Mobile: Avatar/notifications (no hamburger — bottom nav handles primary nav) */}
-            <div className="md:hidden flex items-center gap-2">
-              <NotificationBell />
-              {isAuthenticated && (
-                <Link to="/account" className="shrink-0">
+                <Link to="/account" className="pub-avatar" aria-label="Account">
                   <Avatar
                     src={currentUser?.avatar}
                     name={currentUser?.name}
                     size="sm"
                   />
                 </Link>
-              )}
-              {!isAuthenticated && (
-                <Link
-                  to="/login"
-                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
-                    stageLive
-                      ? "text-white hover:bg-white/10"
-                      : "text-primary-600 hover:bg-primary-50"
-                  }`}
-                >
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="pub-btn pub-btn--ghost">
                   Log in
                 </Link>
-              )}
-            </div>
+                <Link to="/signup" className="pub-btn pub-btn--solid">
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
+
+          <div className="pub-actions pub-actions--mobile">
+            <NotificationBell />
+            {isAuthenticated ? (
+              <Link to="/account" className="pub-avatar" aria-label="Account">
+                <Avatar
+                  src={currentUser?.avatar}
+                  name={currentUser?.name}
+                  size="sm"
+                />
+              </Link>
+            ) : (
+              <Link to="/login" className="pub-btn pub-btn--soft">
+                Log in
+              </Link>
+            )}
           </div>
         </div>
       </header>
-      <div className="app-header-spacer" aria-hidden="true" />
 
-      {/* Main Content */}
       <main className={`flex-1 ${!hasOwnBottomCta ? "pb-20 md:pb-0" : ""}`}>
         <Outlet />
       </main>
@@ -205,9 +160,9 @@ export default function PublicLayout() {
       <footer className="hidden md:block bg-slate-900 text-slate-400"><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="col-span-2 md:col-span-1">
-              <span className="text-lg font-bold text-white font-heading">
-                Apna<span className="text-primary-400">BnB</span>
-              </span>
+              <Link to="/" aria-label="ApnaBnB home" className="inline-flex">
+                <Logo size={36} />
+              </Link>
               <p className="mt-3 text-sm leading-relaxed">
                 Pakistan's trusted platform for property buying, selling, and renting.
               </p>

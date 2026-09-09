@@ -105,31 +105,18 @@ const Login = () => {
     <div className="min-h-screen md:min-h-screen flex flex-col md:flex-row bg-white">
       {/* ── Left Panel: brand / imagery ── */}
       <div
-        className="relative flex flex-col justify-between text-white
+        className="relative flex flex-col text-white
           pt-6 pb-10 px-6 sm:px-10 md:px-12
           min-h-[300px] md:min-h-screen md:flex-1 md:basis-[46%]
-          bg-cover bg-center
-          md:justify-between"
+          bg-cover bg-center"
         style={{
           backgroundImage:
             "linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.35)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80')",
         }}
       >
-        <Link to="/" className="inline-flex items-center w-fit" aria-label="apnabnb home">
-          <span className="inline-flex filter brightness-0 invert opacity-95">
-            <Logo size={40} />
-          </span>
+        <Link to="/" className="relative inline-flex w-fit" aria-label="apnabnb home">
+          <Logo size={40} />
         </Link>
-
-        <div className="max-w-md mt-auto md:mt-0 md:mt-auto">
-          <h1 className="text-3xl font-bold leading-tight mb-4">
-            Welcome back to Pakistan&apos;s most intelligent property network.
-          </h1>
-          <p className="text-sm sm:text-[15px] leading-relaxed text-white/85">
-            Access premium listings, connect with verified agents, and manage
-            your property portfolio with AI-driven insights.
-          </p>
-        </div>
       </div>
 
       {/* ── Right Panel: sign-in form ── */}

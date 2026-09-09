@@ -24,6 +24,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { useAdminSectionUnviewed } from "../../hooks/useAdminSectionUnviewed";
 import MobileBottomNav from "../layout/MobileBottomNav";
+import Logo from "../common/Logo";
 import "../../styles/AdminShell.css";
 import "../../styles/AdminShell.dark.css";
 
@@ -101,9 +102,8 @@ export default function AdminShell() {
         className={`ash-sidebar${navOpen ? " ash-sidebar--open" : ""}`}
       >
         {/* apnabnb logo → home */}
-        <Link to="/" className="ash-logo" aria-label="apnabnb home">
-          <span className="ash-logo-dot" />
-          <span className="ash-logo-word">apnabnb</span>
+        <Link to="/" className="ash-logo" aria-label="ApnaBnB home">
+          <Logo size={34} />
           <span className="ash-logo-tag">Admin</span>
         </Link>
 

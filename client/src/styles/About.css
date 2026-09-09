@@ -71,12 +71,14 @@
 
 .abt-brand {
   margin: 0 0 14px;
-  font-family: var(--font-heading);
-  font-size: clamp(2rem, 5vw, 2.75rem);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1;
-  color: var(--color-primary-700);
+  display: inline-flex;
+  align-items: center;
+}
+
+.abt-brand img {
+  height: clamp(2.5rem, 6vw, 3.5rem) !important;
+  width: auto !important;
+  max-width: min(220px, 55vw) !important;
 }
 
 .abt-hero-title {

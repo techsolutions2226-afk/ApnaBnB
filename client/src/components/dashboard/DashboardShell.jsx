@@ -6,6 +6,7 @@ import { useNotifications } from "../../hooks/useNotifications";
 import { NAV_BY_ROLE, ROLE_META, ROLES } from "./dashboardNav";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
+import Logo from "../common/Logo";
 
 const STORAGE_KEY = "dash_view_role";
 const THEME_KEY = "apnabnb_admin_theme";
@@ -130,12 +131,10 @@ export default function DashboardShell() {
         <Link
           to="/"
           className="flex items-center gap-2 px-5 py-5 border-b border-white/[0.08]"
-          aria-label="apnabnb home"
+          aria-label="ApnaBnB home"
           onClick={() => setNavOpen(false)}
         >
-          <span className="text-xl font-bold text-white font-heading">
-            Apna<span className="text-primary-400">BnB</span>
-          </span>
+          <Logo size={40} />
         </Link>
 
         <div className="flex items-center gap-3 mx-3 mt-4 mb-3 px-3 py-3 bg-white/[0.05] border border-white/[0.07] rounded-xl">

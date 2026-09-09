@@ -1,0 +1,307 @@
+/* ====================================================
+   PublicNav.css — polished marketplace header
+   Tokens from index.css (primary indigo + slate).
+   ==================================================== */
+
+.pub-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  transition:
+    background-color 0.28s ease,
+    border-color 0.28s ease,
+    box-shadow 0.28s ease,
+    backdrop-filter 0.28s ease;
+}
+
+.pub-header--rest {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+}
+
+.pub-header--scrolled {
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.03),
+    0 10px 30px -18px rgba(15, 23, 42, 0.22);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+}
+
+.pub-header--stage {
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.pub-header__inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 4rem;
+}
+
+@media (min-width: 640px) {
+  .pub-header__inner {
+    padding: 0 1.5rem;
+    height: 4.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pub-header__inner {
+    padding: 0 2rem;
+  }
+}
+
+/* ── Brand ── */
+.pub-brand {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pub-brand:hover {
+  opacity: 0.92;
+  transform: translateY(-0.5px);
+}
+
+.pub-brand:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 3px;
+}
+
+/* ── Center pill nav ── */
+.pub-nav {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 9999px;
+  background: var(--color-slate-100);
+  border: 1px solid var(--color-border);
+}
+
+@media (min-width: 768px) {
+  .pub-nav {
+    display: inline-flex;
+  }
+}
+
+.pub-header--stage .pub-nav {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pub-nav__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 1.05rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--color-slate-600);
+  text-decoration: none;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.pub-nav__link:hover {
+  color: var(--color-slate-900);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.pub-nav__link--active {
+  color: var(--color-primary-700);
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 4px 12px -4px rgba(79, 70, 229, 0.28);
+}
+
+.pub-header--stage .pub-nav__link {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pub-header--stage .pub-nav__link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.pub-header--stage .pub-nav__link--active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+/* ── Actions ── */
+.pub-actions {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pub-actions--mobile {
+  display: inline-flex;
+}
+
+@media (min-width: 768px) {
+  .pub-actions {
+    display: inline-flex;
+  }
+  .pub-actions--mobile {
+    display: none;
+  }
+}
+
+.pub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 1.1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.pub-btn:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.pub-btn--ghost {
+  color: var(--color-slate-600);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.pub-btn--ghost:hover {
+  color: var(--color-slate-900);
+  background: var(--color-slate-100);
+}
+
+.pub-btn--soft {
+  color: var(--color-primary-700);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-primary-100);
+}
+
+.pub-btn--soft:hover {
+  background: var(--color-primary-100);
+}
+
+.pub-btn--solid {
+  color: #fff;
+  background: var(--color-primary-600);
+  border: 1px solid var(--color-primary-600);
+  box-shadow: 0 8px 18px -10px rgba(79, 70, 229, 0.7);
+}
+
+.pub-btn--solid:hover {
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+  transform: translateY(-1px);
+}
+
+.pub-header--stage .pub-btn--ghost {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pub-header--stage .pub-btn--ghost:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pub-header--stage .pub-btn--soft {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.pub-header--stage .pub-btn--soft:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.pub-avatar {
+  display: inline-flex;
+  border-radius: 9999px;
+  padding: 2px;
+  border: 1.5px solid var(--color-border);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pub-avatar:hover {
+  border-color: var(--color-primary-300);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 16%, transparent);
+}
+
+.pub-header--stage .pub-avatar {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Announcement strip ── */
+.pub-announce {
+  background: linear-gradient(
+    90deg,
+    var(--color-primary-700) 0%,
+    var(--color-primary-600) 50%,
+    var(--color-primary-700) 100%
+  );
+  color: #fff;
+  text-align: center;
+  padding: 0.55rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.pub-announce__row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pub-announce__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-left: 0.25rem;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.pub-announce__close:hover {
+  background: rgba(255, 255, 255, 0.28);
+}

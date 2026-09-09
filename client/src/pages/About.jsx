@@ -15,6 +15,7 @@ import {
   FiArrowDownRight,
 } from "react-icons/fi";
 import Breadcrumb from "../components/common/Breadcrumb";
+import Logo from "../components/common/Logo";
 import "../styles/About.css";
 
 /* ─── About Us ───
@@ -143,7 +144,9 @@ const About = () => {
       {/* ── Split hero ── */}
       <header className="abt-hero">
         <div className="abt-hero-copy">
-          <p className="abt-brand">ApnaBnB</p>
+          <div className="abt-brand">
+            <Logo size={56} />
+          </div>
           <h1 className="abt-hero-title">
             Property search,
             <span className="abt-hero-title-em"> the other way round</span>

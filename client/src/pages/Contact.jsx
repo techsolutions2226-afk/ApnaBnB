@@ -12,6 +12,7 @@ import {
   FiArrowUpRight,
 } from "react-icons/fi";
 import Breadcrumb from "../components/common/Breadcrumb";
+import Logo from "../components/common/Logo";
 import contactService from "../services/contactService";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Contact.css";
@@ -153,7 +154,9 @@ const Contact = () => {
       {/* Split desk: dark rail + form canvas */}
       <div className="cnt-desk">
         <aside className="cnt-rail">
-          <p className="cnt-brand">ApnaBnB</p>
+          <div className="cnt-brand">
+            <Logo size={48} />
+          </div>
           <span className="cnt-eyebrow">Contact</span>
           <h1 className="cnt-rail-title">{page?.heading || "Get in touch"}</h1>
           {page?.subheading && <p className="cnt-rail-lead">{page.subheading}</p>}

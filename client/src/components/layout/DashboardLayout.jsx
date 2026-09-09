@@ -14,6 +14,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import Avatar from "../ui/Avatar";
+import Logo from "../common/Logo";
 import { useAuth } from "../../context/AuthContext";
 import MobileBottomNav from "./MobileBottomNav";
 import NotificationBell from "../navbar/NotificationBell";
@@ -39,10 +40,8 @@ function MobileTopBar({ onMenuToggle }) {
   return (
     <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-lg border-b border-slate-200">
       <div className="flex items-center justify-between h-14 px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-lg font-bold text-slate-900 font-heading">
-            Apna<span className="text-primary-600">BnB</span>
-          </span>
+        <Link to="/" className="flex items-center gap-2" aria-label="ApnaBnB home">
+          <Logo size={36} />
         </Link>
         <div className="flex items-center gap-2">
           <NotificationBell />
@@ -84,10 +83,8 @@ function DesktopSidebar({ navOpen, onClose }) {
         `}
       >
         <div className="flex items-center justify-between h-16 px-5 border-b border-slate-200">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-lg font-bold text-slate-900 font-heading">
-              Apna<span className="text-primary-600">BnB</span>
-            </span>
+          <Link to="/" className="flex items-center gap-2" aria-label="ApnaBnB home">
+            <Logo size={36} />
           </Link>
           <button
             onClick={onClose}

@@ -225,65 +225,18 @@ const Signup = () => {
   );
 
   return (
-    <div className="h-screen h-[100dvh] overflow-hidden grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] md:h-screen md:h-[100dvh] font-body text-slate-900 bg-white">
-      {/* ── Left Panel: brand — fixed header on mobile, fixed sidebar on desktop ── */}
-      <div className="relative overflow-hidden flex flex-col justify-between p-6 md:p-11 text-white bg-slate-900 md:h-screen md:h-[100dvh] md:sticky md:top-0 shrink-0">
-        {/* Decorative aurora blooms */}
-        <span
-          aria-hidden="true"
-          className="absolute rounded-full blur-3xl opacity-50 pointer-events-none"
-          style={{
-            width: 480,
-            height: 480,
-            left: "-120px",
-            top: "-140px",
-            background: "radial-gradient(circle, rgba(99,102,241,0.55), transparent 70%)",
-          }}
-        />
-        <span
-          aria-hidden="true"
-          className="absolute rounded-full blur-3xl opacity-40 pointer-events-none"
-          style={{
-            width: 520,
-            height: 520,
-            right: "-160px",
-            bottom: "-180px",
-            background: "radial-gradient(circle, rgba(79,70,229,0.5), transparent 70%)",
-          }}
-        />
-
+    <div className="h-screen h-[100dvh] overflow-hidden grid grid-rows-[auto_1fr] md:grid-rows-1 md:grid-cols-[minmax(0,46%)_minmax(0,54%)] md:h-screen md:h-[100dvh] font-body text-slate-900 bg-white">
+      {/* ── Left Panel: brand / house imagery ── */}
+      <div
+        className="relative overflow-hidden flex flex-col p-6 md:p-11 text-white bg-cover bg-center min-h-[300px] md:min-h-0 md:h-screen md:h-[100dvh] md:sticky md:top-0 shrink-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.35)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80')",
+        }}
+      >
         <Link to="/" className="relative inline-flex w-fit" aria-label="apnabnb home">
           <Logo size={40} />
         </Link>
-
-        <motion.div
-          className="relative max-w-md md:mt-10 mt-3"
-          variants={stagger}
-          {...anim}
-        >
-          <motion.p variants={item} className="text-[11px] md:text-xs font-semibold tracking-[0.2em] uppercase text-primary-300 mb-1.5 md:mb-3">
-            Create your account
-          </motion.p>
-          <motion.h1 variants={item} className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-tight">
-            Discover Your Next Space
-          </motion.h1>
-          <motion.p variants={item} className="hidden md:block text-sm sm:text-[15px] leading-relaxed text-white/80 mt-3">
-            One account to search listings, post requirements and reach owners
-            directly.
-          </motion.p>
-        </motion.div>
-
-        <motion.ul
-          className="relative hidden md:block mt-10"
-          variants={stagger}
-          {...anim}
-          aria-label="Community size"
-        >
-          <motion.li variants={item} className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">10,000+</span>
-            <span className="text-sm text-white/70">Verified members</span>
-          </motion.li>
-        </motion.ul>
       </div>
 
       {/* ── Right Panel: signup form — scrolls fully, centered when it fits ── */}

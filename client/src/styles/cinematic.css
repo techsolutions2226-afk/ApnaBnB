@@ -316,13 +316,16 @@
 .search-panel {
   width: 100%;
   max-width: 900px;
-  margin: 16px auto 24px;
+  /* Outer breathing room around the floating search; 24px bottom keeps the
+     expanded filter bar clear of the banner edge. */
+  margin: 0 auto 24px;
+  padding: 0 4px;
 }
 
 .search-panel__toggle {
   display: flex;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .search-toggle {
@@ -397,13 +400,18 @@
 
 .search-panel--card .search-panel__fields {
   background: #fff;
-  box-shadow: 0 24px 60px -20px rgba(2, 6, 23, 0.55);
+  /* Soft floating shadow — rounded pill lift without a heavy drop. */
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.06),
+    0 16px 40px -12px rgba(15, 23, 42, 0.28);
 }
 
 .search-panel--light .search-panel__fields {
   background: #fff;
   border: 1px solid var(--color-border);
-  box-shadow: 0 24px 60px -28px rgba(15, 23, 42, 0.3);
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.05),
+    0 16px 40px -14px rgba(15, 23, 42, 0.2);
 }
 
 .search-fields-row {
@@ -564,8 +572,8 @@
 
 /* Advanced row (expanded search) */
 .search-advanced {
-  /* Contain the expanding height so the entrance animation stays smooth and
-     the inner grid's top margin can't collapse — no pop at the end. */
+  /* Height is animated by Framer; keep overflow clipped so the expand reads
+     as a smooth reveal instead of a hard pop. */
   overflow: hidden;
 }
 
@@ -574,8 +582,8 @@
   grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   gap: 10px;
   align-items: end;
-  margin-top: 10px;
-  padding-top: 12px;
+  /* All spacing via padding (not margin) so the height animation stays smooth. */
+  padding: 12px 14px 16px;
   border-top: 1px solid var(--color-border);
 }
 
@@ -666,8 +674,17 @@ html.abn-stage-live .app-header {
 }
 
 @media (max-width: 560px) {
+  .search-panel {
+    margin-bottom: 20px;
+    padding: 0 2px;
+  }
+
   .search-panel__fields {
     border-radius: 24px;
+  }
+
+  .search-advanced__inner {
+    padding: 12px 12px 14px;
   }
 
   .search-fields-row {
@@ -687,13 +704,14 @@ html.abn-stage-live .app-header {
     flex: 1 1 100%;
     width: 100%;
     height: 48px;
-    margin: 8px 8px 4px;
-    border-radius: 0;
+    margin: 8px 8px 10px;
+    border-radius: 16px;
     justify-content: center;
   }
 
   .search-cta--block {
     margin: 0;
+    border-radius: 15px;
   }
 }
 

@@ -149,7 +149,7 @@ export default function Home() {
     <div className="min-h-screen">
       {/* ══ HERO BANNER (static image) — simple full-width banner with
           headline over an image. No scroll-driven behavior. ══ */}
-      <section className="relative w-full h-[420px] sm:h-[520px] lg:h-[620px] overflow-hidden">
+      <section className="relative w-full min-h-[420px] sm:min-h-[520px] lg:min-h-[620px] overflow-x-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -162,7 +162,7 @@ export default function Home() {
           className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent"
           aria-hidden="true"
         />
-        <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+        <div className="relative z-[1] flex flex-col items-center justify-center text-center px-4 sm:px-6 py-12 min-h-[420px] sm:min-h-[520px] lg:min-h-[620px]">
           <motion.h1
             className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white font-heading text-wrap-balance"
             initial={{ opacity: 0, y: 24 }}
@@ -181,7 +181,7 @@ export default function Home() {
             Pakistan.
           </motion.p>
           <motion.div
-            className="mt-6 w-full max-w-3xl"
+            className="mt-6 w-full max-w-3xl px-1 sm:px-2"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: EASE }}

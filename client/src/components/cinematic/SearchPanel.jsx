@@ -160,7 +160,10 @@ export default function SearchPanel({
               initial={reduce ? false : { height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={reduce ? undefined : { height: 0, opacity: 0 }}
-              transition={{ duration: 0.34, ease: EASE }}
+              transition={{
+                height: { duration: 0.38, ease: EASE },
+                opacity: { duration: 0.28, ease: EASE },
+              }}
               className="search-advanced"
             >
               <div className="search-advanced__inner">

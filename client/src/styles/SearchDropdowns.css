@@ -3,7 +3,7 @@
    the home search bar (city, type, area, beds, price).
    Panels float above the page (position:fixed) so they never
    clip inside the hero or shift the layout.
-   Accent green: #4a934a (site palette uses #1a8f5a too).
+   Accent: primary indigo from index.css.
    ==================================================== */
 
 /* ── Trigger (wraps the existing .abn-s2-field look) ── */
@@ -22,7 +22,7 @@
   border: none;
   cursor: pointer;
   font-family: inherit;
-  color: #333;
+  color: var(--color-slate-800);
   font-size: 14px;
   text-align: left;
 }
@@ -33,12 +33,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #333;
+  color: var(--color-slate-800);
   font-weight: 500;
 }
 
 .dd-trigger-placeholder {
-  color: #9a9a9a;
+  color: var(--color-slate-400);
   font-weight: 400;
 }
 
@@ -47,12 +47,12 @@
   margin-left: auto;
   flex-shrink: 0;
   transition: transform 0.15s ease;
-  color: #6b6b6b;
+  color: var(--color-slate-500);
 }
 
 .dd-field--open {
-  border-color: #4a934a !important;
-  box-shadow: 0 0 0 3px rgba(74, 147, 74, 0.14);
+  border-color: var(--color-primary-600) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-600) 16%, transparent);
 }
 
 .dd-field--open .dd-chev {
@@ -64,9 +64,9 @@
   position: fixed;
   z-index: 90;
   background: #fff;
-  border: 1px solid #e6e6e6;
-  border-radius: 10px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
   max-width: calc(100vw - 16px);
   overflow: hidden;
   animation: dd-pop 0.14s ease;
@@ -101,11 +101,11 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .dd-search-ico {
-  color: #9a9a9a;
+  color: var(--color-slate-400);
   flex-shrink: 0;
 }
 
@@ -116,7 +116,7 @@
   outline: none;
   font-size: 14px;
   font-family: inherit;
-  color: #333;
+  color: var(--color-slate-800);
 }
 
 .dd-list {
@@ -136,23 +136,23 @@
   cursor: pointer;
   font-size: 14px;
   font-family: inherit;
-  color: #333;
+  color: var(--color-slate-800);
 }
 
 .dd-item:hover {
-  background: #f4f4f4;
+  background: var(--color-slate-100);
 }
 
 .dd-item--active {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
   font-weight: 700;
 }
 
 .dd-empty {
   padding: 16px;
   text-align: center;
-  color: #888;
+  color: var(--color-slate-500);
   font-size: 13px;
 }
 
@@ -165,7 +165,7 @@
 .dd-tabs {
   display: flex;
   gap: 6px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border);
   margin-bottom: 12px;
 }
 
@@ -177,18 +177,18 @@
   font-size: 15px;
   font-weight: 600;
   font-family: inherit;
-  color: #555;
+  color: var(--color-slate-500);
   border-bottom: 2px solid transparent;
   transition: color 0.12s;
 }
 
 .dd-tab:hover {
-  color: #333;
+  color: var(--color-slate-800);
 }
 
 .dd-tab--active {
-  color: #4a934a;
-  border-bottom-color: #4a934a;
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-600);
   font-weight: 700;
 }
 
@@ -203,7 +203,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
@@ -212,16 +212,16 @@
 }
 
 .dd-card:hover {
-  border-color: #4a934a;
+  border-color: var(--color-primary-400);
 }
 
 .dd-card--active {
-  border-color: #4a934a;
-  background: #e8f5e9;
+  border-color: var(--color-primary-600);
+  background: var(--color-primary-50);
 }
 
 .dd-card-icon {
-  color: #4a934a;
+  color: var(--color-primary-600);
   display: inline-flex;
   flex-shrink: 0;
 }
@@ -229,14 +229,14 @@
 .dd-card-label {
   font-size: 13.5px;
   font-weight: 500;
-  color: #333;
+  color: var(--color-slate-800);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dd-card--active .dd-card-label {
-  color: #2e7d32;
+  color: var(--color-primary-700);
   font-weight: 700;
 }
 
@@ -258,13 +258,13 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #222;
+  color: var(--color-slate-900);
 }
 
 .dd-change-link {
   border: none;
   background: none;
-  color: #4a934a;
+  color: var(--color-primary-600);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -274,6 +274,7 @@
 
 .dd-change-link:hover {
   text-decoration: underline;
+  color: var(--color-primary-700);
 }
 
 .dd-range-inputs {
@@ -289,7 +290,7 @@
 .dd-range-label {
   display: block;
   font-size: 12px;
-  color: #666;
+  color: var(--color-slate-500);
   margin-bottom: 4px;
 }
 
@@ -297,18 +298,18 @@
   width: 100%;
   height: 40px;
   padding: 0 10px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   font-size: 14px;
   font-family: inherit;
-  color: #333;
+  color: var(--color-slate-800);
   outline: none;
   box-sizing: border-box;
 }
 
 .dd-range-input:focus {
-  border-color: #4a934a;
-  box-shadow: 0 0 0 3px rgba(74, 147, 74, 0.14);
+  border-color: var(--color-primary-600);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-600) 16%, transparent);
 }
 
 /* Autocomplete suggestions — independent floating layer anchored to the
@@ -326,9 +327,9 @@
   padding: 4px;
   list-style: none;
   background: #fff;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
   max-height: 180px;
   overflow-y: auto;
   box-sizing: border-box;
@@ -344,11 +345,11 @@
   cursor: pointer;
   font-size: 13px;
   font-family: inherit;
-  color: #333;
+  color: var(--color-slate-800);
 }
 
 .dd-suggest button:hover {
-  background: #f4f4f4;
+  background: var(--color-slate-100);
 }
 
 /* Range actions */
@@ -358,7 +359,7 @@
   gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .dd-btn {
@@ -374,28 +375,83 @@
 
 .dd-btn--outline {
   background: #fff;
-  border: 1px solid #4a934a;
-  color: #4a934a;
+  border: 1px solid var(--color-primary-600);
+  color: var(--color-primary-600);
 }
 
 .dd-btn--outline:hover {
-  background: #f2faf2;
+  background: var(--color-primary-50);
 }
 
 .dd-btn--solid {
-  background: #4a934a;
-  border: 1px solid #4a934a;
+  background: var(--color-primary-600);
+  border: 1px solid var(--color-primary-600);
   color: #fff;
 }
 
 .dd-btn--solid:hover {
-  background: #3f7f3f;
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
 }
 
 /* ── Beds panel ── */
 .dd-beds {
   width: 300px;
   padding: 14px;
+}
+
+.dd-beds-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+}
+
+.dd-beds-sub {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--color-slate-500);
+}
+
+.dd-beds-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dd-beds-chip {
+  min-width: 52px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 9999px;
+  background: #fff;
+  color: var(--color-slate-700);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.dd-beds-chip:hover {
+  border-color: var(--color-primary-400);
+  color: var(--color-primary-700);
+}
+
+.dd-beds-chip--active {
+  background: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+  color: #fff;
+}
+
+.dd-beds-chip--active:hover {
+  background: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+  color: #fff;
 }
 
 /* ── Unit / currency picker modal ── */
@@ -417,22 +473,22 @@
   cursor: pointer;
   font-family: inherit;
   font-size: 14px;
-  color: #333;
+  color: var(--color-slate-800);
 }
 
 .dd-opt:hover {
-  background: #f4f4f4;
+  background: var(--color-slate-100);
 }
 
 .dd-opt--active {
-  background: #ecfdf5; /* emerald-50 */
-  color: #0c422c; /* dark green */
-  border-color: #10b981; /* emerald-500 */
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+  border-color: var(--color-primary-500);
   font-weight: 600;
 }
 
 .dd-opt-check {
-  color: #10b981; /* emerald-500 */
+  color: var(--color-primary-600);
 }
 
 /* ── Responsive tweaks ── */

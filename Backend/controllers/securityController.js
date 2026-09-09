@@ -56,6 +56,9 @@ const notify = (user, headline, detail) => {
 };
 
 const requirePassword = async (user, password) => {
+  // Google-created accounts have no password — there is nothing to compare
+  // against, so every "enter your current password" gate must reject cleanly.
+  if (!user.password) return { ok: false, code: 'SOCIAL_ACCOUNT', message: 'This account has no password. Sign in with Google.' };
   if (!password) return { ok: false, code: 'PASSWORD_REQUIRED', message: 'Enter your current password.' };
   const match = await bcrypt.compare(String(password), user.password);
   if (!match) return { ok: false, code: 'WRONG_PASSWORD', message: 'That password is not correct.' };
@@ -71,6 +74,8 @@ const getOverview = async (req, res, next) => {
       select: {
         email: true,
         verified: true,
+        authProvider: true,
+        password: true,
         twoFactorEnabled: true,
         twoFactorMethod: true,
         twoFactorRecoveryCodes: true,
@@ -84,6 +89,10 @@ const getOverview = async (req, res, next) => {
     res.status(200).json({
       email: user.email,
       emailVerified: user.verified,
+      // Google-created accounts have no password; the Login & security page
+      // uses this to hide the "change password" section for them.
+      authProvider: user.authProvider || 'email',
+      hasPassword: !!user.password,
       twoFactorEnabled: user.twoFactorEnabled,
       twoFactorMethod: user.twoFactorMethod,
       // The codes themselves are never re-sent — only how many remain.

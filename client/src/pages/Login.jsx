@@ -5,6 +5,7 @@ import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
+import { getLastLogin } from "../utils/lastLogin";
 
 const Login = () => {
   const { login, isLoading, isAuthenticated, getDashboardPath } = useAuth();
@@ -13,6 +14,14 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // Set when the server reports this email belongs to a Google-created account
+  // (password login can never succeed for it). Inline guidance under the form
+  // so the user knows to use "Continue with Google".
+  const [socialNotice, setSocialNotice] = useState(null);
+
+  // "Last method used on this device" — powers the badge on "Continue with
+  // Google", exactly like GitHub / Vercel / Cloudinary remind returning users.
+  const lastLogin = getLastLogin();
 
   /* Redirect authenticated users to their dashboard */
   useEffect(() => {
@@ -23,6 +32,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSocialNotice(null);
 
     // Client-side validation — all errors surfaced via toast, never inline.
     if (!email.trim()) {
@@ -71,6 +81,11 @@ const Login = () => {
         toast.error("Email not found");
       } else if (code === "WRONG_PASSWORD") {
         toast.error("Wrong password");
+      } else if (code === "SOCIAL_ACCOUNT") {
+        setSocialNotice(
+          "This email is linked to a Google account. Sign in with Continue with Google below."
+        );
+        toast.info("Registered with Google — use Continue with Google to sign in.");
       } else if (code === "ACCOUNT_DEACTIVATED") {
         toast.error("This account is deactivated. Contact support to reactivate it.");
       } else if (code === "EMAIL_NOT_VERIFIED") {
@@ -201,8 +216,20 @@ const Login = () => {
             <span className="flex-1 border-t border-slate-200" />
           </div>
 
+          {/* Inline guide when this email belongs to a Google-created account */}
+          {socialNotice && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-primary-200 bg-primary-50 px-3.5 py-3 text-sm text-primary-700">
+              <FiMail className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{socialNotice}</span>
+            </div>
+          )}
+
           {/* Social Login Buttons */}
-          <GoogleAuthButton className="w-full" />
+          <GoogleAuthButton
+            className="w-full"
+            lastUsed={lastLogin?.provider === "google"}
+            lastUsedName={lastLogin?.name || ""}
+          />
 
           {/* Sign-up link */}
           <p className="mt-6 text-sm text-slate-500 text-center">

@@ -44,9 +44,9 @@ const initSockets = (server) => {
     try {
       const user = await prisma.user.findUnique({
         where: { id: decoded.id },
-        select: { id: true, role: true, verified: true, suspended: true, tokenVersion: true },
+        select: { id: true, role: true, verified: true, suspended: true, deactivated: true, tokenVersion: true },
       });
-      if (!user || !user.verified || user.suspended) {
+      if (!user || !user.verified || user.suspended || user.deactivated) {
         return next(new Error('Session no longer valid'));
       }
       if (user.tokenVersion > 0 && (decoded.tokenVersion ?? 0) !== user.tokenVersion) {
@@ -99,6 +99,28 @@ const emitToAdmins = (event, payload) => {
   }
 };
 
+/* Force-logout a user across every device they are connected on.
+
+   Called when an admin deletes, suspends or deactivates an account. Tells the
+   client to drop its local session (auth_token + current_user) before the
+   socket disconnects, so the logout is instant and does not depend on the
+   client's next REST call hitting a 401/403. Then disconnects every socket in
+   that user's room so a muted-but-connected client cannot keep listening.
+
+   Null-guarded like the emitters above: with sockets down this is a no-op, so
+   the admin request that triggered it still completes. */
+const kickUser = (userId, reason = 'account disabled') => {
+  if (!io || !userId) return false;
+  try {
+    io.to(roomFor(userId)).emit('session:revoked', { reason });
+    io.in(roomFor(userId)).disconnectSockets(true);
+    return true;
+  } catch (err) {
+    console.error('Socket kick failed:', err.message);
+    return false;
+  }
+};
+
 const getIO = () => io;
 
-module.exports = { initSockets, emitToUser, emitToAdmins, getIO };
+module.exports = { initSockets, emitToUser, emitToAdmins, kickUser, getIO };

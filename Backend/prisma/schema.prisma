@@ -21,6 +21,14 @@ datasource db {
 
 // ─────────────────────────── Enums ───────────────────────────
 
+enum AuthProvider {
+  // 'email'  → classic email + bcrypt password (this is the default).
+  // 'google' → created through Sign in with Google. Has NO password — the
+  //            account is recovered via "Continue with Google", not a reset.
+  email
+  google
+}
+
 enum Role {
   seller
   buyer
@@ -98,7 +106,12 @@ model User {
   id       String  @id @default(uuid())
   name     String
   email    String  @unique
-  password String
+  // How the account was created. 'email' accounts hold a bcrypt hash in
+  // `password`; 'google' accounts have NO password (null) and are only
+  // accessible through Sign in with Google. This is what lets the login and
+  // forgot-password flows tell the user "use Google" instead of a dead end.
+  authProvider AuthProvider @default(email)
+  password String?
   role     Role
   verified Boolean @default(false)
 

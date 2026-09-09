@@ -1,5 +1,7 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../db/prisma');
+const { cloudinary } = require('../config/cloudinary');
+const { kickUser } = require('../sockets');
 const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
 const { notifyUserInBackground, TYPES } = require('../utils/notifier');
@@ -21,6 +23,9 @@ const adminUserListSelect = {
   id: true,
   name: true,
   email: true,
+  // 'google' accounts have no password — the admin needs this to tell them
+  // apart from normal email accounts (see passwordStatus in withSecretStatus).
+  authProvider: true,
   role: true,
   viewRole: true,
   verified: true,
@@ -103,8 +108,13 @@ const liveAt = (expiresAt) => {
 const withSecretStatus = (u) => ({
   ...u,
 
-  // Always present; the column exists to confirm a password is set at all.
-  passwordStatus: 'set',
+  // Always present; reflects whether a real password exists. Derived from
+  // authProvider because the raw `password` column is deliberately never
+  // selected (see the withSecretStatus note). Google-created accounts have
+  // none, so 'not set' tells an admin the user can only sign in through
+  // "Continue with Google".
+  passwordStatus: u.authProvider === 'google' ? 'not set' : 'set',
+  authProvider: u.authProvider || 'email',
 
   twoFactorSecretStatus:
     u.twoFactorEnabled && u.twoFactorMethod === 'totp' ? 'set' : null,
@@ -141,6 +151,87 @@ const matchInclude = {
 // ── Helpers ───────────────────────────────────────────────────────────────
 const num = (v) =>
   v === undefined || v === null || v === '' ? undefined : Number(v);
+
+/* ── Cloudinary cleanup for deleted accounts ──
+   A Cloudinary asset URL looks like
+   https://res.cloudinary.com/<cloud>/image/upload/v<version>/<path>/<file>.<ext>
+   `public_id` for uploader.destroy is everything after the /upload/ segment
+   with the leading version and the file extension stripped:
+   "apnaBnB/properties/abc123". We only act on URLs that are genuine
+   Cloudinary assets (host ends in cloudinary.com, path contains /image/upload/),
+   so a stray external avatar URL is left untouched. */
+const urlToCloudinaryPublicId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const parsed = new URL(url);
+    if (!/cloudinary\.com$/i.test(parsed.hostname)) return null;
+    if (!parsed.pathname.includes('/image/upload/')) return null;
+    // Everything after "/image/upload/" — e.g. "/v1234/path/file.jpg" →
+    // drop the leading version token, then the file extension.
+    let rest = parsed.pathname.split('/image/upload/')[1];
+    if (!rest) return null;
+    const parts = rest.split('/');
+    if (parts[0] && /^v\d+$/.test(parts[0])) parts.shift();
+    const publicId = parts.join('/').replace(/\.[a-zA-Z0-9]+$/, '');
+    return publicId || null;
+  } catch {
+    return null;
+  }
+};
+
+// Fire-and-forget delete of a single Cloudinary asset; failures are swallowed
+// (a dead photo must never fail the account deletion that triggered it).
+const destroyCloudinaryAsset = (publicId) => {
+  if (!publicId) return;
+  cloudinary.uploader.destroy(publicId, { invalidate: true }).catch((err) => {
+    console.error('Cloudinary destroy failed:', publicId, err.message);
+  });
+};
+
+/* Delete every Cloudinary asset owned by a user: photos on their properties,
+   their avatar, and the uploaded screenshots of their payment proofs. Runs
+   BEFORE the user row is removed so we can read the URLs that cascade-delete
+   with it. Fire-and-forget per asset — nothing here can fail the deletion. */
+const purgeUserCloudinaryAssets = async (userId) => {
+  try {
+    const [properties, payments, user] = await Promise.all([
+      prisma.property.findMany({
+        where: { listedById: userId },
+        select: { photos: true },
+      }),
+      prisma.payment.findMany({
+        where: { userId },
+        select: { proofUrl: true },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { avatar: true },
+      }),
+    ]);
+
+    const publicIds = new Set();
+    properties.forEach((p) => {
+      (p.photos || []).forEach((url) => {
+        const id = urlToCloudinaryPublicId(url);
+        if (id) publicIds.add(id);
+      });
+    });
+    payments.forEach((pay) => {
+      const id = urlToCloudinaryPublicId(pay.proofUrl);
+      if (id) publicIds.add(id);
+    });
+    if (user?.avatar) {
+      const id = urlToCloudinaryPublicId(user.avatar);
+      if (id) publicIds.add(id);
+    }
+
+    publicIds.forEach(destroyCloudinaryAsset);
+    return publicIds.size;
+  } catch (err) {
+    console.error('Failed to purge Cloudinary assets:', err.message);
+    return 0;
+  }
+};
 
 // Normalise a page/limit pair (same semantics as the users endpoint).
 const parseAdminPagination = (req) => {
@@ -564,6 +655,7 @@ const createUser = async (req, res, next) => {
       data: {
         name,
         email: normalizedEmail,
+        authProvider: 'email',
         password: await bcrypt.hash(password, 10),
         role,
         verified: true,
@@ -636,6 +728,13 @@ const deleteUser = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
+    // Purge the user's Cloudinary assets FIRST, while the property/payment/
+    // avatar URLs still exist in the DB (they cascade-delete with the row).
+    // Forced logout is fire-and-forget: the socket emit tells any live
+    // client to drop its session before the account disappears.
+    await purgeUserCloudinaryAssets(id);
+    kickUser(id, 'account deleted');
+
     await prisma.user.delete({ where: { id } });
 
     logActivity({
@@ -652,13 +751,18 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-// Verify/Suspend users — general toggle
+// Verify/Suspend/Deactivate users — general toggle. Every disabling action
+// (suspend / deactivate) revokes live sessions by bumping tokenVersion and
+// kicks any open socket, so the account is logged out the moment the admin
+// acts — not on the user's next request.
 const manageUser = async (req, res, next) => {
   const { id } = req.params;
   const { action } = req.body;
 
-  if (action !== 'verify' && action !== 'suspend') {
-    return res.status(400).json({ message: 'Invalid action. Use "verify" or "suspend".' });
+  if (!['verify', 'suspend', 'deactivate'].includes(action)) {
+    return res
+      .status(400)
+      .json({ message: 'Invalid action. Use "verify", "suspend" or "deactivate".' });
   }
 
   try {
@@ -668,10 +772,21 @@ const manageUser = async (req, res, next) => {
         // Verify clears suspension; suspend keeps verified intact.
         verified: action === 'verify' ? true : undefined,
         suspended: action === 'suspend',
+        deactivated: action === 'deactivate',
+        deactivatedAt: action === 'deactivate' ? new Date() : undefined,
+        // A disabling action must kill every outstanding session immediately.
+        tokenVersion:
+          action === 'suspend' || action === 'deactivate'
+            ? { increment: 1 }
+            : undefined,
       },
       ...userSelect,
     });
-    res.status(200).json({ message: `User ${action}ed successfully.`, user });
+    if (action === 'suspend' || action === 'deactivate') {
+      kickUser(user.id, `account ${action}d`);
+    }
+    const verb = action === 'verify' ? 'verified' : `${action}d`;
+    res.status(200).json({ message: `User ${verb} successfully.`, user });
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
@@ -722,11 +837,16 @@ const suspendUser = async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
   try {
+    /* Bumping tokenVersion revokes every outstanding JWT immediately, and
+       kickUser forces any currently-open socket to drop its session — so the
+       suspension takes effect on the account's live sessions at once, not just
+       at the next login. */
     const user = await prisma.user.update({
       where: { id },
-      data: { suspended: true },
+      data: { suspended: true, tokenVersion: { increment: 1 } },
       ...userSelect,
     });
+    kickUser(user.id, 'account suspended');
 
     /* Without this the user is simply locked out at login with no explanation. */
     notifyUserInBackground({
@@ -750,6 +870,67 @@ const suspendUser = async (req, res, next) => {
     });
 
     res.status(200).json({ message: 'User suspended successfully.', user });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    next(error);
+  }
+};
+
+// Deactivate user endpoint (admin). Distinct from `suspend`: suspension is an
+// admin moderation flag, deactivation is the same reversible disable the user
+// can trigger from "Login & security", performed by an admin. Either way the
+// account's live sessions are revoked immediately (tokenVersion bump + socket
+// kick), so the user is logged out the moment this runs.
+const deactivateUser = async (req, res, next) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true, deactivated: true },
+    });
+    if (!existing) return res.status(404).json({ message: 'User not found.' });
+    if (existing.deactivated) {
+      return res.status(400).json({
+        code: 'ALREADY_DEACTIVATED',
+        message: 'This account is already deactivated.',
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        deactivated: true,
+        deactivatedAt: new Date(),
+        tokenVersion: { increment: 1 },
+      },
+      ...userSelect,
+    });
+    kickUser(user.id, 'account deactivated');
+
+    notifyUserInBackground({
+      recipientId: user.id,
+      type: TYPES.ACCOUNT_SUSPENDED,
+      title: 'Account deactivated',
+      body: reason
+        ? `Your account was deactivated: ${reason}`
+        : 'Your account has been deactivated. Contact support for details.',
+      link: '/contact',
+      entityType: 'user',
+      entityId: user.id,
+    });
+
+    logActivity({
+      action: 'admin.user.deactivate',
+      entityType: 'user',
+      entityId: user.id,
+      meta: { email: user.email, reason: reason || null },
+      req,
+    });
+
+    res.status(200).json({ message: 'User deactivated successfully.', user });
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: 'User not found.' });
@@ -970,6 +1151,12 @@ const deleteProperty = async (req, res, next) => {
     if (!property) {
       return res.status(404).json({ message: 'Property not found.' });
     }
+
+    // Purge the property's Cloudinary photos before the row (and its URLs)
+    // disappears. Fire-and-forget — a failed destroy must not abort the delete.
+    (property.photos || []).forEach((url) => {
+      destroyCloudinaryAsset(urlToCloudinaryPublicId(url));
+    });
 
     await prisma.property.delete({ where: { id } });
 
@@ -1604,8 +1791,11 @@ module.exports = {
   manageUser,
   verifyUser,
   suspendUser,
+  deactivateUser,
   reactivateUser,
   unsuspendUser,
+  // Test hook for the Cloudinary public-id extractor (unit tests).
+  urlToCloudinaryPublicId,
   getAllProperties,
   updateProperty,
   deleteProperty,

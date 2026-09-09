@@ -33,6 +33,9 @@ export default function ForgotPassword() {
       if (err?.code === "EMAIL_NOT_FOUND") {
         setError("Email not found");
         toast.error("Email not found");
+      } else if (err?.code === "SOCIAL_ONLY") {
+        setError("This account signs in with Google. No password to reset.");
+        toast.info("This account signs in with Google — use Continue with Google on the login page.");
       } else {
         toast.error(err?.message || "Failed to send reset email");
       }

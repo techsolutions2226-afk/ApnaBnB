@@ -144,6 +144,7 @@ const registerUser = async (req, res, next) => {
       data: {
         name: normalizedName,
         email: normalizedEmail,
+        authProvider: 'email',
         password: await hashPassword(password),
         role,
         phone: String(phone).trim(),
@@ -306,6 +307,20 @@ const loginUser = async (req, res, next) => {
         .status(404)
         .json({ code: 'EMAIL_NOT_FOUND', message: 'Email not found.' });
     }
+
+    // A Google-created account has NO password (authProvider='google',
+    // password=null). Every bcrypt.compare against null would fail with the
+    // misleading "Wrong password", so tell the user to come back through
+    // "Continue with Google" instead. Security note: we do NOT leak whether
+    // the email even exists — this only fires for an existing row.
+    if (!user.password) {
+      return res.status(401).json({
+        code: 'SOCIAL_ACCOUNT',
+        message: 'This account signs in with Google. Use "Continue with Google".',
+        provider: user.authProvider,
+      });
+    }
+
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res
@@ -574,6 +589,7 @@ const getMe = async (req, res, next) => {
         viewRole: true,
         verified: true,
         suspended: true,
+        deactivated: true,
         avatar: true,
         phone: true,
         location: true,
@@ -592,6 +608,12 @@ const getMe = async (req, res, next) => {
       return res.status(403).json({
         code: 'ACCOUNT_SUSPENDED',
         message: 'This account has been suspended. Contact support.',
+      });
+    }
+    if (user.deactivated) {
+      return res.status(403).json({
+        code: 'ACCOUNT_DEACTIVATED',
+        message: 'This account has been deactivated. Contact support.',
       });
     }
     if (!user.verified) {
@@ -655,6 +677,18 @@ const forgotPassword = async (req, res, next) => {
       return res
         .status(404)
         .json({ code: 'EMAIL_NOT_FOUND', message: 'Email not found.' });
+    }
+
+    // A Google-created account has no password to reset. Sending a reset link
+    // would let anyone claim this email and set a password, silently adding a
+    // login method to an account the user never secured with one — so resolve
+    // the account via "Continue with Google" instead of a password reset.
+    if (!user.password) {
+      return res.status(400).json({
+        code: 'SOCIAL_ONLY',
+        message: 'This account signs in with Google. No password to reset.',
+        provider: user.authProvider,
+      });
     }
 
     if (
@@ -847,13 +881,13 @@ const verifyGoogleIdToken = async (idToken) => {
     err.status = 400;
     throw err;
   }
+  if (!payload.email_verified) {
+    const err = new Error('Google has not verified this email address.');
+    err.status = 400;
+    throw err;
+  }
   return payload;
 };
-
-// Random unusable bcrypt hash for Google-created accounts. There is no
-// password to log in with, and "forgot password" can never be used to reset
-// one of these accounts (the random hash never matches an attacker's input).
-const randomUnusablePassword = () => hashPassword(crypto.randomBytes(24).toString('hex'));
 
 // Same user payload shape as loginUser/verifyOtp so the client treats both
 // flows identically.
@@ -967,7 +1001,10 @@ const googleComplete = async (req, res, next) => {
       data: {
         name: String(payload.name || email.split('@')[0] || 'New Member'),
         email,
-        password: await randomUnusablePassword(),
+        // A Google account has NO password — this is what makes "forgot
+        // password" and password login return SOCIAL_* instead of a dead end.
+        authProvider: 'google',
+        password: null,
         role,
         verified: true, // Google has already verified this email
         avatar: String(payload.picture || ''),

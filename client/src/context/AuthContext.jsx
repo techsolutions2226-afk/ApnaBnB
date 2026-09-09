@@ -6,6 +6,7 @@ import paymentService from "../services/paymentService";
 import { getEffectiveRole, roleRequiresPlan } from "../utils/subscription";
 import { disconnectSocket } from "../api/socket";
 import { clearRequestCache } from "../utils/requestCache";
+import { setLastLogin } from "../utils/lastLogin";
 
 /* How long the user can be idle before we log them out automatically.
    Default 30 minutes; override per-deploy with VITE_IDLE_LOGOUT_MINUTES. */
@@ -202,9 +203,10 @@ export function AuthProvider({ children }) {
       if (response.twoFactorRequired) {
         return response;
       }
-      const user = normalizeUser(response);
+const user = normalizeUser(response);
       setCurrentUser(user);
-      return user;
+      setLastLogin("email", user.email, user.name);
+      return response;
     } catch (err) {
       const errorMessage = err.message || "Login failed";
       setError(errorMessage);
@@ -222,6 +224,7 @@ export function AuthProvider({ children }) {
       const response = await authService.verifyTwoFactor(challengeToken, code);
       const user = normalizeUser(response);
       setCurrentUser(user);
+      setLastLogin("email", user.email, user.name);
       return { ...response, user };
     } catch (err) {
       const errorMessage = err.message || "Verification failed";
@@ -275,6 +278,7 @@ export function AuthProvider({ children }) {
       const response = await authService.googleLogin(idToken);
       if (response.token) {
         setCurrentUser(normalizeUser(response));
+        setLastLogin("google", response.email, response.name);
       }
       return response;
     } catch (err) {
@@ -295,6 +299,7 @@ export function AuthProvider({ children }) {
       const response = await authService.googleComplete(idToken, role, details);
       const user = normalizeUser(response);
       setCurrentUser(user);
+      setLastLogin("google", user.email, user.name);
       return user;
     } catch (err) {
       const errorMessage = err.message || "Google sign-in failed";

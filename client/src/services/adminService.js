@@ -87,6 +87,17 @@ const adminService = {
     }
   },
 
+  // Admin-driven deactivation — reversible, distinct from suspend. Logs the
+  // user out immediately (backend bumps tokenVersion + kicks their sockets).
+  deactivateUser: async (userId, reason) => {
+    try {
+      const response = await apiClient.put(`/admin/users/${userId}/deactivate`, { reason });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to deactivate user' };
+    }
+  },
+
   // Lifts a self-deactivation (the user turned their own account off from
   // Account -> Login & security). Does not touch admin suspension.
   // Lifts an admin suspension. Separate from reactivateUser, which lifts a

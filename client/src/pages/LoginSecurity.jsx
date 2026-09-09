@@ -239,85 +239,98 @@ export default function LoginSecurity() {
               <h2 className="ac-sec-heading">Login</h2>
 
               <div className="ac-field-row ac-field-row--flush">
-                <div className="ac-field-header">
-                  <div>
-                    <p className="ac-field-label">Password</p>
-                    <p className="ac-field-value">
-                      {editingPassword ? "Choose a new password" : "••••••••"}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="ac-field-edit-btn"
-                    onClick={() =>
-                      editingPassword ? closePasswordForm() : setEditingPassword(true)
-                    }
-                  >
-                    {editingPassword ? "Cancel" : "Update"}
-                  </button>
-                </div>
-
-                {editingPassword && (
-                  <div className="ac-sec-form">
-                    <label className="ac-sec-label">
-                      Current password
-                      <input
-                        type="password"
-                        className="ac-field-input"
-                        value={passwords.current}
-                        onChange={(e) =>
-                          setPasswords({ ...passwords, current: e.target.value })
-                        }
-                        autoComplete="current-password"
-                        disabled={savingPassword}
-                      />
-                    </label>
-                    <label className="ac-sec-label">
-                      New password
-                      <input
-                        type="password"
-                        className="ac-field-input"
-                        value={passwords.next}
-                        onChange={(e) =>
-                          setPasswords({ ...passwords, next: e.target.value })
-                        }
-                        autoComplete="new-password"
-                        disabled={savingPassword}
-                      />
-                      <span className="ac-sec-hint">At least 8 characters.</span>
-                    </label>
-                    <label className="ac-sec-label">
-                      Confirm new password
-                      <input
-                        type="password"
-                        className="ac-field-input"
-                        value={passwords.confirm}
-                        onChange={(e) =>
-                          setPasswords({ ...passwords, confirm: e.target.value })
-                        }
-                        autoComplete="new-password"
-                        disabled={savingPassword}
-                      />
-                    </label>
-                    <div className="ac-sec-form-actions">
-                      <button
-                        type="button"
-                        className="ac-field-save-btn"
-                        onClick={submitPassword}
-                        disabled={savingPassword}
-                      >
-                        {savingPassword ? "Saving…" : "Update password"}
-                      </button>
-                      <button
-                        type="button"
-                        className="ac-btn-ghost"
-                        onClick={closePasswordForm}
-                        disabled={savingPassword}
-                      >
-                        Cancel
-                      </button>
+                {!overview?.hasPassword ? (
+                  <div className="ac-field-header">
+                    <div>
+                      <p className="ac-field-label">Password</p>
+                      <p className="ac-field-value">
+                        This account signs in with Google — no password is set.
+                      </p>
                     </div>
                   </div>
+                ) : (
+                  <>
+                  <div className="ac-field-header">
+                    <div>
+                      <p className="ac-field-label">Password</p>
+                      <p className="ac-field-value">
+                        {editingPassword ? "Choose a new password" : "••••••••"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ac-field-edit-btn"
+                      onClick={() =>
+                        editingPassword ? closePasswordForm() : setEditingPassword(true)
+                      }
+                    >
+                      {editingPassword ? "Cancel" : "Update"}
+                    </button>
+                  </div>
+
+                  {editingPassword && (
+                    <div className="ac-sec-form">
+                      <label className="ac-sec-label">
+                        Current password
+                        <input
+                          type="password"
+                          className="ac-field-input"
+                          value={passwords.current}
+                          onChange={(e) =>
+                            setPasswords({ ...passwords, current: e.target.value })
+                          }
+                          autoComplete="current-password"
+                          disabled={savingPassword}
+                        />
+                      </label>
+                      <label className="ac-sec-label">
+                        New password
+                        <input
+                          type="password"
+                          className="ac-field-input"
+                          value={passwords.next}
+                          onChange={(e) =>
+                            setPasswords({ ...passwords, next: e.target.value })
+                          }
+                          autoComplete="new-password"
+                          disabled={savingPassword}
+                        />
+                        <span className="ac-sec-hint">At least 8 characters.</span>
+                      </label>
+                      <label className="ac-sec-label">
+                        Confirm new password
+                        <input
+                          type="password"
+                          className="ac-field-input"
+                          value={passwords.confirm}
+                          onChange={(e) =>
+                            setPasswords({ ...passwords, confirm: e.target.value })
+                          }
+                          autoComplete="new-password"
+                          disabled={savingPassword}
+                        />
+                      </label>
+                      <div className="ac-sec-form-actions">
+                        <button
+                          type="button"
+                          className="ac-field-save-btn"
+                          onClick={submitPassword}
+                          disabled={savingPassword}
+                        >
+                          {savingPassword ? "Saving…" : "Update password"}
+                        </button>
+                        <button
+                          type="button"
+                          className="ac-btn-ghost"
+                          onClick={closePasswordForm}
+                          disabled={savingPassword}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  </>
                 )}
               </div>
 

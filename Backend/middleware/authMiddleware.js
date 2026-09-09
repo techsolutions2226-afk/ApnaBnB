@@ -19,6 +19,7 @@ const loadActiveUser = async (userId) =>
       viewRole: true,
       verified: true,
       suspended: true,
+      deactivated: true,
       tokenVersion: true,
     },
   });
@@ -58,6 +59,17 @@ const verifyToken = async (req, res, next) => {
       return res.status(403).json({
         code: 'ACCOUNT_SUSPENDED',
         message: 'This account has been suspended. Contact support.',
+      });
+    }
+
+    // An account the user (or an admin) deactivated is equally unusable — any
+    // pre-deactivation token must be rejected the moment it is next used, the
+    // same way a suspension is. loginUser already blocks at sign-in; this
+    // closes the back-door for an already-open session.
+    if (user.deactivated) {
+      return res.status(403).json({
+        code: 'ACCOUNT_DEACTIVATED',
+        message: 'This account has been deactivated. Contact support.',
       });
     }
 

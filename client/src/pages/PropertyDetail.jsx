@@ -80,7 +80,7 @@ const capitalize = (s) =>
 const PropertyDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, isAuthenticated, subscription } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
   const { property, isLoading, error } = useProperty(id);
   const { isWishlisted, toggleWishlist } = useWishlist();
 
@@ -214,29 +214,24 @@ const PropertyDetail = () => {
       .catch(() => toast.error("Failed to copy link"));
   };
 
-  /* ── Owner contact (paid) ──
-     Routes rather than revealing inline: with a plan the viewer gets the full
-     owner profile; without one they go straight to /plans and see nothing.
-     `subscription.plan` is only set when a payment is approved, so it is the
-     right signal for every role — `subscription.active` is true for buyers even
-     when they have never paid. The server re-checks on the profile route. */
+  /* ── Owner contact (always shown unless the owner opts out) ──
+     Each listing can hide contact via its `showContact` toggle (managed from
+     the listing form and the admin panel). When hidden the server withholds
+     the fields AND this page shows nothing, so the toggle isn't cosmetic. */
   const isOwnListing = listedBy?._id && listedBy._id === currentUser?.id;
-  const hasPlan = !!subscription?.plan;
+  const contactVisible = property.showContact !== false;
+  const ownerContact = contactVisible
+    ? {
+        name: property.contactName || listedBy?.name || "",
+        phone: property.contactPhone || listedBy?.phone || "",
+        email: property.contactEmail || listedBy?.email || "",
+      }
+    : { name: "", phone: "", email: "" };
 
-  const handleGetContact = () => {
-    if (!isAuthenticated) {
-      toast.info("Please log in to see the owner's details.");
-      navigate("/login");
-      return;
-    }
-    if (!listedBy?._id) return;
-
-    if (isOwnListing || hasPlan) {
-      navigate(`/users/${listedBy._id}`);
-      return;
-    }
-    toast.info("Choose a plan to see the owner's contact details.");
-    navigate(`/plans?from=contact&property=${id}`);
+  const scrollToListedBy = () => {
+    document
+      .getElementById("pd-listed-by")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   /* The "Confirm visit" primary CTA — straight to the visit scheduling page. */
@@ -321,7 +316,7 @@ const PropertyDetail = () => {
                 <button
                   type="button"
                   className="pd-sticky-nav-cta"
-                  onClick={handleGetContact}
+                  onClick={scrollToListedBy}
                 >
                   Contact
                 </button>
@@ -430,7 +425,7 @@ const PropertyDetail = () => {
         <div className="pd-content">
           <div className="pd-main">
             {/* Listed by */}
-            <section className="pd-card pd-listed-by">
+            <section className="pd-card pd-listed-by" id="pd-listed-by">
               <div className="pd-listed-by-left">
                 {listedBy?._id ? (
                   <Link to={`/users/${listedBy._id}`} className="pd-host-link">
@@ -439,7 +434,7 @@ const PropertyDetail = () => {
                       alt={hostInfo.name}
                       className="pd-host-img"
                     />
-                    <div>
+                    <div className="pd-host-info">
                       <p className="pd-host-name">Listed by {listedBy.name}</p>
                       <p className="pd-host-meta">
                         <FiCheckCircle size={13} className="pd-verified-icon" />
@@ -448,6 +443,35 @@ const PropertyDetail = () => {
                           : "Verified Owner"}
                         <span className="pd-view-profile">View profile →</span>
                       </p>
+                      {ownerContact.phone || ownerContact.email ? (
+                        <div className="pd-host-contact">
+                          {ownerContact.phone && (
+                            <a
+                              href={`tel:${ownerContact.phone}`}
+                              className="pd-host-contact-item"
+                            >
+                              <FiPhone size={14} />
+                              {ownerContact.phone}
+                            </a>
+                          )}
+                          {ownerContact.email && (
+                            <a
+                              href={`mailto:${ownerContact.email}`}
+                              className="pd-host-contact-item"
+                            >
+                              <FiMail size={14} />
+                              {ownerContact.email}
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        !contactVisible && (
+                          <p className="pd-host-contact-hidden">
+                            Owner has chosen not to show contact details on this
+                            listing.
+                          </p>
+                        )
+                      )}
                     </div>
                   </Link>
                 ) : (
@@ -465,20 +489,21 @@ const PropertyDetail = () => {
                           ? "Verified Agent"
                           : "Verified Owner"}
                       </p>
+                      {ownerContact.phone && (
+                        <div className="pd-host-contact">
+                          <a
+                            href={`tel:${ownerContact.phone}`}
+                            className="pd-host-contact-item"
+                          >
+                            <FiPhone size={14} />
+                            {ownerContact.phone}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
               </div>
-              {listedBy?._id && listedBy._id !== currentUser?.id && (
-                <button
-                  type="button"
-                  className="pd-msg-btn"
-                  onClick={handleGetContact}
-                >
-                  <FiPhone size={16} />
-                  Get contact info
-                </button>
-              )}
             </section>
 
             {/* Overview */}
@@ -625,7 +650,7 @@ const PropertyDetail = () => {
           <aside className="pd-sidebar">
             <InquiryCard
               property={property}
-              onMessage={handleGetContact}
+              contact={ownerContact}
               onVisit={handleVisit}
             />
           </aside>

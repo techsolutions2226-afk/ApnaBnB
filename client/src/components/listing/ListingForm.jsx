@@ -36,6 +36,7 @@ import Modal from "../common/Modal";
 import { forwardGeocode } from "../../utils/geocode";
 import { loadListingDraft, saveListingDraft } from "../../utils/listingDraft";
 import { useAuth } from "../../context/AuthContext";
+import { photoUrlToFormImage } from "../../utils/cloudinaryUrl";
 import "../../styles/Listing.css";
 import { CITIES, AREAS_BY_CITY } from "../../config/locations";
 import AiDescriptionBadge from "../common/AiDescriptionBadge";
@@ -256,6 +257,7 @@ const EMPTY_FORM = {
   contactWhatsapp: "",
   contactAltPhone: "",
   showWhatsapp: true,
+  showContact: true,
   // Plot-specific
   plotNumber: "",
   plotCorner: false,
@@ -421,14 +423,16 @@ const ListingForm = ({
   const defaults = useMemo(() => {
     if (!initialData) return { ...EMPTY_FORM };
 
-    // Convert old image/gallery format to new images array
+    // Convert old image/gallery format to new images array (with Cloudinary publicId)
     const images = [];
     if (initialData.image) {
-      images.push({ url: initialData.image, isCover: true });
+      const img = photoUrlToFormImage(initialData.image, { isCover: true });
+      if (img) images.push(img);
     }
     if (initialData.gallery && Array.isArray(initialData.gallery)) {
       initialData.gallery.forEach((url) => {
-        if (url) images.push({ url });
+        const img = photoUrlToFormImage(url);
+        if (img) images.push(img);
       });
     }
 
@@ -537,6 +541,7 @@ const ListingForm = ({
       contactWhatsapp: initialData.contactWhatsapp || "",
       contactAltPhone: initialData.contactAltPhone || "",
       showWhatsapp: initialData.showWhatsapp !== false,
+      showContact: initialData.showContact !== false,
       plotNumber: initialData.plotNumber || "",
       plotCorner: Boolean(initialData.plotCorner),
       plotParkFacing: Boolean(initialData.plotParkFacing),
@@ -950,6 +955,7 @@ const ListingForm = ({
         contactWhatsapp: form.contactWhatsapp?.trim() || "",
         contactAltPhone: form.contactAltPhone?.trim() || "",
         showWhatsapp: form.showWhatsapp !== false,
+        showContact: form.showContact !== false,
       };
 
       onSubmit(output);
@@ -1980,13 +1986,22 @@ const ListingForm = ({
           />
           <span>Show WhatsApp on listing</span>
         </label>
+
+        <label className="lst-check-row">
+          <input
+            type="checkbox"
+            checked={form.showContact !== false}
+            onChange={(e) => handleChange("showContact", e.target.checked)}
+          />
+          <span>Show owner contact on the property page</span>
+        </label>
       </div>
 
       {/* ── Images ── */}
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">Photos & Media</h3>
         <p className="lst-form-section-sub">
-          Upload 1–{MAX_IMAGES} photos (JPG, PNG, WEBP). First image is the cover — drag to reorder.
+          Upload 1–{MAX_IMAGES} photos (JPG, PNG, WEBP). New photos become the cover — drag to reorder.
         </p>
 
         <div className="lst-field">
@@ -1995,7 +2010,7 @@ const ListingForm = ({
             onChange={(newImages) => handleChange("images", newImages)}
             maxImages={MAX_IMAGES}
             label="Property Images"
-            helperText={`Drag & drop or browse (Max ${MAX_IMAGES}, 5MB each)`}
+            helperText={`Drag & drop or browse (Max ${MAX_IMAGES}, 5MB each). New photos become the cover.`}
           />
           {showError("images") && (
             <div className="lst-error">{errors.images}</div>

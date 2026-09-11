@@ -295,6 +295,10 @@ model Property {
   contactAltPhone String  @default("")
   showWhatsapp    Boolean @default(true)
 
+  // Per-listing owner contact visibility on the public property detail page.
+  // When false, the detail page and /contact endpoint withhold all contact info.
+  showContact Boolean @default(true)
+
   status PropertyStatus @default(active)
 
   // The role the user was ACTING AS when they listed this (supply side:

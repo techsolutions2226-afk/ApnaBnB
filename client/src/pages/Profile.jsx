@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import userService from "../services/userService";
 import reviewService from "../services/reviewService";
 import listingService from "../services/listingService";
 import Avatar from "../components/common/Avatar";
 import ReviewCard from "../components/common/ReviewCard";
-import { toast } from "react-toastify";
 import { formatPrice } from "../utils/formatters";
 import {
   FiCheck,
@@ -21,7 +20,6 @@ import {
   FiBriefcase,
   FiEye,
   FiClock,
-  FiUnlock,
   FiHome,
   FiMaximize2,
   FiDroplet,
@@ -32,13 +30,9 @@ import "../styles/Common.css";
 
 export default function Profile() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { currentUser, isAuthenticated, subscription } = useAuth();
+  const { currentUser } = useAuth();
 
   const isOwnProfile = currentUser?.id === id;
-  /* `subscription.plan` is only set once a payment is approved, so it holds for
-     every role — `subscription.active` is true for buyers who never paid. */
-  const hasPlan = !!subscription?.plan;
 
   const [user, setUser] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -46,9 +40,9 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showAvatarFull, setShowAvatarFull] = useState(false);
-  /* The paid half of the profile: contact details, coverage and counts. Null
-     until the gated endpoint succeeds — the public payload carries none of it,
-     so there is nothing to hide in the DOM. */
+  /* The full half of the profile: contact details, coverage and counts. Null
+     until the public endpoint resolves — the identity payload carries none of
+     it, so contact only appears once loaded. */
   const [full, setFull] = useState(null);
 
   useEffect(() => {
@@ -95,12 +89,11 @@ export default function Profile() {
     };
   }, [id, isOwnProfile, currentUser]);
 
-  /* Contact details come from a separate, gated endpoint. A 402 simply leaves
-     `full` null and the locked card renders — no redirect, since the visitor
-     may have landed here directly and the public half is still worth showing. */
+  /* Contact details are part of the public profile — no gate, no login needed.
+     A transient failure leaves `full` null and the contact card falls back
+     gracefully to "Not provided" / unavailable. */
   useEffect(() => {
-    if (!id || !isAuthenticated) return;
-    if (!isOwnProfile && !hasPlan) return;
+    if (!id) return;
     let cancelled = false;
     userService
       .getProfile(id)
@@ -108,21 +101,12 @@ export default function Profile() {
         if (!cancelled) setFull(data);
       })
       .catch(() => {
-        /* 402 or transient failure — the locked card is the correct fallback. */
+        /* Transient failure — nothing to render beyond the public half. */
       });
     return () => {
       cancelled = true;
     };
-  }, [id, isAuthenticated, isOwnProfile, hasPlan]);
-
-  const unlock = () => {
-    if (!isAuthenticated) {
-      toast.info("Please log in to see contact details.");
-      navigate("/login");
-      return;
-    }
-    navigate(`/plans?from=contact&user=${id}`);
-  };
+  }, [id]);
 
   // Close the full-screen avatar on Esc.
   useEffect(() => {
@@ -236,10 +220,6 @@ export default function Profile() {
                   <Link to="/account/personal-info" className="pf-btn-action">
                     Edit profile
                   </Link>
-                ) : !full ? (
-                  <button type="button" onClick={unlock} className="pf-btn-action">
-                    <FiUnlock size={15} style={{ marginRight: 6 }} /> Choose plan to unlock
-                  </button>
                 ) : contactPhone ? (
                   <a href={`tel:${contactPhone}`} className="pf-btn-action">
                     <FiPhone size={15} style={{ marginRight: 6 }} /> Contact {firstName}
@@ -330,11 +310,8 @@ export default function Profile() {
                     <FiLock size={20} />
                   </div>
                   <p className="pf-locked-text">
-                    Contact details are available to members on an active plan.
+                    Contact details are currently unavailable.
                   </p>
-                  <button type="button" onClick={unlock} className="pf-btn-unlock-small">
-                    <FiUnlock size={14} /> Unlock Details
-                  </button>
                 </div>
               )}
             </div>

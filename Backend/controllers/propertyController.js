@@ -9,7 +9,6 @@ const {
   normalizeSupply,
 } = require('../utils/matchScore');
 const { sendPropertyCreatedEmail } = require('../utils/mailer');
-const { hasContactAccess } = require('../utils/subscription');
 const { notifyUserInBackground, notifyUsersInBackground, TYPES } = require('../utils/notifier');
 const {
   notifyPropertyMatches,
@@ -18,13 +17,17 @@ const {
 } = require('../utils/matchNotifier');
 const { buildPropertyData, validatePropertyData } = require('../utils/propertyData');
 const { isAllowedViewRole, viewRoleDeniedMessage } = require('../utils/roles');
+const { destroyRemovedPhotoUrls } = require('../utils/cloudinaryAssets');
 
-// Deliberately NO email/phone here: contact details are a paid reveal and are
-// served only by getPropertyContact below. Returning them on every property
-// fetch would make that gate cosmetic — the data would already be in the
-// browser's Network tab.
+// Contact details are intentionally NOT on card-level fetches (list/search):
+// the detail page renders owner contact, but grids don't need it in their
+// payload. `listedByDetailSelect` adds phone/email for getPropertyById only.
 const listedBySelect = {
   select: { id: true, name: true, role: true, avatar: true },
+};
+
+const listedByDetailSelect = {
+  select: { id: true, name: true, role: true, avatar: true, phone: true, email: true },
 };
 
 // Auto-generate matches for a newly-created property.
@@ -294,6 +297,14 @@ const updateProperty = async (req, res, next) => {
       return res.status(400).json({ message: validationError });
     }
 
+    const existing = await prisma.property.findFirst({
+      where: { id, listedById: req.user.id },
+      select: { id: true, photos: true },
+    });
+    if (!existing) {
+      return res.status(404).json({ message: 'Property not found or unauthorized.' });
+    }
+
     // Ownership-scoped update.
     const result = await prisma.property.updateMany({
       where: { id, listedById: req.user.id },
@@ -304,6 +315,11 @@ const updateProperty = async (req, res, next) => {
     }
 
     const property = await prisma.property.findUnique({ where: { id } });
+
+    if (Array.isArray(data.photos)) {
+      destroyRemovedPhotoUrls(existing.photos, property?.photos);
+    }
+
     res.status(200).json(property);
   } catch (error) {
     next(error);
@@ -327,7 +343,6 @@ const deleteProperty = async (req, res, next) => {
     next(error);
   }
 };
-
 // Get single property by ID
 const getPropertyById = async (req, res, next) => {
   const { id } = req.params;
@@ -335,17 +350,32 @@ const getPropertyById = async (req, res, next) => {
   try {
     const property = await prisma.property.findUnique({
       where: { id },
-      include: { listedBy: listedBySelect },
+      include: { listedBy: listedByDetailSelect },
     });
+
     if (!property) {
       return res.status(404).json({ message: 'Property not found.' });
     }
+
+    // Respect the per-listing contact toggle: when the owner hides contact,
+    // withhold every field that would leak it before the payload leaves here.
+    if (property.showContact === false) {
+      delete property.contactName;
+      delete property.contactEmail;
+      delete property.contactPhone;
+      delete property.contactWhatsapp;
+      delete property.contactAltPhone;
+      if (property.listedBy) {
+        delete property.listedBy.phone;
+        delete property.listedBy.email;
+      }
+    }
+
     res.status(200).json(property);
   } catch (error) {
     next(error);
   }
 };
-
 // Search properties with text search
 const searchProperties = async (req, res, next) => {
   const { q, city, area, minPrice, maxPrice, propertyType, bedrooms, bathrooms } = req.query;
@@ -399,11 +429,11 @@ const searchProperties = async (req, res, next) => {
   }
 };
 
-// GET /api/properties/:id/contact — the paid reveal.
-// Returns the lister's phone/email only to the owner themselves or to a user
-// holding an approved plan. Everyone else gets 402 so the client can route
-// them to /plans. This is the real gate: the contact details are on no other
-// endpoint, so hiding the button alone would not be enough.
+// GET /api/properties/:id/contact — public owner contact.
+// Owner contact is shown on the property detail page for everyone, but each
+// listing can opt out via its `showContact` toggle; a hidden listing returns
+// 403 here with no contact in the body. The listing's own contact fields are
+// preferred; legacy rows fall back to the lister's profile phone/email.
 const getPropertyContact = async (req, res, next) => {
   try {
     const property = await prisma.property.findUnique({
@@ -411,6 +441,10 @@ const getPropertyContact = async (req, res, next) => {
       select: {
         id: true,
         listedById: true,
+        showContact: true,
+        contactName: true,
+        contactPhone: true,
+        contactEmail: true,
         listedBy: {
           select: { id: true, name: true, role: true, phone: true, email: true },
         },
@@ -421,18 +455,18 @@ const getPropertyContact = async (req, res, next) => {
       return res.status(404).json({ message: 'Property not found.' });
     }
 
-    const isOwner = property.listedById === req.user.id;
-    const unlocked = isOwner || (await hasContactAccess(req.user.id));
-
-    if (!unlocked) {
-      return res.status(402).json({
-        code: 'PLAN_REQUIRED',
-        message: "Choose a plan to see the owner's contact details.",
+    if (property.showContact === false) {
+      return res.status(403).json({
+        message: 'The owner has chosen not to display contact details on this listing.',
       });
     }
 
-    const { name, role, phone, email } = property.listedBy;
-    res.status(200).json({ name, role, phone: phone || '', email: email || '' });
+    res.status(200).json({
+      name: property.contactName || property.listedBy.name,
+      role: property.listedBy.role,
+      phone: property.contactPhone || property.listedBy.phone || '',
+      email: property.contactEmail || property.listedBy.email || '',
+    });
   } catch (error) {
     next(error);
   }

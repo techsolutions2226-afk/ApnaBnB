@@ -1,0 +1,39 @@
+{
+  "loading": "Loading property",
+  "notFound": "Property not found",
+  "backToHome": "Back to Home",
+  "breadcrumb": "Breadcrumb",
+  "actions": {
+    "contact": "Contact",
+    "share": "Share",
+    "shareTitle": "Share this property",
+    "copyLink": "Copy link",
+    "email": "Email",
+    "messages": "Messages",
+    "viewProfile": "View profile →",
+    "confirmVisit": "Confirm visit",
+    "allAmenities": "All amenities"
+  },
+  "sections": {
+    "overview": "Overview",
+    "description": "Description",
+    "additionalNotes": "Additional Notes",
+    "video": "Video",
+    "amenities": "Amenities",
+    "whereYoullBe": "Where you'll be",
+    "locationNearby": "Location & Nearby",
+    "reviews": "Reviews"
+  },
+  "facts": {
+    "bed_one": "{{count}} Bed",
+    "bed_other": "{{count}} Beds",
+    "bath_one": "{{count}} Bath",
+    "bath_other": "{{count}} Baths"
+  },
+  "toast": {
+    "linkCopied": "Link copied!",
+    "copyFailed": "Failed to copy link",
+    "loginToVisit": "Please log in to confirm a visit.",
+    "ownListing": "This is your own listing."
+  }
+}

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiChevronLeft, FiShield, FiMapPin, FiCalendar } from "react-icons/fi";
 import { useProperty } from "../hooks/useProperties";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useBooking } from "../context/BookingContext";
 import Skeleton from "../components/common/Skeleton";
@@ -23,6 +24,7 @@ const todayISO = () => {
 };
 
 export default function VisitPlan({ propertyId }) {
+  const { t } = useTranslation("visit");
   const { propertyId: routeId } = useParams();
   const actualId = propertyId || routeId;
   const { property, isLoading, error } = useProperty(actualId);
@@ -42,7 +44,7 @@ export default function VisitPlan({ propertyId }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!date) {
-      toast.info("Please choose a visit date.");
+      toast.info(t("plan.chooseDate"));
       return;
     }
 
@@ -58,7 +60,7 @@ export default function VisitPlan({ propertyId }) {
         serviceFee: 0,
         visitorProposal: { date, time },
       });
-      toast.success("Visit proposed! Waiting for the owner to confirm the schedule.");
+      toast.success(t("plan.proposed"));
       const tripId = trip.id || trip._id;
       navigate(`/visits/${tripId}`, { replace: true });
     } catch (err) {
@@ -73,10 +75,10 @@ export default function VisitPlan({ propertyId }) {
       <div className="vs-container">
         <Link to={actualId ? `/property/${actualId}` : "/"} className="vs-breadcrumb">
           <FiChevronLeft size={18} />
-          <span>Back to property</span>
+          <span>{t("plan.back")}</span>
         </Link>
 
-        <h1 className="vs-title">Confirm your visit</h1>
+        <h1 className="vs-title">{t("plan.title")}</h1>
         <p className="vs-subtitle">
           Propose a date and time. The owner will confirm it or offer an
           alternative. Contact details are revealed to both of you once the
@@ -120,12 +122,12 @@ export default function VisitPlan({ propertyId }) {
             <div className="vs-card vs-form-card">
               {isOwnListing ? (
                 <p className="vs-own-note">
-                  You cannot book a visit on your own listing.
+                  {t("plan.ownListing")}
                 </p>
               ) : (
                 <form onSubmit={handleSubmit}>
                   <label className="vs-label" htmlFor="vs-date">
-                    Preferred date
+                    {t("plan.preferredDate")}
                   </label>
                   <input
                     id="vs-date"
@@ -138,7 +140,7 @@ export default function VisitPlan({ propertyId }) {
                   />
 
                   <label className="vs-label" htmlFor="vs-time">
-                    Preferred time
+                    {t("plan.preferredTime")}
                   </label>
                   <input
                     id="vs-time"

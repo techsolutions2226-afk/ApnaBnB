@@ -3,6 +3,9 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 import { AuthProvider } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
+// Initialises i18next before any component calls useTranslation().
+import "./i18n";
 import { WishlistProvider } from "./context/WishlistContext";
 import { BookingProvider } from "./context/BookingContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -82,7 +85,8 @@ import VisitStatus from "./pages/VisitStatus";
 
 function App() {
   return (
-    <AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
       <WishlistProvider>
         <BookingProvider>
           <BrowserRouter>
@@ -195,7 +199,8 @@ function App() {
           </BrowserRouter>
         </BookingProvider>
       </WishlistProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

@@ -1,0 +1,60 @@
+{
+  "title": "Account",
+  "breadcrumb": "Account",
+  "goToProfile": "Go to profile",
+  "cards": {
+    "personalInfo": {
+      "title": "Personal info",
+      "desc": "Provide personal details and how we can reach you"
+    },
+    "loginSecurity": {
+      "title": "Login & security",
+      "desc": "Update your password and secure your account"
+    },
+    "payments": {
+      "title": "Payments & payouts",
+      "desc": "Review payments, payouts, coupons, and gift cards"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "desc": "Choose notification preferences and how you want to be contacted"
+    },
+    "privacy": {
+      "title": "Privacy & sharing",
+      "desc": "Manage your personal data, connected services, and data sharing settings"
+    },
+    "preferences": {
+      "title": "Global preferences",
+      "desc": "Set your default language, currency, and timezone"
+    }
+  },
+  "preferences": {
+    "title": "Global preferences",
+    "subtitle": "Set your default language, currency, and timezone.",
+    "previewNote": "Currency, timezone, area units and date format are a preview — only language is connected so far.",
+    "saved": "Language updated",
+    "save": "Save preferences",
+    "rows": {
+      "language": {
+        "label": "Language",
+        "desc": "The language used across the site."
+      },
+      "currency": {
+        "label": "Currency",
+        "desc": "Prices are shown in this currency."
+      },
+      "timezone": {
+        "label": "Timezone",
+        "desc": "Used for viewing times and scheduled visits."
+      },
+      "areaUnit": {
+        "label": "Area units",
+        "desc": "How property sizes are measured."
+      },
+      "dateFormat": {
+        "label": "Date format",
+        "desc": "How dates appear throughout the site."
+      }
+    }
+  }
+}

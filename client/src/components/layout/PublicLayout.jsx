@@ -1,26 +1,29 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { FiX } from "react-icons/fi";
+import { useTranslation } from "react-i18next";
 import Avatar from "../ui/Avatar";
 import Logo from "../common/Logo";
 import { useAuth } from "../../context/AuthContext";
 import MobileBottomNav from "./MobileBottomNav";
 import NotificationBell from "../navbar/NotificationBell";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 import "../../styles/PublicNav.css";
 
 function AnnouncementBanner() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
   if (!visible) return null;
   return (
     <div className="pub-announce">
       <span className="pub-announce__row">
-        <span className="hidden sm:inline">Welcome to ApnaBnB</span>
-        <span className="sm:hidden">Welcome!</span>
+        <span className="hidden sm:inline">{t("announce.welcome")}</span>
+        <span className="sm:hidden">{t("announce.welcomeShort")}</span>
         <button
           type="button"
           onClick={() => setVisible(false)}
           className="pub-announce__close"
-          aria-label="Dismiss"
+          aria-label={t("announce.dismiss")}
         >
           <FiX className="h-3.5 w-3.5" />
         </button>
@@ -30,6 +33,7 @@ function AnnouncementBanner() {
 }
 
 export default function PublicLayout() {
+  const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
   const [stageLive, setStageLive] = useState(false);
   const headerRef = useRef(null);
@@ -64,9 +68,9 @@ export default function PublicLayout() {
   }, []);
 
   const navLinks = [
-    { to: "/", label: "Home" },
-    { to: "/about", label: "About" },
-    { to: "/contact", label: "Contact" },
+    { to: "/", label: t("nav.home") },
+    { to: "/about", label: t("nav.about") },
+    { to: "/contact", label: t("nav.contact") },
   ];
 
   const isActive = (to) =>
@@ -88,11 +92,11 @@ export default function PublicLayout() {
 
       <header ref={headerRef} className={`pub-header app-header ${headerMod}`}>
         <div className="pub-header__inner">
-          <Link to="/" className="pub-brand" aria-label="ApnaBnB home">
+          <Link to="/" className="pub-brand" aria-label={t("nav.homeAriaLabel")}>
             <Logo size={44} />
           </Link>
 
-          <nav className="pub-nav" aria-label="Main navigation">
+          <nav className="pub-nav" aria-label={t("nav.ariaLabel")}>
             {navLinks.map((link) => (
               <Link
                 key={link.to}
@@ -107,13 +111,17 @@ export default function PublicLayout() {
           </nav>
 
           <div className="pub-actions">
+            {/* Globe button — opens a menu with English / اردو. Leads the
+                right-hand cluster so it is findable without competing with
+                the Log in / Sign up buttons for weight. */}
+            <LanguageSwitcher variant="menu" />
             <NotificationBell />
             {isAuthenticated ? (
               <>
                 <Link to={dashboardPath} className="pub-btn pub-btn--soft">
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
-                <Link to="/account" className="pub-avatar" aria-label="Account">
+                <Link to="/account" className="pub-avatar" aria-label={t("nav.account")}>
                   <Avatar
                     src={currentUser?.avatar}
                     name={currentUser?.name}
@@ -124,19 +132,20 @@ export default function PublicLayout() {
             ) : (
               <>
                 <Link to="/login" className="pub-btn pub-btn--ghost">
-                  Log in
+                  {t("nav.login")}
                 </Link>
                 <Link to="/signup" className="pub-btn pub-btn--solid">
-                  Sign up
+                  {t("nav.signup")}
                 </Link>
               </>
             )}
           </div>
 
           <div className="pub-actions pub-actions--mobile">
+            <LanguageSwitcher variant="menu" size="sm" />
             <NotificationBell />
             {isAuthenticated ? (
-              <Link to="/account" className="pub-avatar" aria-label="Account">
+              <Link to="/account" className="pub-avatar" aria-label={t("nav.account")}>
                 <Avatar
                   src={currentUser?.avatar}
                   name={currentUser?.name}
@@ -145,7 +154,7 @@ export default function PublicLayout() {
               </Link>
             ) : (
               <Link to="/login" className="pub-btn pub-btn--soft">
-                Log in
+                {t("nav.login")}
               </Link>
             )}
           </div>
@@ -164,43 +173,47 @@ export default function PublicLayout() {
                 <Logo size={36} />
               </Link>
               <p className="mt-3 text-sm leading-relaxed">
-                Pakistan's trusted platform for property buying, selling, and renting.
+                {t("footer.tagline")}
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3">Company</h3>
+              <h3 className="text-sm font-semibold text-white mb-3">{t("footer.company")}</h3>
               <ul className="space-y-2">
-                {["About", "Contact", "Careers"].map((item) => (
-                  <li key={item}>
+                {[
+                  { key: "about", to: "/about" },
+                  { key: "contact", to: "/contact" },
+                  { key: "careers", to: "/careers" },
+                ].map((item) => (
+                  <li key={item.key}>
                     <Link
-                      to={`/${item.toLowerCase()}`}
+                      to={item.to}
                       className="text-sm hover:text-white transition-colors"
                     >
-                      {item}
+                      {t(`footer.${item.key}`)}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3">Explore</h3>
+              <h3 className="text-sm font-semibold text-white mb-3">{t("footer.explore")}</h3>
               <ul className="space-y-2">
-                {["Homes for Sale", "Homes for Rent", "Plots", "Commercial"].map((item) => (
-                  <li key={item}>
+                {["homesForSale", "homesForRent", "plots", "commercial"].map((key) => (
+                  <li key={key}>
                     <Link to="/search" className="text-sm hover:text-white transition-colors">
-                      {item}
+                      {t(`footer.${key}`)}
                     </Link>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white mb-3">Support</h3>
+              <h3 className="text-sm font-semibold text-white mb-3">{t("footer.support")}</h3>
               <ul className="space-y-2">
-                {["Help Center", "Privacy Policy", "Terms of Service"].map((item) => (
-                  <li key={item}>
+                {["helpCenter", "privacyPolicy", "termsOfService"].map((key) => (
+                  <li key={key}>
                     <Link to="/legal/terms" className="text-sm hover:text-white transition-colors">
-                      {item}
+                      {t(`footer.${key}`)}
                     </Link>
                   </li>
                 ))}
@@ -209,17 +222,17 @@ export default function PublicLayout() {
           </div>
           <div className="mt-10 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-slate-500">
-              &copy; {new Date().getFullYear()} ApnaBnB. All rights reserved.
+              {t("footer.rights", { year: new Date().getFullYear() })}
             </p>
             <div className="flex items-center gap-4">
-              {["Facebook", "Twitter", "Instagram"].map((social) => (
+              {["facebook", "twitter", "instagram"].map((key) => (
                 <a
-                  key={social}
+                  key={key}
                   href="#"
                   className="text-xs text-slate-500 hover:text-white transition-colors"
-                  aria-label={social}
+                  aria-label={t(`footer.${key}`)}
                 >
-                  {social}
+                  {t(`footer.${key}`)}
                 </a>
               ))}
             </div>

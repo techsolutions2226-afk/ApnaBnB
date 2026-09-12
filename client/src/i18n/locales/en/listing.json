@@ -1,0 +1,193 @@
+{
+  "steps": {
+    "purposePrompt": "Are you selling or renting out this property?",
+    "categoryPrompt": "Pick a category, then a sub-type.",
+    "previousGroup": "Previous group",
+    "nextGroup": "Next group"
+  },
+  "sections": {
+    "basicDetails": "Basic Details",
+    "location": "Location",
+    "propertyDetails": "Property Details",
+    "features": "Features & Amenities",
+    "featuresHint": "Pick all that apply. Buyers filter listings by these.",
+    "contact": "Contact Information",
+    "media": "Photos & Media",
+    "description": "Description"
+  },
+  "fields": {
+    "title": "Property Title",
+    "priceNegotiable": "Price negotiable",
+    "securityDeposit": "Security Deposit",
+    "advanceRent": "Advance Rent",
+    "minRentalPeriod": "Minimum Rental Period",
+    "availableFrom": "Available From",
+    "condition": "Property Condition",
+    "selectCondition": "Select condition",
+    "furnishing": "Furnishing",
+    "city": "City",
+    "selectCity": "Select city",
+    "locality": "Locality / Sub-area",
+    "block": "Block",
+    "street": "Street",
+    "landmark": "Nearby Landmark",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "floorNumber": "Floor Number",
+    "totalFloors": "Total Floors",
+    "constructionYear": "Construction Year",
+    "facing": "Property Facing",
+    "selectFacing": "Select facing",
+    "buildingName": "Building Name",
+    "apartmentNumber": "Apartment Number",
+    "parkingSpaces": "Parking Spaces",
+    "plotNumber": "Plot Number",
+    "possession": "Possession",
+    "developmentStatus": "Development Status",
+    "washrooms": "Washrooms",
+    "officeRooms": "Office Rooms",
+    "frontage": "Frontage",
+    "fullName": "Full Name",
+    "email": "Email",
+    "mobile": "Mobile",
+    "whatsapp": "WhatsApp",
+    "alternatePhone": "Alternate Phone",
+    "showWhatsapp": "Show WhatsApp on listing",
+    "showOwnerContact": "Show owner contact on the property page",
+    "propertyDescription": "Property Description",
+    "additionalNotes": "Additional Notes",
+    "select": "Select",
+    "changeArea": "Change Area",
+    "selectArea": "Select area",
+    "selectCityFirst": "Select city first"
+  },
+  "location": {
+    "prompt": "How do you want to set the location?",
+    "pickOnMap": "Pick on map",
+    "useCurrent": "Use my current location",
+    "enterCoords": "Enter latitude & longitude",
+    "gpsHint": "Reads your device GPS. Your browser will ask for permission the first time.",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "applyCoords": "Apply coordinates",
+    "coordsTip": "Tip: paste a \"lat, lng\" pair from Google Maps. Right-click any spot in Maps and copy the coordinates.",
+    "clearPin": "Clear pin"
+  },
+  "media": {
+    "images": "Property Images",
+    "video": "Property Video",
+    "aiHint": "Click here and AI will draft this from the details above — or write your own.",
+    "notesPlaceholder": "Anything else buyers should know…"
+  },
+  "options": {
+    "purpose": {
+      "sale": "For Sale",
+      "rent": "For Rent"
+    },
+    "category": {
+      "commercial": "Commercial",
+      "home": "Home",
+      "plot": "Plot"
+    },
+    "propertyType": {
+      "house": "House",
+      "upperPortion": "Upper Portion",
+      "lowerPortion": "Lower Portion",
+      "farmHouse": "Farm House",
+      "penthouse": "Penthouse",
+      "residentialPlot": "Residential Plot",
+      "commercialPlot": "Commercial Plot",
+      "agriculturalLand": "Agricultural Land",
+      "industrialLand": "Industrial Land",
+      "plotForm": "Plot Form",
+      "plotFile": "Plot File",
+      "office": "Office",
+      "warehouse": "Warehouse",
+      "building": "Building",
+      "factory": "Factory",
+      "plaza": "Plaza",
+      "commercialBuilding": "Commercial Building",
+      "other": "Other",
+      "flat": "Flat",
+      "room": "Room",
+      "shop": "Shop"
+    },
+    "furnishing": {
+      "unfurnished": "Unfurnished",
+      "semiFurnished": "Semi-Furnished",
+      "furnished": "Furnished"
+    },
+    "condition": {
+      "brandNew": "Brand New",
+      "likeNew": "Like New",
+      "needsRenovation": "Needs Renovation",
+      "underConstruction": "Under Construction",
+      "good": "Good"
+    },
+    "possession": {
+      "immediate": "Immediate",
+      "comingSoon": "Coming soon",
+      "underDevelopment": "Under development"
+    },
+    "development": {
+      "developed": "Developed",
+      "semiDeveloped": "Semi-developed"
+    },
+    "sizeUnit": {
+      "squareFeet": "Square Feet",
+      "squareYards": "Square Yards",
+      "squareMeters": "Square Meters",
+      "marla": "Marla",
+      "kanal": "Kanal"
+    },
+    "facing": {
+      "north": "North",
+      "south": "South",
+      "east": "East",
+      "west": "West",
+      "northEast": "North-East",
+      "northWest": "North-West",
+      "southEast": "South-East",
+      "southWest": "South-West"
+    }
+  },
+  "placeholders": {
+    "title": "e.g. 10 Marla House in Gulberg III",
+    "price": "e.g. 130,000",
+    "deposit": "e.g. 65,000",
+    "months": "e.g. 10",
+    "city": "Enter your city",
+    "locality": "Enter your area / neighbourhood",
+    "block": "e.g. Block B, Phase 5",
+    "blockShort": "e.g. Block C",
+    "street": "e.g. Street 12",
+    "landmark": "e.g. Near Metro Station",
+    "latitude": "e.g. 31.5204",
+    "longitude": "e.g. 74.3587",
+    "floor": "e.g. 4",
+    "groundFloor": "0 = Ground",
+    "year": "e.g. 2018",
+    "frontage": "e.g. 30 ft front",
+    "name": "e.g. Ahmad Khan",
+    "email": "ahmad@example.com"
+  },
+  "validation": {
+    "titleRequired": "Title is required",
+    "titleMin": "Title must be at least 10 characters",
+    "titleMax": "Title must be at most 120 characters",
+    "descRequired": "Description is required",
+    "descMin": "Description must be at least 20 characters",
+    "descMax": "Description must be at most {{max}} characters",
+    "coordsInvalid": "Enter valid numbers for both latitude and longitude.",
+    "latRange": "Latitude must be between -90 and 90.",
+    "lngRange": "Longitude must be between -180 and 180.",
+    "noGeolocation": "Your browser does not support geolocation.",
+    "emailRequired": "Contact email is required",
+    "emailInvalid": "Enter a valid email",
+    "whatsappInvalid": "Enter a valid WhatsApp number"
+  },
+  "toast": {
+    "pinSet": "Pin set from latitude/longitude",
+    "locationSet": "Location set from your device"
+  }
+}

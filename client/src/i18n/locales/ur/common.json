@@ -1,0 +1,65 @@
+{
+  "brand": "اپنا بی این بی",
+  "announce": {
+    "welcome": "اپنا بی این بی میں خوش آمدید",
+    "welcomeShort": "خوش آمدید!",
+    "dismiss": "بند کریں"
+  },
+  "nav": {
+    "ariaLabel": "مرکزی مینیو",
+    "home": "ہوم",
+    "about": "ہمارے بارے میں",
+    "contact": "رابطہ",
+    "dashboard": "ڈیش بورڈ",
+    "account": "اکاؤنٹ",
+    "login": "لاگ ان",
+    "signup": "اکاؤنٹ بنائیں",
+    "homeAriaLabel": "اپنا بی این بی ہوم"
+  },
+  "language": {
+    "label": "زبان",
+    "switcherAriaLabel": "زبان تبدیل کریں",
+    "changeTo": "{{language}} میں تبدیل کریں",
+    "current": "موجودہ زبان: {{language}}",
+    "english": "انگریزی",
+    "urdu": "اردو"
+  },
+  "footer": {
+    "tagline": "پاکستان کا قابلِ اعتماد پلیٹ فارم — جائیداد خریدیں، بیچیں اور کرائے پر دیں۔",
+    "company": "کمپنی",
+    "about": "ہمارے بارے میں",
+    "contact": "رابطہ",
+    "careers": "ملازمتیں",
+    "explore": "تلاش کریں",
+    "homesForSale": "فروخت کے لیے گھر",
+    "homesForRent": "کرائے کے لیے گھر",
+    "plots": "پلاٹ",
+    "commercial": "کمرشل",
+    "support": "معاونت",
+    "helpCenter": "ہیلپ سینٹر",
+    "privacyPolicy": "پرائیویسی پالیسی",
+    "termsOfService": "شرائط و ضوابط",
+    "rights": "© {{year}} اپنا بی این بی۔ جملہ حقوق محفوظ ہیں۔",
+    "facebook": "فیس بک",
+    "twitter": "ٹوئٹر",
+    "instagram": "انسٹاگرام"
+  },
+  "actions": {
+    "save": "محفوظ کریں",
+    "cancel": "منسوخ کریں",
+    "close": "بند کریں",
+    "back": "واپس",
+    "next": "آگے",
+    "search": "تلاش کریں",
+    "viewAll": "سب دیکھیں",
+    "comingSoon": "جلد آ رہا ہے"
+  },
+  "bottomNav": {
+    "ariaLabel": "موبائل مینیو",
+    "home": "ہوم",
+    "search": "تلاش",
+    "list": "شامل کریں",
+    "dashboard": "ڈیش بورڈ",
+    "profile": "پروفائل"
+  }
+}

@@ -45,43 +45,44 @@ import { useAiDescription } from "../../hooks/useAiDescription";
 import { AMENITY_GROUPS } from "../../config/amenities";
 
 
+import { useTranslation } from "react-i18next";
 /* ── Static Options ── */
 // Top-level property category — drives which sub-types the user can pick.
 const CATEGORIES = [
-  { value: "home", label: "Home", icon: "🏠" },
-  { value: "plot", label: "Plot", icon: "📐" },
-  { value: "commercial", label: "Commercial", icon: "🏢" },
+  { value: "home", labelKey: "options.category.home", icon: "🏠" },
+  { value: "plot", labelKey: "options.category.plot", icon: "📐" },
+  { value: "commercial", labelKey: "options.category.commercial", icon: "🏢" },
 ];
 
 // Sub-types per category. Stored on the property as `propertyType` (kebab-case).
 // Icons mirror the search bar's PROPERTY_TABS so the two pickers stay identical.
 const SUBTYPES_BY_CATEGORY = {
   home: [
-    { value: "house", label: "House", icon: FiHome },
-    { value: "flat", label: "Flat", icon: FiLayout },
-    { value: "upper-portion", label: "Upper Portion", icon: FiChevronsUp },
-    { value: "lower-portion", label: "Lower Portion", icon: FiChevronsDown },
-    { value: "farm-house", label: "Farm House", icon: FiSunrise },
-    { value: "room", label: "Room", icon: FiColumns },
-    { value: "penthouse", label: "Penthouse", icon: FiLayers },
+    { value: "house", labelKey: "options.propertyType.house", icon: FiHome },
+    { value: "flat", labelKey: "options.propertyType.flat", icon: FiLayout },
+    { value: "upper-portion", labelKey: "options.propertyType.upperPortion", icon: FiChevronsUp },
+    { value: "lower-portion", labelKey: "options.propertyType.lowerPortion", icon: FiChevronsDown },
+    { value: "farm-house", labelKey: "options.propertyType.farmHouse", icon: FiSunrise },
+    { value: "room", labelKey: "options.propertyType.room", icon: FiColumns },
+    { value: "penthouse", labelKey: "options.propertyType.penthouse", icon: FiLayers },
   ],
   plot: [
-    { value: "residential-plot", label: "Residential Plot", icon: FiHome },
-    { value: "commercial-plot", label: "Commercial Plot", icon: FiBriefcase },
-    { value: "agricultural-land", label: "Agricultural Land", icon: FiSunrise },
-    { value: "industrial-land", label: "Industrial Land", icon: FiTruck },
-    { value: "plot-form", label: "Plot Form", icon: FiFileText },
-    { value: "plot-file", label: "Plot File", icon: FiFolder },
+    { value: "residential-plot", labelKey: "options.propertyType.residentialPlot", icon: FiHome },
+    { value: "commercial-plot", labelKey: "options.propertyType.commercialPlot", icon: FiBriefcase },
+    { value: "agricultural-land", labelKey: "options.propertyType.agriculturalLand", icon: FiSunrise },
+    { value: "industrial-land", labelKey: "options.propertyType.industrialLand", icon: FiTruck },
+    { value: "plot-form", labelKey: "options.propertyType.plotForm", icon: FiFileText },
+    { value: "plot-file", labelKey: "options.propertyType.plotFile", icon: FiFolder },
   ],
   commercial: [
-    { value: "office", label: "Office", icon: FiMonitor },
-    { value: "shop", label: "Shop", icon: FiShoppingBag },
-    { value: "warehouse", label: "Warehouse", icon: FiBox },
-    { value: "building", label: "Building", icon: FiHome },
-    { value: "factory", label: "Factory", icon: FiTool },
-    { value: "plaza", label: "Plaza", icon: FiLayers },
-    { value: "commercial-building", label: "Commercial Building", icon: FiBriefcase },
-    { value: "other", label: "Other", icon: FiGrid },
+    { value: "office", labelKey: "options.propertyType.office", icon: FiMonitor },
+    { value: "shop", labelKey: "options.propertyType.shop", icon: FiShoppingBag },
+    { value: "warehouse", labelKey: "options.propertyType.warehouse", icon: FiBox },
+    { value: "building", labelKey: "options.propertyType.building", icon: FiHome },
+    { value: "factory", labelKey: "options.propertyType.factory", icon: FiTool },
+    { value: "plaza", labelKey: "options.propertyType.plaza", icon: FiLayers },
+    { value: "commercial-building", labelKey: "options.propertyType.commercialBuilding", icon: FiBriefcase },
+    { value: "other", labelKey: "options.propertyType.other", icon: FiGrid },
   ],
 };
 
@@ -96,33 +97,35 @@ const CATEGORY_OF_SUBTYPE = Object.fromEntries(
 CATEGORY_OF_SUBTYPE.apartment = "home";
 
 const PURPOSES = [
-  { value: "sale", label: "For Sale" },
-  { value: "rent", label: "For Rent" },
+  { value: "sale", labelKey: "options.purpose.sale" },
+  { value: "rent", labelKey: "options.purpose.rent" },
 ];
 
 const FURNISHED_OPTIONS = [
-  { value: "unfurnished", label: "Unfurnished" },
-  { value: "semi-furnished", label: "Semi-Furnished" },
-  { value: "furnished", label: "Furnished" },
+  { value: "unfurnished", labelKey: "options.furnishing.unfurnished" },
+  { value: "semi-furnished", labelKey: "options.furnishing.semiFurnished" },
+  { value: "furnished", labelKey: "options.furnishing.furnished" },
 ];
 
 const CONDITION_OPTIONS = [
-  { value: "brand-new", label: "Brand New" },
-  { value: "like-new", label: "Like New" },
-  { value: "good", label: "Good" },
-  { value: "needs-renovation", label: "Needs Renovation" },
-  { value: "under-construction", label: "Under Construction" },
+  { value: "brand-new", labelKey: "options.condition.brandNew" },
+  { value: "like-new", labelKey: "options.condition.likeNew" },
+  { value: "good", labelKey: "options.condition.good" },
+  { value: "needs-renovation", labelKey: "options.condition.needsRenovation" },
+  { value: "under-construction", labelKey: "options.condition.underConstruction" },
 ];
 
+/* The stored value stays English (it is written to the property record);
+   only the label is translated. */
 const FACING_OPTIONS = [
-  "North",
-  "South",
-  "East",
-  "West",
-  "North-East",
-  "North-West",
-  "South-East",
-  "South-West",
+  { value: "North", labelKey: "options.facing.north" },
+  { value: "South", labelKey: "options.facing.south" },
+  { value: "East", labelKey: "options.facing.east" },
+  { value: "West", labelKey: "options.facing.west" },
+  { value: "North-East", labelKey: "options.facing.northEast" },
+  { value: "North-West", labelKey: "options.facing.northWest" },
+  { value: "South-East", labelKey: "options.facing.southEast" },
+  { value: "South-West", labelKey: "options.facing.southWest" },
 ];
 
 const LEASE_TERMS = [1, 3, 6, 12, 24, 36];
@@ -134,11 +137,11 @@ const MAX_IMAGES = 6;
 const PK_PHONE = /^(?:\+92|0)?3\d{9}$/;
 
 const SIZE_UNITS = [
-  { value: "Sq. Ft.", label: "Square Feet" },
-  { value: "Sq. Yd.", label: "Square Yards" },
-  { value: "Sq. M.", label: "Square Meters" },
-  { value: "Marla", label: "Marla" },
-  { value: "Kanal", label: "Kanal" },
+  { value: "Sq. Ft.", labelKey: "options.sizeUnit.squareFeet" },
+  { value: "Sq. Yd.", labelKey: "options.sizeUnit.squareYards" },
+  { value: "Sq. M.", labelKey: "options.sizeUnit.squareMeters" },
+  { value: "Marla", labelKey: "options.sizeUnit.marla" },
+  { value: "Kanal", labelKey: "options.sizeUnit.kanal" },
 ];
 
 // Legacy size units stored in older records map onto the new option values.
@@ -287,11 +290,11 @@ const EMPTY_FORM = {
 const validate = (data) => {
   const errors = {};
 
-  if (!data.title.trim()) errors.title = "Title is required";
+  if (!data.title.trim()) errors.title = t("validation.titleRequired");
   else if (data.title.trim().length < 10)
-    errors.title = "Title must be at least 10 characters";
+    errors.title = t("validation.titleMin");
   else if (data.title.trim().length > 120)
-    errors.title = "Title must be at most 120 characters";
+    errors.title = t("validation.titleMax");
 
   if (!data.purpose) errors.purpose = "Choose Sale or Rent";
   if (!data.category) errors.category = "Pick a property category";
@@ -314,7 +317,7 @@ const validate = (data) => {
   if (!data.city) {
     errors.city = "Select a city";
   } else if (data.city === "Other" && !data.customCity.trim()) {
-    errors.customCity = "Enter your city";
+    errors.customCity = t("placeholders.city");
   }
 
   if (data.city === "Other") {
@@ -332,11 +335,11 @@ const validate = (data) => {
       errors.bathrooms = "Enter bathrooms count";
   }
 
-  if (!data.description.trim()) errors.description = "Description is required";
+  if (!data.description.trim()) errors.description = t("validation.descRequired");
   else if (data.description.trim().length < 20)
-    errors.description = "Description must be at least 20 characters";
+    errors.description = t("validation.descMin");
   else if (data.description.trim().length > DESC_MAX)
-    errors.description = `Description must be at most ${DESC_MAX} characters`;
+    errors.description = t("validation.descMax", { max: DESC_MAX });
 
   if (data.notes && data.notes.length > NOTES_MAX)
     errors.notes = `Notes must be at most ${NOTES_MAX} characters`;
@@ -379,9 +382,9 @@ const validate = (data) => {
   }
 
   if (!data.contactName?.trim()) errors.contactName = "Contact name is required";
-  if (!data.contactEmail?.trim()) errors.contactEmail = "Contact email is required";
+  if (!data.contactEmail?.trim()) errors.contactEmail = t("validation.emailRequired");
   else if (!/\S+@\S+\.\S+/.test(data.contactEmail))
-    errors.contactEmail = "Enter a valid email";
+    errors.contactEmail = t("validation.emailInvalid");
   if (!data.contactPhone?.trim()) errors.contactPhone = "Contact phone is required";
   else if (!PK_PHONE.test(String(data.contactPhone).replace(/[\s-]/g, "")))
     errors.contactPhone = "Enter a valid Pakistani mobile (03XXXXXXXXX)";
@@ -389,7 +392,7 @@ const validate = (data) => {
     data.contactWhatsapp?.trim() &&
     !PK_PHONE.test(String(data.contactWhatsapp).replace(/[\s-]/g, ""))
   ) {
-    errors.contactWhatsapp = "Enter a valid WhatsApp number";
+    errors.contactWhatsapp = t("validation.whatsappInvalid");
   }
   if (
     data.contactAltPhone?.trim() &&
@@ -420,6 +423,7 @@ const ListingForm = ({
   // Optional — notified when Sale/Rent purpose changes (admin status options).
   onPurposeChange = null,
 }) => {
+  const { t } = useTranslation("listing");
   const { currentUser } = useAuth();
 
   /* ── Merge initial data with defaults ── */
@@ -822,15 +826,15 @@ const ListingForm = ({
     const lat = Number(manualLat);
     const lng = Number(manualLng);
     if (!manualLat.trim() || !manualLng.trim() || Number.isNaN(lat) || Number.isNaN(lng)) {
-      toast.error("Enter valid numbers for both latitude and longitude.");
+      toast.error(t("validation.coordsInvalid"));
       return;
     }
     if (lat < -90 || lat > 90) {
-      toast.error("Latitude must be between -90 and 90.");
+      toast.error(t("validation.latRange"));
       return;
     }
     if (lng < -180 || lng > 180) {
-      toast.error("Longitude must be between -180 and 180.");
+      toast.error(t("validation.lngRange"));
       return;
     }
     setForm((prev) => ({ ...prev, coordinates: { lat, lng } }));
@@ -840,7 +844,7 @@ const ListingForm = ({
       delete next.coordinates;
       return next;
     });
-    toast.success("Pin set from latitude/longitude");
+    toast.success(t("toast.pinSet"));
   }, [manualLat, manualLng]);
 
   // When switching modes, sync the manual inputs from the current coordinates
@@ -858,7 +862,7 @@ const ListingForm = ({
 
   const handleFetchCurrentLocation = useCallback(() => {
     if (!("geolocation" in navigator)) {
-      toast.error("Your browser does not support geolocation.");
+      toast.error(t("validation.noGeolocation"));
       return;
     }
     setIsFetchingLocation(true);
@@ -873,7 +877,7 @@ const ListingForm = ({
           return next;
         });
         setIsFetchingLocation(false);
-        toast.success("Location set from your device");
+        toast.success(t("toast.locationSet"));
       },
       (err) => {
         setIsFetchingLocation(false);
@@ -977,7 +981,7 @@ const ListingForm = ({
       {/* ── 1. Select Purpose ── */}
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">1. Purpose</h3>
-        <p className="lst-form-section-sub">Are you selling or renting out this property?</p>
+        <p className="lst-form-section-sub">{t("steps.purposePrompt")}</p>
         <div className="lst-purpose-row">
           {PURPOSES.map((p) => {
             const active = form.purpose === p.value;
@@ -991,7 +995,7 @@ const ListingForm = ({
                 <span className="lst-purpose-icon">
                   {p.value === "sale" ? "🏷️" : "🔑"}
                 </span>
-                <span className="lst-purpose-label">{p.label}</span>
+                <span className="lst-purpose-label">{t(p.labelKey)}</span>
               </button>
             );
           })}
@@ -1001,7 +1005,7 @@ const ListingForm = ({
       {/* ── 2. Select Property Type ── */}
       <div className="lst-form-section">
         <h3 className="lst-form-section-title">2. Property Type</h3>
-        <p className="lst-form-section-sub">Pick a category, then a sub-type.</p>
+        <p className="lst-form-section-sub">{t("steps.categoryPrompt")}</p>
 
         {/* Category cards */}
         <div className="lst-category-row">
@@ -1015,7 +1019,7 @@ const ListingForm = ({
                 className={`lst-category-card ${active ? "lst-category-card--active" : ""}`}
               >
                 <span className="lst-category-icon">{c.icon}</span>
-                <span className="lst-category-label">{c.label}</span>
+                <span className="lst-category-label">{t(c.labelKey)}</span>
               </button>
             );
           })}
@@ -1040,7 +1044,7 @@ const ListingForm = ({
                     <SIcon size={16} />
                   </span>
                 )}
-                <span className="lst-subtype-card-label">{s.label}</span>
+                <span className="lst-subtype-card-label">{t(s.labelKey)}</span>
               </button>
             );
           })}
@@ -1050,19 +1054,19 @@ const ListingForm = ({
         )}
       </div>
 
-      {/* ── Basic Details ── */}
+      {/* ── {t("sections.basicDetails")} ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Basic Details</h3>
+        <h3 className="lst-form-section-title">{t("sections.basicDetails")}</h3>
 
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-title">
-            Property Title
+            {t("fields.title")}
           </label>
           <input
             id="lst-title"
             type="text"
             className={fieldClass("lst-input", "title")}
-            placeholder="e.g. 10 Marla House in Gulberg III"
+            placeholder={t("placeholders.title")}
             value={form.title}
             onChange={(e) => handleChange("title", e.target.value)}
             onBlur={() => handleBlur("title")}
@@ -1086,7 +1090,7 @@ const ListingForm = ({
             inputMode="numeric"
             className={fieldClass("lst-input", "price")}
             placeholder={
-              form.purpose === "rent" ? "e.g. 65,000" : "e.g. 42,000,000"
+              form.purpose === "rent" ? t("placeholders.deposit") : "e.g. 42,000,000"
             }
             value={form.price ? Number(form.price).toLocaleString("en-US") : ""}
             onChange={(e) => handlePriceChange(e.target.value)}
@@ -1103,7 +1107,7 @@ const ListingForm = ({
             checked={Boolean(form.priceNegotiable)}
             onChange={(e) => handleChange("priceNegotiable", e.target.checked)}
           />
-          <span>Price negotiable</span>
+          <span>{t("fields.priceNegotiable")}</span>
         </label>
 
         {/* Rental-only fields */}
@@ -1112,14 +1116,14 @@ const ListingForm = ({
             <div className="lst-row">
               <div className="lst-field">
                 <label className="lst-label">
-                  Security Deposit
+                  {t("fields.securityDeposit")}
                   <span className="lst-label-hint">(PKR)</span>
                 </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   className={fieldClass("lst-input", "securityDeposit")}
-                  placeholder="e.g. 130,000"
+                  placeholder={t("placeholders.price")}
                   value={
                     form.securityDeposit
                       ? Number(form.securityDeposit).toLocaleString("en-US")
@@ -1134,14 +1138,14 @@ const ListingForm = ({
               </div>
               <div className="lst-field">
                 <label className="lst-label">
-                  Advance Rent
+                  {t("fields.advanceRent")}
                   <span className="lst-label-hint">(PKR)</span>
                 </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   className="lst-input"
-                  placeholder="e.g. 65,000"
+                  placeholder={t("placeholders.deposit")}
                   value={
                     form.advanceRent
                       ? Number(form.advanceRent).toLocaleString("en-US")
@@ -1155,7 +1159,7 @@ const ListingForm = ({
             </div>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Minimum Rental Period</label>
+                <label className="lst-label">{t("fields.minRentalPeriod")}</label>
                 <select
                   className="lst-select"
                   value={form.leaseTerm}
@@ -1167,7 +1171,7 @@ const ListingForm = ({
                 </select>
               </div>
               <div className="lst-field">
-                <label className="lst-label">Available From</label>
+                <label className="lst-label">{t("fields.availableFrom")}</label>
                 <input
                   type="date"
                   className="lst-input"
@@ -1189,7 +1193,7 @@ const ListingForm = ({
               id="lst-size"
               type="number"
               className={fieldClass("lst-input", "size")}
-              placeholder="e.g. 10"
+              placeholder={t("placeholders.months")}
               value={form.size}
               onChange={(e) => handleChange("size", e.target.value)}
               onBlur={() => handleBlur("size")}
@@ -1224,28 +1228,28 @@ const ListingForm = ({
 
         <div className="lst-row">
           <div className="lst-field">
-            <label className="lst-label">Property Condition</label>
+            <label className="lst-label">{t("fields.condition")}</label>
             <select
               className="lst-select"
               value={form.condition}
               onChange={(e) => handleChange("condition", e.target.value)}
             >
-              <option value="">Select condition</option>
+              <option value="">{t("fields.selectCondition")}</option>
               {CONDITION_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+                <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
               ))}
             </select>
           </div>
           {(form.category === "home" || form.category === "commercial") && (
             <div className="lst-field">
-              <label className="lst-label">Furnishing</label>
+              <label className="lst-label">{t("fields.furnishing")}</label>
               <select
                 className="lst-select"
                 value={form.furnished}
                 onChange={(e) => handleChange("furnished", e.target.value)}
               >
                 {FURNISHED_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                  <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
                 ))}
               </select>
             </div>
@@ -1255,7 +1259,7 @@ const ListingForm = ({
 
       {/* ── Location ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Location</h3>
+        <h3 className="lst-form-section-title">{t("sections.location")}</h3>
 
         <div className="lst-row lst-row--location">
           <div className="lst-field">
@@ -1269,7 +1273,7 @@ const ListingForm = ({
               onChange={(e) => handleChange("city", e.target.value)}
               onBlur={() => handleBlur("city")}
             >
-              <option value="">Select city</option>
+              <option value="">{t("fields.selectCity")}</option>
               {CITIES.map((city) => (
                 <option key={city} value={city}>
                   {city}
@@ -1280,7 +1284,7 @@ const ListingForm = ({
               <input
                 type="text"
                 className={fieldClass("lst-input", "customCity")}
-                placeholder="Enter your city"
+                placeholder={t("placeholders.city")}
                 value={form.customCity}
                 onChange={(e) => handleChange("customCity", e.target.value)}
                 onBlur={() => handleBlur("customCity")}
@@ -1305,7 +1309,7 @@ const ListingForm = ({
                 id="lst-area"
                 type="text"
                 className={fieldClass("lst-input", "customArea")}
-                placeholder="Enter your area / neighbourhood"
+                placeholder={t("placeholders.locality")}
                 value={form.customArea}
                 onChange={(e) => handleChange("customArea", e.target.value)}
                 onBlur={() => handleBlur("customArea")}
@@ -1320,7 +1324,7 @@ const ListingForm = ({
                 disabled={!form.city}
               >
                 <option value="">
-                  {form.city ? "Select area" : "Select city first"}
+                  {form.city ? t("fields.selectArea") : t("fields.selectCityFirst")}
                 </option>
                 {availableAreas.map((area) => (
                   <option key={area} value={area}>
@@ -1345,7 +1349,7 @@ const ListingForm = ({
               <input
                 type="text"
                 className={fieldClass("lst-input", "customArea")}
-                placeholder="Enter your area / neighbourhood"
+                placeholder={t("placeholders.locality")}
                 value={form.customArea}
                 onChange={(e) => handleChange("customArea", e.target.value)}
                 onBlur={() => handleBlur("customArea")}
@@ -1359,22 +1363,22 @@ const ListingForm = ({
 
         <div className="lst-row">
           <div className="lst-field">
-            <label className="lst-label">Locality / Sub-area</label>
+            <label className="lst-label">{t("fields.locality")}</label>
             <input
               type="text"
               className="lst-input"
-              placeholder="e.g. Block B, Phase 5"
+              placeholder={t("placeholders.block")}
               value={form.locality}
               onChange={(e) => handleChange("locality", e.target.value)}
               disabled={!form.city}
             />
           </div>
           <div className="lst-field">
-            <label className="lst-label">Block</label>
+            <label className="lst-label">{t("fields.block")}</label>
             <input
               type="text"
               className="lst-input"
-              placeholder="e.g. Block C"
+              placeholder={t("placeholders.blockShort")}
               value={form.block}
               onChange={(e) => handleChange("block", e.target.value)}
             />
@@ -1382,21 +1386,21 @@ const ListingForm = ({
         </div>
         <div className="lst-row">
           <div className="lst-field">
-            <label className="lst-label">Street</label>
+            <label className="lst-label">{t("fields.street")}</label>
             <input
               type="text"
               className="lst-input"
-              placeholder="e.g. Street 12"
+              placeholder={t("placeholders.street")}
               value={form.street}
               onChange={(e) => handleChange("street", e.target.value)}
             />
           </div>
           <div className="lst-field">
-            <label className="lst-label">Nearby Landmark</label>
+            <label className="lst-label">{t("fields.landmark")}</label>
             <input
               type="text"
               className="lst-input"
-              placeholder="e.g. Near Metro Station"
+              placeholder={t("placeholders.landmark")}
               value={form.landmark}
               onChange={(e) => handleChange("landmark", e.target.value)}
             />
@@ -1406,7 +1410,7 @@ const ListingForm = ({
         {/* Map pin — three input modes */}
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-location-mode">
-            How do you want to set the location?
+            {t("location.prompt")}
           </label>
           <select
             id="lst-location-mode"
@@ -1415,9 +1419,9 @@ const ListingForm = ({
             onChange={(e) => handleModeChange(e.target.value)}
             style={{ marginBottom: 12 }}
           >
-            <option value="map">Pick on map</option>
-            <option value="device">Use my current location</option>
-            <option value="manual">Enter latitude & longitude</option>
+            <option value="map">{t("location.pickOnMap")}</option>
+            <option value="device">{t("location.useCurrent")}</option>
+            <option value="manual">{t("location.enterCoords")}</option>
           </select>
 
           {/* Mode 1: Current device location */}
@@ -1445,7 +1449,7 @@ const ListingForm = ({
                 {isFetchingLocation ? "Fetching…" : "Fetch current location"}
               </button>
               <p style={{ fontSize: 12, color: "#717171", margin: "8px 0 0" }}>
-                Reads your device GPS. Your browser will ask for permission the first time.
+                {t("location.gpsHint")}
               </p>
             </div>
           )}
@@ -1487,7 +1491,7 @@ const ListingForm = ({
               <div className="lst-row" style={{ marginBottom: 10 }}>
                 <div className="lst-field" style={{ margin: 0 }}>
                   <label className="lst-label" htmlFor="lst-manual-lat">
-                    Latitude
+                    {t("location.latitude")}
                     <span className="lst-label-hint">(-90 to 90)</span>
                   </label>
                   <input
@@ -1495,14 +1499,14 @@ const ListingForm = ({
                     type="number"
                     step="any"
                     className="lst-input"
-                    placeholder="e.g. 31.5204"
+                    placeholder={t("placeholders.latitude")}
                     value={manualLat}
                     onChange={(e) => setManualLat(e.target.value)}
                   />
                 </div>
                 <div className="lst-field" style={{ margin: 0 }}>
                   <label className="lst-label" htmlFor="lst-manual-lng">
-                    Longitude
+                    {t("location.longitude")}
                     <span className="lst-label-hint">(-180 to 180)</span>
                   </label>
                   <input
@@ -1510,7 +1514,7 @@ const ListingForm = ({
                     type="number"
                     step="any"
                     className="lst-input"
-                    placeholder="e.g. 74.3587"
+                    placeholder={t("placeholders.longitude")}
                     value={manualLng}
                     onChange={(e) => setManualLng(e.target.value)}
                   />
@@ -1532,10 +1536,10 @@ const ListingForm = ({
                   cursor: "pointer",
                 }}
               >
-                Apply coordinates
+                {t("location.applyCoords")}
               </button>
               <p style={{ fontSize: 12, color: "#717171", margin: "8px 0 0" }}>
-                Tip: paste a "lat, lng" pair from Google Maps. Right-click any spot in Maps and copy the coordinates.
+                {t("location.coordsTip")}
               </p>
             </div>
           )}
@@ -1584,7 +1588,7 @@ const ListingForm = ({
                   fontSize: 13,
                 }}
               >
-                Clear pin
+                {t("location.clearPin")}
               </button>
             </div>
           )}
@@ -1594,20 +1598,20 @@ const ListingForm = ({
         </div>
       </div>
 
-      {/* ── Property Details ── */}
+      {/* ── {t("sections.propertyDetails")} ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Property Details</h3>
+        <h3 className="lst-form-section-title">{t("sections.propertyDetails")}</h3>
 
         {form.category === "home" && (
           <>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label" htmlFor="lst-bedrooms">Bedrooms</label>
+                <label className="lst-label" htmlFor="lst-bedrooms">{t("fields.bedrooms")}</label>
                 <input
                   id="lst-bedrooms"
                   type="number"
                   className={fieldClass("lst-input", "bedrooms")}
-                  placeholder="e.g. 4"
+                  placeholder={t("placeholders.floor")}
                   value={form.bedrooms}
                   onChange={(e) => handleChange("bedrooms", e.target.value)}
                   onBlur={() => handleBlur("bedrooms")}
@@ -1617,12 +1621,12 @@ const ListingForm = ({
                 {showError("bedrooms") && <div className="lst-error">{errors.bedrooms}</div>}
               </div>
               <div className="lst-field">
-                <label className="lst-label" htmlFor="lst-bathrooms">Bathrooms</label>
+                <label className="lst-label" htmlFor="lst-bathrooms">{t("fields.bathrooms")}</label>
                 <input
                   id="lst-bathrooms"
                   type="number"
                   className={fieldClass("lst-input", "bathrooms")}
-                  placeholder="e.g. 4"
+                  placeholder={t("placeholders.floor")}
                   value={form.bathrooms}
                   onChange={(e) => handleChange("bathrooms", e.target.value)}
                   onBlur={() => handleBlur("bathrooms")}
@@ -1634,25 +1638,25 @@ const ListingForm = ({
             </div>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Floor Number</label>
-                <input type="number" className="lst-input" min="0" max="100" value={form.floorNumber} onChange={(e) => handleChange("floorNumber", e.target.value)} placeholder="0 = Ground" />
+                <label className="lst-label">{t("fields.floorNumber")}</label>
+                <input type="number" className="lst-input" min="0" max="100" value={form.floorNumber} onChange={(e) => handleChange("floorNumber", e.target.value)} placeholder={t("placeholders.groundFloor")} />
               </div>
               <div className="lst-field">
-                <label className="lst-label">Total Floors</label>
+                <label className="lst-label">{t("fields.totalFloors")}</label>
                 <input type="number" className="lst-input" min="0" max="100" value={form.totalFloors} onChange={(e) => handleChange("totalFloors", e.target.value)} />
               </div>
             </div>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Construction Year</label>
-                <input type="number" className="lst-input" min="1950" max="2100" value={form.constructionYear} onChange={(e) => handleChange("constructionYear", e.target.value)} placeholder="e.g. 2018" />
+                <label className="lst-label">{t("fields.constructionYear")}</label>
+                <input type="number" className="lst-input" min="1950" max="2100" value={form.constructionYear} onChange={(e) => handleChange("constructionYear", e.target.value)} placeholder={t("placeholders.year")} />
               </div>
               <div className="lst-field">
-                <label className="lst-label">Property Facing</label>
+                <label className="lst-label">{t("fields.facing")}</label>
                 <select className="lst-select" value={form.facing} onChange={(e) => handleChange("facing", e.target.value)}>
-                  <option value="">Select facing</option>
+                  <option value="">{t("fields.selectFacing")}</option>
                   {FACING_OPTIONS.map((f) => (
-                    <option key={f} value={f}>{f}</option>
+                    <option key={f.value} value={f.value}>{t(f.labelKey)}</option>
                   ))}
                 </select>
               </div>
@@ -1661,16 +1665,16 @@ const ListingForm = ({
               <>
                 <div className="lst-row">
                   <div className="lst-field">
-                    <label className="lst-label">Building Name</label>
+                    <label className="lst-label">{t("fields.buildingName")}</label>
                     <input type="text" className="lst-input" value={form.buildingName} onChange={(e) => handleChange("buildingName", e.target.value)} />
                   </div>
                   <div className="lst-field">
-                    <label className="lst-label">Apartment Number</label>
+                    <label className="lst-label">{t("fields.apartmentNumber")}</label>
                     <input type="text" className="lst-input" value={form.apartmentNumber} onChange={(e) => handleChange("apartmentNumber", e.target.value)} />
                   </div>
                 </div>
                 <div className="lst-field">
-                  <label className="lst-label">Parking Spaces</label>
+                  <label className="lst-label">{t("fields.parkingSpaces")}</label>
                   <input type="number" className="lst-input" min="0" max="20" value={form.parkingSpaces} onChange={(e) => handleChange("parkingSpaces", e.target.value)} />
                 </div>
               </>
@@ -1682,25 +1686,25 @@ const ListingForm = ({
           <>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Plot Number</label>
+                <label className="lst-label">{t("fields.plotNumber")}</label>
                 <input type="text" className="lst-input" value={form.plotNumber} onChange={(e) => handleChange("plotNumber", e.target.value)} />
               </div>
               <div className="lst-field">
-                <label className="lst-label">Possession</label>
+                <label className="lst-label">{t("fields.possession")}</label>
                 <select className="lst-select" value={form.plotPossession} onChange={(e) => handleChange("plotPossession", e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="immediate">Immediate</option>
-                  <option value="soon">Coming soon</option>
-                  <option value="under-development">Under development</option>
+                  <option value="">{t("fields.select")}</option>
+                  <option value="immediate">{t("options.possession.immediate")}</option>
+                  <option value="soon">{t("options.possession.comingSoon")}</option>
+                  <option value="under-development">{t("options.possession.underDevelopment")}</option>
                 </select>
               </div>
             </div>
             <div className="lst-field">
-              <label className="lst-label">Development Status</label>
+              <label className="lst-label">{t("fields.developmentStatus")}</label>
               <select className="lst-select" value={form.plotDevelopment} onChange={(e) => handleChange("plotDevelopment", e.target.value)}>
-                <option value="">Select</option>
-                <option value="developed">Developed</option>
-                <option value="semi-developed">Semi-developed</option>
+                <option value="">{t("fields.select")}</option>
+                <option value="developed">{t("options.development.developed")}</option>
+                <option value="semi-developed">{t("options.development.semiDeveloped")}</option>
                 <option value="raw">Raw</option>
               </select>
             </div>
@@ -1728,37 +1732,37 @@ const ListingForm = ({
           <>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Floor Number</label>
+                <label className="lst-label">{t("fields.floorNumber")}</label>
                 <input type="number" className="lst-input" min="0" value={form.floorNumber} onChange={(e) => handleChange("floorNumber", e.target.value)} />
               </div>
               <div className="lst-field">
-                <label className="lst-label">Total Floors</label>
+                <label className="lst-label">{t("fields.totalFloors")}</label>
                 <input type="number" className="lst-input" min="0" value={form.totalFloors} onChange={(e) => handleChange("totalFloors", e.target.value)} />
               </div>
             </div>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Building Name</label>
+                <label className="lst-label">{t("fields.buildingName")}</label>
                 <input type="text" className="lst-input" value={form.buildingName} onChange={(e) => handleChange("buildingName", e.target.value)} />
               </div>
               <div className="lst-field">
-                <label className="lst-label">Parking Spaces</label>
+                <label className="lst-label">{t("fields.parkingSpaces")}</label>
                 <input type="number" className="lst-input" min="0" value={form.parkingSpaces} onChange={(e) => handleChange("parkingSpaces", e.target.value)} />
               </div>
             </div>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">Washrooms</label>
+                <label className="lst-label">{t("fields.washrooms")}</label>
                 <input type="number" className="lst-input" min="0" value={form.commWashrooms} onChange={(e) => handleChange("commWashrooms", e.target.value)} />
               </div>
               <div className="lst-field">
-                <label className="lst-label">Office Rooms</label>
+                <label className="lst-label">{t("fields.officeRooms")}</label>
                 <input type="number" className="lst-input" min="0" value={form.commOfficeRooms} onChange={(e) => handleChange("commOfficeRooms", e.target.value)} />
               </div>
             </div>
             <div className="lst-field">
-              <label className="lst-label">Frontage</label>
-              <input type="text" className="lst-input" placeholder="e.g. 30 ft front" value={form.commFrontage} onChange={(e) => handleChange("commFrontage", e.target.value)} />
+              <label className="lst-label">{t("fields.frontage")}</label>
+              <input type="text" className="lst-input" placeholder={t("placeholders.frontage")} value={form.commFrontage} onChange={(e) => handleChange("commFrontage", e.target.value)} />
             </div>
             <div className="lst-check-grid">
               {[
@@ -1779,11 +1783,11 @@ const ListingForm = ({
         )}
       </div>
 
-      {/* ── Features & Amenities (grouped, zameen-style) ── */}
+      {/* ── {t("sections.features")} (grouped, zameen-style) ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Features & Amenities</h3>
+        <h3 className="lst-form-section-title">{t("sections.features")}</h3>
         <p className="lst-form-section-sub">
-          Pick all that apply. Buyers filter listings by these.
+          {t("sections.featuresHint")}
         </p>
 
         {/* Carousel-style slider: arrows pinned to the left + right edges of
@@ -1804,7 +1808,7 @@ const ListingForm = ({
                 onClick={() =>
                   setAmenityGroupIdx((i) => (i - 1 + total) % total)
                 }
-                aria-label="Previous group"
+                aria-label={t("steps.previousGroup")}
               >
                 <FiChevronLeft size={24} />
               </button>
@@ -1816,7 +1820,7 @@ const ListingForm = ({
                 onClick={() =>
                   setAmenityGroupIdx((i) => (i + 1) % total)
                 }
-                aria-label="Next group"
+                aria-label={t("steps.nextGroup")}
               >
                 <FiChevronRight size={24} />
               </button>
@@ -1882,9 +1886,9 @@ const ListingForm = ({
         )}
       </div>
 
-      {/* ── Contact Information ── */}
+      {/* ── {t("sections.contact")} ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Contact Information</h3>
+        <h3 className="lst-form-section-title">{t("sections.contact")}</h3>
         <p className="lst-form-section-sub">
           Buyers see these details on your listing. Prefilled from your account
           — edit if you want a different contact for this listing.
@@ -1892,13 +1896,13 @@ const ListingForm = ({
 
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-contact-name">
-            Full Name
+            {t("fields.fullName")}
           </label>
           <input
             id="lst-contact-name"
             type="text"
             className={fieldClass("lst-input", "contactName")}
-            placeholder="e.g. Ahmad Khan"
+            placeholder={t("placeholders.name")}
             value={form.contactName}
             onChange={(e) => handleChange("contactName", e.target.value)}
             onBlur={() => handleBlur("contactName")}
@@ -1911,13 +1915,13 @@ const ListingForm = ({
         <div className="lst-row">
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-email">
-              Email
+              {t("fields.email")}
             </label>
             <input
               id="lst-contact-email"
               type="email"
               className={fieldClass("lst-input", "contactEmail")}
-              placeholder="ahmad@example.com"
+              placeholder={t("placeholders.email")}
               value={form.contactEmail}
               onChange={(e) => handleChange("contactEmail", e.target.value)}
               onBlur={() => handleBlur("contactEmail")}
@@ -1928,7 +1932,7 @@ const ListingForm = ({
           </div>
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-phone">
-              Mobile
+              {t("fields.mobile")}
             </label>
             <input
               id="lst-contact-phone"
@@ -1948,7 +1952,7 @@ const ListingForm = ({
         <div className="lst-row">
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-wa">
-              WhatsApp
+              {t("fields.whatsapp")}
             </label>
             <input
               id="lst-contact-wa"
@@ -1965,7 +1969,7 @@ const ListingForm = ({
           </div>
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-alt">
-              Alternate Phone
+              {t("fields.alternatePhone")}
             </label>
             <input
               id="lst-contact-alt"
@@ -1988,7 +1992,7 @@ const ListingForm = ({
             checked={form.showWhatsapp !== false}
             onChange={(e) => handleChange("showWhatsapp", e.target.checked)}
           />
-          <span>Show WhatsApp on listing</span>
+          <span>{t("fields.showWhatsapp")}</span>
         </label>
 
         <label className="lst-check-row">
@@ -1997,13 +2001,13 @@ const ListingForm = ({
             checked={form.showContact !== false}
             onChange={(e) => handleChange("showContact", e.target.checked)}
           />
-          <span>Show owner contact on the property page</span>
+          <span>{t("fields.showOwnerContact")}</span>
         </label>
       </div>
 
       {/* ── Images ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Photos & Media</h3>
+        <h3 className="lst-form-section-title">{t("sections.media")}</h3>
         <p className="lst-form-section-sub">
           Upload 1–{MAX_IMAGES} photos (JPG, PNG, WEBP). New photos become the cover — drag to reorder.
         </p>
@@ -2013,7 +2017,7 @@ const ListingForm = ({
             images={form.images || []}
             onChange={(newImages) => handleChange("images", newImages)}
             maxImages={MAX_IMAGES}
-            label="Property Images"
+            label={t("media.images")}
             helperText={`Drag & drop or browse (Max ${MAX_IMAGES}, 5MB each). New photos become the cover.`}
           />
           {showError("images") && (
@@ -2029,7 +2033,7 @@ const ListingForm = ({
               setTouched((prev) => ({ ...prev, videoUrl: true }));
             }}
             onUploadingChange={setVideoUploading}
-            label="Property Video"
+            label={t("media.video")}
             helperText="Drag & drop a walkthrough video or click to browse"
           />
           {showError("videoUrl") && (
@@ -2040,11 +2044,11 @@ const ListingForm = ({
 
       {/* ── Description ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">Description</h3>
+        <h3 className="lst-form-section-title">{t("sections.description")}</h3>
 
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-desc">
-            Property Description
+            {t("fields.propertyDescription")}
           </label>
           <AiDescriptionBadge
             loading={ai.loading}
@@ -2055,7 +2059,7 @@ const ListingForm = ({
           <textarea
             id="lst-desc"
             className={fieldClass("lst-textarea", "description")}
-            placeholder="Click here and AI will draft this from the details above — or write your own."
+            placeholder={t("media.aiHint")}
             value={form.description}
             maxLength={DESC_MAX}
             onFocus={() => ai.handleFocus(form.description)}
@@ -2075,12 +2079,12 @@ const ListingForm = ({
 
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-notes">
-            Additional Notes <span className="lst-label-hint">(optional)</span>
+            {t("fields.additionalNotes")} <span className="lst-label-hint">(optional)</span>
           </label>
           <textarea
             id="lst-notes"
             className={fieldClass("lst-textarea", "notes")}
-            placeholder="Anything else buyers should know…"
+            placeholder={t("media.notesPlaceholder")}
             value={form.notes}
             maxLength={NOTES_MAX}
             onChange={(e) => handleChange("notes", e.target.value)}
@@ -2116,7 +2120,7 @@ const ListingForm = ({
       <Modal
         isOpen={unitModalOpen}
         onClose={() => setUnitModalOpen(false)}
-        title="Change Area"
+        title={t("fields.changeArea")}
         size="small"
       >
         <div className="dd-modal-list">
@@ -2131,7 +2135,7 @@ const ListingForm = ({
                 setUnitModalOpen(false);
               }}
             >
-              <span className="dd-opt-label">{u.label}</span>
+              <span className="dd-opt-label">{t(u.labelKey)}</span>
               {form.sizeUnit === u.value && (
                 <FiCheck className="dd-opt-check" size={16} />
               )}

@@ -44,6 +44,7 @@ import {
 import AiDescriptionBadge from "../components/common/AiDescriptionBadge";
 import { useAiDescription } from "../hooks/useAiDescription";
 import "../styles/Requirement.css";
+import { useTranslation } from "react-i18next";
 import "../styles/Listing.css"; /* category/subtype/unit-picker styles shared with Create Listing */
 import "../styles/SearchDropdowns.css"; /* unit-picker modal option styles */
 
@@ -52,45 +53,45 @@ const URGENCY_OPTIONS = ["30 days", "45 days", "60 days", "90 days"];
 
 // Buy vs rent — same two-option toggle as the Create Listing page.
 const PURPOSES = [
-  { value: "sale", label: "To Buy" },
-  { value: "rent", label: "To Rent" },
+  { value: "sale", labelKey: "options.buy" },
+  { value: "rent", labelKey: "options.rent" },
 ];
 
 // Top-level property category — drives which sub-types the user can pick.
 // Mirrors the Create Listing form exactly so both pickers stay identical.
 const CATEGORIES = [
-  { value: "home", label: "Home", icon: "🏠" },
-  { value: "plot", label: "Plot", icon: "📐" },
-  { value: "commercial", label: "Commercial", icon: "🏢" },
+  { value: "home", labelKey: "listing:options.category.home", icon: "🏠" },
+  { value: "plot", labelKey: "listing:options.category.plot", icon: "📐" },
+  { value: "commercial", labelKey: "listing:options.category.commercial", icon: "🏢" },
 ];
 
 // Sub-types per category (same values as listings — matchmaking compares
 // propertyType verbatim, so a requirement must use the listing's kebab-case).
 const SUBTYPES_BY_CATEGORY = {
   home: [
-    { value: "house", label: "House", icon: FiHome },
-    { value: "flat", label: "Flat", icon: FiLayout },
-    { value: "upper-portion", label: "Upper Portion", icon: FiChevronsUp },
-    { value: "lower-portion", label: "Lower Portion", icon: FiChevronsDown },
-    { value: "farm-house", label: "Farm House", icon: FiSunrise },
-    { value: "room", label: "Room", icon: FiColumns },
-    { value: "penthouse", label: "Penthouse", icon: FiLayers },
+    { value: "house", labelKey: "listing:options.propertyType.house", icon: FiHome },
+    { value: "flat", labelKey: "listing:options.propertyType.flat", icon: FiLayout },
+    { value: "upper-portion", labelKey: "listing:options.propertyType.upperPortion", icon: FiChevronsUp },
+    { value: "lower-portion", labelKey: "listing:options.propertyType.lowerPortion", icon: FiChevronsDown },
+    { value: "farm-house", labelKey: "listing:options.propertyType.farmHouse", icon: FiSunrise },
+    { value: "room", labelKey: "listing:options.propertyType.room", icon: FiColumns },
+    { value: "penthouse", labelKey: "listing:options.propertyType.penthouse", icon: FiLayers },
   ],
   plot: [
-    { value: "residential-plot", label: "Residential Plot", icon: FiHome },
-    { value: "commercial-plot", label: "Commercial Plot", icon: FiBriefcase },
-    { value: "agricultural-land", label: "Agricultural Land", icon: FiSunrise },
-    { value: "industrial-land", label: "Industrial Land", icon: FiTruck },
-    { value: "plot-form", label: "Plot Form", icon: FiFileText },
-    { value: "plot-file", label: "Plot File", icon: FiFolder },
+    { value: "residential-plot", labelKey: "listing:options.propertyType.residentialPlot", icon: FiHome },
+    { value: "commercial-plot", labelKey: "listing:options.propertyType.commercialPlot", icon: FiBriefcase },
+    { value: "agricultural-land", labelKey: "listing:options.propertyType.agriculturalLand", icon: FiSunrise },
+    { value: "industrial-land", labelKey: "listing:options.propertyType.industrialLand", icon: FiTruck },
+    { value: "plot-form", labelKey: "listing:options.propertyType.plotForm", icon: FiFileText },
+    { value: "plot-file", labelKey: "listing:options.propertyType.plotFile", icon: FiFolder },
   ],
   commercial: [
-    { value: "shop", label: "Shop", icon: FiShoppingBag },
-    { value: "office", label: "Office", icon: FiMonitor },
-    { value: "warehouse", label: "Warehouse", icon: FiBox },
-    { value: "factory", label: "Factory", icon: FiTool },
-    { value: "building", label: "Building", icon: FiHome },
-    { value: "other", label: "Other", icon: FiGrid },
+    { value: "shop", labelKey: "listing:options.propertyType.shop", icon: FiShoppingBag },
+    { value: "office", labelKey: "listing:options.propertyType.office", icon: FiMonitor },
+    { value: "warehouse", labelKey: "listing:options.propertyType.warehouse", icon: FiBox },
+    { value: "factory", labelKey: "listing:options.propertyType.factory", icon: FiTool },
+    { value: "building", labelKey: "listing:options.propertyType.building", icon: FiHome },
+    { value: "other", labelKey: "listing:options.propertyType.other", icon: FiGrid },
   ],
 };
 
@@ -105,11 +106,11 @@ CATEGORY_OF_SUBTYPE.apartment = "home";
 
 // Same unit picker as the Create Listing form.
 const SIZE_UNITS = [
-  { value: "Sq. Ft.", label: "Square Feet" },
-  { value: "Sq. Yd.", label: "Square Yards" },
-  { value: "Sq. M.", label: "Square Meters" },
-  { value: "Marla", label: "Marla" },
-  { value: "Kanal", label: "Kanal" },
+  { value: "Sq. Ft.", labelKey: "listing:options.sizeUnit.squareFeet" },
+  { value: "Sq. Yd.", labelKey: "listing:options.sizeUnit.squareYards" },
+  { value: "Sq. M.", labelKey: "listing:options.sizeUnit.squareMeters" },
+  { value: "Marla", labelKey: "listing:options.sizeUnit.marla" },
+  { value: "Kanal", labelKey: "listing:options.sizeUnit.kanal" },
 ];
 
 // Map legacy units onto the new picker values.
@@ -243,9 +244,9 @@ const EMPTY_FORM = {
 const validate = (data) => {
   const errors = {};
 
-  if (!data.title.trim()) errors.title = "Title is required";
+  if (!data.title.trim()) errors.title = t("listing:validation.titleRequired");
   else if (data.title.trim().length < 10)
-    errors.title = "Title must be at least 10 characters";
+    errors.title = t("listing:validation.titleMin");
 
   if (!data.propertyType) errors.propertyType = "Select a property type";
   else {
@@ -300,6 +301,7 @@ const Required = () => (
 );
 
 const PostRequirement = () => {
+  const { t } = useTranslation("requirement");
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -521,7 +523,7 @@ const PostRequirement = () => {
 
   const handleFetchCurrentLocation = useCallback(() => {
     if (!("geolocation" in navigator)) {
-      toast.error("Your browser does not support geolocation.");
+      toast.error(t("listing:validation.noGeolocation"));
       return;
     }
     setIsFetchingLocation(true);
@@ -536,7 +538,7 @@ const PostRequirement = () => {
           return next;
         });
         setIsFetchingLocation(false);
-        toast.success("Location set from your device");
+        toast.success(t("listing:toast.locationSet"));
       },
       (err) => {
         setIsFetchingLocation(false);
@@ -556,15 +558,15 @@ const PostRequirement = () => {
     const lat = Number(manualLat);
     const lng = Number(manualLng);
     if (!manualLat.trim() || !manualLng.trim() || Number.isNaN(lat) || Number.isNaN(lng)) {
-      toast.error("Enter valid numbers for both latitude and longitude.");
+      toast.error(t("listing:validation.coordsInvalid"));
       return;
     }
     if (lat < -90 || lat > 90) {
-      toast.error("Latitude must be between -90 and 90.");
+      toast.error(t("listing:validation.latRange"));
       return;
     }
     if (lng < -180 || lng > 180) {
-      toast.error("Longitude must be between -180 and 180.");
+      toast.error(t("listing:validation.lngRange"));
       return;
     }
     setForm((prev) => ({ ...prev, coordinates: { lat, lng } }));
@@ -574,7 +576,7 @@ const PostRequirement = () => {
       delete next.coordinates;
       return next;
     });
-    toast.success("Pin set from latitude/longitude");
+    toast.success(t("listing:toast.pinSet"));
   }, [manualLat, manualLng]);
 
   const handleLocationModeChange = useCallback(
@@ -599,7 +601,7 @@ const PostRequirement = () => {
       setTouched(allTouched);
 
       if (Object.keys(validationErrors).length > 0) {
-        toast.error("Please fix the errors above");
+        toast.error(t("toast.fixErrors"));
         return;
       }
 
@@ -641,7 +643,7 @@ const PostRequirement = () => {
         if (draftKey) clearRequirementDraft(draftKey);
 
         setIsSubmitting(false);
-        toast.success("Requirement posted successfully!");
+        toast.success(t("toast.posted"));
         navigate(`/dashboard/${viewRole}`);
       } catch (error) {
         setIsSubmitting(false);
@@ -666,14 +668,14 @@ const PostRequirement = () => {
           to={`/dashboard/${viewRole}`}
           className="dash-breadcrumb-link"
         >
-          Dashboard
+          {t("common:nav.dashboard")}
         </Link>
         <span className="dash-breadcrumb-sep">/</span>
-        <span className="dash-breadcrumb-current">Post Requirement</span>
+        <span className="dash-breadcrumb-current">{t("breadcrumb")}</span>
       </nav>
 
       <div className="req-header">
-        <h1 className="req-title">Post a Requirement</h1>
+        <h1 className="req-title">{t("title")}</h1>
         <p className="req-subtitle">
           {isDealer
             ? "Describe what your client is looking for — other dealers and sellers will see this."
@@ -684,9 +686,9 @@ const PostRequirement = () => {
       <form className="req-form" onSubmit={handleSubmit} noValidate>
         {/* ── Purpose — buy vs rent (same two-option toggle as Create Listing) ── */}
         <div className="req-form-section">
-          <h3 className="req-form-section-title">Purpose</h3>
+          <h3 className="req-form-section-title">{t("sections.purpose")}</h3>
           <p className="req-form-section-sub">
-            Are you looking to buy or rent?
+            {t("sections.purposePrompt")}
           </p>
           <div className="lst-purpose-row">
             {PURPOSES.map((p) => {
@@ -701,7 +703,7 @@ const PostRequirement = () => {
                   <span className="lst-purpose-icon">
                     {p.value === "sale" ? "🏷️" : "🔑"}
                   </span>
-                  <span className="lst-purpose-label">{p.label}</span>
+                  <span className="lst-purpose-label">{t(p.labelKey)}</span>
                 </button>
               );
             })}
@@ -717,7 +719,7 @@ const PostRequirement = () => {
           {/* Title */}
           <div className="req-field">
             <label className="req-label" htmlFor="req-title">
-              Requirement Title<Required />
+              {t("fields.title")}<Required />
             </label>
             <input
               id="req-title"
@@ -735,10 +737,10 @@ const PostRequirement = () => {
             {showError("title") && <div className="req-error">{errors.title}</div>}
           </div>
 
-          {/* Property Type — category cards + subtype grid (same as Create Listing) */}
+          {/* {t("fields.propertyType")} — category cards + subtype grid (same as Create Listing) */}
           <div className="req-field">
             <label className="req-label">
-              Property Type<Required />
+              {t("fields.propertyType")}<Required />
             </label>
             <div className="lst-category-row">
               {CATEGORIES.map((c) => {
@@ -751,7 +753,7 @@ const PostRequirement = () => {
                     className={`lst-category-card ${active ? "lst-category-card--active" : ""}`}
                   >
                     <span className="lst-category-icon">{c.icon}</span>
-                    <span className="lst-category-label">{c.label}</span>
+                    <span className="lst-category-label">{t(c.labelKey)}</span>
                   </button>
                 );
               })}
@@ -773,7 +775,7 @@ const PostRequirement = () => {
                         <SIcon size={16} />
                       </span>
                     )}
-                    <span className="lst-subtype-card-label">{s.label}</span>
+                    <span className="lst-subtype-card-label">{t(s.labelKey)}</span>
                   </button>
                 );
               })}
@@ -787,7 +789,7 @@ const PostRequirement = () => {
               (same trigger/UX as the Create Listing page) */}
           <div className="req-field">
             <label className="req-label" htmlFor="req-size">
-              Preferred Size<Required />
+              {t("fields.preferredSize")}<Required />
               <span className="req-label-hint">(value + unit)</span>
             </label>
             <div style={{ display: "flex", gap: 8 }}>
@@ -797,7 +799,7 @@ const PostRequirement = () => {
                 step="any"
                 min="0"
                 className={fieldClass("req-input", "size")}
-                placeholder="e.g. 10"
+                placeholder={t("placeholders.size")}
                 value={form.size}
                 onChange={(e) => handleChange("size", e.target.value)}
                 onBlur={() => handleBlur("size")}
@@ -827,7 +829,7 @@ const PostRequirement = () => {
 
         {/* ── Location ── */}
         <div className="req-form-section">
-          <h3 className="req-form-section-title">Preferred Location</h3>
+          <h3 className="req-form-section-title">{t("fields.preferredLocation")}</h3>
 
           <div className="req-row">
             <div className="req-field">
@@ -841,7 +843,7 @@ const PostRequirement = () => {
                 onChange={(e) => handleChange("city", e.target.value)}
                 onBlur={() => handleBlur("city")}
               >
-                <option value="">Select city</option>
+                <option value="">{t("listing:fields.selectCity")}</option>
                 {CITIES.map((city) => (
                   <option key={city} value={city}>{city}</option>
                 ))}
@@ -853,13 +855,13 @@ const PostRequirement = () => {
             {form.city === "Other" && (
               <div className="req-field">
                 <label className="req-label" htmlFor="req-custom-city">
-                  Enter City<Required />
+                  {t("fields.enterCity")}<Required />
                 </label>
                 <input
                   id="req-custom-city"
                   type="text"
                   className={fieldClass("req-input", "customCity")}
-                  placeholder="Type your city"
+                  placeholder={t("placeholders.city")}
                   value={form.customCity}
                   onChange={(e) => handleChange("customCity", e.target.value)}
                   onBlur={() => handleBlur("customCity")}
@@ -876,7 +878,7 @@ const PostRequirement = () => {
             {form.city && form.city !== "Other" && (
               <div className="req-field">
                 <label className="req-label" htmlFor="req-area">
-                  Preferred Area<Required />
+                  {t("fields.preferredArea")}<Required />
                 </label>
                 <select
                   id="req-area"
@@ -885,7 +887,7 @@ const PostRequirement = () => {
                   onChange={(e) => handleChange("area", e.target.value)}
                   onBlur={() => handleBlur("area")}
                 >
-                  <option value="">Select area</option>
+                  <option value="">{t("listing:fields.selectArea")}</option>
                   {areaOptions.map((area) => (
                     <option key={area} value={area}>{area}</option>
                   ))}
@@ -898,13 +900,13 @@ const PostRequirement = () => {
             {(form.city === "Other" || form.area === "Other") && (
               <div className="req-field">
                 <label className="req-label" htmlFor="req-custom-area">
-                  Enter Area<Required />
+                  {t("fields.enterArea")}<Required />
                 </label>
                 <input
                   id="req-custom-area"
                   type="text"
                   className={fieldClass("req-input", "customArea")}
-                  placeholder="e.g. DHA Phase 5 / Gulberg"
+                  placeholder={t("placeholders.area")}
                   value={form.customArea}
                   onChange={(e) => handleChange("customArea", e.target.value)}
                   onBlur={() => handleBlur("customArea")}
@@ -919,7 +921,7 @@ const PostRequirement = () => {
           {/* Map pin — three input modes (same UX as Create Listing) */}
           <div className="req-field">
             <label className="req-label" htmlFor="req-location-mode">
-              How do you want to set the location?<Required />
+              {t("listing:location.prompt")}<Required />
             </label>
             <select
               id="req-location-mode"
@@ -928,9 +930,9 @@ const PostRequirement = () => {
               onChange={(e) => handleLocationModeChange(e.target.value)}
               style={{ marginBottom: 12 }}
             >
-              <option value="map">Pick on map</option>
-              <option value="device">Use my current location</option>
-              <option value="manual">Enter latitude & longitude</option>
+              <option value="map">{t("listing:location.pickOnMap")}</option>
+              <option value="device">{t("listing:location.useCurrent")}</option>
+              <option value="manual">{t("listing:location.enterCoords")}</option>
             </select>
 
             {/* Mode 1: Current device location */}
@@ -958,7 +960,7 @@ const PostRequirement = () => {
                   {isFetchingLocation ? "Fetching…" : "Fetch current location"}
                 </button>
                 <p style={{ fontSize: 12, color: "#717171", margin: "8px 0 0" }}>
-                  Reads your device GPS. Your browser will ask for permission the first time.
+                  {t("listing:location.gpsHint")}
                 </p>
               </div>
             )}
@@ -980,7 +982,7 @@ const PostRequirement = () => {
                 <div className="req-row" style={{ marginBottom: 10 }}>
                   <div className="req-field" style={{ margin: 0 }}>
                     <label className="req-label" htmlFor="req-manual-lat">
-                      Latitude
+                      {t("listing:location.latitude")}
                       <span className="req-label-hint">(-90 to 90)</span>
                     </label>
                     <input
@@ -988,14 +990,14 @@ const PostRequirement = () => {
                       type="number"
                       step="any"
                       className="req-input"
-                      placeholder="e.g. 31.5204"
+                      placeholder={t("listing:placeholders.latitude")}
                       value={manualLat}
                       onChange={(e) => setManualLat(e.target.value)}
                     />
                   </div>
                   <div className="req-field" style={{ margin: 0 }}>
                     <label className="req-label" htmlFor="req-manual-lng">
-                      Longitude
+                      {t("listing:location.longitude")}
                       <span className="req-label-hint">(-180 to 180)</span>
                     </label>
                     <input
@@ -1003,7 +1005,7 @@ const PostRequirement = () => {
                       type="number"
                       step="any"
                       className="req-input"
-                      placeholder="e.g. 74.3587"
+                      placeholder={t("listing:placeholders.longitude")}
                       value={manualLng}
                       onChange={(e) => setManualLng(e.target.value)}
                     />
@@ -1025,10 +1027,10 @@ const PostRequirement = () => {
                     cursor: "pointer",
                   }}
                 >
-                  Apply coordinates
+                  {t("listing:location.applyCoords")}
                 </button>
                 <p style={{ fontSize: 12, color: "#717171", margin: "8px 0 0" }}>
-                  Tip: paste a "lat, lng" pair from Google Maps. Right-click any spot in Maps and copy the coordinates.
+                  {t("listing:location.coordsTip")}
                 </p>
               </div>
             )}
@@ -1076,7 +1078,7 @@ const PostRequirement = () => {
                     fontSize: 13,
                   }}
                 >
-                  Clear pin
+                  {t("listing:location.clearPin")}
                 </button>
               </div>
             )}
@@ -1086,13 +1088,13 @@ const PostRequirement = () => {
           </div>
         </div>
 
-        {/* ── Budget & Details ── */}
+        {/* ── {t("sections.budgetDetails")} ── */}
         <div className="req-form-section">
-          <h3 className="req-form-section-title">Budget & Details</h3>
+          <h3 className="req-form-section-title">{t("sections.budgetDetails")}</h3>
 
           <div className="req-field">
             <label className="req-label">
-              Budget Range<Required />
+              {t("fields.budgetRange")}<Required />
               <span className="req-label-hint">(PKR)</span>
             </label>
             <div className="req-budget-row">
@@ -1101,7 +1103,7 @@ const PostRequirement = () => {
                   type="text"
                   inputMode="numeric"
                   className={fieldClass("req-input", "budgetMin")}
-                  placeholder="Min (e.g. 18,000,000)"
+                  placeholder={t("placeholders.budgetMin")}
                   value={
                     form.budgetMin
                       ? Number(form.budgetMin).toLocaleString("en-US")
@@ -1122,7 +1124,7 @@ const PostRequirement = () => {
                   type="text"
                   inputMode="numeric"
                   className={fieldClass("req-input", "budgetMax")}
-                  placeholder="Max (e.g. 26,000,000)"
+                  placeholder={t("placeholders.budgetMax")}
                   value={
                     form.budgetMax
                       ? Number(form.budgetMax).toLocaleString("en-US")
@@ -1143,14 +1145,14 @@ const PostRequirement = () => {
           <div className="req-row">
             <div className="req-field">
               <label className="req-label" htmlFor="req-bedrooms">
-                Bedrooms
+                {t("listing:fields.bedrooms")}
                 <span className="req-label-hint">(optional)</span>
               </label>
               <input
                 id="req-bedrooms"
                 type="number"
                 className="req-input"
-                placeholder="e.g. 3"
+                placeholder={t("placeholders.rooms")}
                 value={form.bedrooms}
                 onChange={(e) => handleChange("bedrooms", e.target.value)}
                 min="0"
@@ -1160,14 +1162,14 @@ const PostRequirement = () => {
 
             <div className="req-field">
               <label className="req-label" htmlFor="req-bathrooms">
-                Bathrooms
+                {t("listing:fields.bathrooms")}
                 <span className="req-label-hint">(optional)</span>
               </label>
               <input
                 id="req-bathrooms"
                 type="number"
                 className="req-input"
-                placeholder="e.g. 3"
+                placeholder={t("placeholders.rooms")}
                 value={form.bathrooms}
                 onChange={(e) => handleChange("bathrooms", e.target.value)}
                 min="0"
@@ -1177,7 +1179,7 @@ const PostRequirement = () => {
           </div>
 
           <div className="req-field">
-            <label className="req-label">Timeline / Urgency<Required /></label>
+            <label className="req-label">{t("fields.timeline")}<Required /></label>
             <div className="req-urgency-options">
               {URGENCY_OPTIONS.map((opt) => (
                 <button
@@ -1196,13 +1198,13 @@ const PostRequirement = () => {
           </div>
         </div>
 
-        {/* ── Additional Notes ── */}
+        {/* ── {t("listing:fields.additionalNotes")} ── */}
         <div className="req-form-section">
-          <h3 className="req-form-section-title">Additional Notes</h3>
+          <h3 className="req-form-section-title">{t("listing:fields.additionalNotes")}</h3>
 
           <div className="req-field">
             <label className="req-label" htmlFor="req-notes">
-              Notes
+              {t("sections.notes")}
               <span className="req-label-hint">(optional — preferences, must-haves, etc.)</span>
             </label>
             <AiDescriptionBadge
@@ -1236,13 +1238,13 @@ const PostRequirement = () => {
             className="req-btn req-btn--primary"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Posting..." : "Post Requirement"}
+            {isSubmitting ? t("toast.posting") : t("breadcrumb")}
           </button>
           <Link
             to={`/dashboard/${viewRole}`}
             className="req-btn req-btn--secondary"
           >
-            Cancel
+            {t("common:actions.cancel")}
           </Link>
         </div>
       </form>
@@ -1251,7 +1253,7 @@ const PostRequirement = () => {
       <Modal
         isOpen={unitModalOpen}
         onClose={() => setUnitModalOpen(false)}
-        title="Change Area"
+        title={t("listing:fields.changeArea")}
         size="small"
       >
         <div className="dd-modal-list">
@@ -1266,7 +1268,7 @@ const PostRequirement = () => {
                 setUnitModalOpen(false);
               }}
             >
-              <span className="dd-opt-label">{u.label}</span>
+              <span className="dd-opt-label">{t(u.labelKey)}</span>
               {form.sizeUnit === u.value && (
                 <FiCheck className="dd-opt-check" size={16} />
               )}

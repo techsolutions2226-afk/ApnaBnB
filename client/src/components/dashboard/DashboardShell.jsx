@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Link, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { FiChevronDown, FiSettings, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
 import {
@@ -15,6 +16,7 @@ import { readViewRole, writeViewRole } from "../../utils/viewRoleStore";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
+import LanguageSwitcher from "../common/LanguageSwitcher";
 import Seo from "../seo/Seo";
 import { privateAreaTitle } from "../../config/seo";
 
@@ -63,6 +65,7 @@ export default function DashboardShell() {
  * sellers/buyers may switch between those two hats; dealers stay dealer-only.
  */
 function MemberDashboardShell() {
+  const { t } = useTranslation("dashboard");
   const { currentUser, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -190,12 +193,12 @@ function MemberDashboardShell() {
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ "--role-accent": meta.accent }}
-        aria-label="Dashboard navigation"
+        aria-label={t("nav.ariaLabel")}
       >
         <Link
           to="/"
           className="flex items-center gap-2 px-5 py-5 border-b border-white/[0.08]"
-          aria-label="ApnaBnB home"
+          aria-label={t("common:nav.homeAriaLabel")}
           onClick={() => setNavOpen(false)}
         >
           <Logo size={40} />
@@ -217,11 +220,11 @@ function MemberDashboardShell() {
             <p className="truncate text-sm font-medium text-white">
               {currentUser?.name || "My Account"}
             </p>
-            <p className="text-xs text-slate-400">{meta.label} workspace</p>
+            <p className="text-xs text-slate-400">{t(meta.labelKey)}</p>
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-2 overflow-y-auto" aria-label="Main navigation">
+        <nav className="flex-1 px-3 py-2 overflow-y-auto" aria-label={t("nav.mainAriaLabel")}>
           {items.map((item) => {
             const Icon = item.icon;
             const sectionBadge =
@@ -232,7 +235,7 @@ function MemberDashboardShell() {
                   : 0;
             return (
               <NavLink
-                key={item.to + item.label}
+                key={item.to + item.labelKey}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
@@ -245,7 +248,7 @@ function MemberDashboardShell() {
                 onClick={() => setNavOpen(false)}
               >
                 <Icon size={17} aria-hidden="true" />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
                 {sectionBadge > 0 && (
                   <span className="ml-auto min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-white text-xs font-bold">
                     {sectionBadge > 9 ? "9+" : sectionBadge}
@@ -257,10 +260,13 @@ function MemberDashboardShell() {
         </nav>
 
         <div className="p-3 border-t border-white/[0.08] space-y-1 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3">
+          {/* Sits with the theme toggle: both are "how this panel looks/reads"
+              rather than navigation. */}
+          <LanguageSwitcher tone="dark" className="mb-2" />
           <div
             className="flex flex-nowrap items-stretch gap-1 p-[3px] mb-2 rounded-[10px] border border-white/12 bg-black/35"
             role="radiogroup"
-            aria-label="Panel theme"
+            aria-label={t("nav.panelTheme")}
           >
             <button
               type="button"
@@ -274,7 +280,7 @@ function MemberDashboardShell() {
               onClick={() => setThemePref("light")}
             >
               <FiSun size={14} />
-              <span>Light</span>
+              <span>{t("menu.lightMode")}</span>
             </button>
             <button
               type="button"
@@ -288,7 +294,7 @@ function MemberDashboardShell() {
               onClick={() => setThemePref("dark")}
             >
               <FiMoon size={14} />
-              <span>Dark</span>
+              <span>{t("menu.darkMode")}</span>
             </button>
           </div>
           <Link
@@ -325,7 +331,7 @@ function MemberDashboardShell() {
                 ? "text-slate-400 hover:bg-slate-800"
                 : "text-slate-500 hover:bg-slate-100"
             }`}
-            aria-label="Toggle menu"
+            aria-label={t("nav.toggleMenu")}
             onClick={() => setNavOpen((v) => !v)}
           >
             <span className="block h-0.5 w-6 bg-current mb-1.5" />
@@ -338,7 +344,7 @@ function MemberDashboardShell() {
           {currentUser && <NotificationBell />}
 
           <div className="relative" ref={selectRef}>
-            <span className="sr-only">Viewing as</span>
+            <span className="sr-only">{t("roles.viewingAs")}</span>
             {canSwitchRoles ? (
               <>
                 <button
@@ -361,7 +367,7 @@ function MemberDashboardShell() {
                     size={15}
                     className={isDark ? "text-slate-300" : "text-slate-600"}
                   />
-                  <span>{meta.label}</span>
+                  <span>{t(meta.labelKey)}</span>
                   <FiChevronDown
                     size={15}
                     className={`transition-transform ${
@@ -399,10 +405,10 @@ function MemberDashboardShell() {
                             onClick={() => pickRole(role)}
                           >
                             <Icon size={15} className="text-slate-500" />
-                            <span>{m.label}</span>
+                            <span>{t(m.labelKey)}</span>
                             {role === realRole && (
                               <span className="ml-auto text-xs text-slate-400">
-                                your role
+                                {t("roles.yourRole")}
                               </span>
                             )}
                           </button>
@@ -420,7 +426,7 @@ function MemberDashboardShell() {
                     : "text-slate-700 bg-white border-slate-200"
                 }`}
                 style={{ "--role-accent": meta.accent }}
-                aria-label={`Role: ${meta.label}`}
+                aria-label={t(meta.labelKey)}
               >
                 <span
                   className="h-2 w-2 rounded-full"
@@ -430,7 +436,7 @@ function MemberDashboardShell() {
                   size={15}
                   className={isDark ? "text-slate-300" : "text-slate-600"}
                 />
-                <span>{meta.label}</span>
+                <span>{t(meta.labelKey)}</span>
               </div>
             )}
           </div>

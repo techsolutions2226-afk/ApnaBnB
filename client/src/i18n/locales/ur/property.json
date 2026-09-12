@@ -1,0 +1,39 @@
+{
+  "loading": "جائیداد لوڈ ہو رہی ہے",
+  "notFound": "جائیداد نہیں ملی",
+  "backToHome": "ہوم پر واپس",
+  "breadcrumb": "راستہ",
+  "actions": {
+    "contact": "رابطہ",
+    "share": "شیئر کریں",
+    "shareTitle": "یہ جائیداد شیئر کریں",
+    "copyLink": "لنک کاپی کریں",
+    "email": "ای میل",
+    "messages": "پیغامات",
+    "viewProfile": "پروفائل دیکھیں →",
+    "confirmVisit": "ملاقات طے کریں",
+    "allAmenities": "تمام سہولیات"
+  },
+  "sections": {
+    "overview": "تفصیل",
+    "description": "تعارف",
+    "additionalNotes": "اضافی معلومات",
+    "video": "ویڈیو",
+    "amenities": "سہولیات",
+    "whereYoullBe": "مقام",
+    "locationNearby": "مقام اور قریبی سہولیات",
+    "reviews": "تبصرے"
+  },
+  "facts": {
+    "bed_one": "{{count}} بیڈ روم",
+    "bed_other": "{{count}} بیڈ روم",
+    "bath_one": "{{count}} باتھ روم",
+    "bath_other": "{{count}} باتھ روم"
+  },
+  "toast": {
+    "linkCopied": "لنک کاپی ہو گیا!",
+    "copyFailed": "لنک کاپی نہیں ہو سکا",
+    "loginToVisit": "ملاقات طے کرنے کے لیے لاگ ان کریں۔",
+    "ownListing": "یہ آپ کی اپنی لسٹنگ ہے۔"
+  }
+}

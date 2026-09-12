@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
+import { useTranslation } from "react-i18next";
 import { useProperties } from "../hooks/useProperties";
 import PropertyCard from "../components/property/PropertyCard";
 import Pagination from "../components/common/Pagination";
@@ -13,22 +14,20 @@ import "../styles/cinematic.css";
 import "../styles/SearchFields.css";
 import "../styles/SearchDropdowns.css";
 
+/* Route and artwork are fixed; the copy lives in the `home` namespace under
+   cta.<key> so it can be translated without touching this file. */
 const CTA_CARDS = [
   {
+    key: "buy",
     href: "/sale",
     image:
       "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1000&q=80&auto=format&fit=crop",
-    title: "Looking to buy?",
-    text: "Find your dream home or next investment opportunity across Pakistan's premium locations.",
-    cta: "Explore Properties",
   },
   {
+    key: "rent",
     href: "/rent",
     image:
       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1000&q=80&auto=format&fit=crop",
-    title: "Looking to rent?",
-    text: "Discover meticulously curated rentals, from chic city apartments to expansive family villas.",
-    cta: "Find Rentals",
   },
 ];
 
@@ -45,6 +44,7 @@ const revealUp = {
 };
 
 export default function Home() {
+  const { t } = useTranslation("home");
   const navigate = useNavigate();
   const [tab, setTab] = useState("buy");
   const [city, setCity] = useState("");
@@ -177,7 +177,8 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE }}
           >
-            Discover Your Next <em className="not-italic text-indigo-300">Chapter</em>
+            {t("hero.titleLead")}{" "}
+            <em className="not-italic text-indigo-300">{t("hero.titleAccent")}</em>
           </motion.h1>
           <motion.p
             className="mt-4 max-w-xl text-white/90 text-base sm:text-lg"
@@ -185,8 +186,7 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1, ease: EASE }}
           >
-            Find the property that fits your life — buy, rent or sell across
-            Pakistan.
+            {t("hero.subtitle")}
           </motion.p>
           <motion.div
             className="mt-6 w-full max-w-3xl px-1 sm:px-2"
@@ -225,13 +225,13 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-slate-900/10" aria-hidden="true" />
               <div className="relative h-full flex flex-col justify-end p-3 sm:p-6">
                 <h3 className="text-sm sm:text-2xl font-bold text-white font-heading leading-tight mb-1 sm:mb-1.5">
-                  {card.title}
+                  {t(`cta.${card.key}.title`)}
                 </h3>
                 <p className="hidden sm:block text-sm text-slate-300 mb-3 line-clamp-2 max-w-xs">
-                  {card.text}
+                  {t(`cta.${card.key}.text`)}
                 </p>
                 <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary-400 group-hover:text-primary-300 transition-colors">
-                  {card.cta}
+                  {t(`cta.${card.key}.action`)}
                   <FiArrowRight className="h-3 w-3 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-0.5" />
                 </span>
               </div>
@@ -250,13 +250,13 @@ export default function Home() {
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
-            Popular Homes
+            {t("popular.heading")}
           </h2>
           <button
             onClick={() => navigate("/search")}
             className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
           >
-            View all
+            {t("popular.viewAll")}
           </button>
         </div>
 
@@ -268,7 +268,7 @@ export default function Home() {
           </div>
         ) : featuredProps.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-500">No properties yet — be the first to list one.</p>
+            <p className="text-slate-500">{t("popular.empty")}</p>
           </div>
         ) : (
           <>

@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "ariaLabel": "Dashboard navigation",
+    "mainAriaLabel": "Main navigation",
+    "toggleMenu": "Toggle menu",
+    "panelTheme": "Panel theme",
+    "dashboard": "Dashboard",
+    "matches": "Matches",
+    "visits": "Visits",
+    "plans": "Plans",
+    "createListing": "Create Listing",
+    "myListings": "My Listings",
+    "postRequirement": "Post Requirement",
+    "myRequirements": "My Requirements",
+    "browseProperties": "Browse Properties",
+    "wishlists": "Wishlists",
+    "requirementsBoard": "Requirements Board"
+  },
+  "roles": {
+    "seller": "Seller",
+    "buyer": "Buyer",
+    "dealer": "Dealer",
+    "viewingAs": "Viewing as",
+    "yourRole": "your role"
+  },
+  "menu": {
+    "account": "Account",
+    "settings": "Settings",
+    "logout": "Log out",
+    "language": "Language",
+    "lightMode": "Light",
+    "darkMode": "Dark"
+  }
+}

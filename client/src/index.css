@@ -298,3 +298,54 @@
     touch-action: manipulation;
   }
 }
+
+/* ── Urdu typography ──
+   Inter has no Arabic-script coverage, so Urdu falls back to whatever the OS
+   picks — usually a face that does not join letters correctly. Noto Naskh
+   Arabic is injected at runtime (utils/language.js) only when Urdu is chosen,
+   and applied here by the <html lang> attribute.
+
+   Naskh rather than Nastaliq on purpose: Nastaliq is the traditional Urdu
+   face but needs roughly double the line-height, which would stretch every
+   card, table row and button in the app. Naskh keeps the existing metrics.
+
+   Scoped to [lang="ur"] so an English page is completely unaffected. */
+[lang="ur"],
+[lang="ur"] body {
+  font-family: "Noto Naskh Arabic", "Segoe UI", Tahoma, var(--font-sans);
+}
+
+[lang="ur"] h1,
+[lang="ur"] h2,
+[lang="ur"] h3,
+[lang="ur"] h4,
+[lang="ur"] h5,
+[lang="ur"] h6,
+[lang="ur"] .font-heading {
+  font-family: "Noto Naskh Arabic", "Segoe UI", Tahoma, var(--font-heading);
+  /* Arabic-script glyphs carry deeper descenders than Latin; without this the
+     tight heading leading clips them. */
+  line-height: 1.5;
+}
+
+/* Naskh renders visually smaller than Inter at the same px size, and its
+   descenders need room. A small bump keeps body copy equally readable without
+   changing any layout box. */
+[lang="ur"] body,
+[lang="ur"] p,
+[lang="ur"] li,
+[lang="ur"] label,
+[lang="ur"] button,
+[lang="ur"] input,
+[lang="ur"] select,
+[lang="ur"] textarea {
+  font-size: 1.04em;
+  line-height: 1.75;
+}
+
+/* Prices, areas and phone numbers stay in Western digits — the norm on
+   Pakistani property listings — and render better in the Latin face. */
+[lang="ur"] .tabular-nums,
+[lang="ur"] [data-numeric] {
+  font-family: var(--font-sans);
+}

@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import useAccountPath from "../hooks/useAccountPath";
+import { SUPPORTED_LANGUAGES } from "../i18n";
 import { FiChevronLeft } from "react-icons/fi";
 import "../styles/Account.css";
 
-/* ─── Global preferences — FRONTEND ONLY ───
-   Language, currency, timezone and measurement units. Selections change on
-   screen but are not saved and do not affect the rest of the app yet.
-*/
+/* ─── Global preferences ───
+   Language is LIVE: choosing one loads that bundle, re-renders the app and
+   persists the choice for this device (see LanguageContext).
 
-const LANGUAGES = [
-  { value: "en", label: "English" },
-  { value: "ur", label: "اردو (Urdu)" },
-  { value: "pa", label: "پنجابی (Punjabi)" },
-  { value: "sd", label: "سنڌي (Sindhi)" },
-];
+   Currency, timezone, area units and date format are still local-only mirrors
+   — the labels below say so rather than pretending otherwise. They are kept
+   visible because the shape of the page is the deliverable; wiring them needs
+   price/date formatting work across the app, not just a control here.
+*/
 
 const CURRENCIES = [
   { value: "PKR", label: "PKR — Pakistani Rupee (Rs)" },
@@ -45,13 +47,14 @@ const DATE_FORMATS = [
 ];
 
 export default function GlobalPreferences() {
+  const { t } = useTranslation("account");
   const { currentUser } = useAuth();
+  const { language, setLanguage, switching } = useLanguage();
   const navigate = useNavigate();
   const { base } = useAccountPath();
 
-  // Local-only mirrors; these do not persist anywhere yet.
+  // Still local-only mirrors; these do not persist anywhere yet.
   const [prefs, setPrefs] = useState({
-    language: "en",
     currency: "PKR",
     timezone: "Asia/Karachi",
     areaUnit: "marla",
@@ -66,37 +69,21 @@ export default function GlobalPreferences() {
 
   const set = (key) => (e) => setPrefs((prev) => ({ ...prev, [key]: e.target.value }));
 
-  const rows = [
-    {
-      key: "language",
-      label: "Language",
-      desc: "The language used across the site.",
-      options: LANGUAGES,
-    },
-    {
-      key: "currency",
-      label: "Currency",
-      desc: "Prices are shown in this currency.",
-      options: CURRENCIES,
-    },
-    {
-      key: "timezone",
-      label: "Timezone",
-      desc: "Used for viewing times and scheduled visits.",
-      options: TIMEZONES,
-    },
-    {
-      key: "areaUnit",
-      label: "Area units",
-      desc: "How property sizes are measured.",
-      options: AREA_UNITS,
-    },
-    {
-      key: "dateFormat",
-      label: "Date format",
-      desc: "How dates appear throughout the site.",
-      options: DATE_FORMATS,
-    },
+  /* Applied immediately rather than behind a Save button: the whole page
+     re-renders in the new language, which IS the confirmation. A Save button
+     that changed the UI before you pressed it would be a lie. */
+  const onLanguageChange = async (event) => {
+    const next = event.target.value;
+    if (next === language) return;
+    await setLanguage(next);
+    toast.success(t("preferences.saved"));
+  };
+
+  const previewRows = [
+    { key: "currency", options: CURRENCIES },
+    { key: "timezone", options: TIMEZONES },
+    { key: "areaUnit", options: AREA_UNITS },
+    { key: "dateFormat", options: DATE_FORMATS },
   ];
 
   return (
@@ -104,32 +91,53 @@ export default function GlobalPreferences() {
       <div className="ac-container">
         <Link to={base} className="ac-breadcrumb">
           <FiChevronLeft size={18} />
-          <span>Account</span>
+          <span>{t("breadcrumb")}</span>
         </Link>
 
-        <h1 className="ac-title">Global preferences</h1>
-        <p className="ac-subtitle-text">
-          Set your default language, currency, and timezone.
-        </p>
-
-        <div className="ac-preview-note">
-          This section is a preview — these controls aren&apos;t connected yet.
-        </div>
+        <h1 className="ac-title">{t("preferences.title")}</h1>
+        <p className="ac-subtitle-text">{t("preferences.subtitle")}</p>
 
         <div className="ac-sec-body">
           <section className="ac-sec-block">
-            {rows.map((row) => (
+            {/* ── Language — live ── */}
+            <div className="ac-pref-row">
+              <div className="ac-notif-info">
+                <p className="ac-notif-label">{t("preferences.rows.language.label")}</p>
+                <p className="ac-notif-desc">{t("preferences.rows.language.desc")}</p>
+              </div>
+              <select
+                className="ac-select"
+                value={language}
+                onChange={onLanguageChange}
+                disabled={switching}
+                aria-label={t("preferences.rows.language.label")}
+              >
+                {SUPPORTED_LANGUAGES.map((option) => (
+                  // Labelled in its own language so someone in the wrong one
+                  // can still find their way out.
+                  <option key={option.code} value={option.code} lang={option.code}>
+                    {option.nativeLabel}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
+
+          <div className="ac-preview-note">{t("preferences.previewNote")}</div>
+
+          <section className="ac-sec-block">
+            {previewRows.map((row) => (
               <div key={row.key} className="ac-pref-row">
                 <div className="ac-notif-info">
-                  <p className="ac-notif-label">{row.label}</p>
-                  <p className="ac-notif-desc">{row.desc}</p>
+                  <p className="ac-notif-label">{t(`preferences.rows.${row.key}.label`)}</p>
+                  <p className="ac-notif-desc">{t(`preferences.rows.${row.key}.desc`)}</p>
                 </div>
-                {/* TODO: persist and apply this preference app-wide */}
+                {/* TODO: persist and apply these across the app */}
                 <select
                   className="ac-select"
                   value={prefs[row.key]}
                   onChange={set(row.key)}
-                  aria-label={row.label}
+                  aria-label={t(`preferences.rows.${row.key}.label`)}
                 >
                   {row.options.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -140,13 +148,6 @@ export default function GlobalPreferences() {
               </div>
             ))}
           </section>
-
-          <div className="ac-sec-form-actions">
-            {/* TODO: save the preference set */}
-            <button type="button" className="ac-field-save-btn" disabled>
-              Save preferences
-            </button>
-          </div>
         </div>
       </div>
     </div>

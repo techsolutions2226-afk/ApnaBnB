@@ -1,0 +1,294 @@
+/* ── LanguageSwitcher ──
+   A two-option segmented control. Sized to sit alongside .pub-btn in the
+   public navbar without changing the header's height. */
+
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.lang-switch--segmented {
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--color-slate-300, #cbd5e1);
+  border-radius: 999px;
+  background: #fff;
+}
+
+.lang-switch__option {
+  border: none;
+  background: none;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-slate-500, #64748b);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.lang-switch__option:hover:not(:disabled):not(.lang-switch__option--active) {
+  color: var(--color-slate-900, #0f172a);
+  background: var(--color-slate-100, #f1f5f9);
+}
+
+.lang-switch__option--active {
+  background: var(--color-slate-900, #0f172a);
+  color: #fff;
+  /* The active option is disabled (clicking it is a no-op), but it must not
+     look unavailable — it is the current state, not a dead control. */
+  cursor: default;
+  opacity: 1;
+}
+
+.lang-switch__option:disabled:not(.lang-switch__option--active) {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.lang-switch__option:focus-visible {
+  outline: 2px solid var(--color-primary-500, #4a90d9);
+  outline-offset: 1px;
+}
+
+/* Urdu glyphs sit lower and render small at the same px size as Latin text. */
+.lang-switch__option[lang="ur"] {
+  font-size: 13.5px;
+  /* Naskh has a deep descender; a touch of leading keeps the pill centred. */
+  line-height: 1.4;
+}
+
+/* ── size: sm — the dashboard sidebar, where vertical space is tight ── */
+.lang-switch--sm .lang-switch__option {
+  padding: 4px 9px;
+  font-size: 11.5px;
+}
+
+.lang-switch--sm .lang-switch__option[lang="ur"] {
+  font-size: 12.5px;
+}
+
+/* ── variant: inline — inside a settings row, no surrounding pill ── */
+.lang-switch--inline {
+  gap: 8px;
+}
+
+.lang-switch--inline .lang-switch__option {
+  border: 1px solid var(--color-slate-300, #cbd5e1);
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.lang-switch--inline .lang-switch__option[lang="ur"] {
+  font-size: 15px;
+}
+
+/* ── tone: dark — the dashboard sidebar, which is dark in both themes.
+   An explicit modifier rather than an ancestor selector, so it cannot break
+   when the sidebar's own classes change. Matches the theme toggle directly
+   above it. ── */
+.lang-switch--dark.lang-switch--segmented {
+  width: 100%;
+  gap: 1px;
+  padding: 3px;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+}
+
+.lang-switch--dark .lang-switch__option {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  color: var(--color-slate-500, #64748b);
+}
+
+.lang-switch--dark .lang-switch__option--active {
+  background: var(--color-primary-600, #2563eb);
+  color: #fff;
+}
+
+.lang-switch--dark .lang-switch__option:hover:not(:disabled):not(.lang-switch__option--active) {
+  color: #cbd5e1;
+  background: transparent;
+}
+
+@media (max-width: 640px) {
+  /* Keep the control tappable (44px target) without widening the header. */
+  .lang-switch--segmented .lang-switch__option {
+    padding: 7px 10px;
+  }
+
+  .lang-switch--inline {
+    width: 100%;
+  }
+
+  .lang-switch--inline .lang-switch__option {
+    flex: 1 1 0;
+  }
+}
+
+/* ── variant: menu — globe button + dropdown ──
+   Used in the public navbar. Sized to match .pub-btn (min-height 40px, pill
+   radius) so it sits level with Log in / Sign up without changing the header
+   height. */
+.lang-menu {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.lang-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--color-slate-200, #e2e8f0);
+  border-radius: 9999px;
+  background: #fff;
+  color: var(--color-slate-600, #475569);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.lang-menu__trigger:hover:not(:disabled) {
+  color: var(--color-slate-900, #0f172a);
+  background: var(--color-slate-100, #f1f5f9);
+}
+
+.lang-menu__trigger:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.lang-menu__trigger:focus-visible {
+  outline: 2px solid var(--color-primary-500, #4a90d9);
+  outline-offset: 2px;
+}
+
+.lang-menu__globe {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.lang-menu__current {
+  line-height: 1;
+}
+
+/* Urdu glyphs render smaller and sit lower than Latin at the same size. */
+.lang-menu__current[lang="ur"] {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.lang-menu__caret {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.lang-menu__caret--open {
+  transform: rotate(180deg);
+}
+
+.lang-menu__list {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60; /* above .pub-header (40) so it is not clipped by the bar */
+  min-width: 172px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--color-slate-200, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+.lang-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-slate-700, #334155);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lang-menu__item:hover:not(:disabled) {
+  background: var(--color-slate-100, #f1f5f9);
+  color: var(--color-slate-900, #0f172a);
+}
+
+.lang-menu__item:focus-visible {
+  outline: 2px solid var(--color-primary-500, #4a90d9);
+  outline-offset: -2px;
+}
+
+.lang-menu__item--active {
+  color: var(--color-primary-700, #1d4ed8);
+  font-weight: 600;
+}
+
+.lang-menu__item[lang="ur"] .lang-menu__item-label {
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.lang-menu__tick {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* ── size: sm — the mobile header, where space is tightest ── */
+.lang-menu--sm .lang-menu__trigger {
+  min-height: 36px;
+  padding: 0 0.55rem;
+  gap: 4px;
+}
+
+.lang-menu--sm .lang-menu__globe {
+  width: 17px;
+  height: 17px;
+}
+
+@media (max-width: 640px) {
+  /* Drop the text and caret on a phone: the globe alone is the convention,
+     and the header has to fit a bell, an avatar and a CTA beside it. */
+  .lang-menu--sm .lang-menu__current,
+  .lang-menu--sm .lang-menu__caret {
+    display: none;
+  }
+
+  .lang-menu--sm .lang-menu__trigger {
+    padding: 0 0.5rem;
+  }
+
+  .lang-menu__list {
+    min-width: 160px;
+  }
+}

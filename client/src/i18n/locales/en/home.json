@@ -1,0 +1,24 @@
+{
+  "hero": {
+    "titleLead": "Discover Your Next",
+    "titleAccent": "Chapter",
+    "subtitle": "Find the property that fits your life — buy, rent or sell across Pakistan."
+  },
+  "cta": {
+    "buy": {
+      "title": "Looking to buy?",
+      "text": "Find your dream home or next investment opportunity across Pakistan's premium locations.",
+      "action": "Explore Properties"
+    },
+    "rent": {
+      "title": "Looking to rent?",
+      "text": "Discover meticulously curated rentals, from chic city apartments to expansive family villas.",
+      "action": "Find Rentals"
+    }
+  },
+  "popular": {
+    "heading": "Popular Homes",
+    "viewAll": "View all",
+    "empty": "No properties yet — be the first to list one."
+  }
+}

@@ -23,6 +23,7 @@ import Skeleton from "../components/common/Skeleton";
 import { formatLocation } from "../utils/formatters";
 import "../styles/Visit.css";
 
+import { useTranslation } from "react-i18next";
 /* ─── Visit status — the mutual-confirmation hub ───
    Both the visitor and the owner land here. Each side can:
    - see the current proposed schedule(s),
@@ -38,6 +39,7 @@ import "../styles/Visit.css";
 const fmt = (p) => (p ? `${p.date} at ${p.time}` : "—");
 
 export default function VisitStatus() {
+  const { t } = useTranslation("visit");
   const { tripId } = useParams();
   const id = tripId;
 
@@ -106,8 +108,8 @@ export default function VisitStatus() {
       setTrip(updated);
       toast.success(
         updated.visitorConfirmed && updated.ownerConfirmed
-          ? "Visit confirmed! Contact details revealed."
-          : "You confirmed. Waiting for the other side to confirm."
+          ? t("status.bothConfirmedToast")
+          : t("status.youConfirmedToast")
       );
     } catch (err) {
       toast.error(err?.message || "Failed to confirm the visit.");
@@ -119,7 +121,7 @@ export default function VisitStatus() {
   const handlePropose = async (e) => {
     e.preventDefault();
     if (!newDate) {
-      toast.info("Please choose a date.");
+      toast.info(t("status.chooseDate"));
       return;
     }
     setBusy("propose");
@@ -133,7 +135,7 @@ export default function VisitStatus() {
       setNewDate("");
       setNewTime("");
       toast.success(
-        "New schedule proposed. The other side will confirm or counter-propose."
+        t("status.rescheduled")
       );
     } catch (err) {
       toast.error(err?.message || "Failed to propose a new schedule.");
@@ -147,10 +149,10 @@ export default function VisitStatus() {
       <div className="vs-container">
         <Link to="/trips" className="vs-breadcrumb">
           <FiChevronLeft size={18} />
-          <span>Back to visits</span>
+          <span>{t("status.back")}</span>
         </Link>
 
-        <h1 className="vs-title">Visit details</h1>
+        <h1 className="vs-title">{t("status.title")}</h1>
 
         {/* Status banner */}
         <div className={`vs-banner vs-banner--${trip.status}`}>
@@ -158,7 +160,7 @@ export default function VisitStatus() {
             <>
               <FiCheckCircle size={20} />
               <div>
-                <strong>Visit completed</strong>
+                <strong>{t("status.completed")}</strong>
                 <p>This visit was completed successfully on {fmtDate(trip.completedAt || trip.checkIn)}.</p>
               </div>
             </>
@@ -166,15 +168,15 @@ export default function VisitStatus() {
             <>
               <FiClock size={20} />
               <div>
-                <strong>Visit cancelled</strong>
-                <p>This visit was cancelled and recorded as unsuccessful.</p>
+                <strong>{t("status.cancelled")}</strong>
+                <p>{t("status.cancelledNote")}</p>
               </div>
             </>
           ) : isCheckedIn ? (
             <>
               <FiCheckCircle size={20} />
               <div>
-                <strong>Visitor checked in</strong>
+                <strong>{t("status.checkedIn")}</strong>
                 <p>
                   {isOwner
                     ? "The visitor arrived at your property. Mark the visit completed after you meet."
@@ -186,7 +188,7 @@ export default function VisitStatus() {
             <>
               <FiClock size={20} />
               <div>
-                <strong>Visit confirmed</strong>
+                <strong>{t("status.confirmed")}</strong>
                 <p>
                   {isOwner
                     ? "Use the check-in code below when the visitor arrives."
@@ -198,7 +200,7 @@ export default function VisitStatus() {
             <>
               <FiClock size={20} />
               <div>
-                <strong>You confirmed</strong>
+                <strong>{t("status.youConfirmed")}</strong>
                 <p>Waiting for the {isOwner ? "visitor" : "owner"} to confirm the schedule.</p>
               </div>
             </>
@@ -206,8 +208,8 @@ export default function VisitStatus() {
             <>
               <FiClock size={20} />
               <div>
-                <strong>Awaiting confirmation</strong>
-                <p>A mutually confirmed schedule unlocks the check-in flow and contact details.</p>
+                <strong>{t("status.awaiting")}</strong>
+                <p>{t("status.mutualNote")}</p>
               </div>
             </>
           )}
@@ -244,7 +246,7 @@ export default function VisitStatus() {
 
           {/* Right — schedule + confirm card */}
           <div className="vs-card vs-actions-card">
-            <h3 className="vs-card-head">Schedule</h3>
+            <h3 className="vs-card-head">{t("status.schedule")}</h3>
 
             <div className="vs-schedule-row">
               <span className="vs-schedule-label">
@@ -281,7 +283,7 @@ export default function VisitStatus() {
             {isCompleted ? (
               <p className="vs-congrats">
                 <FiCheckCircle size={16} />
-                Visit completed — you can leave a review from the Visits page.
+                {t("status.reviewHint")}
               </p>
             ) : bothConfirmed && !isCancelled ? (
               <>
@@ -299,7 +301,7 @@ export default function VisitStatus() {
                       try {
                         const res = await tripService.complete(id);
                         setTrip(res.trip);
-                        toast.success("Visit completed successfully!");
+                        toast.success(t("status.completedToast"));
                       } catch (err) {
                         toast.error(err?.message || "Failed to complete the visit.");
                       } finally {
@@ -335,14 +337,14 @@ export default function VisitStatus() {
                       onClick={() => setShowPropose((v) => !v)}
                     >
                       <FiRefreshCw size={16} />
-                      Propose another time
+                      {t("status.proposeAnother")}
                     </button>
                   </div>
                 )}
 
                 {showPropose && !bothConfirmed && (
                   <form className="vs-propose-form" onSubmit={handlePropose}>
-                    <label className="vs-label">Preferred date</label>
+                    <label className="vs-label">{t("status.preferredDate")}</label>
                     <input
                       type="date"
                       className="vs-input"
@@ -350,7 +352,7 @@ export default function VisitStatus() {
                       onChange={(e) => setNewDate(e.target.value)}
                       required
                     />
-                    <label className="vs-label">Preferred time</label>
+                    <label className="vs-label">{t("status.preferredTime")}</label>
                     <input
                       type="time"
                       className="vs-input"
@@ -461,7 +463,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
       const res = await tripService.generateCheckinCode(id);
       setCodeState({ code: res.code, qrPayload: res.qrPayload, expiresAt: res.expiresAt });
       onTrip(res.trip);
-      toast.success("Check-in code generated. It expires in 10 minutes.");
+      toast.success(t("status.codeGenerated"));
     } catch (err) {
       toast.error(err?.message || "Failed to generate the check-in code.");
     } finally {
@@ -473,7 +475,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
     const code = String(raw || "").trim();
     const parsed = code.includes(":") ? code.split(":").pop().trim() : code;
     if (!parsed) {
-      toast.info("No code detected — ask the owner to show the QR again.");
+      toast.info(t("status.noCode"));
       return;
     }
     setBusy("checkin");
@@ -511,7 +513,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
         () => {}
       );
     } catch {
-      toast.error("Camera unavailable. Use the code entry below instead.");
+      toast.error(t("status.cameraUnavailable"));
       setShowScanner(false);
       scannerActive.current = false;
     }
@@ -540,7 +542,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
         <div className="vs-checkin-head">
           <FiKey size={18} />
           <div>
-            <strong>Checked in ✓</strong>
+            <strong>{t("status.checkedInMark")}</strong>
             <p>
               {isOwner
                 ? "The visitor arrived. Mark the visit completed after you meet."
@@ -562,8 +564,8 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
         <div className="vs-checkin-head">
           <FiKey size={18} />
           <div>
-            <strong>Check-in code</strong>
-            <p>Show this when the visitor arrives. It expires in 10 minutes.</p>
+            <strong>{t("status.checkInCode")}</strong>
+            <p>{t("status.codeHint")}</p>
           </div>
         </div>
 
@@ -596,7 +598,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
                 onClick={handleGenerate}
               >
                 <FiRefreshCw size={16} />
-                Regenerate code
+                {t("status.regenerate")}
               </button>
             </div>
           </div>
@@ -611,7 +613,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
       <div className="vs-checkin-head">
         <FiKey size={18} />
         <div>
-          <strong>Check in — I'm here</strong>
+          <strong>{t("status.checkIn")}</strong>
           <p>
             Scan the QR the owner is showing, or type the code. Only your
             account (the one that booked this visit) can check in.
@@ -623,7 +625,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
         <div className="vs-scanner-wrap">
           <div id="vs-scanner" className="vs-scanner" />
           <button type="button" className="vs-outline" onClick={stopScanner}>
-            Cancel scan
+            {t("status.cancelScan")}
           </button>
         </div>
       ) : (
@@ -655,7 +657,7 @@ function CheckInPanel({ trip, isOwner, busy, setBusy, onTrip }) {
               pattern="[0-9]{6}"
               maxLength={6}
               className="vs-input vs-code-input"
-              placeholder="6-digit code"
+              placeholder={t("status.sixDigit")}
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
             />
@@ -700,18 +702,18 @@ function ContactCard({ trip }) {
     <div className="vs-card vs-contact">
       <div className="vs-contact-head">
         <FiShield size={16} />
-        <strong>Contact details revealed</strong>
-        <span>Mutual confirmation complete</span>
+        <strong>{t("status.contactRevealed")}</strong>
+        <span>{t("status.mutualComplete")}</span>
       </div>
 
       {loading ? (
-        <p className="vs-contact-loading">Loading contact details…</p>
+        <p className="vs-contact-loading">{t("status.loadingContact")}</p>
       ) : err ? (
         <p className="vs-error">{err}</p>
       ) : contact ? (
         <div className="vs-contact-grid">
           <div className="vs-contact-person">
-            <p className="vs-contact-role">Owner</p>
+            <p className="vs-contact-role">{t("status.owner")}</p>
             <p className="vs-contact-name">
               <FiUser size={15} /> {contact.owner?.name || "—"}
             </p>
@@ -723,7 +725,7 @@ function ContactCard({ trip }) {
             </p>
           </div>
           <div className="vs-contact-person">
-            <p className="vs-contact-role">Visitor</p>
+            <p className="vs-contact-role">{t("status.visitor")}</p>
             <p className="vs-contact-name">
               <FiUser size={15} /> {contact.visitor?.name || "—"}
             </p>
@@ -736,7 +738,7 @@ function ContactCard({ trip }) {
           </div>
         </div>
       ) : (
-        <p className="vs-error">No contact details available.</p>
+        <p className="vs-error">{t("status.noContact")}</p>
       )}
     </div>
   );

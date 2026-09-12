@@ -1,0 +1,65 @@
+{
+  "brand": "ApnaBnB",
+  "announce": {
+    "welcome": "Welcome to ApnaBnB",
+    "welcomeShort": "Welcome!",
+    "dismiss": "Dismiss"
+  },
+  "nav": {
+    "ariaLabel": "Main navigation",
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "account": "Account",
+    "login": "Log in",
+    "signup": "Sign up",
+    "homeAriaLabel": "ApnaBnB home"
+  },
+  "language": {
+    "label": "Language",
+    "switcherAriaLabel": "Change language",
+    "changeTo": "Switch to {{language}}",
+    "current": "Current language: {{language}}",
+    "english": "English",
+    "urdu": "Urdu"
+  },
+  "footer": {
+    "tagline": "Pakistan's trusted platform for property buying, selling, and renting.",
+    "company": "Company",
+    "about": "About",
+    "contact": "Contact",
+    "careers": "Careers",
+    "explore": "Explore",
+    "homesForSale": "Homes for Sale",
+    "homesForRent": "Homes for Rent",
+    "plots": "Plots",
+    "commercial": "Commercial",
+    "support": "Support",
+    "helpCenter": "Help Center",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "rights": "© {{year}} ApnaBnB. All rights reserved.",
+    "facebook": "Facebook",
+    "twitter": "Twitter",
+    "instagram": "Instagram"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "viewAll": "View all",
+    "comingSoon": "Coming soon"
+  },
+  "bottomNav": {
+    "ariaLabel": "Mobile navigation",
+    "home": "Home",
+    "search": "Search",
+    "list": "List",
+    "dashboard": "Dashboard",
+    "profile": "Profile"
+  }
+}

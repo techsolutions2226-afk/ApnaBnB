@@ -1,0 +1,193 @@
+{
+  "steps": {
+    "purposePrompt": "کیا آپ یہ جائیداد فروخت کر رہے ہیں یا کرائے پر دے رہے ہیں؟",
+    "categoryPrompt": "پہلے قسم منتخب کریں، پھر ذیلی قسم۔",
+    "previousGroup": "پچھلا گروپ",
+    "nextGroup": "اگلا گروپ"
+  },
+  "sections": {
+    "basicDetails": "بنیادی تفصیلات",
+    "location": "مقام",
+    "propertyDetails": "جائیداد کی تفصیلات",
+    "features": "خصوصیات اور سہولیات",
+    "featuresHint": "جو بھی موجود ہوں منتخب کریں۔ خریدار انہی کی بنیاد پر تلاش کرتے ہیں۔",
+    "contact": "رابطے کی معلومات",
+    "media": "تصاویر اور ویڈیو",
+    "description": "تعارف"
+  },
+  "fields": {
+    "title": "جائیداد کا عنوان",
+    "priceNegotiable": "قیمت پر بات ہو سکتی ہے",
+    "securityDeposit": "سیکیورٹی رقم",
+    "advanceRent": "ایڈوانس کرایہ",
+    "minRentalPeriod": "کم از کم مدتِ کرایہ",
+    "availableFrom": "کب سے دستیاب",
+    "condition": "جائیداد کی حالت",
+    "selectCondition": "حالت منتخب کریں",
+    "furnishing": "فرنیچر",
+    "city": "شہر",
+    "selectCity": "شہر منتخب کریں",
+    "locality": "علاقہ / محلہ",
+    "block": "بلاک",
+    "street": "گلی",
+    "landmark": "قریبی نشانی",
+    "bedrooms": "بیڈ روم",
+    "bathrooms": "باتھ روم",
+    "floorNumber": "منزل نمبر",
+    "totalFloors": "کل منزلیں",
+    "constructionYear": "تعمیر کا سال",
+    "facing": "رخ",
+    "selectFacing": "رخ منتخب کریں",
+    "buildingName": "عمارت کا نام",
+    "apartmentNumber": "اپارٹمنٹ نمبر",
+    "parkingSpaces": "پارکنگ کی جگہیں",
+    "plotNumber": "پلاٹ نمبر",
+    "possession": "قبضہ",
+    "developmentStatus": "ترقیاتی حالت",
+    "washrooms": "واش روم",
+    "officeRooms": "دفتری کمرے",
+    "frontage": "سامنے کی چوڑائی",
+    "fullName": "پورا نام",
+    "email": "ای میل",
+    "mobile": "موبائل",
+    "whatsapp": "واٹس ایپ",
+    "alternatePhone": "متبادل فون",
+    "showWhatsapp": "لسٹنگ پر واٹس ایپ دکھائیں",
+    "showOwnerContact": "جائیداد کے صفحے پر مالک کا رابطہ دکھائیں",
+    "propertyDescription": "جائیداد کا تعارف",
+    "additionalNotes": "اضافی معلومات",
+    "select": "منتخب کریں",
+    "changeArea": "علاقہ تبدیل کریں",
+    "selectArea": "علاقہ منتخب کریں",
+    "selectCityFirst": "پہلے شہر منتخب کریں"
+  },
+  "location": {
+    "prompt": "آپ مقام کیسے متعین کرنا چاہتے ہیں؟",
+    "pickOnMap": "نقشے پر منتخب کریں",
+    "useCurrent": "میرا موجودہ مقام استعمال کریں",
+    "enterCoords": "طول و عرض بلد درج کریں",
+    "gpsHint": "یہ آپ کے آلے کا جی پی ایس پڑھتا ہے۔ پہلی بار براؤزر اجازت مانگے گا۔",
+    "latitude": "عرض بلد",
+    "longitude": "طول بلد",
+    "applyCoords": "کوآرڈینیٹس لاگو کریں",
+    "coordsTip": "مشورہ: گوگل میپس سے \"lat, lng\" کا جوڑا کاپی کریں۔ میپس پر کسی جگہ دائیں کلک کر کے کوآرڈینیٹس کاپی کیے جا سکتے ہیں۔",
+    "clearPin": "نشان ہٹائیں"
+  },
+  "media": {
+    "images": "جائیداد کی تصاویر",
+    "video": "جائیداد کی ویڈیو",
+    "aiHint": "یہاں کلک کریں، AI اوپر دی گئی تفصیلات سے مسودہ تیار کر دے گا — یا خود لکھیں۔",
+    "notesPlaceholder": "کوئی اور بات جو خریداروں کو معلوم ہونی چاہیے…"
+  },
+  "options": {
+    "purpose": {
+      "sale": "فروخت کے لیے",
+      "rent": "کرائے کے لیے"
+    },
+    "category": {
+      "commercial": "کمرشل",
+      "home": "رہائشی",
+      "plot": "پلاٹ"
+    },
+    "propertyType": {
+      "house": "گھر",
+      "upperPortion": "بالائی پورشن",
+      "lowerPortion": "زیریں پورشن",
+      "farmHouse": "فارم ہاؤس",
+      "penthouse": "پینٹ ہاؤس",
+      "residentialPlot": "رہائشی پلاٹ",
+      "commercialPlot": "کمرشل پلاٹ",
+      "agriculturalLand": "زرعی زمین",
+      "industrialLand": "صنعتی زمین",
+      "plotForm": "پلاٹ فارم",
+      "plotFile": "پلاٹ فائل",
+      "office": "دفتر",
+      "warehouse": "گودام",
+      "building": "عمارت",
+      "factory": "فیکٹری",
+      "plaza": "پلازہ",
+      "commercialBuilding": "کمرشل عمارت",
+      "other": "دیگر",
+      "flat": "فلیٹ",
+      "room": "کمرہ",
+      "shop": "دکان"
+    },
+    "furnishing": {
+      "unfurnished": "بغیر فرنیچر",
+      "semiFurnished": "جزوی فرنشڈ",
+      "furnished": "مکمل فرنشڈ"
+    },
+    "condition": {
+      "brandNew": "بالکل نیا",
+      "likeNew": "نئے جیسا",
+      "needsRenovation": "مرمت درکار",
+      "underConstruction": "زیرِ تعمیر",
+      "good": "اچھی حالت"
+    },
+    "possession": {
+      "immediate": "فوری",
+      "comingSoon": "جلد دستیاب",
+      "underDevelopment": "زیرِ ترقی"
+    },
+    "development": {
+      "developed": "ترقی یافتہ",
+      "semiDeveloped": "جزوی ترقی یافتہ"
+    },
+    "sizeUnit": {
+      "squareFeet": "مربع فٹ",
+      "squareYards": "مربع گز",
+      "squareMeters": "مربع میٹر",
+      "marla": "مرلہ",
+      "kanal": "کنال"
+    },
+    "facing": {
+      "north": "شمال",
+      "south": "جنوب",
+      "east": "مشرق",
+      "west": "مغرب",
+      "northEast": "شمال مشرق",
+      "northWest": "شمال مغرب",
+      "southEast": "جنوب مشرق",
+      "southWest": "جنوب مغرب"
+    }
+  },
+  "placeholders": {
+    "title": "مثلاً گلبرگ III میں 10 مرلہ گھر",
+    "price": "مثلاً 130,000",
+    "deposit": "مثلاً 65,000",
+    "months": "مثلاً 10",
+    "city": "اپنا شہر درج کریں",
+    "locality": "اپنا علاقہ / محلہ درج کریں",
+    "block": "مثلاً بلاک B، فیز 5",
+    "blockShort": "مثلاً بلاک C",
+    "street": "مثلاً گلی 12",
+    "landmark": "مثلاً میٹرو اسٹیشن کے قریب",
+    "latitude": "مثلاً 31.5204",
+    "longitude": "مثلاً 74.3587",
+    "floor": "مثلاً 4",
+    "groundFloor": "0 = گراؤنڈ",
+    "year": "مثلاً 2018",
+    "frontage": "مثلاً 30 فٹ سامنے",
+    "name": "مثلاً احمد خان",
+    "email": "ahmad@example.com"
+  },
+  "validation": {
+    "titleRequired": "عنوان ضروری ہے",
+    "titleMin": "عنوان کم از کم 10 حروف کا ہونا چاہیے",
+    "titleMax": "عنوان زیادہ سے زیادہ 120 حروف کا ہو سکتا ہے",
+    "descRequired": "تعارف ضروری ہے",
+    "descMin": "تعارف کم از کم 20 حروف کا ہونا چاہیے",
+    "descMax": "تعارف زیادہ سے زیادہ {{max}} حروف کا ہو سکتا ہے",
+    "coordsInvalid": "عرض بلد اور طول بلد دونوں کے لیے درست اعداد درج کریں۔",
+    "latRange": "عرض بلد -90 سے 90 کے درمیان ہونا چاہیے۔",
+    "lngRange": "طول بلد -180 سے 180 کے درمیان ہونا چاہیے۔",
+    "noGeolocation": "آپ کا براؤزر مقام کی سہولت کی حمایت نہیں کرتا۔",
+    "emailRequired": "رابطے کے لیے ای میل ضروری ہے",
+    "emailInvalid": "درست ای میل درج کریں",
+    "whatsappInvalid": "درست واٹس ایپ نمبر درج کریں"
+  },
+  "toast": {
+    "pinSet": "عرض/طول بلد سے نشان لگا دیا گیا",
+    "locationSet": "آپ کے آلے سے مقام متعین کر دیا گیا"
+  }
+}

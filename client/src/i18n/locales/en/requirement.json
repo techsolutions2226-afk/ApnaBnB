@@ -1,0 +1,44 @@
+{
+  "breadcrumb": "Post Requirement",
+  "title": "Post a Requirement",
+  "editTitle": "Edit Requirement",
+  "sections": {
+    "purpose": "Purpose",
+    "purposePrompt": "Are you looking to buy or rent?",
+    "budgetDetails": "Budget & Details",
+    "notes": "Notes"
+  },
+  "fields": {
+    "title": "Requirement Title",
+    "propertyType": "Property Type",
+    "preferredSize": "Preferred Size",
+    "preferredLocation": "Preferred Location",
+    "enterCity": "Enter City",
+    "preferredArea": "Preferred Area",
+    "enterArea": "Enter Area",
+    "budgetRange": "Budget Range",
+    "timeline": "Timeline / Urgency"
+  },
+  "options": {
+    "buy": "To Buy",
+    "rent": "To Rent"
+  },
+  "placeholders": {
+    "size": "e.g. 10",
+    "city": "Type your city",
+    "area": "e.g. DHA Phase 5 / Gulberg",
+    "budgetMin": "Min (e.g. 18,000,000)",
+    "budgetMax": "Max (e.g. 26,000,000)",
+    "rooms": "e.g. 3"
+  },
+  "toast": {
+    "fixErrors": "Please fix the errors above",
+    "posted": "Requirement posted successfully!",
+    "updated": "Requirement updated successfully!",
+    "posting": "Posting..."
+  },
+  "loading": "Loading Requirement...",
+  "loadingHint": "Please wait while we fetch your requirement details.",
+  "notFound": "Requirement Not Found",
+  "backToMine": "Back to My Requirements"
+}

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { FiHome, FiSearch, FiPlus, FiGrid, FiUser } from "react-icons/fi";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 
 function isPathActive(pathname, to, { prefix = false } = {}) {
@@ -26,6 +27,7 @@ export default function MobileBottomNav({
   dashboardPath: dashboardPathProp,
   profilePath = "/account",
 }) {
+  const { t } = useTranslation();
   const { isAuthenticated, getDashboardPath } = useAuth();
   const location = useLocation();
 
@@ -35,17 +37,17 @@ export default function MobileBottomNav({
   if (hidden) return null;
 
   const items = [
-    { to: "/", icon: FiHome, label: "Home" },
-    { to: "/search", icon: FiSearch, label: "Search" },
-    { to: "/listing/new", icon: FiPlus, label: "List", isCenter: true },
-    { to: dashboardPath, icon: FiGrid, label: "Dashboard", isDashboard: true },
-    { to: profilePath, icon: FiUser, label: "Profile", prefix: true },
+    { to: "/", icon: FiHome, label: t("bottomNav.home") },
+    { to: "/search", icon: FiSearch, label: t("bottomNav.search") },
+    { to: "/listing/new", icon: FiPlus, label: t("bottomNav.list"), isCenter: true },
+    { to: dashboardPath, icon: FiGrid, label: t("bottomNav.dashboard"), isDashboard: true },
+    { to: profilePath, icon: FiUser, label: t("bottomNav.profile"), prefix: true },
   ];
 
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-slate-200 safe-bottom"
-      aria-label="Mobile navigation"
+      aria-label={t("bottomNav.ariaLabel")}
     >
       <div className="flex items-center justify-around h-16">
         {items.map((item) => {

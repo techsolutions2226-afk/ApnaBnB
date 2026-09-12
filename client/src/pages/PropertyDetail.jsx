@@ -2,12 +2,14 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useProperty } from "../hooks/useProperties";
 import { useWishlist } from "../context/WishlistContext";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import Modal from "../components/common/Modal";
 import PropertyReviews from "../components/property/detail/PropertyReviews";
 import PropertyGallery from "../components/property/detail/PropertyGallery";
 import PropertyThingsToKnow from "../components/property/detail/PropertyThingsToKnow";
+import PropertyVideo from "../components/common/PropertyVideo";
 import Skeleton from "../components/common/Skeleton";
 import {
   AiFillStar,
@@ -68,16 +70,19 @@ const amenityIcons = {
   "Servant Quarters": <FaConciergeBell size={18} />,
 };
 
+/* Tab ids stay stable (they are scroll anchors); the visible label comes from
+   the `property` namespace. */
 const SECTIONS = [
-  { id: "overview", label: "Overview" },
-  { id: "location", label: "Location & Nearby" },
-  { id: "reviews", label: "Reviews" },
+  { id: "overview", labelKey: "sections.overview" },
+  { id: "location", labelKey: "sections.locationNearby" },
+  { id: "reviews", labelKey: "sections.reviews" },
 ];
 
 const capitalize = (s) =>
   s ? String(s).charAt(0).toUpperCase() + String(s).slice(1).replace(/-/g, " ") : "";
 
 const PropertyDetail = () => {
+  const { t } = useTranslation("property");
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated } = useAuth();
@@ -129,7 +134,7 @@ const PropertyDetail = () => {
   if (isLoading) {
     return (
       <div className="pd-wrapper">
-        <Seo title="Loading property" path={`/property/${id}`} noindex />
+        <Seo title={t("loading")} path={`/property/${id}`} noindex />
         <div className="pd-container">
           <Skeleton count={10} />
         </div>
@@ -140,11 +145,11 @@ const PropertyDetail = () => {
   if (!property || error) {
     return (
       <div className="pd-not-found">
-        <Seo title="Property not found" path={`/property/${id}`} noindex />
-        <h2>Property not found</h2>
+        <Seo title={t("notFound")} path={`/property/${id}`} noindex />
+        <h2>{t("notFound")}</h2>
         <p>{error || "The property you are looking for does not exist."}</p>
         <Link to="/" className="pd-back-home">
-          Back to Home
+          {t("backToHome")}
         </Link>
       </div>
     );
@@ -208,10 +213,10 @@ const PropertyDetail = () => {
     navigator.clipboard
       .writeText(window.location.href)
       .then(() => {
-        toast.success("Link copied!");
+        toast.success(t("toast.linkCopied"));
         setShareModalOpen(false);
       })
-      .catch(() => toast.error("Failed to copy link"));
+      .catch(() => toast.error(t("toast.copyFailed")));
   };
 
   /* ── Owner contact (always shown unless the owner opts out) ──
@@ -237,12 +242,12 @@ const PropertyDetail = () => {
   /* The "Confirm visit" primary CTA — straight to the visit scheduling page. */
   const handleVisit = () => {
     if (!isAuthenticated) {
-      toast.info("Please log in to confirm a visit.");
+      toast.info(t("toast.loginToVisit"));
       navigate("/login");
       return;
     }
     if (isOwnListing) {
-      toast.info("This is your own listing.");
+      toast.info(t("toast.ownListing"));
       return;
     }
     navigate(`/visit/${id}`);
@@ -260,10 +265,10 @@ const PropertyDetail = () => {
     propertyType ? { icon: <FiHome size={14} />, label: capitalize(propertyType) } : null,
     size ? { icon: <FiMaximize2 size={14} />, label: `${size} ${sizeUnit || ""}`.trim() } : null,
     bedrooms != null && bedrooms > 0
-      ? { icon: <FaBed size={14} />, label: `${bedrooms} Bed${bedrooms !== 1 ? "s" : ""}` }
+      ? { icon: <FaBed size={14} />, label: t("facts.bed", { count: bedrooms }) }
       : null,
     bathrooms != null && bathrooms > 0
-      ? { icon: <FiDroplet size={14} />, label: `${bathrooms} Bath${bathrooms !== 1 ? "s" : ""}` }
+      ? { icon: <FiDroplet size={14} />, label: t("facts.bath", { count: bathrooms }) }
       : null,
     purpose
       ? {
@@ -307,7 +312,7 @@ const PropertyDetail = () => {
                 }`}
                 onClick={() => scrollToSection(s.id)}
               >
-                {s.label}
+                {t(s.labelKey)}
               </button>
             ))}
             <div className="pd-sticky-nav-price">
@@ -318,7 +323,7 @@ const PropertyDetail = () => {
                   className="pd-sticky-nav-cta"
                   onClick={scrollToListedBy}
                 >
-                  Contact
+                  {t("actions.contact")}
                 </button>
               )}
             </div>
@@ -328,7 +333,7 @@ const PropertyDetail = () => {
 
       <div className="pd-container">
         {/* Breadcrumb */}
-        <nav className="pd-breadcrumb" aria-label="Breadcrumb">
+        <nav className="pd-breadcrumb" aria-label={t("breadcrumb")}>
           <Link to="/">Home</Link>
           <span className="pd-breadcrumb-sep">/</span>
           {purpose && (
@@ -378,7 +383,7 @@ const PropertyDetail = () => {
               onClick={() => setShareModalOpen(true)}
             >
               <FiShare size={15} />
-              <span>Share</span>
+              <span>{t("actions.share")}</span>
             </button>
             <button
               type="button"
@@ -416,7 +421,7 @@ const PropertyDetail = () => {
               }`}
               onClick={() => scrollToSection(s.id)}
             >
-              {s.label}
+              {t(s.labelKey)}
             </button>
           ))}
         </div>
@@ -441,7 +446,7 @@ const PropertyDetail = () => {
                         {listedBy?.role === "dealer"
                           ? "Verified Agent"
                           : "Verified Owner"}
-                        <span className="pd-view-profile">View profile →</span>
+                        <span className="pd-view-profile">{t("actions.viewProfile")}</span>
                       </p>
                       {ownerContact.phone || ownerContact.email ? (
                         <div className="pd-host-contact">
@@ -512,7 +517,7 @@ const PropertyDetail = () => {
               className="pd-card pd-overview-card"
               id="overview"
             >
-              <h2 className="pd-section-heading">Overview</h2>
+              <h2 className="pd-section-heading">{t("sections.overview")}</h2>
               <div className="pd-overview-grid">
                 {overviewRows.map((row) => (
                   <div key={row.label} className="pd-overview-item">
@@ -526,7 +531,7 @@ const PropertyDetail = () => {
             {/* Description */}
             {description && (
               <section className="pd-card">
-                <h2 className="pd-section-heading">Description</h2>
+                <h2 className="pd-section-heading">{t("sections.description")}</h2>
                 <div className="pd-description">
                   <p>{displayDesc}</p>
                   {isDescLong && (
@@ -544,7 +549,7 @@ const PropertyDetail = () => {
 
             {notes && (
               <section className="pd-card">
-                <h2 className="pd-section-heading">Additional Notes</h2>
+                <h2 className="pd-section-heading">{t("sections.additionalNotes")}</h2>
                 <div className="pd-description">
                   <p>{notes}</p>
                 </div>
@@ -553,22 +558,15 @@ const PropertyDetail = () => {
 
             {videoUrl && (
               <section className="pd-card">
-                <h2 className="pd-section-heading">Video</h2>
-                <a
-                  href={videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="pd-show-more"
-                >
-                  Watch property video
-                </a>
+                <h2 className="pd-section-heading">{t("sections.video")}</h2>
+                <PropertyVideo url={videoUrl} title={`${title || "Property"} video`} />
               </section>
             )}
 
             {/* Amenities */}
             {amenities.length > 0 && (
               <section className="pd-card" id="amenities">
-                <h2 className="pd-section-heading">Amenities</h2>
+                <h2 className="pd-section-heading">{t("sections.amenities")}</h2>
                 <div className="pd-amenities-grid">
                   {visibleAmenities.map((a) => (
                     <div key={a} className="pd-amenity">
@@ -609,7 +607,7 @@ const PropertyDetail = () => {
               className="pd-card pd-location"
               id="location"
             >
-              <h2 className="pd-section-heading">Where you&apos;ll be</h2>
+              <h2 className="pd-section-heading">{t("sections.whereYoullBe")}</h2>
               <p className="pd-location-text">
                 <FiMapPin size={15} />
                 {locationString}
@@ -670,7 +668,7 @@ const PropertyDetail = () => {
             className="pd-mobile-cta-btn"
             onClick={handleVisit}
           >
-            Confirm visit
+            {t("actions.confirmVisit")}
           </button>
         )}
       </div>
@@ -679,7 +677,7 @@ const PropertyDetail = () => {
       <Modal
         isOpen={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
-        title="Share this property"
+        title={t("actions.shareTitle")}
       >
         <div className="pd-share-content">
           <div className="pd-share-preview">
@@ -697,7 +695,7 @@ const PropertyDetail = () => {
           </div>
           <div className="pd-share-options">
             <button type="button" className="pd-share-option" onClick={handleCopyLink}>
-              <FiCopy size={18} /> Copy link
+              <FiCopy size={18} /> {t("actions.copyLink")}
             </button>
             <button
               type="button"
@@ -709,7 +707,7 @@ const PropertyDetail = () => {
                 setShareModalOpen(false);
               }}
             >
-              <FiMail size={18} /> Email
+              <FiMail size={18} /> {t("actions.email")}
             </button>
             <button
               type="button"
@@ -721,7 +719,7 @@ const PropertyDetail = () => {
                 setShareModalOpen(false);
               }}
             >
-              <FiMessageSquare size={18} /> Messages
+              <FiMessageSquare size={18} /> {t("actions.messages")}
             </button>
           </div>
         </div>
@@ -731,7 +729,7 @@ const PropertyDetail = () => {
       <Modal
         isOpen={amenitiesModalOpen}
         onClose={() => setAmenitiesModalOpen(false)}
-        title="All amenities"
+        title={t("actions.allAmenities")}
       >
         <div className="pd-amenities-modal-list">
           {amenities.map((a) => (

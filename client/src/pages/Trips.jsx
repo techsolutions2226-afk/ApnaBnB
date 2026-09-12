@@ -20,6 +20,7 @@ import {
 } from "react-icons/fi";
 import "../styles/Trips.css";
 
+import { useTranslation } from "react-i18next";
 const TAB_LIST = ["upcoming", "completed", "cancelled"];
 
 function formatDate(dateStr) {
@@ -32,6 +33,7 @@ function formatDate(dateStr) {
 }
 
 function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
+  const { t } = useTranslation("visit");
   const property = propertyMap[trip.propertyId] || trip.property;
   if (!property) return null;
   const coverImage = property.image || property.photos?.[0];
@@ -49,17 +51,17 @@ function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
         <img src={coverImage} alt={property.title} />
         {trip.status === "cancelled" && (
           <span className="tr-card-badge tr-card-badge--cancelled">
-            Cancelled
+            {t("trips.cancelled")}
           </span>
         )}
         {trip.status === "upcoming" && (
           <span className="tr-card-badge tr-card-badge--upcoming">
-            Upcoming
+            {t("trips.upcoming")}
           </span>
         )}
         {trip.status === "checked_in" && (
           <span className="tr-card-badge tr-card-badge--checked_in">
-            Checked in
+            {t("trips.checkedIn")}
           </span>
         )}
       </Link>
@@ -117,14 +119,14 @@ function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
               <>
                 <Link to={`/visits/${trip.id}`} className="tr-detail-btn">
                   <FiChevronRight size={16} />
-                  View visit
+                  {t("trips.viewVisit")}
                 </Link>
                 {trip.status === "upcoming" && (
                   <button
                     className="tr-cancel-btn"
                     onClick={() => onCancel(trip.id)}
                   >
-                    Cancel visit
+                    {t("trips.cancelVisit")}
                   </button>
                 )}
               </>
@@ -132,11 +134,11 @@ function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
             {trip.status === "completed" &&
               (reviewed ? (
                 <span className="tr-review-done">
-                  Review submitted <FiCheckCircle size={14} />
+                  {t("trips.reviewSubmitted")} <FiCheckCircle size={14} />
                 </span>
               ) : (
                 <button className="tr-review-btn" onClick={() => onReview(trip)}>
-                  Write a review <FiChevronRight size={14} />
+                  {t("trips.writeReview")} <FiChevronRight size={14} />
                 </button>
               ))}
             {trip.status === "cancelled" && trip.refundAmount && (
@@ -146,7 +148,7 @@ function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
         </div>
 
         <p className="tr-confirmation">
-          Confirmation code: <strong>{trip.confirmationCode}</strong>
+          {t("trips.confirmationCode")} <strong>{trip.confirmationCode}</strong>
         </p>
         {trip.status === "upcoming" && (
           <p className="tr-visit-fee-note">
@@ -160,6 +162,7 @@ function TripCard({ trip, propertyMap, onCancel, onReview, reviewed }) {
 }
 
 export default function Trips() {
+  const { t } = useTranslation("visit");
   const { currentUser } = useAuth();
   const {
     cancelTrip,
@@ -234,7 +237,7 @@ export default function Trips() {
    const handleCancel = async (tripId) => {
      try {
        await cancelTrip(tripId);
-       toast.success("Visit cancelled. Refundable fee will be returned.");
+       toast.success(t("trips.cancelledToast"));
      } catch (err) {
        toast.error(err?.message || "Failed to cancel visit");
      } finally {
@@ -244,11 +247,11 @@ export default function Trips() {
 
   const handleReviewSubmit = async () => {
     if (reviewRating === 0) {
-      toast.error("Please select a rating");
+      toast.error(t("trips.selectRating"));
       return;
     }
     if (reviewText.trim().length < 10) {
-      toast.error("Please write at least 10 characters");
+      toast.error(t("trips.minChars"));
       return;
     }
     const trip = reviewModal;
@@ -262,7 +265,7 @@ export default function Trips() {
         comment: reviewText.trim(),
       });
       setReviewedProps((prev) => new Set(prev).add(trip.propertyId));
-      toast.success("Review submitted! It now shows on the property's reviews.");
+      toast.success(t("trips.reviewDone"));
       setReviewModal(null);
       setReviewRating(0);
       setReviewText("");
@@ -277,7 +280,7 @@ export default function Trips() {
     <div className="tr-page">
       <div className="tr-container">
         <div className="tr-header-row">
-          <h1 className="tr-title">Visits</h1>
+          <h1 className="tr-title">{t("trips.title")}</h1>
           <RefreshButton onRefresh={refresh} refreshing={refreshing} />
         </div>
 
@@ -285,11 +288,11 @@ export default function Trips() {
         <div className="tr-summary">
           <div className="tr-summary-item tr-summary-item--success">
             <span className="tr-summary-value">{successful}</span>
-            <span className="tr-summary-label">Successful visits</span>
+            <span className="tr-summary-label">{t("trips.successful")}</span>
           </div>
           <div className="tr-summary-item tr-summary-item--unsuccess">
             <span className="tr-summary-value">{unsuccessful}</span>
-            <span className="tr-summary-label">Unsuccessful visits</span>
+            <span className="tr-summary-label">{t("trips.unsuccessful")}</span>
           </div>
           <div className="tr-summary-hint">
             Successful = checked in and completed. Unsuccessful = cancelled or
@@ -319,19 +322,19 @@ export default function Trips() {
             icon={<FiCalendar size={48} />}
             title={
               activeTab === "upcoming"
-                ? "No upcoming visits"
+                ? t("trips.emptyUpcoming")
                 : activeTab === "completed"
-                  ? "No completed visits yet"
-                  : "No cancelled visits"
+                  ? t("trips.emptyCompleted")
+                  : t("trips.emptyCancelled")
             }
             description={
               activeTab === "upcoming"
-                ? "Time to plan your next property visit."
+                ? t("trips.emptyUpcomingDesc")
                 : activeTab === "completed"
-                  ? "Once you complete a visit, it will show up here."
-                  : "Cancelled visits will appear here."
+                  ? t("trips.emptyCompletedDesc")
+                  : t("trips.emptyCancelledDesc")
             }
-            actionLabel={activeTab === "upcoming" ? "Start searching" : null}
+            actionLabel={activeTab === "upcoming" ? t("trips.startSearching") : null}
             onAction={
               activeTab === "upcoming" ? () => navigate("/search") : null
             }
@@ -356,7 +359,7 @@ export default function Trips() {
       {cancelConfirm && (
         <Modal
           onClose={() => setCancelConfirm(null)}
-          title="Cancel visit"
+          title={t("trips.cancelVisit")}
           size="small"
         >
           <div className="tr-modal-body">
@@ -370,13 +373,13 @@ export default function Trips() {
                 className="tr-modal-cancel"
                 onClick={() => setCancelConfirm(null)}
               >
-                Keep visit
+                {t("trips.keepVisit")}
               </button>
               <button
                 className="tr-modal-confirm"
                 onClick={() => handleCancel(cancelConfirm)}
               >
-                Cancel visit
+                {t("trips.cancelVisit")}
               </button>
             </div>
           </div>
@@ -391,7 +394,7 @@ export default function Trips() {
             setReviewRating(0);
             setReviewText("");
           }}
-          title="Write a review"
+          title={t("trips.writeReview")}
         >
           <div className="tr-review-modal">
             <p className="tr-review-property">
@@ -403,7 +406,7 @@ export default function Trips() {
             </p>
 
             <div className="tr-review-rating">
-              <p className="tr-review-rating-label">Your rating</p>
+              <p className="tr-review-rating-label">{t("trips.yourRating")}</p>
               <StarRating
                 value={reviewRating}
                 onChange={setReviewRating}
@@ -413,18 +416,18 @@ export default function Trips() {
 
             <div className="tr-review-text-wrap">
               <label className="tr-review-text-label">
-                Tell others about your experience
+                {t("trips.reviewLabel")}
               </label>
               <textarea
                 className="tr-review-textarea"
                 rows={5}
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="How was your visit? What did you enjoy most?"
+                placeholder={t("trips.reviewPlaceholder")}
                 maxLength={500}
               />
               <p className="tr-review-char-count">
-                {500 - reviewText.length} characters remaining
+                {t("trips.charsRemaining", { count: 500 - reviewText.length })}
               </p>
             </div>
 

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import useAccountPath from "../hooks/useAccountPath";
 import {
@@ -14,53 +15,20 @@ import {
 import "../styles/Account.css";
 
 export default function Account() {
+  const { t } = useTranslation("account");
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const { cardPath } = useAccountPath();
 
+  /* Copy lives in the `account` namespace under cards.<key>; icon and route
+     stay here. */
   const cards = [
-    {
-      icon: FiUser,
-      title: "Personal info",
-      desc: "Provide personal details and how we can reach you",
-      to: cardPath("personal-info"),
-      enabled: true,
-    },
-    {
-      icon: FiShield,
-      title: "Login & security",
-      desc: "Update your password and secure your account",
-      to: cardPath("login-security"),
-      enabled: true,
-    },
-    {
-      icon: FiCreditCard,
-      title: "Payments & payouts",
-      desc: "Review payments, payouts, coupons, and gift cards",
-      to: cardPath("payments"),
-      enabled: true,
-    },
-    {
-      icon: FiBell,
-      title: "Notifications",
-      desc: "Choose notification preferences and how you want to be contacted",
-      to: cardPath("notifications"),
-      enabled: true,
-    },
-    {
-      icon: FiEye,
-      title: "Privacy & sharing",
-      desc: "Manage your personal data, connected services, and data sharing settings",
-      to: cardPath("privacy"),
-      enabled: true,
-    },
-    {
-      icon: FiSliders,
-      title: "Global preferences",
-      desc: "Set your default language, currency, and timezone",
-      to: cardPath("preferences"),
-      enabled: true,
-    },
+    { key: "personalInfo", icon: FiUser, to: cardPath("personal-info"), enabled: true },
+    { key: "loginSecurity", icon: FiShield, to: cardPath("login-security"), enabled: true },
+    { key: "payments", icon: FiCreditCard, to: cardPath("payments"), enabled: true },
+    { key: "notifications", icon: FiBell, to: cardPath("notifications"), enabled: true },
+    { key: "privacy", icon: FiEye, to: cardPath("privacy"), enabled: true },
+    { key: "preferences", icon: FiSliders, to: cardPath("preferences"), enabled: true },
   ];
 
   useEffect(() => {
@@ -71,7 +39,7 @@ export default function Account() {
 
   const handleCardClick = (card) => {
     if (!card.enabled) {
-      toast.info("Coming soon");
+      toast.info(t("common:actions.comingSoon"));
     }
   };
 
@@ -80,7 +48,7 @@ export default function Account() {
       <div className="ac-container">
         {/* Header */}
         <div className="ac-header">
-          <h1 className="ac-title">Account</h1>
+          <h1 className="ac-title">{t("title")}</h1>
           <p className="ac-subtitle">
             <span className="ac-user-name">
               {currentUser.firstName} {currentUser.lastName}
@@ -98,22 +66,22 @@ export default function Account() {
             const Icon = card.icon;
             if (card.enabled && card.to) {
               return (
-                <Link to={card.to} key={card.title} className="ac-card">
+                <Link to={card.to} key={card.key} className="ac-card">
                   <Icon className="ac-card-icon" />
-                  <h3 className="ac-card-title">{card.title}</h3>
-                  <p className="ac-card-desc">{card.desc}</p>
+                  <h3 className="ac-card-title">{t(`cards.${card.key}.title`)}</h3>
+                  <p className="ac-card-desc">{t(`cards.${card.key}.desc`)}</p>
                 </Link>
               );
             }
             return (
               <button
-                key={card.title}
+                key={card.key}
                 className="ac-card ac-card--disabled"
                 onClick={() => handleCardClick(card)}
               >
                 <Icon className="ac-card-icon" />
-                <h3 className="ac-card-title">{card.title}</h3>
-                <p className="ac-card-desc">{card.desc}</p>
+                <h3 className="ac-card-title">{t(`cards.${card.key}.title`)}</h3>
+                <p className="ac-card-desc">{t(`cards.${card.key}.desc`)}</p>
               </button>
             );
           })}

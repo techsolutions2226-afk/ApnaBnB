@@ -310,10 +310,14 @@ const user = normalizeUser(response);
     }
   };
 
-  /* ── Logout ── */
+  /* ── Logout ──
+     clearRequestCache() is not optional here: requestCache holds GET results
+     for 30s and several keys are not user-scoped, so without it the next
+     account to sign in on this tab can be served the previous one's lists. */
   const logout = () => {
     authService.logout();
     disconnectSocket();
+    clearRequestCache();
     setCurrentUser(null);
     setSubscription(EMPTY_SUBSCRIPTION);
     setError(null);
@@ -328,9 +332,17 @@ const user = normalizeUser(response);
     if (!isAuthenticated) return;
 
     let timer;
+    /* Idle logout must tear down exactly what the manual one does. It used to
+       skip both of these: the socket stayed connected (the handshake is only
+       checked at connect time, so it kept delivering notifications to a
+       signed-out browser) and the request cache survived into the next
+       account's session. */
     const triggerLogout = () => {
       authService.logout();
+      disconnectSocket();
+      clearRequestCache();
       setCurrentUser(null);
+      setSubscription(EMPTY_SUBSCRIPTION);
       setError(null);
       toast.info("You were logged out due to inactivity.");
     };

@@ -43,6 +43,19 @@ export function allowedViewRoles(accountRole) {
   return [];
 }
 
+/**
+ * The member role this account actually is, or null when it is not a member
+ * account at all (admin).
+ *
+ * Callers used to write `ROLES.includes(role) ? role : "buyer"`, which quietly
+ * turned an admin into a buyer and handed them a member dashboard. Returning
+ * null forces the caller to decide what to do with a non-member instead of
+ * defaulting to a wrong answer.
+ */
+export function memberRole(accountRole) {
+  return ROLES.includes(accountRole) ? accountRole : null;
+}
+
 export function clampViewRole(accountRole, viewRole) {
   const allowed = allowedViewRoles(accountRole);
   if (allowed.includes(viewRole)) return viewRole;

@@ -8,6 +8,7 @@ const {
   sendTwoFactorCodeEmail,
   sendSecurityAlertEmail,
 } = require('../utils/mailer');
+const { createSession, describeDevice } = require('../utils/sessions');
 const {
   createChallengeToken,
   hashChallengeToken,
@@ -32,11 +33,20 @@ const RESET_RESEND_COOLDOWN_MS = 60 * 1000;     // 60 seconds
 const hashResetToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
-// Generate JWT. The version is the user's current session-invalidation counter,
-// baked in so a token minted before a logout/password change/2FA toggle is
-// rejected by verifyToken the instant the account row is re-read.
-const generateToken = (id, role, tokenVersion = 0) =>
-  jwt.sign({ id, role, tokenVersion }, process.env.JWT_SECRET, { expiresIn: '30d' });
+// Generate JWT. Two revocation handles are baked in:
+//   tokenVersion — the account-wide counter, so a token minted before a
+//                  password change / 2FA toggle / suspension is rejected the
+//                  instant the account row is re-read.
+//   sid          — this sign-in's Session row, so ONE device can be logged out
+//                  without disturbing the others. Omitted only for tokens
+//                  minted before sessions existed; verifyToken still accepts
+//                  those on tokenVersion alone.
+const generateToken = (id, role, tokenVersion = 0, sid = null) =>
+  jwt.sign(
+    sid ? { id, role, tokenVersion, sid } : { id, role, tokenVersion },
+    process.env.JWT_SECRET,
+    { expiresIn: '30d' },
+  );
 
 // 6-digit numeric OTP as a zero-padded string.
 const generateOtp = () => String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
@@ -237,6 +247,10 @@ const verifyOtp = async (req, res, next) => {
       },
     });
 
+    // Open this device's session before minting the token, so the JWT can
+    // carry its id and a later logout can end THIS sign-in alone.
+    const session = await createSession(prisma, user, req);
+
     res.status(200).json({
       id: user.id,
       name: user.name,
@@ -248,7 +262,7 @@ const verifyOtp = async (req, res, next) => {
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
       verified: true,
-      token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
+      token: generateToken(user.id, user.role, user.tokenVersion ?? 0, session.id),
       message: 'Email verified successfully.',
     });
   } catch (error) {
@@ -384,6 +398,10 @@ const loginUser = async (req, res, next) => {
       ).catch(() => {});
     }
 
+    // Open this device's session before minting the token, so the JWT can
+    // carry its id and a later logout can end THIS sign-in alone.
+    const session = await createSession(prisma, user, req);
+
     res.status(200).json({
       id: user.id,
       name: user.name,
@@ -394,7 +412,7 @@ const loginUser = async (req, res, next) => {
       phone: user.phone || '',
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
-      token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
+      token: generateToken(user.id, user.role, user.tokenVersion ?? 0, session.id),
     });
   } catch (error) {
     next(error);
@@ -555,6 +573,10 @@ const verifyTwoFactor = async (req, res, next) => {
       ).catch(() => {});
     }
 
+    // Open this device's session before minting the token, so the JWT can
+    // carry its id and a later logout can end THIS sign-in alone.
+    const session = await createSession(prisma, user, req);
+
     res.status(200).json({
       id: user.id,
       name: user.name,
@@ -565,7 +587,7 @@ const verifyTwoFactor = async (req, res, next) => {
       phone: user.phone || '',
       location: user.location || '',
       emergencyContact: user.emergencyContact || '',
-      token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
+      token: generateToken(user.id, user.role, user.tokenVersion ?? 0, session.id),
       usedRecoveryCode,
       recoveryCodesRemaining: usedRecoveryCode
         ? user.twoFactorRecoveryCodes.length - 1
@@ -645,23 +667,111 @@ const getMe = async (req, res, next) => {
   }
 };
 
-// POST /api/auth/logout — revoke the current session server-side.
-// Bumping tokenVersion invalidates every JWT minted at or before this moment,
-// including copies of this token still sitting in localStorage/sessionStorage
-// or on a stolen device. verifyToken compares the claim to the row on every
-// request, so the revocation takes effect immediately.
+/* POST /api/auth/logout — end THIS device's session server-side.
+   Revoking the one Session row is what makes logout per-device: verifyToken
+   re-reads the row on every request, so this token dies immediately while the
+   user's phone and any other browser stay signed in.
+
+   A token minted before sessions existed carries no `sid`. There is no row to
+   revoke for those, so they fall back to the old behaviour — bump
+   tokenVersion — which does sign the account out everywhere. That only
+   affects tokens already in the wild at deploy time and ages out with them. */
 const logoutUser = async (req, res) => {
   try {
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { tokenVersion: { increment: 1 } },
-    });
+    if (req.session?.id) {
+      await prisma.session.update({
+        where: { id: req.session.id },
+        data: { revokedAt: new Date() },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { tokenVersion: { increment: 1 } },
+      });
+    }
     res.status(200).json({ message: 'Logged out successfully.' });
   } catch (error) {
     // Even if the DB write fails, the client still clears its local copy; a
     // 500 here should not block the user's ability to leave. Keep the error
     // path explicit but non-fatal from the client's perspective.
     res.status(500).json({ message: 'Could not revoke the session remotely.' });
+  }
+};
+
+/* GET /api/auth/sessions — the "signed-in devices" list.
+   Returns only live sessions: anything revoked, expired, or stranded by a
+   global tokenVersion bump is already unusable and would only confuse. */
+const listSessions = async (req, res, next) => {
+  try {
+    const rows = await prisma.session.findMany({
+      where: {
+        userId: req.user.id,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+        tokenVersion: req.user.tokenVersion ?? 0,
+      },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+
+    res.status(200).json({
+      sessions: rows.map((row) => ({
+        id: row.id,
+        device: describeDevice(row.userAgent),
+        ip: row.ip || '',
+        createdAt: row.createdAt,
+        lastSeenAt: row.lastSeenAt,
+        // Lets the UI label one row "This device" and leave it out of the
+        // count it offers to sign out.
+        current: row.id === req.session?.id,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* POST /api/auth/sessions/revoke-others — sign out every OTHER device.
+   Deliberately NOT a tokenVersion bump: that would take this device down too
+   and force the user to log back in on the machine they are sitting at. */
+const revokeOtherSessions = async (req, res, next) => {
+  try {
+    // Without a sid there is no "this device" to preserve, so the only honest
+    // thing we can offer is the account-wide revocation — which logs this
+    // browser out as well. Tell the client, so it can clear up locally.
+    if (!req.session?.id) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { tokenVersion: { increment: 1 } },
+      });
+      return res.status(200).json({
+        revoked: null,
+        endedCurrentSession: true,
+        message: 'Signed out on all devices. Please sign in again on this one.',
+      });
+    }
+
+    const { count } = await prisma.session.updateMany({
+      where: {
+        userId: req.user.id,
+        id: { not: req.session.id },
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    // Anything older than the current tokenVersion was already dead, so the
+    // count reported is only what this action actually ended.
+    res.status(200).json({
+      revoked: count,
+      endedCurrentSession: false,
+      message:
+        count === 0
+          ? 'No other devices were signed in.'
+          : `Signed out ${count} other device${count === 1 ? '' : 's'}.`,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -896,7 +1006,7 @@ const verifyGoogleIdToken = async (idToken) => {
 
 // Same user payload shape as loginUser/verifyOtp so the client treats both
 // flows identically.
-const googleUserPayload = (user) => ({
+const googleUserPayload = (user, session) => ({
   id: user.id,
   name: user.name,
   email: user.email,
@@ -909,11 +1019,67 @@ const googleUserPayload = (user) => ({
   longitude: user.longitude ?? null,
   emergencyContact: user.emergencyContact || '',
   verified: true,
-  token: generateToken(user.id, user.role, user.tokenVersion ?? 0),
+  token: generateToken(user.id, user.role, user.tokenVersion ?? 0, session.id),
 });
 
+/* Single gate for an existing account arriving through Google, shared by
+   /google and /google/complete so the two can never drift apart.
+
+   Google proving the email is only the FIRST factor — exactly what a correct
+   password is on /login. Everything loginUser enforces after that point
+   (suspension, self-deactivation, and the second factor) has to be enforced
+   here too, or "Continue with Google" quietly becomes a way around all three.
+   Always answers the request. */
+const respondForExistingGoogleUser = async (req, res, user) => {
+  if (user.suspended) {
+    return res.status(403).json({
+      code: 'ACCOUNT_SUSPENDED',
+      message: 'This account has been suspended. Contact support.',
+    });
+  }
+  // Mirrors loginUser: self-deactivation is reversible and gets its own code.
+  if (user.deactivated) {
+    return res.status(403).json({
+      code: 'ACCOUNT_DEACTIVATED',
+      message: 'This account is deactivated. Contact support to reactivate it.',
+    });
+  }
+
+  // Second factor. Issue the same challenge /login does and stop here — no
+  // JWT is minted until /verify-2fa passes, so the code screen and the
+  // attempt/expiry limits behind it are identical for both sign-in routes.
+  if (user.twoFactorEnabled) {
+    const challenge = await issueTwoFactorChallenge(user);
+    if (!challenge.ok) {
+      return res.status(502).json({
+        code: 'MAIL_FAILED',
+        message: 'We could not send your sign-in code. Please try again shortly.',
+      });
+    }
+    return res.status(200).json({
+      twoFactorRequired: true,
+      method: user.twoFactorMethod,
+      challengeToken: challenge.token,
+      maskedEmail: maskEmail(user.email),
+    });
+  }
+
+  if (user.loginAlertsEnabled) {
+    sendSecurityAlertEmail(
+      user.email,
+      'New sign-in to your account',
+      'Your account was just signed in to with Google.',
+      user.name,
+    ).catch(() => {});
+  }
+
+  const session = await createSession(prisma, user, req);
+  return res.status(200).json(googleUserPayload(user, session));
+};
+
 // POST /api/auth/google — exchange a Google ID token for a session.
-//   • Existing email  → { ...user, token }
+//   • Existing email  → { ...user, token }, or a 2FA challenge when the
+//                       account has a second factor turned on
 //   • New email       → { requiresRole: true, profile: { name, email, avatar } }
 //                       (no account created yet — the client must pick a role
 //                        and confirm via POST /api/auth/google/complete)
@@ -926,13 +1092,7 @@ const googleAuth = async (req, res, next) => {
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      if (existing.suspended) {
-        return res.status(403).json({
-          code: 'ACCOUNT_SUSPENDED',
-          message: 'This account has been suspended. Contact support.',
-        });
-      }
-      return res.status(200).json(googleUserPayload(existing));
+      return respondForExistingGoogleUser(req, res, existing);
     }
 
     res.status(200).json({
@@ -991,15 +1151,11 @@ const googleComplete = async (req, res, next) => {
     const email = String(payload.email).toLowerCase();
 
     // Re-check: the account may have been created between the two calls.
+    // Same gate as /google — a row that exists here is a sign-in, not a
+    // signup, so it gets the suspension / deactivation / 2FA checks.
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      if (existing.suspended) {
-        return res.status(403).json({
-          code: 'ACCOUNT_SUSPENDED',
-          message: 'This account has been suspended. Contact support.',
-        });
-      }
-      return res.status(200).json(googleUserPayload(existing));
+      return respondForExistingGoogleUser(req, res, existing);
     }
 
     const user = await prisma.user.create({
@@ -1020,7 +1176,8 @@ const googleComplete = async (req, res, next) => {
       },
     });
 
-    res.status(201).json(googleUserPayload(user));
+    const session = await createSession(prisma, user, req);
+    res.status(201).json(googleUserPayload(user, session));
   } catch (error) {
     next(error);
   }
@@ -1028,6 +1185,8 @@ const googleComplete = async (req, res, next) => {
 
 module.exports = {
   verifyTwoFactor,
+  listSessions,
+  revokeOtherSessions,
   registerUser,
   loginUser,
   getMe,

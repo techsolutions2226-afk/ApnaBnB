@@ -1,8 +1,7 @@
 import { useOutletContext } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ROLES, clampViewRole } from "../components/dashboard/dashboardNav";
-
-const STORAGE_KEY = "dash_view_role";
+import { ROLES, memberRole, clampViewRole } from "../components/dashboard/dashboardNav";
+import { readViewRole } from "../utils/viewRoleStore";
 
 /**
  * useViewRole — the role the user is currently ACTING AS.
@@ -25,9 +24,11 @@ export const useViewRole = () => {
   const outlet = useOutletContext();
   const { currentUser } = useAuth();
 
-  const realRole = ROLES.includes(currentUser?.role)
-    ? currentUser.role
-    : "buyer";
+  /* null for an admin. Admins are redirected out of the member shell before
+     any page that uses this hook can mount (see DashboardShell), so the
+     fallback is a backstop, not the normal path — but it must not silently
+     turn an admin into a buyer the way it used to. */
+  const realRole = memberRole(currentUser?.role) || "buyer";
 
   let viewRole = outlet?.viewRole;
 
@@ -38,12 +39,10 @@ export const useViewRole = () => {
   }
 
   if (!viewRole) {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (ROLES.includes(stored)) viewRole = stored;
-    } catch {
-      /* ignore */
-    }
+    // Scoped to this user — a hat left by another account on this browser
+    // must not leak across.
+    const stored = readViewRole(currentUser?.id);
+    if (ROLES.includes(stored)) viewRole = stored;
   }
 
   if (!viewRole) viewRole = realRole;

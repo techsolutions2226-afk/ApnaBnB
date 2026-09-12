@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { NavLink, Link, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { FiChevronDown, FiSettings, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -7,27 +7,62 @@ import {
   NAV_BY_ROLE,
   ROLE_META,
   ROLES,
+  memberRole,
   allowedViewRoles,
   clampViewRole,
 } from "./dashboardNav";
+import { readViewRole, writeViewRole } from "../../utils/viewRoleStore";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
 import Seo from "../seo/Seo";
 import { privateAreaTitle } from "../../config/seo";
 
-const STORAGE_KEY = "dash_view_role";
 const THEME_KEY = "apnabnb_admin_theme";
 
 /**
- * DashboardShell — standalone dashboard app shell with a FIXED left sidebar and
- * a scrolling content area on the right. It renders no global navbar/footer —
- * the sidebar (with the apnabnb logo linking home) is the only chrome.
+ * DashboardShell — the member dashboard shell.
+ *
+ * This outer component is only a role guard. It calls two hooks and nothing
+ * else, so the early return below can never trip the rules of hooks; all the
+ * real state lives in MemberDashboardShell.
+ *
+ * Admins do not belong in here. /account/* is mounted ONLY under this shell
+ * (App.jsx), behind a ProtectedRoute with no `roles` prop, so an admin who
+ * types /account walks straight in — and the hat resolution downstream used to
+ * coerce them to "buyer" and then dress them in whatever role the last person
+ * on this browser left in localStorage. That is how an admin ended up looking
+ * at the seller dashboard.
+ *
+ * The account pages have a real admin home at /admin/account (the very same
+ * components — see useAccountPath), so those redirect there. Everything else
+ * in this shell is member-only (listings, requirements, plans), so /admin is
+ * the honest destination.
+ */
+export default function DashboardShell() {
+  const { currentUser } = useAuth();
+  const location = useLocation();
+
+  if (currentUser?.role === "admin") {
+    const target = location.pathname.startsWith("/account")
+      ? `/admin${location.pathname}${location.search}`
+      : "/admin";
+    return <Navigate to={target} replace />;
+  }
+
+  return <MemberDashboardShell />;
+}
+
+/**
+ * MemberDashboardShell — standalone dashboard app shell with a FIXED left
+ * sidebar and a scrolling content area on the right. It renders no global
+ * navbar/footer — the sidebar (with the apnabnb logo linking home) is the only
+ * chrome.
  *
  * The top-right "Viewing as" selector is constrained by permanent account role:
  * sellers/buyers may switch between those two hats; dealers stay dealer-only.
  */
-export default function DashboardShell() {
+function MemberDashboardShell() {
   const { currentUser, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,10 +80,9 @@ export default function DashboardShell() {
     }
   }, [location.pathname, markSectionRead]);
 
-  const realRole =
-    currentUser?.role && ROLES.includes(currentUser.role)
-      ? currentUser.role
-      : "buyer";
+  // null only for a non-member account, and the guard above already redirected
+  // those, so this fallback is unreachable rather than load-bearing.
+  const realRole = memberRole(currentUser?.role) || "buyer";
 
   const switchableRoles = allowedViewRoles(realRole);
   const canSwitchRoles = switchableRoles.length > 1;
@@ -58,12 +92,10 @@ export default function DashboardShell() {
     if (currentUser?.viewRole && ROLES.includes(currentUser.viewRole)) {
       candidate = currentUser.viewRole;
     } else {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored && ROLES.includes(stored)) candidate = stored;
-      } catch {
-        /* ignore */
-      }
+      // Scoped to this user: a shared browser must not hand one account the
+      // hat another account left behind.
+      const stored = readViewRole(currentUser?.id);
+      if (stored && ROLES.includes(stored)) candidate = stored;
     }
     return clampViewRole(realRole, candidate) || realRole;
   };
@@ -73,11 +105,7 @@ export default function DashboardShell() {
   const setViewRole = (role) => {
     if (!switchableRoles.includes(role)) return;
     setViewRoleState(role);
-    try {
-      localStorage.setItem(STORAGE_KEY, role);
-    } catch {
-      /* ignore */
-    }
+    writeViewRole(currentUser?.id, role);
     if (currentUser?.viewRole !== role) {
       updateProfile({ viewRole: role }).catch(() => {});
     }

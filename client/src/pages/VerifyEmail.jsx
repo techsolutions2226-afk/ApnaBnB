@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import authService from "../services/authService";
+import { disconnectSocket } from "../api/socket";
+import { clearRequestCache } from "../utils/requestCache";
 import Logo from "../components/common/Logo";
 
 const OTP_LENGTH = 6;
@@ -76,10 +78,14 @@ export default function VerifyEmail() {
         return;
       }
       toast.success("Email verified! Please log in.");
-      // Drop the token so the user is forced to log in explicitly,
-      // matching the requested flow.
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("current_user");
+      // Drop the token so the user is forced to log in explicitly, matching
+      // the requested flow. Go through authService.logout() rather than
+      // clearing storage by hand: verifyOtp opened a Session row for this
+      // device, and only the real logout revokes it instead of leaving an
+      // orphan behind on the "signed-in devices" list.
+      authService.logout();
+      disconnectSocket();
+      clearRequestCache();
       navigate("/login", { replace: true });
     } catch (err) {
       toast.error(err?.message || "Verification failed");

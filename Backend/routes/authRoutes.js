@@ -13,6 +13,8 @@ const {
   googleComplete,
   getMe,
   logoutUser,
+  listSessions,
+  revokeOtherSessions,
 } = require('../controllers/authController');
 const verifyToken = require('../middleware/authMiddleware');
 
@@ -37,6 +39,22 @@ const loginLimiter = rateLimit({
   },
 });
 
+/* The Google endpoints are the other unauthenticated entry point, and each
+   call makes an outbound request to Google to verify the token — so without a
+   cap they are both a brute-force surface and a way to burn our Google quota
+   from outside. There is no trustworthy email to key on before the token is
+   verified, so this keys on IP alone and sits well above what a real sign-in
+   needs (one /google call, plus one /google/complete for a new account). */
+const googleLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 30 : 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    message: 'Too many Google sign-in attempts. Please wait a few minutes and try again.',
+  },
+});
+
 router.post('/register', registerUser);
 router.post('/login', loginLimiter, loginUser);
 router.post('/verify-otp', verifyOtp);
@@ -52,13 +70,22 @@ router.post('/reset-password', resetPassword);
 // Returns 401/403 when the account was deleted/suspended/unverified.
 router.get('/me', verifyToken, getMe);
 
-// Server-side logout. Bumps tokenVersion so the current JWT is revoked
-// immediately — a stolen token becomes useless even if the client's copy
-// (localStorage) survives. Idempotent and safe to re-call.
+// Server-side logout. Revokes THIS device's Session row so the current JWT is
+// rejected immediately — a stolen token becomes useless even if the client's
+// copy (localStorage) survives — while the user's other devices stay signed
+// in. Idempotent and safe to re-call.
 router.post('/logout', verifyToken, logoutUser);
 
+// Signed-in devices. The list is read-only; revoke-others ends every other
+// session but deliberately keeps the caller's own, so the user is not signed
+// out of the machine they are sitting at.
+router.get('/sessions', verifyToken, listSessions);
+router.post('/sessions/revoke-others', verifyToken, revokeOtherSessions);
+
 // Google OAuth ("Continue with Google") — public, no JWT required.
-router.post('/google', googleAuth);
-router.post('/google/complete', googleComplete);
+// /google can answer with a 2FA challenge instead of a token when the account
+// has a second factor on; the client finishes it at /verify-2fa like any login.
+router.post('/google', googleLimiter, googleAuth);
+router.post('/google/complete', googleLimiter, googleComplete);
 
 module.exports = router;

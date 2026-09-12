@@ -12,6 +12,7 @@
 
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { isSessionLive } = require('../utils/sessions');
 const prisma = require('../db/prisma');
 
 let io = null;
@@ -51,6 +52,15 @@ const initSockets = (server) => {
       }
       if (user.tokenVersion > 0 && (decoded.tokenVersion ?? 0) !== user.tokenVersion) {
         return next(new Error('Session revoked'));
+      }
+      /* Per-device revocation, same test the REST middleware applies — a
+         device signed out from another browser must not keep a live socket
+         open. `sid` is absent on tokens minted before sessions existed. */
+      if (decoded.sid) {
+        const session = await prisma.session.findUnique({ where: { id: decoded.sid } });
+        if (!isSessionLive(session, user.tokenVersion)) {
+          return next(new Error('Session revoked'));
+        }
       }
       socket.userId = user.id;
       socket.role = user.role;

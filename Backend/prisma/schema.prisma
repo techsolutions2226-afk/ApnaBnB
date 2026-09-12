@@ -202,6 +202,47 @@ model User {
   wishlists         Wishlist[]
   payments          Payment[]
   notifications     Notification[]            @relation("NotificationRecipient")
+  sessions          Session[]
+}
+
+// One row per sign-in — i.e. per device/browser.
+//
+// tokenVersion on User stays the GLOBAL kill switch (password change, 2FA
+// toggle, admin suspend): bumping it retires every session at once. This table
+// is the per-device layer underneath it, so an ordinary logout can drop one
+// device without signing the user out everywhere else.
+//
+// The JWT carries this row's id as `sid`. A session counts as live only when
+// the row exists, is not revoked, has not expired, AND its `tokenVersion`
+// still matches the user's — that last condition is what lets every existing
+// tokenVersion bump invalidate sessions without touching this table.
+model Session {
+  id String @id @default(uuid())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // The user's tokenVersion at the moment this session was minted. A global
+  // revocation moves the user past it and strands every older row.
+  tokenVersion Int @default(0)
+
+  // Shown on the "Signed-in devices" list so the user can recognise which row
+  // is their phone and which is the library computer. Best-effort only.
+  userAgent String @default("")
+  ip        String @default("")
+
+  createdAt  DateTime  @default(now())
+  // Touched at most once every few minutes (see authMiddleware) — a write on
+  // every request would double the cost of every authenticated call.
+  lastSeenAt DateTime  @default(now())
+  // Mirrors the JWT's own 30-day lifetime so dead rows can be pruned.
+  expiresAt  DateTime
+  // Set by an explicit logout or by "sign out all other devices".
+  revokedAt  DateTime?
+
+  // The hot path is "load this session by id"; the list/revoke-others paths
+  // scan by user.
+  @@index([userId])
 }
 
 // In-app notifications. Unlike ActivityLog — which records who ACTED — a row

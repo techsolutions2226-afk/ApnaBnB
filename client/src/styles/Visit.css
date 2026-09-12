@@ -72,6 +72,15 @@
   }
 }
 
+/* The page shell had no mobile override at all, so a phone kept the desktop
+   40px/24px frame. Matches the .tr-page / .ac-page step-down from the same
+   40px 24px 80px desktop value. */
+@media (max-width: 640px) {
+  .vs-page {
+    padding: 24px 0 64px;
+  }
+}
+
 /* ── Card ── */
 .vs-card {
   background: #fff;

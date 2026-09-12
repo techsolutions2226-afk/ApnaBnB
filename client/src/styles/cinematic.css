@@ -701,8 +701,18 @@ html.abn-stage-live .app-header {
     gap: 0;
   }
 
-  .search-cell {
-    flex: 1 1 50%;
+  /* Stack the fields on a phone. At 50% each cell was ~168px, which truncated
+     "Search by Location" to "Search b...". This also re-asserts the full-width
+     city cell that .search-cell--city sets in the 900px block above — the old
+     `flex: 1 1 50%` shorthand reset its flex-basis and silently undid it. */
+  .search-cell,
+  .search-cell--city {
+    flex: 1 1 100%;
+  }
+
+  /* Stacked cells need a horizontal rule instead of the vertical hairline. */
+  .search-fields-row > .search-cell + .search-cell {
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
   }
 
   .search-panel--card .search-cell > .abn-s2-field,

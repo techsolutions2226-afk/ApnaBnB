@@ -272,7 +272,7 @@ const Signup = () => {
                     <motion.button
                       key={r.value}
                       type="button"
-                      className={`relative flex flex-col items-start gap-1 p-3 text-left rounded-xl border transition-colors ${
+                      className={`relative flex flex-col items-start gap-1 p-2.5 sm:p-3 text-left rounded-xl border transition-colors ${
                         shownError("role")
                           ? "border-danger-500"
                           : active
@@ -297,7 +297,7 @@ const Signup = () => {
                       >
                         {r.label}
                       </span>
-                      <span className="text-[11px] leading-tight text-slate-500">
+                      <span className="text-[10px] sm:text-[11px] leading-tight text-slate-500">
                         {r.description}
                       </span>
                       <AnimatePresence>

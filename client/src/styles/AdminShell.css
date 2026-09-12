@@ -185,7 +185,9 @@
   flex-direction: column;
 }
 
-@media (max-width: 900px) {
+/* MobileBottomNav is `md:hidden`, so it only exists below 768px. Reserving
+   space for it up to 900px left 72px of dead padding in the 768-900 band. */
+@media (max-width: 767.98px) {
   /* Keep Account / Logout above the mobile bottom nav */
   .ash-sidebar-foot {
     padding-bottom: calc(16px + 4.5rem + env(safe-area-inset-bottom, 0px));
@@ -391,8 +393,14 @@
   }
   .ash-content {
     padding: 12px;
-    padding-bottom: calc(12px + 4.5rem + env(safe-area-inset-bottom, 0px));
     overflow-x: clip;
+  }
+}
+
+/* Bottom-nav clearance only in the range where the bottom nav is rendered. */
+@media (max-width: 767.98px) {
+  .ash-content {
+    padding-bottom: calc(12px + 4.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

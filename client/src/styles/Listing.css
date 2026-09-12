@@ -1415,8 +1415,11 @@
    ══════════════════════════════════════ */
 
 @media (max-width: 768px) {
+  /* The dashboard shell's <main> already applies a 16px gutter, so repeating
+     it here double-padded the page and left the cards only 326px of a 390px
+     screen. Drop the horizontal padding and let the shell's gutter stand. */
   .lst-page {
-    padding: 24px 16px 48px;
+    padding: 24px 0 48px;
   }
 
   .lst-title {

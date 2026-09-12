@@ -9,6 +9,7 @@ router.get('/me/stats', verifyToken, getUserStats);
 // Two-segment path, so it cannot be shadowed by '/:id' below.
 // Public — full profile (including owner contact) is shown for everyone.
 router.get('/:id/profile', getUserProfile);
-router.get('/:id', getPublicUser);
+// Signed-in only: member profiles are not visible to anonymous visitors.
+router.get('/:id', verifyToken, getPublicUser);
 
 module.exports = router;

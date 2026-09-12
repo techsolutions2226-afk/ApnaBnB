@@ -1,9 +1,12 @@
 const prisma = require('../db/prisma');
+const { scrubListingContact } = require('../utils/contactVisibility');
 const { sendListingCreatedEmail } = require('../utils/mailer');
 const { parsePagination, paginated } = require('../utils/pagination');
 const { notifyUserInBackground, TYPES } = require('../utils/notifier');
 
-const ownerSelect = { select: { id: true, name: true, email: true, role: true } };
+// No email: listing endpoints are public, and this is the account's LOGIN
+// email, not a contact detail the owner chose to publish.
+const ownerSelect = { select: { id: true, name: true, role: true } };
 
 // Create Listing
 const createListing = async (req, res, next) => {
@@ -94,7 +97,9 @@ const getListings = async (req, res, next) => {
       args.take = pag.take;
     }
 
-    const listings = await prisma.listing.findMany(args);
+    const listings = (await prisma.listing.findMany(args)).map((l) =>
+      scrubListingContact(l, req.user),
+    );
 
     if (pag.enabled) {
       const total = await prisma.listing.count({ where });
@@ -140,7 +145,7 @@ const updateListing = async (req, res, next) => {
       where: { id },
       include: { property: true, owner: ownerSelect },
     });
-    res.status(200).json(listing);
+    res.status(200).json(scrubListingContact(listing, req.user));
   } catch (error) {
     next(error);
   }
@@ -161,7 +166,7 @@ const getUserListings = async (req, res, next) => {
       where,
       include: { property: true, owner: ownerSelect },
     });
-    res.status(200).json(listings);
+    res.status(200).json(listings.map((l) => scrubListingContact(l, req.user)));
   } catch (error) {
     next(error);
   }
@@ -210,7 +215,7 @@ const getListingById = async (req, res, next) => {
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found.' });
     }
-    res.status(200).json(listing);
+    res.status(200).json(scrubListingContact(listing, req.user));
   } catch (error) {
     next(error);
   }

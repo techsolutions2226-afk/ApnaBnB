@@ -18,6 +18,7 @@ const {
 const { buildPropertyData, validatePropertyData } = require('../utils/propertyData');
 const { isAllowedViewRole, viewRoleDeniedMessage } = require('../utils/roles');
 const cache = require('../utils/cache');
+const { scrubPropertyContact } = require('../utils/contactVisibility');
 const {
   rankRelatedProperties,
   buildCandidateTiers,
@@ -379,17 +380,10 @@ const getPropertyById = async (req, res, next) => {
 
     // Respect the per-listing contact toggle: when the owner hides contact,
     // withhold every field that would leak it before the payload leaves here.
-    if (property.showContact === false) {
-      delete property.contactName;
-      delete property.contactEmail;
-      delete property.contactPhone;
-      delete property.contactWhatsapp;
-      delete property.contactAltPhone;
-      if (property.listedBy) {
-        delete property.listedBy.phone;
-        delete property.listedBy.email;
-      }
-    }
+    // Shared with the listing endpoints so the toggle is enforced identically
+    // everywhere. No viewer passed: the public property page stays stripped
+    // for everyone, owners included, exactly as before.
+    scrubPropertyContact(property, null);
 
     res.status(200).json(property);
   } catch (error) {

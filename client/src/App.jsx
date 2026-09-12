@@ -140,7 +140,15 @@ function App() {
                   <Route path="/search" element={<SearchResults />} />
                   <Route path="/sale" element={<SearchResults />} />
                   <Route path="/rent" element={<SearchResults />} />
-                  <Route path="/users/:id" element={<Profile />} />
+                  {/* Member profiles are signed-in only — the API behind them is too. */}
+                  <Route
+                    path="/users/:id"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="/legal/:slug" element={<Legal />} />
                 </Route>
 

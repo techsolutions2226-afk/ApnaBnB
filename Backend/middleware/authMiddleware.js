@@ -138,4 +138,29 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+/* Optional authentication for PUBLIC reads that reveal more to the owner.
+   Runs the full verifyToken check (live DB row, suspension, tokenVersion,
+   per-device session) when a Bearer token is present, and attaches req.user
+   on success. Anything else — no token, an expired or revoked one — continues
+   anonymously instead of rejecting, because the route itself is public.
+
+   A DB failure still propagates as an error rather than silently downgrading
+   the caller to anonymous. */
+const optionalAuth = (req, res, next) => {
+  if (!req.headers.authorization?.startsWith('Bearer ')) return next();
+
+  // Swallow verifyToken's 401/403 response and fall through as anonymous.
+  const anonymous = {
+    status() { return this; },
+    json() {
+      req.user = undefined;
+      req.session = undefined;
+      next();
+      return this;
+    },
+  };
+  return verifyToken(req, anonymous, next);
+};
+
 module.exports = verifyToken;
+module.exports.optionalAuth = optionalAuth;

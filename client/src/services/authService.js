@@ -274,9 +274,6 @@ const authService = {
         idToken,
         role,
         phone: details.phone || '',
-        location: details.location || '',
-        latitude: details.latitude ?? null,
-        longitude: details.longitude ?? null,
       });
       if (response.data.token) {
         localStorage.setItem('auth_token', response.data.token);

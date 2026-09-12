@@ -77,7 +77,9 @@ const asGoogle = (email) => {
   googleProfile = { aud: CLIENT_ID, email, email_verified: true, name: 'E2E Gate', picture: '' };
 };
 
-const DETAILS = { phone: '+92 300 1112222', location: 'Test Address' };
+// Location is deliberately not collected at Google signup any more — role
+// and phone are the whole payload.
+const DETAILS = { phone: '+92 300 1112222' };
 
 (async () => {
   try {
@@ -166,6 +168,24 @@ const DETAILS = { phone: '+92 300 1112222', location: 'Test Address' };
     if (created.authProvider !== 'google' || created.password !== null || !created.verified)
       fail('created row has the wrong shape', created);
     ok('googleComplete -> account created (google provider, no password, verified)');
+
+    if (created.location) fail('signup must not store a location', created.location);
+    if (created.latitude !== null || created.longitude !== null)
+      fail('signup must not store coordinates', { lat: created.latitude, lng: created.longitude });
+    ok('signup stores no location or coordinates (only role + phone are asked for)');
+
+    // And the request must succeed with NO location key at all in the body.
+    const bare = mk('bare');
+    asGoogle(bare);
+    await call(auth.googleAuth, { idToken: 'tok' });
+    const bareRes = await call(auth.googleComplete, {
+      idToken: 'tok', role: 'buyer', phone: '+92 300 9998888',
+    });
+    if (bareRes.status !== 201 || !bareRes.body.token)
+      fail('a payload with no location field must still create the account', bareRes);
+    const bareRow = await prisma.user.findUnique({ where: { email: bare } });
+    made.push(bareRow.id);
+    ok('a payload carrying only role + phone creates the account');
 
     /* 6. Token verification failures still reject. */
     googleProfile = { aud: 'some-other-app.apps.googleusercontent.com', email: mk('x'), email_verified: true };

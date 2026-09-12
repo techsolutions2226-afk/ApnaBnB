@@ -1111,16 +1111,20 @@ const googleAuth = async (req, res, next) => {
 // POST /api/auth/google/complete — finish creating a brand-new Google account
 // once the client has chosen their role (Buyer/Seller/Dealer).
 const googleComplete = async (req, res, next) => {
-  const { idToken, role, phone, location, latitude, longitude } = req.body;
+  const { idToken, role, phone } = req.body;
 
   const VALID_ROLES = ['seller', 'buyer', 'dealer'];
   if (!role || !VALID_ROLES.includes(role)) {
     return res.status(400).json({ message: 'Please select a valid role.' });
   }
 
-  // Google's ID token carries no phone number or address, so the client
-  // collects them alongside the role. Validate here too — the client form is
-  // a convenience, not a trust boundary.
+  // Google's ID token carries no phone number, so the client collects one
+  // alongside the role. Validated here too — the client form is a
+  // convenience, not a trust boundary.
+  //
+  // Location is deliberately NOT collected at signup: it made the Google flow
+  // longer than the email one, which never asks for it. User.location stays in
+  // the schema and users can fill it in later from Personal info.
   const cleanPhone = String(phone || '').trim();
   if (!cleanPhone) {
     return res.status(400).json({ message: 'Phone number is required.' });
@@ -1128,23 +1132,6 @@ const googleComplete = async (req, res, next) => {
   if (!/^[+(\d][\d\s()-]{6,19}$/.test(cleanPhone)) {
     return res.status(400).json({ message: 'Please enter a valid phone number.' });
   }
-
-  const cleanLocation = String(location || '').trim();
-  if (!cleanLocation) {
-    return res.status(400).json({ message: 'Business address is required.' });
-  }
-  if (cleanLocation.length > 200) {
-    return res.status(400).json({ message: 'Address is too long (max 200 characters).' });
-  }
-
-  // Coordinates are optional — only present when the user used "detect my
-  // location". Store them only if both are valid, so we never persist half a
-  // point or a NaN that came in from a malformed client payload.
-  const lat = Number(latitude);
-  const lng = Number(longitude);
-  const hasCoords =
-    Number.isFinite(lat) && Number.isFinite(lng) &&
-    lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 
   try {
     const payload = await verifyGoogleIdToken(idToken);
@@ -1170,9 +1157,9 @@ const googleComplete = async (req, res, next) => {
         verified: true, // Google has already verified this email
         avatar: String(payload.picture || ''),
         phone: cleanPhone,
-        location: cleanLocation,
-        latitude: hasCoords ? lat : null,
-        longitude: hasCoords ? lng : null,
+        // Not collected at signup — the column stays, users fill it in from
+        // Personal info when they need it.
+        location: '',
       },
     });
 

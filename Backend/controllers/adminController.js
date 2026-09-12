@@ -13,6 +13,7 @@ const {
   urlToCloudinaryPublicId,
   destroyCloudinaryAsset,
   destroyRemovedPhotoUrls,
+  destroyRemovedUrls,
 } = require('../utils/cloudinaryAssets');
 // urlToCloudinaryPublicId is re-exported from cloudinaryAssets for convenience;
 // pure extractor also lives in utils/cloudinaryPublicId.js (no SDK).
@@ -167,7 +168,7 @@ const purgeUserCloudinaryAssets = async (userId) => {
     const [properties, payments, user] = await Promise.all([
       prisma.property.findMany({
         where: { listedById: userId },
-        select: { photos: true },
+        select: { photos: true, videoUrl: true },
       }),
       prisma.payment.findMany({
         where: { userId },
@@ -185,6 +186,8 @@ const purgeUserCloudinaryAssets = async (userId) => {
         const id = urlToCloudinaryPublicId(url);
         if (id) publicIds.add(id);
       });
+      const videoId = urlToCloudinaryPublicId(p.videoUrl);
+      if (videoId) publicIds.add(videoId);
     });
     payments.forEach((pay) => {
       const id = urlToCloudinaryPublicId(pay.proofUrl);
@@ -1080,6 +1083,9 @@ const updateProperty = async (req, res, next) => {
     if (Array.isArray(data.photos)) {
       destroyRemovedPhotoUrls(property.photos, updated.photos);
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'videoUrl')) {
+      destroyRemovedUrls(property.videoUrl, updated.videoUrl);
+    }
 
     // When admin changes moderation status, mirror onto linked listings where
     // the listing enum supports it (no "rejected" / "rented" on listings).
@@ -1132,6 +1138,7 @@ const deleteProperty = async (req, res, next) => {
     (property.photos || []).forEach((url) => {
       destroyCloudinaryAsset(urlToCloudinaryPublicId(url));
     });
+    destroyRemovedUrls(property.videoUrl, null);
 
     await prisma.property.delete({ where: { id } });
 

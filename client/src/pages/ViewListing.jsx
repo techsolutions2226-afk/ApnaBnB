@@ -11,6 +11,7 @@ import { useUpdateProperty } from "../hooks/useProperties";
 import { FiMapPin, FiHome, FiDollarSign, FiCalendar, FiEye, FiEdit2, FiArrowLeft, FiMaximize, FiImage, FiCheckCircle, FiXCircle, FiTrash2, FiStar } from "react-icons/fi";
 import StatusBadge from "../components/common/StatusBadge";
 import MapView from "../components/common/MapView";
+import PropertyVideo from "../components/common/PropertyVideo";
 import {
   buildPropertyOverviewRows,
   buildContactRows,
@@ -407,14 +408,10 @@ const ViewListing = () => {
                 <h3 className="req-view-card-title">Video</h3>
               </div>
               <div className="req-view-card-body">
-                <a
-                  href={property.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="req-view-value req-view-value--highlight"
-                >
-                  Watch property video
-                </a>
+                <PropertyVideo
+                  url={property.videoUrl}
+                  title={`${property.title || "Property"} video`}
+                />
               </div>
             </div>
           )}

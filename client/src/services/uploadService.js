@@ -46,6 +46,27 @@ const uploadService = {
     }
   },
 
+  // Upload a property walkthrough video — lands in the apnaBnB/videos
+  // Cloudinary folder (resource_type: video, so it streams directly).
+  uploadVideo: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const response = await apiClient.post('/upload/video', formData, {
+        // 50MB clips need more headroom than still images.
+        timeout: 5 * 60 * 1000,
+      });
+
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || {
+        success: false,
+        message: 'Failed to upload video. Please try again.',
+      };
+    }
+  },
+
   // Upload multiple images
   uploadMultiple: async (files) => {
     try {
@@ -77,6 +98,21 @@ const uploadService = {
       throw error.response?.data || {
         success: false,
         message: 'Failed to delete image.',
+      };
+    }
+  },
+
+  // Delete a property video from Cloudinary (video pipeline).
+  deleteVideo: async (publicId) => {
+    try {
+      const response = await apiClient.delete('/upload/video', {
+        params: { publicId, resourceType: 'video' },
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || {
+        success: false,
+        message: 'Failed to delete video.',
       };
     }
   },

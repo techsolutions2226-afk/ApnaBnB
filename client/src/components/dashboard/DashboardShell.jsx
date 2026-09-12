@@ -161,6 +161,50 @@ function MemberDashboardShell() {
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
+  /* Lock page scroll while the mobile drawer is open. Without this, iOS/Android
+     rubber-band / overscroll moves the fixed sidebar slightly with the page. */
+  useEffect(() => {
+    if (!navOpen) return undefined;
+
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+      bodyOverscroll: body.style.overscrollBehavior,
+      htmlOverflow: html.style.overflow,
+      htmlOverscroll: html.style.overscrollBehavior,
+    };
+
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overscrollBehavior = "none";
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+
+    return () => {
+      body.style.overflow = prev.bodyOverflow;
+      body.style.position = prev.bodyPosition;
+      body.style.top = prev.bodyTop;
+      body.style.left = prev.bodyLeft;
+      body.style.right = prev.bodyRight;
+      body.style.width = prev.bodyWidth;
+      body.style.overscrollBehavior = prev.bodyOverscroll;
+      html.style.overflow = prev.htmlOverflow;
+      html.style.overscrollBehavior = prev.htmlOverscroll;
+      window.scrollTo(0, scrollY);
+    };
+  }, [navOpen]);
+
   const items = NAV_BY_ROLE[viewRole] || [];
   const meta = ROLE_META[viewRole] || ROLE_META[realRole];
   const RoleIcon = meta.icon;
@@ -179,7 +223,7 @@ function MemberDashboardShell() {
 
   return (
     <div
-      className={`flex h-screen font-sans ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
+      className={`flex h-screen h-[100dvh] overflow-hidden font-sans ${isDark ? "bg-slate-950" : "bg-slate-50"}`}
       data-theme={theme}
     >
       <Seo
@@ -189,7 +233,7 @@ function MemberDashboardShell() {
         noindex
       />
       <aside
-        className={`fixed left-0 top-0 z-[60] h-full w-72 flex flex-col bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-[60] h-[100dvh] max-h-[100dvh] w-72 flex flex-col overflow-hidden overscroll-none bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
           navOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ "--role-accent": meta.accent }}
@@ -224,7 +268,10 @@ function MemberDashboardShell() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-2 overflow-y-auto" aria-label={t("nav.mainAriaLabel")}>
+        <nav
+          className="flex-1 min-h-0 px-3 py-2 overflow-y-auto overscroll-contain"
+          aria-label={t("nav.mainAriaLabel")}
+        >
           {items.map((item) => {
             const Icon = item.icon;
             const sectionBadge =
@@ -444,16 +491,17 @@ function MemberDashboardShell() {
 
         {navOpen && (
           <div
-            className="fixed inset-0 z-[45] bg-black/50 lg:hidden"
+            className="fixed inset-0 z-[45] bg-black/50 touch-none overscroll-none lg:hidden"
             onClick={() => setNavOpen(false)}
+            onTouchMove={(e) => e.preventDefault()}
             aria-hidden="true"
           />
         )}
 
         <main
-          className={`flex-1 overflow-y-auto px-3 py-4 sm:p-6 pb-24 md:pb-6 ${
-            isDark ? "bg-slate-950 text-slate-100" : ""
-          }`}
+          className={`flex-1 px-3 py-4 sm:p-6 pb-24 md:pb-6 ${
+            navOpen ? "overflow-hidden overscroll-none" : "overflow-y-auto"
+          } ${isDark ? "bg-slate-950 text-slate-100" : ""}`}
         >
           <Outlet context={{ viewRole, setViewRole, realRole }} />
         </main>

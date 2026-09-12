@@ -323,6 +323,16 @@
   padding: 6px 10px;
   border-radius: 6px;
 }
+.pd-gallery-count--mobile {
+  display: none;
+}
+/* Mobile swipe track — hidden on desktop; activated in the 900px breakpoint */
+.pd-gallery-swipe {
+  display: none;
+}
+.pd-gallery-dots {
+  display: none;
+}
 .pd-show-all-btn {
   display: inline-flex;
   align-items: center;
@@ -1126,8 +1136,80 @@
     grid-template-columns: 1fr;
     height: 280px;
   }
+  .pd-gallery-main,
   .pd-gallery-side {
     display: none;
+  }
+  .pd-gallery-swipe {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scrollbar-width: none;
+  }
+  .pd-gallery-swipe::-webkit-scrollbar {
+    display: none;
+  }
+  .pd-gallery-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    position: relative;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .pd-gallery-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  .pd-gallery-count--desktop {
+    display: none;
+  }
+  .pd-gallery-count--mobile {
+    display: inline;
+  }
+  .pd-gallery-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .pd-gallery-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+    transition: width 0.15s ease, background 0.15s ease;
+  }
+  .pd-gallery-dot.is-active {
+    width: 16px;
+    background: #fff;
+  }
+  /* Keep "Show all" clear of the dots */
+  .pd-gallery-actions {
+    bottom: auto;
+    top: 12px;
+    right: 12px;
   }
   .pd-sticky-nav-price {
     display: none;

@@ -1,9 +1,19 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { FiChevronLeft, FiChevronRight, FiX, FiGrid } from "react-icons/fi";
 
 export default function PropertyGallery({ gallery = [], title }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [swipeIndex, setSwipeIndex] = useState(0);
+  const trackRef = useRef(null);
+
+  const onSwipeScroll = useCallback(() => {
+    const el = trackRef.current;
+    if (!el || el.clientWidth <= 0) return;
+    const next = Math.round(el.scrollLeft / el.clientWidth);
+    const clamped = Math.max(0, Math.min(gallery.length - 1, next));
+    setSwipeIndex((prev) => (prev === clamped ? prev : clamped));
+  }, [gallery.length]);
 
   if (!gallery || gallery.length === 0) {
     return (
@@ -33,6 +43,7 @@ export default function PropertyGallery({ gallery = [], title }) {
   return (
     <>
       <div className="pd-gallery">
+        {/* Desktop / tablet mosaic */}
         <div
           className="pd-gallery-main"
           onClick={() => openLightbox(0)}
@@ -62,9 +73,38 @@ export default function PropertyGallery({ gallery = [], title }) {
           </div>
         )}
 
+        {/* Mobile: thumb-swipe carousel (scroll-snap) */}
+        <div
+          className="pd-gallery-swipe"
+          ref={trackRef}
+          onScroll={onSwipeScroll}
+          role="region"
+          aria-roledescription="carousel"
+          aria-label={title ? `${title} photos` : "Property photos"}
+        >
+          {gallery.map((src, i) => (
+            <div
+              key={`${src}-${i}`}
+              className="pd-gallery-slide"
+              onClick={() => openLightbox(i)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Photo ${i + 1} of ${gallery.length}`}
+              onKeyDown={(e) => e.key === "Enter" && openLightbox(i)}
+            >
+              <img src={src} alt={`${title || "Property"} ${i + 1}`} draggable={false} />
+            </div>
+          ))}
+        </div>
+
         <div className="pd-gallery-actions">
           <span className="pd-gallery-count">
-            {gallery.length} photo{gallery.length !== 1 ? "s" : ""}
+            <span className="pd-gallery-count--desktop">
+              {gallery.length} photo{gallery.length !== 1 ? "s" : ""}
+            </span>
+            <span className="pd-gallery-count--mobile">
+              {swipeIndex + 1} / {gallery.length}
+            </span>
           </span>
           <button
             type="button"
@@ -78,6 +118,17 @@ export default function PropertyGallery({ gallery = [], title }) {
             Show all photos
           </button>
         </div>
+
+        {gallery.length > 1 && gallery.length <= 8 && (
+          <div className="pd-gallery-dots" aria-hidden="true">
+            {gallery.map((_, i) => (
+              <span
+                key={i}
+                className={`pd-gallery-dot${i === swipeIndex ? " is-active" : ""}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {lightboxOpen && (

@@ -1,0 +1,23 @@
+/**
+ * Derive Cloudinary public_id from a delivery URL (no SDK / env required).
+ * https://res.cloudinary.com/<cloud>/image/upload/v123/path/file.jpg
+ * → "path/file"
+ */
+const urlToCloudinaryPublicId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  try {
+    const parsed = new URL(url);
+    if (!/cloudinary\.com$/i.test(parsed.hostname)) return null;
+    if (!parsed.pathname.includes('/image/upload/')) return null;
+    let rest = parsed.pathname.split('/image/upload/')[1];
+    if (!rest) return null;
+    const parts = rest.split('/');
+    if (parts[0] && /^v\d+$/.test(parts[0])) parts.shift();
+    const publicId = parts.join('/').replace(/\.[a-zA-Z0-9]+$/, '');
+    return publicId || null;
+  } catch {
+    return null;
+  }
+};
+
+module.exports = { urlToCloudinaryPublicId };

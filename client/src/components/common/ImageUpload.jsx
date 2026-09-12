@@ -81,7 +81,8 @@ const ImageUpload = ({
           file,
         };
 
-        currentImages = [...currentImages, tempImage];
+        // New uploads become the cover (index 0). Home cards use photos[0].
+        currentImages = [tempImage, ...currentImages];
         onChange(currentImages);
 
         try {
@@ -267,7 +268,7 @@ const ImageUpload = ({
 
       {images.length > 0 && (
         <p className="image-upload-instructions">
-          Drag images to reorder. First image will be the cover photo.
+          New photos become the cover. Drag to reorder — first image is the cover photo.
         </p>
       )}
     </div>

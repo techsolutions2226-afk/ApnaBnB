@@ -71,9 +71,22 @@ export const validatePhone = (value) => {
   return null;
 };
 
+/** Optional phone: empty is fine; if anything is entered it must be a valid PK mobile. */
+export const validateOptionalPhone = (value, label = "Mobile number") => {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const digits = sanitizePkPhoneDigits(raw);
+  if (!PK_PHONE_RE.test(digits)) {
+    return `Enter a valid 10-digit ${label.toLowerCase()} starting with 3`;
+  }
+  return null;
+};
+
 /** Full E.164-style value sent to the API from the local 10-digit field. */
-export const formatPkPhoneForApi = (localDigits) =>
-  `+92${sanitizePkPhoneDigits(localDigits)}`;
+export const formatPkPhoneForApi = (localDigits) => {
+  const digits = sanitizePkPhoneDigits(localDigits);
+  return digits ? `+92${digits}` : "";
+};
 
 // Exact age from a YYYY-MM-DD string, evaluated against today's calendar date.
 export const calculateAge = (dob) => {

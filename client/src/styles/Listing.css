@@ -86,6 +86,64 @@
   margin-left: 4px;
 }
 
+.lst-required {
+  color: var(--color-danger-600, #dc2626);
+  margin-left: 3px;
+  font-weight: 700;
+}
+
+.lst-phone-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.lst-phone-group:focus-within {
+  border-color: #222;
+  box-shadow: 0 0 0 2px rgba(34, 34, 34, 0.1);
+}
+
+.lst-phone-group--error {
+  border-color: var(--color-danger-600);
+}
+
+.lst-phone-group--error:focus-within {
+  border-color: var(--color-danger-600);
+  box-shadow: 0 0 0 2px rgba(193, 53, 21, 0.15);
+}
+
+.lst-phone-prefix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.lst-phone-group .lst-phone-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.lst-phone-group .lst-phone-input:focus {
+  border: none;
+  box-shadow: none;
+}
+
 .lst-check-row {
   display: inline-flex;
   align-items: center;

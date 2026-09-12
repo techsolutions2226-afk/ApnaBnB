@@ -43,9 +43,87 @@ import { CITIES, AREAS_BY_CITY } from "../../config/locations";
 import AiDescriptionBadge from "../common/AiDescriptionBadge";
 import { useAiDescription } from "../../hooks/useAiDescription";
 import { AMENITY_GROUPS } from "../../config/amenities";
-
+import {
+  sanitizePkPhoneDigits,
+  formatPkPhoneForApi,
+  validatePhone,
+  validateOptionalPhone,
+  PK_PHONE_DIGITS,
+} from "../../utils/signupValidation";
 
 import { useTranslation } from "react-i18next";
+
+/* Visual order — scroll/focus the first invalid field on submit. */
+const FIELD_FOCUS_ORDER = [
+  "propertyType",
+  "title",
+  "price",
+  "securityDeposit",
+  "leaseTerm",
+  "size",
+  "sizeUnit",
+  "city",
+  "customCity",
+  "area",
+  "customArea",
+  "coordinates",
+  "bedrooms",
+  "bathrooms",
+  "amenities",
+  "contactName",
+  "contactEmail",
+  "contactPhone",
+  "contactWhatsapp",
+  "contactAltPhone",
+  "images",
+  "videoUrl",
+  "description",
+  "notes",
+];
+
+const FIELD_FOCUS_IDS = {
+  propertyType: "lst-property-type",
+  title: "lst-title",
+  price: "lst-price",
+  securityDeposit: "lst-security-deposit",
+  leaseTerm: "lst-lease-term",
+  size: "lst-size",
+  sizeUnit: "lst-size-unit",
+  city: "lst-city",
+  customCity: "lst-custom-city",
+  area: "lst-area",
+  customArea: "lst-custom-area",
+  coordinates: "lst-coordinates",
+  bedrooms: "lst-bedrooms",
+  bathrooms: "lst-bathrooms",
+  amenities: "lst-amenities",
+  contactName: "lst-contact-name",
+  contactEmail: "lst-contact-email",
+  contactPhone: "lst-contact-phone",
+  contactWhatsapp: "lst-contact-wa",
+  contactAltPhone: "lst-contact-alt",
+  images: "lst-images",
+  videoUrl: "lst-video",
+  description: "lst-description",
+  notes: "lst-notes",
+};
+
+const focusFirstInvalid = (errorMap) => {
+  const first = FIELD_FOCUS_ORDER.find((f) => errorMap[f]);
+  if (!first) return;
+  const el = document.getElementById(FIELD_FOCUS_IDS[first]);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  if (typeof el.focus === "function") {
+    requestAnimationFrame(() => {
+      try {
+        el.focus({ preventScroll: true });
+      } catch {
+        el.focus();
+      }
+    });
+  }
+};
 /* ── Static Options ── */
 // Top-level property category — drives which sub-types the user can pick.
 const CATEGORIES = [
@@ -133,8 +211,6 @@ const LEASE_TERMS = [1, 3, 6, 12, 24, 36];
 const DESC_MAX = 2000;
 const NOTES_MAX = 1000;
 const MAX_IMAGES = 6;
-
-const PK_PHONE = /^(?:\+92|0)?3\d{9}$/;
 
 const SIZE_UNITS = [
   { value: "Sq. Ft.", labelKey: "options.sizeUnit.squareFeet" },
@@ -286,15 +362,23 @@ const EMPTY_FORM = {
   commCorner: false,
 };
 
-/* ── Validation ── */
-const validate = (data) => {
+/* ── Validation ──
+   Required (must ship a usable marketplace listing):
+   purpose/category (defaults always set), propertyType, title, price, size,
+   sizeUnit, city/area, map pin, description, ≥1 amenity, ≥1 photo,
+   contact name + email + PK mobile; bedrooms/bathrooms for homes;
+   security deposit + lease term for rent.
+   Optional: WhatsApp / alt phone (format-checked if filled), video, notes,
+   condition, furnishing, locality extras, plot/commercial bags. */
+const validate = (data, t) => {
   const errors = {};
+  const tr = typeof t === "function" ? t : (key) => key;
 
-  if (!data.title.trim()) errors.title = t("validation.titleRequired");
+  if (!data.title.trim()) errors.title = tr("validation.titleRequired");
   else if (data.title.trim().length < 10)
-    errors.title = t("validation.titleMin");
+    errors.title = tr("validation.titleMin");
   else if (data.title.trim().length > 120)
-    errors.title = t("validation.titleMax");
+    errors.title = tr("validation.titleMax");
 
   if (!data.purpose) errors.purpose = "Choose Sale or Rent";
   if (!data.category) errors.category = "Pick a property category";
@@ -317,7 +401,7 @@ const validate = (data) => {
   if (!data.city) {
     errors.city = "Select a city";
   } else if (data.city === "Other" && !data.customCity.trim()) {
-    errors.customCity = t("placeholders.city");
+    errors.customCity = tr("placeholders.city");
   }
 
   if (data.city === "Other") {
@@ -335,11 +419,11 @@ const validate = (data) => {
       errors.bathrooms = "Enter bathrooms count";
   }
 
-  if (!data.description.trim()) errors.description = t("validation.descRequired");
+  if (!data.description.trim()) errors.description = tr("validation.descRequired");
   else if (data.description.trim().length < 20)
-    errors.description = t("validation.descMin");
+    errors.description = tr("validation.descMin");
   else if (data.description.trim().length > DESC_MAX)
-    errors.description = t("validation.descMax", { max: DESC_MAX });
+    errors.description = tr("validation.descMax", { max: DESC_MAX });
 
   if (data.notes && data.notes.length > NOTES_MAX)
     errors.notes = `Notes must be at most ${NOTES_MAX} characters`;
@@ -382,31 +466,23 @@ const validate = (data) => {
   }
 
   if (!data.contactName?.trim()) errors.contactName = "Contact name is required";
-  if (!data.contactEmail?.trim()) errors.contactEmail = t("validation.emailRequired");
+  if (!data.contactEmail?.trim()) errors.contactEmail = tr("validation.emailRequired");
   else if (!/\S+@\S+\.\S+/.test(data.contactEmail))
-    errors.contactEmail = t("validation.emailInvalid");
-  if (!data.contactPhone?.trim()) errors.contactPhone = "Contact phone is required";
-  else if (!PK_PHONE.test(String(data.contactPhone).replace(/[\s-]/g, "")))
-    errors.contactPhone = "Enter a valid Pakistani mobile (03XXXXXXXXX)";
-  if (
-    data.contactWhatsapp?.trim() &&
-    !PK_PHONE.test(String(data.contactWhatsapp).replace(/[\s-]/g, ""))
-  ) {
-    errors.contactWhatsapp = t("validation.whatsappInvalid");
-  }
-  if (
-    data.contactAltPhone?.trim() &&
-    !PK_PHONE.test(String(data.contactAltPhone).replace(/[\s-]/g, ""))
-  ) {
-    errors.contactAltPhone = "Enter a valid alternate phone";
-  }
+    errors.contactEmail = tr("validation.emailInvalid");
+
+  const phoneErr = validatePhone(data.contactPhone);
+  if (phoneErr) errors.contactPhone = phoneErr;
+  const waErr = validateOptionalPhone(data.contactWhatsapp, "WhatsApp number");
+  if (waErr) errors.contactWhatsapp = waErr;
+  const altErr = validateOptionalPhone(data.contactAltPhone, "alternate phone");
+  if (altErr) errors.contactAltPhone = altErr;
 
   return errors;
 };
 
 /* Red asterisk indicator used on every required label. */
 const Required = () => (
-  <span style={{ color: "#d32f2f", marginLeft: 2 }} aria-hidden="true">
+  <span className="lst-required" aria-hidden="true">
     *
   </span>
 );
@@ -544,9 +620,9 @@ const ListingForm = ({
         : "",
       contactName: initialData.contactName || "",
       contactEmail: initialData.contactEmail || "",
-      contactPhone: initialData.contactPhone || "",
-      contactWhatsapp: initialData.contactWhatsapp || "",
-      contactAltPhone: initialData.contactAltPhone || "",
+      contactPhone: sanitizePkPhoneDigits(initialData.contactPhone || ""),
+      contactWhatsapp: sanitizePkPhoneDigits(initialData.contactWhatsapp || ""),
+      contactAltPhone: sanitizePkPhoneDigits(initialData.contactAltPhone || ""),
       showWhatsapp: initialData.showWhatsapp !== false,
       showContact: initialData.showContact !== false,
       plotNumber: initialData.plotNumber || "",
@@ -579,9 +655,15 @@ const ListingForm = ({
     return loadListingDraft(draftKey);
   }, [initialData, draftKey]);
 
-  const [form, setForm] = useState(() =>
-    restoredDraft?.form ? { ...defaults, ...restoredDraft.form } : defaults,
-  );
+  const [form, setForm] = useState(() => {
+    const base = restoredDraft?.form ? { ...defaults, ...restoredDraft.form } : defaults;
+    return {
+      ...base,
+      contactPhone: sanitizePkPhoneDigits(base.contactPhone || ""),
+      contactWhatsapp: sanitizePkPhoneDigits(base.contactWhatsapp || ""),
+      contactAltPhone: sanitizePkPhoneDigits(base.contactAltPhone || ""),
+    };
+  });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   // Index of the currently visible amenity group (Main Features / Business…
@@ -610,7 +692,9 @@ const ListingForm = ({
       const patch = {};
       if (!prev.contactName && currentUser.name) patch.contactName = currentUser.name;
       if (!prev.contactEmail && currentUser.email) patch.contactEmail = currentUser.email;
-      if (!prev.contactPhone && currentUser.phone) patch.contactPhone = currentUser.phone;
+      if (!prev.contactPhone && currentUser.phone) {
+        patch.contactPhone = sanitizePkPhoneDigits(currentUser.phone);
+      }
       if (Object.keys(patch).length === 0) return prev;
       return { ...prev, ...patch };
     });
@@ -749,6 +833,13 @@ const ListingForm = ({
       }
     },
     [errors, onPurposeChange],
+  );
+
+  const handlePhoneChange = useCallback(
+    (field, raw) => {
+      handleChange(field, sanitizePkPhoneDigits(raw));
+    },
+    [handleChange],
   );
 
   const handleBlur = useCallback((field) => {
@@ -897,7 +988,7 @@ const ListingForm = ({
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      const validationErrors = validate({ ...form, videoUploading });
+      const validationErrors = validate({ ...form, videoUploading }, t);
       setErrors(validationErrors);
 
       /* Mark all as touched so errors show */
@@ -905,7 +996,10 @@ const ListingForm = ({
       Object.keys(EMPTY_FORM).forEach((k) => (allTouched[k] = true));
       setTouched(allTouched);
 
-      if (Object.keys(validationErrors).length > 0) return;
+      if (Object.keys(validationErrors).length > 0) {
+        focusFirstInvalid(validationErrors);
+        return;
+      }
 
       /* Build clean output — resolve "Other" placeholders to their custom text. */
       const finalCity =
@@ -959,16 +1053,16 @@ const ListingForm = ({
         availableFrom: form.availableFrom || undefined,
         contactName: form.contactName.trim(),
         contactEmail: form.contactEmail.trim(),
-        contactPhone: form.contactPhone.trim(),
-        contactWhatsapp: form.contactWhatsapp?.trim() || "",
-        contactAltPhone: form.contactAltPhone?.trim() || "",
+        contactPhone: formatPkPhoneForApi(form.contactPhone),
+        contactWhatsapp: formatPkPhoneForApi(form.contactWhatsapp),
+        contactAltPhone: formatPkPhoneForApi(form.contactAltPhone),
         showWhatsapp: form.showWhatsapp !== false,
         showContact: form.showContact !== false,
       };
 
       onSubmit(output);
     },
-    [form, onSubmit, videoUploading],
+    [form, onSubmit, videoUploading, t],
   );
 
   /* ── Error display helper ── */
@@ -976,11 +1070,37 @@ const ListingForm = ({
   const fieldClass = (base, field) =>
     `${base}${showError(field) ? ` ${base}--error` : ""}`;
 
+  const renderPhoneInput = (id, field) => (
+    <div
+      className={`lst-phone-group${showError(field) ? " lst-phone-group--error" : ""}`}
+    >
+      <span className="lst-phone-prefix" aria-hidden="true">
+        +92
+      </span>
+      <input
+        id={id}
+        type="tel"
+        inputMode="numeric"
+        autoComplete="tel-national"
+        className="lst-input lst-phone-input"
+        placeholder="3XX XXXXXXX"
+        value={form[field]}
+        onChange={(e) => handlePhoneChange(field, e.target.value)}
+        onBlur={() => handleBlur(field)}
+        maxLength={PK_PHONE_DIGITS}
+        aria-invalid={!!showError(field)}
+      />
+    </div>
+  );
+
   return (
     <form className="lst-form" onSubmit={handleSubmit} noValidate>
       {/* ── 1. Select Purpose ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">1. Purpose</h3>
+        <h3 className="lst-form-section-title">
+          1. Purpose
+          <Required />
+        </h3>
         <p className="lst-form-section-sub">{t("steps.purposePrompt")}</p>
         <div className="lst-purpose-row">
           {PURPOSES.map((p) => {
@@ -1003,8 +1123,11 @@ const ListingForm = ({
       </div>
 
       {/* ── 2. Select Property Type ── */}
-      <div className="lst-form-section">
-        <h3 className="lst-form-section-title">2. Property Type</h3>
+      <div className="lst-form-section" id="lst-property-type">
+        <h3 className="lst-form-section-title">
+          2. Property Type
+          <Required />
+        </h3>
         <p className="lst-form-section-sub">{t("steps.categoryPrompt")}</p>
 
         {/* Category cards */}
@@ -1061,6 +1184,7 @@ const ListingForm = ({
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-title">
             {t("fields.title")}
+            <Required />
           </label>
           <input
             id="lst-title"
@@ -1080,6 +1204,7 @@ const ListingForm = ({
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-price">
             {form.purpose === "rent" ? "Monthly Rent" : "Price"}
+            <Required />
             <span className="lst-label-hint">
               {form.purpose === "rent" ? "(PKR / month)" : "(PKR)"}
             </span>
@@ -1115,11 +1240,13 @@ const ListingForm = ({
           <>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">
+                <label className="lst-label" htmlFor="lst-security-deposit">
                   {t("fields.securityDeposit")}
+                  <Required />
                   <span className="lst-label-hint">(PKR)</span>
                 </label>
                 <input
+                  id="lst-security-deposit"
                   type="text"
                   inputMode="numeric"
                   className={fieldClass("lst-input", "securityDeposit")}
@@ -1159,16 +1286,24 @@ const ListingForm = ({
             </div>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label">{t("fields.minRentalPeriod")}</label>
+                <label className="lst-label" htmlFor="lst-lease-term">
+                  {t("fields.minRentalPeriod")}
+                  <Required />
+                </label>
                 <select
-                  className="lst-select"
+                  id="lst-lease-term"
+                  className={fieldClass("lst-select", "leaseTerm")}
                   value={form.leaseTerm}
                   onChange={(e) => handleChange("leaseTerm", Number(e.target.value))}
+                  onBlur={() => handleBlur("leaseTerm")}
                 >
                   {LEASE_TERMS.map((m) => (
                     <option key={m} value={m}>{m} month{m > 1 ? "s" : ""}</option>
                   ))}
                 </select>
+                {showError("leaseTerm") && (
+                  <div className="lst-error">{errors.leaseTerm}</div>
+                )}
               </div>
               <div className="lst-field">
                 <label className="lst-label">{t("fields.availableFrom")}</label>
@@ -1188,6 +1323,7 @@ const ListingForm = ({
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-size">
               Size {form.sizeUnit ? `(${form.sizeUnit})` : ""}
+              <Required />
             </label>
             <input
               id="lst-size"
@@ -1205,9 +1341,13 @@ const ListingForm = ({
           </div>
 
           <div className="lst-field">
-            <label className="lst-label">Unit</label>
+            <label className="lst-label" htmlFor="lst-size-unit">
+              Unit
+              <Required />
+            </label>
             <button
               type="button"
+              id="lst-size-unit"
               className={`lst-unit-trigger${
                 showError("sizeUnit") ? " lst-unit-trigger--error" : ""
               }`}
@@ -1265,6 +1405,7 @@ const ListingForm = ({
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-city">
               City
+              <Required />
             </label>
             <select
               id="lst-city"
@@ -1282,6 +1423,7 @@ const ListingForm = ({
             </select>
             {form.city === "Other" && (
               <input
+                id="lst-custom-city"
                 type="text"
                 className={fieldClass("lst-input", "customCity")}
                 placeholder={t("placeholders.city")}
@@ -1302,11 +1444,12 @@ const ListingForm = ({
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-area">
               Area
+              <Required />
             </label>
             {form.city === "Other" ? (
               // Custom city → free-text area only (no dropdown).
               <input
-                id="lst-area"
+                id="lst-custom-area"
                 type="text"
                 className={fieldClass("lst-input", "customArea")}
                 placeholder={t("placeholders.locality")}
@@ -1347,6 +1490,7 @@ const ListingForm = ({
           {form.city !== "Other" && form.area === "Other" && (
             <div className="lst-field lst-custom-area">
               <input
+                id="lst-custom-area"
                 type="text"
                 className={fieldClass("lst-input", "customArea")}
                 placeholder={t("placeholders.locality")}
@@ -1408,9 +1552,10 @@ const ListingForm = ({
         </div>
 
         {/* Map pin — three input modes */}
-        <div className="lst-field">
+        <div className="lst-field" id="lst-coordinates" tabIndex={-1}>
           <label className="lst-label" htmlFor="lst-location-mode">
             {t("location.prompt")}
+            <Required />
           </label>
           <select
             id="lst-location-mode"
@@ -1606,7 +1751,10 @@ const ListingForm = ({
           <>
             <div className="lst-row">
               <div className="lst-field">
-                <label className="lst-label" htmlFor="lst-bedrooms">{t("fields.bedrooms")}</label>
+                <label className="lst-label" htmlFor="lst-bedrooms">
+                  {t("fields.bedrooms")}
+                  <Required />
+                </label>
                 <input
                   id="lst-bedrooms"
                   type="number"
@@ -1621,7 +1769,10 @@ const ListingForm = ({
                 {showError("bedrooms") && <div className="lst-error">{errors.bedrooms}</div>}
               </div>
               <div className="lst-field">
-                <label className="lst-label" htmlFor="lst-bathrooms">{t("fields.bathrooms")}</label>
+                <label className="lst-label" htmlFor="lst-bathrooms">
+                  {t("fields.bathrooms")}
+                  <Required />
+                </label>
                 <input
                   id="lst-bathrooms"
                   type="number"
@@ -1784,8 +1935,11 @@ const ListingForm = ({
       </div>
 
       {/* ── {t("sections.features")} (grouped, zameen-style) ── */}
-      <div className="lst-form-section">
-        <h3 className="lst-form-section-title">{t("sections.features")}</h3>
+      <div className="lst-form-section" id="lst-amenities" tabIndex={-1}>
+        <h3 className="lst-form-section-title">
+          {t("sections.features")}
+          <Required />
+        </h3>
         <p className="lst-form-section-sub">
           {t("sections.featuresHint")}
         </p>
@@ -1897,6 +2051,7 @@ const ListingForm = ({
         <div className="lst-field">
           <label className="lst-label" htmlFor="lst-contact-name">
             {t("fields.fullName")}
+            <Required />
           </label>
           <input
             id="lst-contact-name"
@@ -1916,6 +2071,7 @@ const ListingForm = ({
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-email">
               {t("fields.email")}
+              <Required />
             </label>
             <input
               id="lst-contact-email"
@@ -1933,16 +2089,9 @@ const ListingForm = ({
           <div className="lst-field">
             <label className="lst-label" htmlFor="lst-contact-phone">
               {t("fields.mobile")}
+              <Required />
             </label>
-            <input
-              id="lst-contact-phone"
-              type="tel"
-              className={fieldClass("lst-input", "contactPhone")}
-              placeholder="03XXXXXXXXX"
-              value={form.contactPhone}
-              onChange={(e) => handleChange("contactPhone", e.target.value)}
-              onBlur={() => handleBlur("contactPhone")}
-            />
+            {renderPhoneInput("lst-contact-phone", "contactPhone")}
             {showError("contactPhone") && (
               <div className="lst-error">{errors.contactPhone}</div>
             )}
@@ -1954,15 +2103,7 @@ const ListingForm = ({
             <label className="lst-label" htmlFor="lst-contact-wa">
               {t("fields.whatsapp")}
             </label>
-            <input
-              id="lst-contact-wa"
-              type="tel"
-              className={fieldClass("lst-input", "contactWhatsapp")}
-              placeholder="03XXXXXXXXX"
-              value={form.contactWhatsapp}
-              onChange={(e) => handleChange("contactWhatsapp", e.target.value)}
-              onBlur={() => handleBlur("contactWhatsapp")}
-            />
+            {renderPhoneInput("lst-contact-wa", "contactWhatsapp")}
             {showError("contactWhatsapp") && (
               <div className="lst-error">{errors.contactWhatsapp}</div>
             )}
@@ -1971,15 +2112,7 @@ const ListingForm = ({
             <label className="lst-label" htmlFor="lst-contact-alt">
               {t("fields.alternatePhone")}
             </label>
-            <input
-              id="lst-contact-alt"
-              type="tel"
-              className={fieldClass("lst-input", "contactAltPhone")}
-              placeholder="03XXXXXXXXX"
-              value={form.contactAltPhone}
-              onChange={(e) => handleChange("contactAltPhone", e.target.value)}
-              onBlur={() => handleBlur("contactAltPhone")}
-            />
+            {renderPhoneInput("lst-contact-alt", "contactAltPhone")}
             {showError("contactAltPhone") && (
               <div className="lst-error">{errors.contactAltPhone}</div>
             )}
@@ -2007,17 +2140,24 @@ const ListingForm = ({
 
       {/* ── Images ── */}
       <div className="lst-form-section">
-        <h3 className="lst-form-section-title">{t("sections.media")}</h3>
+        <h3 className="lst-form-section-title">
+          {t("sections.media")}
+        </h3>
         <p className="lst-form-section-sub">
           Upload 1–{MAX_IMAGES} photos (JPG, PNG, WEBP). New photos become the cover — drag to reorder.
         </p>
 
-        <div className="lst-field">
+        <div className="lst-field" id="lst-images" tabIndex={-1}>
           <ImageUpload
             images={form.images || []}
             onChange={(newImages) => handleChange("images", newImages)}
             maxImages={MAX_IMAGES}
-            label={t("media.images")}
+            label={
+              <>
+                {t("media.images")}
+                <Required />
+              </>
+            }
             helperText={t("media.imagesHelper", { max: MAX_IMAGES })}
           />
           {showError("images") && (
@@ -2025,7 +2165,7 @@ const ListingForm = ({
           )}
         </div>
 
-        <div className="lst-field">
+        <div className="lst-field" id="lst-video" tabIndex={-1}>
           <VideoUpload
             value={form.videoUrl || ""}
             onChange={(url) => {
@@ -2047,8 +2187,9 @@ const ListingForm = ({
         <h3 className="lst-form-section-title">{t("sections.description")}</h3>
 
         <div className="lst-field">
-          <label className="lst-label" htmlFor="lst-desc">
+          <label className="lst-label" htmlFor="lst-description">
             {t("fields.propertyDescription")}
+            <Required />
           </label>
           <AiDescriptionBadge
             loading={ai.loading}
@@ -2057,7 +2198,7 @@ const ListingForm = ({
             onRegenerate={ai.regenerate}
           />
           <textarea
-            id="lst-desc"
+            id="lst-description"
             className={fieldClass("lst-textarea", "description")}
             placeholder={t("media.aiHint")}
             value={form.description}

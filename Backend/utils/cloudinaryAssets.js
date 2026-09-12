@@ -2,7 +2,7 @@
  * Cloudinary destroy helpers (requires CLOUDINARY_* env via config/cloudinary).
  */
 const { cloudinary } = require('../config/cloudinary');
-const { urlToCloudinaryAsset } = require('./cloudinaryPublicId');
+const { urlToCloudinaryAsset, urlToCloudinaryPublicId } = require('./cloudinaryPublicId');
 
 const destroyCloudinaryAsset = (publicId, options = {}) => {
   if (!publicId) return;
@@ -32,6 +32,10 @@ const destroyRemovedUrls = (previous = [], next = []) => {
 const destroyRemovedPhotoUrls = destroyRemovedUrls;
 
 module.exports = {
+  // Re-exported so callers that only need the id (adminController's purge)
+  // have one import for all Cloudinary helpers. Dropping it breaks account
+  // deletion's asset cleanup at runtime, not at build time.
+  urlToCloudinaryPublicId,
   urlToCloudinaryAsset,
   destroyCloudinaryAsset,
   destroyCloudinaryUrl,

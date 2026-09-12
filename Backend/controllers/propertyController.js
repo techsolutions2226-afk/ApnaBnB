@@ -323,6 +323,9 @@ const updateProperty = async (req, res, next) => {
     if (Object.prototype.hasOwnProperty.call(data, 'videoUrl')) {
       destroyRemovedUrls(existing.videoUrl, property?.videoUrl);
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'videoUrl')) {
+      destroyRemovedPhotoUrls(existing.videoUrl, property?.videoUrl);
+    }
 
     res.status(200).json(property);
   } catch (error) {

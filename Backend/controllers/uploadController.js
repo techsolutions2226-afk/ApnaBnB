@@ -1,11 +1,6 @@
 const { cloudinary } = require('../config/cloudinary');
 const prisma = require('../db/prisma');
 
-// A user may only delete images out of their OWN property photo sets (or
-// brand-new uploads that haven't been attached to any listing yet and live in
-// the property_images folder). Images that belong to somebody else's listing
-// are off-limits — so a leaked/guessed publicId can't be used to sabotage
-// another seller's photos. Admins can delete anything.
 const isPhotoAttachedTo = (publicId, properties) =>
   properties.some((p) =>
     (p.photos || []).some((url) => String(url).includes(publicId)),
@@ -28,8 +23,8 @@ const uploadImage = async (req, res, next) => {
     // (`url` + `public_id`) is identical and clients can't tell the difference.
     const isVideo = String(req.file.mimetype || '').startsWith('video/');
     const imageData = {
-      url: req.file.path, // Cloudinary URL
-      public_id: req.file.filename, // Cloudinary public ID
+      url: req.file.path,
+      public_id: req.file.filename,
       originalName: req.file.originalname,
       size: req.file.size,
       resource_type: isVideo ? 'video' : 'image',
@@ -41,22 +36,20 @@ const uploadImage = async (req, res, next) => {
       image: imageData,
     });
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('Error uploading file:', error);
     next(error);
   }
 };
 
-// Upload multiple images to Cloudinary
 const uploadMultipleImages = async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: 'No image files provided' });
     }
 
-    // Return array of uploaded file info
     const images = req.files.map((file) => ({
-      url: file.path, // Cloudinary URL
-      public_id: file.filename, // Cloudinary public ID
+      url: file.path,
+      public_id: file.filename,
       originalName: file.originalname,
       size: file.size,
     }));
@@ -64,7 +57,7 @@ const uploadMultipleImages = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Images uploaded successfully',
-      images: images,
+      images,
     });
   } catch (error) {
     console.error('Error uploading images:', error);
@@ -87,7 +80,6 @@ const deleteImage = async (req, res, next) => {
       return res.status(400).json({ message: 'Public ID is required' });
     }
 
-    // Ownership scoping (non-admins only).
     if (req.user?.role !== 'admin') {
       const folder = resourceType === 'video'
         ? (process.env.CLOUDINARY_VIDEO_FOLDER || 'apnaBnB/videos').replace(/\/+$/, '')

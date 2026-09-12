@@ -77,7 +77,18 @@
     "images": "Property Images",
     "video": "Property Video",
     "aiHint": "Click here and AI will draft this from the details above — or write your own.",
-    "notesPlaceholder": "Anything else buyers should know…"
+    "notesPlaceholder": "Anything else buyers should know…",
+    "optional": "optional",
+    "videoHelper": "Drag & drop a walkthrough video or click to browse",
+    "videoReplace": "Drop a new video to replace it",
+    "videoFormats": "MP4 / MOV / WEBM / MKV / AVI • Max {{max}}MB",
+    "videoRemove": "Remove video",
+    "videoUploading": "Uploading video…",
+    "videoUploaded": "Video uploaded successfully",
+    "videoBadType": "Invalid file type. Only MP4, MOV, WEBM, MKV, and AVI videos are allowed.",
+    "videoTooLarge": "File is too large. Maximum size is {{max}}MB.",
+    "videoFailed": "Failed to upload video. Please try again.",
+    "imagesHelper": "Drag & drop or browse (Max {{max}}, 5MB each). New photos become the cover."
   },
   "options": {
     "purpose": {

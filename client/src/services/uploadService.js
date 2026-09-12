@@ -3,10 +3,6 @@ import apiClient from '../api/apiClient';
 const UPLOAD_TIMEOUT_MS = 60000;
 
 const uploadService = {
-  // Upload single image — used for property photos. Lands in the
-  // property_images Cloudinary folder.
-  // Do not set Content-Type manually; apiClient strips it for FormData so the
-  // browser can attach the multipart boundary multer needs.
   uploadSingle: async (file) => {
     try {
       const formData = new FormData();
@@ -25,9 +21,6 @@ const uploadService = {
     }
   },
 
-  // Upload a profile picture — lands in the Profile-Images Cloudinary folder
-  // (separate from property photos), square-cropped to 400×400 with face-aware
-  // gravity so the user's face stays centred.
   uploadProfileImage: async (file) => {
     try {
       const formData = new FormData();

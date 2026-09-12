@@ -39,8 +39,13 @@ test('urlToCloudinaryPublicId: returns null for external (non-Cloudinary) URLs',
 });
 
 test('urlToCloudinaryPublicId: returns null for non-upload paths', () => {
-  const url = 'https://res.cloudinary.com/demo/video/upload/v1/apnaBnB/movie.mp4';
+  const url = 'https://res.cloudinary.com/demo/raw/upload/v1/apnaBnB/doc.pdf';
   assert.equal(urlToCloudinaryPublicId(url), null);
+});
+
+test('urlToCloudinaryPublicId: extracts public id from a video delivery URL', () => {
+  const url = 'https://res.cloudinary.com/demo/video/upload/v1/apnaBnB/videos/walkthrough.mp4';
+  assert.equal(urlToCloudinaryPublicId(url), 'apnaBnB/videos/walkthrough');
 });
 
 test('kickUser: no-ops safely when sockets are not initialised', () => {

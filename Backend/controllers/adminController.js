@@ -1133,8 +1133,7 @@ const deleteProperty = async (req, res, next) => {
       return res.status(404).json({ message: 'Property not found.' });
     }
 
-    // Purge the property's Cloudinary photos before the row (and its URLs)
-    // disappears. Fire-and-forget — a failed destroy must not abort the delete.
+    // Purge the property's Cloudinary photos/video before the row disappears.
     (property.photos || []).forEach((url) => {
       destroyCloudinaryAsset(urlToCloudinaryPublicId(url));
     });

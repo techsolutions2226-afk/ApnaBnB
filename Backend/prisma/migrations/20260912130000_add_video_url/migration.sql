@@ -1,5 +1,12 @@
 -- AddVideoUrl — Property walkthrough video (Cloudinary URL).
--- The schema declared videoUrl for a long time without a migration ever
--- creating the column; this closes that gap so listing saves that include a
--- video don't fail on a missing column.
-ALTER TABLE "Property" ADD COLUMN "videoUrl" TEXT;
+--
+-- schema.prisma has declared Property.videoUrl since 72b2752, but no migration
+-- ever created the column: it was added to the development database by hand.
+-- A fresh `prisma migrate deploy` therefore produced a database without it,
+-- and every property read/write would fail on the missing column.
+--
+-- IF NOT EXISTS because the column IS already present on databases that were
+-- patched directly — same convention as 20260906223231_add_token_version.
+-- Without it this migration fails with "column already exists" on exactly the
+-- databases that have been running the feature.
+ALTER TABLE "Property" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;

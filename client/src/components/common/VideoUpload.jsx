@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { FaVideo, FaTimes, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import uploadService from '../../services/uploadService';
 import { urlToCloudinaryPublicId } from '../../utils/cloudinaryUrl';
 import '../../styles/VideoUpload.css';
@@ -18,18 +19,16 @@ const MAX_SIZE_MB = 50;
 
 /* ── VideoUpload — single property walkthrough video ──
    Drag & drop (or browse) one video, upload it straight to Cloudinary, and
-   surface the resulting URL via onChange. The user never pastes a link — the
-   file itself is uploaded. Mirrors ImageUpload's upload-immediately contract:
-   the owning form is told via onUploadingChange while a file is in flight so
-   it can block submission until the cloud URL is ready. */
+   surface the resulting URL via onChange. */
 const VideoUpload = ({
   value = "",
   onChange,
   onUploadingChange,
-  label = "Property Video",
-  helperText = "Drag & drop a video here or click to browse",
+  label,
+  helperText,
   maxSizeMB = MAX_SIZE_MB,
 }) => {
+  const { t } = useTranslation("listing");
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -43,7 +42,6 @@ const VideoUpload = ({
     [onUploadingChange]
   );
 
-  // Revoke a stale object URL when the preview changes or unmounts.
   useEffect(() => {
     return () => {
       if (previewUrl?.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
@@ -52,10 +50,10 @@ const VideoUpload = ({
 
   const validateFile = (file) => {
     if (!VIDEO_MIME_TYPES.includes(file.type)) {
-      return "Invalid file type. Only MP4, MOV, WEBM, MKV, and AVI videos are allowed.";
+      return t("media.videoBadType");
     }
     if (file.size > maxSizeMB * 1024 * 1024) {
-      return `File is too large. Maximum size is ${maxSizeMB}MB.`;
+      return t("media.videoTooLarge", { max: maxSizeMB });
     }
     return null;
   };
@@ -79,8 +77,7 @@ const VideoUpload = ({
 
   const handleFile = useCallback(
     async (file) => {
-      if (!file) return;
-      if (isUploading) return;
+      if (!file || isUploading) return;
 
       const validationError = validateFile(file);
       if (validationError) {
@@ -99,7 +96,6 @@ const VideoUpload = ({
           URL.revokeObjectURL(objectUrl);
           setPreviewUrl("");
           onChange(response.image.url);
-          // Replace flow: drop the previous Cloudinary video once the new one is live.
           if (previousUrl && previousUrl !== response.image.url) {
             const oldId = urlToCloudinaryPublicId(previousUrl);
             if (oldId) {
@@ -108,14 +104,12 @@ const VideoUpload = ({
               });
             }
           }
-          toast.success("Video uploaded successfully");
+          toast.success(t("media.videoUploaded"));
         } else {
           throw new Error(response?.message || "Upload failed");
         }
       } catch (error) {
-        const message =
-          error?.message || "Failed to upload video. Please try again.";
-        toast.error(message);
+        toast.error(error?.message || t("media.videoFailed"));
         console.error("Video upload failed:", error);
         URL.revokeObjectURL(objectUrl);
         setPreviewUrl("");
@@ -157,12 +151,11 @@ const VideoUpload = ({
     }
   }, [isUploading, onChange, value]);
 
-  const acceptAttr = VIDEO_MIME_TYPES.join(",");
-
   return (
     <div className="video-upload-container">
       <label className="video-upload-label">
-        {label} <span className="video-upload-label-hint">(optional)</span>
+        {label || t("media.video")}{" "}
+        <span className="video-upload-label-hint">({t("media.optional")})</span>
       </label>
 
       {value && !isUploading && (
@@ -178,7 +171,7 @@ const VideoUpload = ({
             className="video-upload-remove"
             onClick={handleRemove}
           >
-            <FaTimes size={14} /> Remove video
+            <FaTimes size={14} /> {t("media.videoRemove")}
           </button>
         </div>
       )}
@@ -195,7 +188,7 @@ const VideoUpload = ({
           )}
           <div className="video-upload-overlay">
             <FaSpinner className="spinner" />
-            <span>Uploading video…</span>
+            <span>{t("media.videoUploading")}</span>
           </div>
         </div>
       ) : (
@@ -218,16 +211,16 @@ const VideoUpload = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept={acceptAttr}
+            accept={VIDEO_MIME_TYPES.join(",")}
             onChange={handleFileInput}
             style={{ display: "none" }}
           />
           <FaVideo className="upload-icon" />
           <p className="upload-text">
-            {value ? "Drop a new video to replace it" : helperText}
+            {value ? t("media.videoReplace") : helperText || t("media.videoHelper")}
           </p>
           <p className="upload-hint">
-            MP4 / MOV / WEBM / MKV / AVI • Max {maxSizeMB}MB
+            {t("media.videoFormats", { max: maxSizeMB })}
           </p>
         </div>
       )}

@@ -2018,7 +2018,7 @@ const ListingForm = ({
             onChange={(newImages) => handleChange("images", newImages)}
             maxImages={MAX_IMAGES}
             label={t("media.images")}
-            helperText={`Drag & drop or browse (Max ${MAX_IMAGES}, 5MB each). New photos become the cover.`}
+            helperText={t("media.imagesHelper", { max: MAX_IMAGES })}
           />
           {showError("images") && (
             <div className="lst-error">{errors.images}</div>
@@ -2034,7 +2034,7 @@ const ListingForm = ({
             }}
             onUploadingChange={setVideoUploading}
             label={t("media.video")}
-            helperText="Drag & drop a walkthrough video or click to browse"
+            helperText={t("media.videoHelper")}
           />
           {showError("videoUrl") && (
             <div className="lst-error">{errors.videoUrl}</div>

@@ -2127,15 +2127,6 @@ const ListingForm = ({
           />
           <span>{t("fields.showWhatsapp")}</span>
         </label>
-
-        <label className="lst-check-row">
-          <input
-            type="checkbox"
-            checked={form.showContact !== false}
-            onChange={(e) => handleChange("showContact", e.target.checked)}
-          />
-          <span>{t("fields.showOwnerContact")}</span>
-        </label>
       </div>
 
       {/* ── Images ── */}

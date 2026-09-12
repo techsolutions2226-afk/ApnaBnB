@@ -45,7 +45,7 @@
 
 .pf-card-banner {
   height: 105px;
-  background: linear-gradient(180deg, #dcf4e5 0%, #eaf7ee 100%);
+  background: linear-gradient(180deg, var(--color-primary-100) 0%, var(--color-primary-50) 100%);
   width: 100%;
 }
 
@@ -84,7 +84,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--color-primary-600);
   border: 2.5px solid #ffffff;
   display: flex;
   align-items: center;
@@ -102,8 +102,8 @@
 }
 
 .pf-role-pill {
-  background: #e8f7ee;
-  color: #16a34a;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.8px;
@@ -151,7 +151,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  background: #16a34a;
+  background: var(--color-primary-600);
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
@@ -164,7 +164,7 @@
 }
 
 .pf-btn-action:hover {
-  background: #15803d;
+  background: var(--color-primary-700);
   color: #ffffff;
 }
 
@@ -172,7 +172,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #16a34a;
+  background: var(--color-primary-600);
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
@@ -185,7 +185,7 @@
 }
 
 .pf-btn-primary:hover {
-  background: #15803d;
+  background: var(--color-primary-700);
   color: #ffffff;
 }
 
@@ -232,8 +232,8 @@ a.pf-contact-item:hover {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #e8f7ee;
-  color: #16a34a;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -301,7 +301,7 @@ a.pf-contact-item:hover {
   align-items: center;
   gap: 6px;
   padding: 9px 18px;
-  background: #16a34a;
+  background: var(--color-primary-600);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -312,7 +312,7 @@ a.pf-contact-item:hover {
 }
 
 .pf-btn-unlock-small:hover {
-  background: #15803d;
+  background: var(--color-primary-700);
 }
 
 /* ═══════════════════════════════════════════════
@@ -459,7 +459,7 @@ a.pf-contact-item:hover {
 }
 
 .pf-card-price--green {
-  color: #16a34a;
+  color: var(--color-primary-600);
 }
 
 .pf-card-location-row {

@@ -161,6 +161,33 @@
   accent-color: var(--color-primary-600, #4f46e5);
 }
 
+.lst-terms-agree {
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
+.lst-terms-agree--error {
+  color: var(--color-danger-600, #dc2626);
+}
+
+.lst-terms-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-primary-600, #4f46e5);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.lst-terms-link:hover {
+  color: var(--color-primary-700, #4338ca);
+}
+
 .lst-check-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

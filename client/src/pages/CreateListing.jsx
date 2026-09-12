@@ -109,6 +109,7 @@ const CreateListing = () => {
         isSubmitting={isSubmitting}
         submitLabel="Create Listing"
         draftKey={currentUser?.id}
+        requireTermsAgreement
       />
     </div>
   );

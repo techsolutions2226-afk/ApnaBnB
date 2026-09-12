@@ -34,6 +34,7 @@ import VideoUpload from "../common/VideoUpload";
 import LocationPicker from "../common/LocationPicker";
 import MapView from "../common/MapView";
 import Modal from "../common/Modal";
+import TermsAndConditions from "../common/TermsAndConditions";
 import { forwardGeocode } from "../../utils/geocode";
 import { loadListingDraft, saveListingDraft } from "../../utils/listingDraft";
 import { useAuth } from "../../context/AuthContext";
@@ -79,6 +80,7 @@ const FIELD_FOCUS_ORDER = [
   "videoUrl",
   "description",
   "notes",
+  "agreedTerms",
 ];
 
 const FIELD_FOCUS_IDS = {
@@ -106,6 +108,7 @@ const FIELD_FOCUS_IDS = {
   videoUrl: "lst-video",
   description: "lst-description",
   notes: "lst-notes",
+  agreedTerms: "lst-agreed-terms",
 };
 
 const focusFirstInvalid = (errorMap) => {
@@ -498,6 +501,8 @@ const ListingForm = ({
   draftKey = null,
   // Optional — notified when Sale/Rent purpose changes (admin status options).
   onPurposeChange = null,
+  // Create flow only: require agreeing to listing Terms before submit.
+  requireTermsAgreement = false,
 }) => {
   const { t } = useTranslation("listing");
   const { currentUser } = useAuth();
@@ -682,6 +687,8 @@ const ListingForm = ({
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
   const [videoUploading, setVideoUploading] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   // Prefill contact details from the logged-in user's profile. Runs once on
   // mount + whenever `currentUser` becomes available. Never overwrites a value
@@ -989,11 +996,16 @@ const ListingForm = ({
     (e) => {
       e.preventDefault();
       const validationErrors = validate({ ...form, videoUploading }, t);
+      if (requireTermsAgreement && !agreedTerms) {
+        validationErrors.agreedTerms =
+          "You must agree to the Terms and Conditions before creating a listing";
+      }
       setErrors(validationErrors);
 
       /* Mark all as touched so errors show */
       const allTouched = {};
       Object.keys(EMPTY_FORM).forEach((k) => (allTouched[k] = true));
+      if (requireTermsAgreement) allTouched.agreedTerms = true;
       setTouched(allTouched);
 
       if (Object.keys(validationErrors).length > 0) {
@@ -1062,7 +1074,7 @@ const ListingForm = ({
 
       onSubmit(output);
     },
-    [form, onSubmit, videoUploading, t],
+    [form, onSubmit, videoUploading, t, requireTermsAgreement, agreedTerms],
   );
 
   /* ── Error display helper ── */
@@ -2232,6 +2244,60 @@ const ListingForm = ({
         </div>
       </div>
 
+      {/* ── Terms (create flow) ── */}
+      {requireTermsAgreement && (
+        <div className="lst-form-section" id="lst-agreed-terms" tabIndex={-1}>
+          <h3 className="lst-form-section-title">
+            Terms and Conditions
+            <Required />
+          </h3>
+          <p className="lst-form-section-sub">
+            Review ApnaBnB&apos;s listing rules before you publish. Click the
+            link to read the full terms.
+          </p>
+          <label
+            className={`lst-check-row lst-terms-agree${
+              showError("agreedTerms") ? " lst-terms-agree--error" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              id="lst-agreed-terms-input"
+              checked={agreedTerms}
+              onChange={(e) => {
+                setAgreedTerms(e.target.checked);
+                setTouched((prev) => ({ ...prev, agreedTerms: true }));
+                if (errors.agreedTerms) {
+                  setErrors((prev) => {
+                    const next = { ...prev };
+                    delete next.agreedTerms;
+                    return next;
+                  });
+                }
+              }}
+              disabled={isSubmitting}
+            />
+            <span>
+              I agree to the{" "}
+              <button
+                type="button"
+                className="lst-terms-link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setTermsOpen(true);
+                }}
+              >
+                Terms and Conditions
+              </button>
+            </span>
+          </label>
+          {showError("agreedTerms") && (
+            <div className="lst-error">{errors.agreedTerms}</div>
+          )}
+        </div>
+      )}
+
       {/* ── Actions ── */}
       <div className="lst-actions">
         <button
@@ -2275,6 +2341,35 @@ const ListingForm = ({
           ))}
         </div>
       </Modal>
+
+      {requireTermsAgreement && (
+        <Modal
+          isOpen={termsOpen}
+          onClose={() => setTermsOpen(false)}
+          title="Terms and Conditions"
+          size="large"
+          footer={
+            <button
+              type="button"
+              className="lst-btn lst-btn--primary"
+              onClick={() => {
+                setAgreedTerms(true);
+                setTouched((prev) => ({ ...prev, agreedTerms: true }));
+                setErrors((prev) => {
+                  const next = { ...prev };
+                  delete next.agreedTerms;
+                  return next;
+                });
+                setTermsOpen(false);
+              }}
+            >
+              I agree
+            </button>
+          }
+        >
+          <TermsAndConditions compact />
+        </Modal>
+      )}
     </form>
   );
 };

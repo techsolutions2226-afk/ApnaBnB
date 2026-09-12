@@ -40,15 +40,40 @@ export const validateEmail = (value) => {
   return null;
 };
 
-// Accepts +, spaces, dashes, parens; validates on digits only (10–15 covers
-// local 03xxxxxxxxx and +92 international forms).
+/* Pakistan mobile: local 10 digits after +92, always starting with 3
+   (e.g. 3001234567 → +92 300 1234567). The Signup UI stores only these
+   local digits; +92 is a fixed prefix and is prepended on submit. */
+export const PK_PHONE_DIGITS = 10;
+export const PK_PHONE_RE = /^3\d{9}$/;
+
+/** Strip non-digits and normalize common paste forms (92… / 03…) to 10 local digits. */
+export const sanitizePkPhoneDigits = (raw) => {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (digits.startsWith("92") && digits.length > PK_PHONE_DIGITS) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith("0") && digits.length > 1) {
+    digits = digits.slice(1);
+  }
+  // Local mobiles always start with 3 — drop any leading digit that isn't.
+  if (digits.length > 0 && digits[0] !== "3") {
+    digits = digits.replace(/^[^3]+/, "");
+  }
+  return digits.slice(0, PK_PHONE_DIGITS);
+};
+
 export const validatePhone = (value) => {
-  const v = (value || "").trim();
-  if (!v) return "Mobile number is required";
-  const digits = v.replace(/[^\d]/g, "");
-  if (digits.length < 10 || digits.length > 15) return "Enter a valid mobile number";
+  const digits = sanitizePkPhoneDigits(value);
+  if (!digits) return "Mobile number is required";
+  if (!PK_PHONE_RE.test(digits)) {
+    return "Enter a valid 10-digit mobile number starting with 3";
+  }
   return null;
 };
+
+/** Full E.164-style value sent to the API from the local 10-digit field. */
+export const formatPkPhoneForApi = (localDigits) =>
+  `+92${sanitizePkPhoneDigits(localDigits)}`;
 
 // Exact age from a YYYY-MM-DD string, evaluated against today's calendar date.
 export const calculateAge = (dob) => {

@@ -22,7 +22,40 @@ import {
   NAME_MAX,
   EMAIL_MAX,
   MIN_YEAR,
+  sanitizePkPhoneDigits,
+  formatPkPhoneForApi,
+  PK_PHONE_DIGITS,
 } from "../utils/signupValidation";
+
+/* Visual order — used to scroll/focus the first invalid field on submit. */
+const FIELD_FOCUS_ORDER = [
+  "role",
+  "firstName",
+  "lastName",
+  "birthdate",
+  "email",
+  "phone",
+  "password",
+  "agreed",
+];
+
+const FIELD_FOCUS_IDS = {
+  role: "signup-role-buyer",
+  firstName: "signup-first",
+  lastName: "signup-last",
+  birthdate: "signup-dob",
+  email: "signup-email",
+  phone: "signup-phone",
+  password: "signup-password",
+  agreed: "signup-agreed",
+};
+
+const RequiredMark = () => (
+  <span className="text-danger-500" aria-hidden="true">
+    {" "}
+    *
+  </span>
+);
 
 /* ── Role options for the selector ──
    SVG icons rather than emoji: emoji render differently per platform, carry
@@ -128,16 +161,24 @@ const Signup = () => {
   const pwChecks = passwordChecks(form.password);
   const pwScore = PW_RULES.filter(({ key }) => pwChecks[key]).length;
 
+  const clearServerError = (field) => {
+    if (!serverErrors[field]) return;
+    setServerErrors((prev) => {
+      const { [field]: _drop, ...rest } = prev;
+      return rest;
+    });
+  };
+
   const update = (field) => (e) => {
     const { value } = e.target;
     setForm((prev) => ({ ...prev, [field]: value }));
-    // A field the user edits should drop any stale server error for it.
-    if (serverErrors[field]) {
-      setServerErrors((prev) => {
-        const { [field]: _drop, ...rest } = prev;
-        return rest;
-      });
-    }
+    clearServerError(field);
+  };
+
+  const updatePhone = (e) => {
+    const digits = sanitizePkPhoneDigits(e.target.value);
+    setForm((prev) => ({ ...prev, phone: digits }));
+    clearServerError("phone");
   };
 
   const markTouched = (field) => () =>
@@ -154,12 +195,26 @@ const Signup = () => {
     return serverErrors[field] || errors[field] || null;
   };
 
+  const focusFirstInvalid = (errorMap) => {
+    const first = FIELD_FOCUS_ORDER.find((f) => errorMap[f]);
+    if (!first) return;
+    const el = document.getElementById(FIELD_FOCUS_IDS[first]);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Role cards are buttons; checkbox/inputs accept focus normally.
+    if (typeof el.focus === "function") {
+      requestAnimationFrame(() => el.focus({ preventScroll: true }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitAttempted(true);
 
-    if (!isValid) {
-      toast.error("Please fix the highlighted fields");
+    const { errors: nextErrors, isValid: ok } = validateSignupForm(form, agreed);
+    if (!ok) {
+      // Inline errors only — no toast for client-side field validation.
+      focusFirstInvalid({ ...nextErrors, ...serverErrors });
       return;
     }
     // Double-submit guards: ref (synchronous) + state (render).
@@ -172,7 +227,7 @@ const Signup = () => {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim(),
+        phone: formatPkPhoneForApi(form.phone),
         password: form.password,
         birthdate: form.birthdate,
         role: form.role,
@@ -187,7 +242,7 @@ const Signup = () => {
       const msg = err?.message || "";
       if (code === "EMAIL_IN_USE" || /already (exists|in use)/i.test(msg)) {
         setServerErrors((prev) => ({ ...prev, email: "Email already in use" }));
-        toast.error("Email already in use");
+        focusFirstInvalid({ email: "Email already in use" });
       } else {
         toast.error(msg || "Signup failed. Please try again.");
       }
@@ -206,6 +261,11 @@ const Signup = () => {
     "border-danger-500 focus:border-danger-500 focus:ring-danger-500/20";
   const wrapClass = (field) =>
     `${inputBase} ${shownError(field) ? inputErr : inputOk}`;
+  const phoneGroupClass = `flex items-stretch h-10 rounded-lg bg-white border transition-colors overflow-hidden focus-within:outline-none focus-within:ring-2 ${
+    shownError("phone")
+      ? "border-danger-500 focus-within:border-danger-500 focus-within:ring-danger-500/20"
+      : "border-slate-200 hover:border-slate-300 focus-within:border-primary-500 focus-within:ring-primary-500/20"
+  } ${busy ? "bg-slate-50" : ""}`;
 
   /* Inline error with a height/opacity transition, so a message appearing
      never makes the rest of the form jump. */
@@ -264,7 +324,10 @@ const Signup = () => {
           <form onSubmit={handleSubmit} noValidate>
             {/* ── Role Selector ── */}
             <motion.div variants={item}>
-              <p className="text-sm font-medium text-slate-700 mb-2">I want to join as</p>
+              <p className="text-sm font-medium text-slate-700 mb-2">
+                I want to join as
+                <RequiredMark />
+              </p>
               <div className="grid grid-cols-3 gap-2">
                 {ROLES.map((r) => {
                   const active = form.role === r.value;
@@ -272,6 +335,7 @@ const Signup = () => {
                     <motion.button
                       key={r.value}
                       type="button"
+                      id={r.value === "buyer" ? "signup-role-buyer" : undefined}
                       className={`relative flex flex-col items-start gap-1 p-2.5 sm:p-3 text-left rounded-xl border transition-colors ${
                         shownError("role")
                           ? "border-danger-500"
@@ -327,6 +391,7 @@ const Signup = () => {
                 <div className="flex flex-col gap-1">
                   <label htmlFor="signup-first" className="text-sm font-medium text-slate-700">
                     First name
+                    <RequiredMark />
                   </label>
                   <input
                     type="text"
@@ -345,6 +410,7 @@ const Signup = () => {
                 <div className="flex flex-col gap-1">
                   <label htmlFor="signup-last" className="text-sm font-medium text-slate-700">
                     Last name
+                    <RequiredMark />
                   </label>
                   <input
                     type="text"
@@ -370,6 +436,7 @@ const Signup = () => {
             <motion.div className="flex flex-col gap-1 mt-4" variants={item}>
               <label htmlFor="signup-dob" className="text-sm font-medium text-slate-700">
                 Date of birth
+                <RequiredMark />
               </label>
               <input
                 type="date"
@@ -397,6 +464,7 @@ const Signup = () => {
             <motion.div className="flex flex-col gap-1 mt-4" variants={item}>
               <label htmlFor="signup-email" className="text-sm font-medium text-slate-700">
                 Email
+                <RequiredMark />
               </label>
               <input
                 type="email"
@@ -423,19 +491,32 @@ const Signup = () => {
             <motion.div className="flex flex-col gap-1 mt-4" variants={item}>
               <label htmlFor="signup-phone" className="text-sm font-medium text-slate-700">
                 Mobile number
+                <RequiredMark />
               </label>
-              <input
-                type="tel"
-                id="signup-phone"
-                className={wrapClass("phone")}
-                placeholder="03XX XXXXXXX"
-                value={form.phone}
-                onChange={update("phone")}
-                onBlur={markTouched("phone")}
-                autoComplete="tel"
-                maxLength={20}
-                disabled={busy}
-              />
+              <div className={phoneGroupClass}>
+                <span
+                  className={`inline-flex items-center pl-3.5 pr-2 text-sm font-medium select-none border-r ${
+                    busy ? "text-slate-400 border-slate-200" : "text-slate-600 border-slate-200"
+                  }`}
+                  aria-hidden="true"
+                >
+                  +92
+                </span>
+                <input
+                  type="tel"
+                  id="signup-phone"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  className="min-w-0 flex-1 h-full px-3 text-sm bg-transparent text-slate-900 placeholder:text-slate-400 border-0 outline-none focus:ring-0 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  placeholder="3XX XXXXXXX"
+                  value={form.phone}
+                  onChange={updatePhone}
+                  onBlur={markTouched("phone")}
+                  maxLength={PK_PHONE_DIGITS}
+                  disabled={busy}
+                  aria-invalid={!!shownError("phone")}
+                />
+              </div>
               {shownError("phone") ? (
                 <FieldError field="phone" />
               ) : (
@@ -450,6 +531,7 @@ const Signup = () => {
             <motion.div className="flex flex-col gap-1 mt-4" variants={item}>
               <label htmlFor="signup-password" className="text-sm font-medium text-slate-700">
                 Password
+                <RequiredMark />
               </label>
               <div className="relative">
                 <input
@@ -563,16 +645,23 @@ const Signup = () => {
               <label className="flex items-center gap-2.5 mt-3 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  id="signup-agreed"
+                  className={`h-4 w-4 rounded text-primary-600 focus:ring-primary-500 ${
+                    shownError("agreed")
+                      ? "border-danger-500"
+                      : "border-slate-300"
+                  }`}
                   checked={agreed}
                   onChange={(e) => {
                     setAgreed(e.target.checked);
                     setTouched((prev) => ({ ...prev, agreed: true }));
                   }}
                   disabled={busy}
+                  aria-invalid={!!shownError("agreed")}
                 />
                 <span className="text-sm text-slate-700">
                   I agree to the platform's terms and policies
+                  <RequiredMark />
                 </span>
               </label>
               <FieldError field="agreed" />
@@ -581,10 +670,10 @@ const Signup = () => {
             <motion.button
               type="submit"
               className="relative mt-5 flex items-center justify-center h-11 w-full overflow-hidden text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              disabled={busy || !isValid}
+              disabled={busy}
               variants={item}
-              whileHover={reduce || busy || !isValid ? undefined : { y: -2 }}
-              whileTap={reduce || busy || !isValid ? undefined : { scale: 0.99 }}
+              whileHover={reduce || busy ? undefined : { y: -2 }}
+              whileTap={reduce || busy ? undefined : { scale: 0.99 }}
               transition={{ duration: 0.2, ease: EASE }}
             >
               {/* A sheen sweeps across the moment the form becomes valid. */}

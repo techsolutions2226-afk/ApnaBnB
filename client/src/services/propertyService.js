@@ -21,6 +21,17 @@ const propertyService = {
     }
   },
 
+  /* "Similar properties" for the detail page. Ranked server-side and cached
+     there, so this is a plain read with no filters to pass. */
+  getRelated: async (id) => {
+    try {
+      const response = await apiClient.get(`/properties/${id}/related`);
+      return response.data.properties || [];
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch related properties' };
+    }
+  },
+
   // Create new property
   create: async (propertyData) => {
     try {

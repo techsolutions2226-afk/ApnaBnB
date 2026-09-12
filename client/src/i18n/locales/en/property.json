@@ -35,5 +35,9 @@
     "copyFailed": "Failed to copy link",
     "loginToVisit": "Please log in to confirm a visit.",
     "ownListing": "This is your own listing."
+  },
+  "related": {
+    "heading": "Similar properties",
+    "subtitle": "Other listings nearby with a comparable price and size."
   }
 }

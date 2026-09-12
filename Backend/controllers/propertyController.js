@@ -17,6 +17,11 @@ const {
 } = require('../utils/matchNotifier');
 const { buildPropertyData, validatePropertyData } = require('../utils/propertyData');
 const { isAllowedViewRole, viewRoleDeniedMessage } = require('../utils/roles');
+const cache = require('../utils/cache');
+const {
+  rankRelatedProperties,
+  buildCandidateTiers,
+} = require('../utils/relatedProperties');
 const { destroyRemovedUrls } = require('../utils/cloudinaryAssets');
 
 // Contact details are intentionally NOT on card-level fetches (list/search):
@@ -487,6 +492,56 @@ const getPropertyContact = async (req, res, next) => {
   }
 };
 
+
+/* GET /api/properties/:id/related — "similar properties" for the detail page.
+
+   Candidate tiers run widest-useful-first and stop as soon as enough rows are
+   found, so a listing in a thin market still fills the row. Ranking is
+   deterministic, which is what makes the result safe to cache: every visitor
+   to a listing sees the same set, so one query serves them all. */
+const RELATED_LIMIT = 6;
+const RELATED_TTL_MS = 5 * 60 * 1000;
+
+const getRelatedProperties = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const base = await prisma.property.findUnique({ where: { id } });
+    if (!base) {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
+
+    const properties = await cache.wrap(
+      `related:${id}:${base.updatedAt?.getTime?.() ?? 0}`,
+      RELATED_TTL_MS,
+      async () => {
+        const seen = new Map();
+
+        for (const where of buildCandidateTiers(base)) {
+          const rows = await prisma.property.findMany({
+            where,
+            include: { listedBy: listedBySelect },
+            // Over-fetch so the ranking has something to choose between —
+            // the tier query only narrows, it does not order by similarity.
+            take: RELATED_LIMIT * 5,
+            orderBy: { createdAt: 'desc' },
+          });
+          rows.forEach((row) => {
+            if (row.id !== base.id) seen.set(row.id, row);
+          });
+          if (seen.size >= RELATED_LIMIT * 2) break;
+        }
+
+        return rankRelatedProperties(base, [...seen.values()], RELATED_LIMIT);
+      },
+    );
+
+    res.status(200).json({ properties });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createProperty,
   getProperties,
@@ -495,5 +550,6 @@ module.exports = {
   updateProperty,
   deleteProperty,
   getPropertyContact,
+  getRelatedProperties,
   generateMatchesForProperty,
 };

@@ -10,6 +10,7 @@ import PropertyReviews from "../components/property/detail/PropertyReviews";
 import PropertyGallery from "../components/property/detail/PropertyGallery";
 import PropertyThingsToKnow from "../components/property/detail/PropertyThingsToKnow";
 import PropertyVideo from "../components/common/PropertyVideo";
+import RelatedProperties from "../components/property/RelatedProperties";
 import Skeleton from "../components/common/Skeleton";
 import {
   AiFillStar,
@@ -642,6 +643,10 @@ const PropertyDetail = () => {
                 propertyId={id}
               />
             </section>
+
+            {/* Similar properties — ranked server-side, renders nothing when
+                there is no sensible match. */}
+            <RelatedProperties propertyId={id} />
           </div>
 
           {/* Sticky inquiry sidebar */}

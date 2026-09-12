@@ -226,7 +226,7 @@
 }
 
 @media (max-width: 640px) {
-  .wl-page { padding: 20px 12px 64px; }
+  .wl-page { padding: 20px 0 64px; }
   .wl-header {
     flex-direction: column;
     align-items: stretch;

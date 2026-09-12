@@ -902,7 +902,7 @@
   }
 
   .cm-skeleton-page {
-    padding: 24px 16px 48px;
+    padding: 24px 12px 48px;
   }
 
   .cm-skeleton-stats {
@@ -1518,5 +1518,28 @@ color: var(--color-warning-700);
 @media (prefers-reduced-motion: reduce) {
   .cm-spinner {
     animation-duration: 2s;
+  }
+}
+
+/* ── Skeleton responsive parity ──
+   The detail skeleton must collapse on exactly the same breakpoints as the
+   real page it stands in for (.pd-content in PropertyDetail.css), or the
+   loading state overflows on mobile and then snaps to a 1-col layout once
+   data arrives. Mirrors PropertyDetail.css:1101 / :1111. */
+@media (max-width: 1024px) {
+  .cm-skeleton-detail-content {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .cm-skeleton-detail-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cm-skeleton-detail-sidebar {
+    position: static;
+    order: -1;
   }
 }

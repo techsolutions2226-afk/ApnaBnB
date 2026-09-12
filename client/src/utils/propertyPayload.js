@@ -75,6 +75,7 @@ export const formToPropertyPayload = (form, extras = {}) => {
     contactWhatsapp: form.contactWhatsapp?.trim() || "",
     contactAltPhone: form.contactAltPhone?.trim() || "",
     showWhatsapp: form.showWhatsapp !== false,
+    showContact: form.showContact !== false,
     plotDetails:
       form.category === "plot"
         ? {
@@ -173,6 +174,7 @@ export const propertyToFormInitial = (p = {}) => {
     contactWhatsapp: p.contactWhatsapp || "",
     contactAltPhone: p.contactAltPhone || "",
     showWhatsapp: p.showWhatsapp !== false,
+    showContact: p.showContact !== false,
     plotNumber: plot.plotNumber || "",
     plotCorner: Boolean(plot.corner),
     plotParkFacing: Boolean(plot.parkFacing),

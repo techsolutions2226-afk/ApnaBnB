@@ -348,7 +348,7 @@
 
 @media (max-width: 640px) {
   .ac-page {
-    padding: 24px 16px 64px;
+    padding: 24px 0 64px;
   }
 
   .ac-card-grid {

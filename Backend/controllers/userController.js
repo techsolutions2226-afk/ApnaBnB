@@ -1,6 +1,5 @@
 const prisma = require('../db/prisma');
 const { involvedWhere, roleInvolvedWhere } = require('./matchController');
-const { hasContactAccess } = require('../utils/subscription');
 const {
   MEMBER_VIEW_ROLES,
   isAllowedViewRole,
@@ -38,23 +37,14 @@ const getPublicUser = async (req, res, next) => {
   }
 };
 
-// GET /api/users/:id/profile — the full owner profile behind the paid gate.
-// Returns everything a member may see about a lister: identity, contact
-// details, where they operate, and their active listings. Open to the user
-// themselves and to anyone holding an approved plan; everyone else gets 402
-// so the client can route them to /plans.
+// GET /api/users/:id/profile — the full owner profile, public.
+// Returns everything about a lister: identity, contact details, where they
+// operate, and their active listings. Contact details are open to everyone so
+// a buyer can reach an owner directly and builds trust on the listing.
 const getUserProfile = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const isSelf = req.user.id === id;
-    if (!isSelf && !(await hasContactAccess(req.user.id))) {
-      return res.status(402).json({
-        code: 'PLAN_REQUIRED',
-        message: 'Choose a plan to see full owner details.',
-      });
-    }
-
     const user = await prisma.user.findUnique({
       where: { id },
       select: {

@@ -512,7 +512,7 @@
 
 @media (max-width: 768px) {
   .mtch-page {
-    padding: 24px 16px 48px;
+    padding: 24px 0 48px;
   }
 
   .mtch-title {
@@ -564,6 +564,25 @@
     overflow-x: auto;
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mtch-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* .mtch-filter-btn-group is an unstyled wrapper div, so it defaulted to
+     display:block and its buttons wrapped as inline content — which defeated
+     the scroll rail above and stacked the pills three rows deep. */
+  .mtch-filter-btn-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .mtch-filter-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .mtch-card-actions {

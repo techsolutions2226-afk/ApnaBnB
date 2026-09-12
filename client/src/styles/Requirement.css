@@ -575,7 +575,7 @@
 
 @media (max-width: 768px) {
   .req-page {
-    padding: 24px 16px 48px;
+    padding: 24px 0 48px;
   }
 
   .req-title {
@@ -645,6 +645,25 @@
     overflow-x: auto;
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .req-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* .req-filter-btn-group is an unstyled wrapper div, so it defaulted to
+     display:block and stacked its buttons vertically inside the rail — the
+     two groups then sat side by side at different heights. */
+  .req-filter-btn-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .req-filter-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 }
 

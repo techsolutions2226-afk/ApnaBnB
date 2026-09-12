@@ -1,18 +1,14 @@
 import { AiFillStar } from "react-icons/ai";
-import { FiShield, FiPhone, FiCalendar } from "react-icons/fi";
+import { FiShield, FiPhone, FiCalendar, FiMail } from "react-icons/fi";
+import { Link } from "react-router-dom";
 import { formatPrice } from "../../utils/formatters";
 
-/* Sidebar card on a property page: price, rating, and two CTAs. The primary
-   action sends the viewer to the visit page to propose a schedule; the
-   secondary "Get contact info" hands off to the owner profile / plans gate,
-   as before. Contact details are never rendered here. */
-const InquiryCard = ({ property, onMessage, onVisit }) => {
+/* Sidebar card on a property page: price, rating, and CTAs. Owner contact is
+   public and rendered inline when present, so the only primary action left is
+   the visit flow. */
+const InquiryCard = ({ property, contact, onVisit }) => {
   const { price, rating, reviews, listedBy, purpose } = property || {};
-
-  const handleSubmit = (e) => {
-    e?.preventDefault();
-    if (typeof onMessage === "function") onMessage();
-  };
+  const ownerId = listedBy?._id || property?.listedById;
 
   const handleVisit = () => {
     if (typeof onVisit === "function") onVisit();
@@ -43,18 +39,23 @@ const InquiryCard = ({ property, onMessage, onVisit }) => {
         Confirm visit
       </button>
 
-      <button
-        type="button"
-        className="rv-card-btn rv-card-btn--secondary"
-        onClick={handleSubmit}
-      >
-        <FiPhone size={17} />
-        Get contact info
-      </button>
+      {(contact?.phone || contact?.email) && (
+        <div className="rv-card-contact">
+          {contact.phone && (
+            <a href={`tel:${contact.phone}`} className="rv-card-contact-item">
+              <FiPhone size={15} /> {contact.phone}
+            </a>
+          )}
+          {contact.email && (
+            <a href={`mailto:${contact.email}`} className="rv-card-contact-item">
+              <FiMail size={15} /> {contact.email}
+            </a>
+          )}
+        </div>
+      )}
 
       <p className="rv-card-note">
-        Phone and email are revealed to you and the other side once the visit
-        is confirmed by both parties.
+        Feel free to contact the owner directly or confirm a visit below.
       </p>
 
       {listedBy && (
@@ -64,6 +65,13 @@ const InquiryCard = ({ property, onMessage, onVisit }) => {
             ? "Verified agent listing"
             : "Verified owner listing"}
         </div>
+      )}
+
+      {ownerId && (
+        <Link to={`/users/${ownerId}`} className="rv-card-view-profile">
+          <FiShield size={14} />
+          View owner profile
+        </Link>
       )}
 
       <div className="rv-card-visit-fee">

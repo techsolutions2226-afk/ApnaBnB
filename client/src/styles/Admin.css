@@ -4139,3 +4139,24 @@ tr:hover .adm-trunc-btn,
   }
 }
 
+
+/* ── Tab rows scroll on narrow viewports ──
+   .adm-tabs is a nowrap flex row with no overflow handling of its own, while
+   .ash-content sets `overflow-x: clip` below 900px. Together that clipped any
+   tab past the viewport edge and made it unreachable rather than scrollable. */
+@media (max-width: 900px) {
+  .adm-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .adm-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .adm-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}

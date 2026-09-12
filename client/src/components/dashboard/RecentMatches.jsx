@@ -142,7 +142,7 @@ const RecentMatches = ({ limit = 5, emptyMessage }) => {
             return (
               <Link
                 key={match._id}
-                to="/matches"
+                to={property._id ? `/property/${property._id}` : "/matches"}
                 className="rm-card"
                 style={{ position: "relative" }}
               >

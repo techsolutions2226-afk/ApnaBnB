@@ -14,7 +14,9 @@
  * ─────────────────────────────────────────────── */
 
 // Public, identical-for-everyone reads. Prefix match on the path.
-const PUBLIC_GET_PREFIXES = ['/api/plans', '/api/contact', '/api/properties'];
+// /api/properties is intentionally excluded: listing photos change often via
+// admin/seller edits and must not sit in browser/edge caches after updates.
+const PUBLIC_GET_PREFIXES = ['/api/plans', '/api/contact'];
 
 const PUBLIC_MAX_AGE = 60; // seconds
 

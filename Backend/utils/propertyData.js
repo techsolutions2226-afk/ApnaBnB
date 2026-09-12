@@ -93,6 +93,7 @@ const buildPropertyData = (body, { partial = false } = {}) => {
   if (!partial || has('contactWhatsapp')) set('contactWhatsapp', str(body.contactWhatsapp));
   if (!partial || has('contactAltPhone')) set('contactAltPhone', str(body.contactAltPhone));
   if (!partial || has('showWhatsapp')) set('showWhatsapp', bool(body.showWhatsapp));
+  if (!partial || has('showContact')) set('showContact', bool(body.showContact));
   if (has('status')) set('status', body.status);
 
   return data;

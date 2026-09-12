@@ -3,7 +3,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { urlToCloudinaryPublicId } = require('../controllers/adminController');
+const { urlToCloudinaryPublicId } = require('../utils/cloudinaryPublicId');
 const { kickUser } = require('../sockets');
 
 test('urlToCloudinaryPublicId: extracts public id from a modern versioned URL', () => {

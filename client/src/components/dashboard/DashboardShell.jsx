@@ -228,7 +228,7 @@ export default function DashboardShell() {
           })}
         </nav>
 
-        <div className="p-3 border-t border-white/[0.08] space-y-1 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-3">
+        <div className="p-3 border-t border-white/[0.08] space-y-1 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3">
           <div
             className="flex flex-nowrap items-stretch gap-1 p-[3px] mb-2 rounded-[10px] border border-white/12 bg-black/35"
             role="radiogroup"
@@ -417,7 +417,7 @@ export default function DashboardShell() {
         )}
 
         <main
-          className={`flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6 ${
+          className={`flex-1 overflow-y-auto px-3 py-4 sm:p-6 pb-24 md:pb-6 ${
             isDark ? "bg-slate-950 text-slate-100" : ""
           }`}
         >

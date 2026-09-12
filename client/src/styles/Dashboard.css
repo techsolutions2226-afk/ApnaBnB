@@ -1093,7 +1093,7 @@
 
 @media (max-width: 768px) {
   .dash-page {
-    padding: 8px 16px 48px;
+    padding: 8px 0 48px;
   }
 
   .dash-greeting {

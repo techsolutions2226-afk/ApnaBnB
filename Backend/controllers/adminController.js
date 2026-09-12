@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../db/prisma');
-const { cloudinary } = require('../config/cloudinary');
 const { kickUser } = require('../sockets');
 const { logActivity } = require('../utils/activityLogger');
 const { sendSecurityAlertEmail } = require('../utils/mailer');
@@ -10,6 +9,13 @@ const {
   buildPropertyData,
   validatePropertyData,
 } = require('../utils/propertyData');
+const {
+  urlToCloudinaryPublicId,
+  destroyCloudinaryAsset,
+  destroyRemovedPhotoUrls,
+} = require('../utils/cloudinaryAssets');
+// urlToCloudinaryPublicId is re-exported from cloudinaryAssets for convenience;
+// pure extractor also lives in utils/cloudinaryPublicId.js (no SDK).
 
 const STATS_CACHE_KEY = 'admin:stats:v3';
 const STATS_TTL_MS = 60_000;
@@ -151,42 +157,6 @@ const matchInclude = {
 // ── Helpers ───────────────────────────────────────────────────────────────
 const num = (v) =>
   v === undefined || v === null || v === '' ? undefined : Number(v);
-
-/* ── Cloudinary cleanup for deleted accounts ──
-   A Cloudinary asset URL looks like
-   https://res.cloudinary.com/<cloud>/image/upload/v<version>/<path>/<file>.<ext>
-   `public_id` for uploader.destroy is everything after the /upload/ segment
-   with the leading version and the file extension stripped:
-   "apnaBnB/properties/abc123". We only act on URLs that are genuine
-   Cloudinary assets (host ends in cloudinary.com, path contains /image/upload/),
-   so a stray external avatar URL is left untouched. */
-const urlToCloudinaryPublicId = (url) => {
-  if (!url || typeof url !== 'string') return null;
-  try {
-    const parsed = new URL(url);
-    if (!/cloudinary\.com$/i.test(parsed.hostname)) return null;
-    if (!parsed.pathname.includes('/image/upload/')) return null;
-    // Everything after "/image/upload/" — e.g. "/v1234/path/file.jpg" →
-    // drop the leading version token, then the file extension.
-    let rest = parsed.pathname.split('/image/upload/')[1];
-    if (!rest) return null;
-    const parts = rest.split('/');
-    if (parts[0] && /^v\d+$/.test(parts[0])) parts.shift();
-    const publicId = parts.join('/').replace(/\.[a-zA-Z0-9]+$/, '');
-    return publicId || null;
-  } catch {
-    return null;
-  }
-};
-
-// Fire-and-forget delete of a single Cloudinary asset; failures are swallowed
-// (a dead photo must never fail the account deletion that triggered it).
-const destroyCloudinaryAsset = (publicId) => {
-  if (!publicId) return;
-  cloudinary.uploader.destroy(publicId, { invalidate: true }).catch((err) => {
-    console.error('Cloudinary destroy failed:', publicId, err.message);
-  });
-};
 
 /* Delete every Cloudinary asset owned by a user: photos on their properties,
    their avatar, and the uploaded screenshots of their payment proofs. Runs
@@ -1106,6 +1076,11 @@ const updateProperty = async (req, res, next) => {
       include: { listedBy: listedBySelect },
     });
 
+    // Drop Cloudinary assets that were removed/replaced in this save.
+    if (Array.isArray(data.photos)) {
+      destroyRemovedPhotoUrls(property.photos, updated.photos);
+    }
+
     // When admin changes moderation status, mirror onto linked listings where
     // the listing enum supports it (no "rejected" / "rented" on listings).
     if (data.status) {
@@ -1794,7 +1769,7 @@ module.exports = {
   deactivateUser,
   reactivateUser,
   unsuspendUser,
-  // Test hook for the Cloudinary public-id extractor (unit tests).
+  // Re-export for older imports; preferred source is utils/cloudinaryAssets.
   urlToCloudinaryPublicId,
   getAllProperties,
   updateProperty,

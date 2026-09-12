@@ -8,8 +8,8 @@ const router = express.Router();
 router.post('/', verifyToken, createProperty);
 router.get('/search', searchProperties);
 // Declared before '/:id' for clarity; the two-segment path can't collide with it.
-// Auth required — the handler decides owner-vs-paid-vs-locked.
-router.get('/:id/contact', verifyToken, getPropertyContact);
+// Public — owner contact is shown for everyone on the property detail page.
+router.get('/:id/contact', getPropertyContact);
 router.get('/:id', getPropertyById);
 router.get('/', getProperties);
 router.put('/:id', verifyToken, updateProperty);

@@ -70,7 +70,6 @@ const Matches = () => {
      "far". The server tags every match, so this filters what's already loaded
      rather than re-running the engine. */
   const [tierFilter, setTierFilter] = useState("all");
-  const [busyId, setBusyId] = useState(null);
   const [rechecking, setRechecking] = useState(false);
 
   /* "Check again" — re-runs matching across every listing and requirement the
@@ -87,25 +86,6 @@ const Matches = () => {
       toast.error(err?.message || "Could not re-check your matches.");
     } finally {
       setRechecking(false);
-    }
-  };
-
-  // Accept / reject a match.
-  const handleStatus = async (match, status) => {
-    setBusyId(match._id);
-    try {
-      await matchService.updateStatus(match._id, status);
-      if (status === "accepted") {
-        toast.success("Match accepted.");
-        refetch();
-        return;
-      }
-      toast.info("Match dismissed.");
-      refetch();
-    } catch (e) {
-      toast.error(e.message || "Could not update match.");
-    } finally {
-      setBusyId(null);
     }
   };
 
@@ -410,9 +390,12 @@ const Matches = () => {
               .join(", ");
 
             return (
-              <div
+              <Link
                 key={match._id}
+                to={property._id ? `/property/${property._id}` : "#"}
                 style={{
+                  textDecoration: "none",
+                  color: "inherit",
                   background: "#fff",
                   border: "1px solid #ebebeb",
                   borderRadius: 12,
@@ -563,12 +546,7 @@ const Matches = () => {
                           color: "#222",
                         }}
                       >
-                        <Link
-                          to={`/property/${property._id}`}
-                          style={{ color: "inherit", textDecoration: "none" }}
-                        >
-                          {property.title || "Untitled property"}
-                        </Link>
+                        {property.title || "Untitled property"}
                       </h4>
                       <div style={{ fontSize: 13, color: "#717171" }}>
                         {location || "Location pending"}
@@ -639,45 +617,7 @@ const Matches = () => {
                     )}
                   </div>
                 )}
-
-                {/* Actions — driven by the deal state */}
-                <div className="mtch-actions">
-                  {match.status === "pending" && (
-                    <>
-                      <button
-                        type="button"
-                        className="mtch-btn mtch-btn--primary"
-                        disabled={busyId === match._id}
-                        onClick={() => handleStatus(match, "accepted")}
-                      >
-                        {busyId === match._id ? "Working…" : "Accept match"}
-                      </button>
-                      <button
-                        type="button"
-                        className="mtch-btn mtch-btn--ghost"
-                        disabled={busyId === match._id}
-                        onClick={() => handleStatus(match, "rejected")}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                  {match.status === "closed" && (
-                    <span className="mtch-deal-done">✓ Deal closed</span>
-                  )}
-                  {match.status === "rejected" && (
-                    <span className="mtch-deal-rejected">Dismissed</span>
-                  )}
-                  {property._id && (
-                    <Link
-                      to={`/property/${property._id}`}
-                      className="mtch-btn mtch-btn--secondary"
-                    >
-                      View property
-                    </Link>
-                  )}
-                </div>
-              </div>
+              </Link>
             );
           })}
         </div>

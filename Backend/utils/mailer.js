@@ -148,14 +148,32 @@ const sendViaSmtp = async ({ to, subject, html, text, replyTo }) => {
 const sendMail = async (message) =>
   provider() === 'brevo' ? sendViaBrevo(message) : sendViaSmtp(message);
 
-const buildOtpHtml = (otp, recipientName) => `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+const buildOtpHtml = (otp, recipientName) => `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 480px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #222; margin: 0 0 8px;">Verify your email</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} use the code below to confirm your email address. It expires in 5 minutes.
       </p>
-      <div style="text-align: center; padding: 18px 0; background: #fff8e1; border-radius: 10px; letter-spacing: 8px; font-size: 32px; font-weight: 700; color: #222;">
+      <div class="em-otp" style="text-align: center; padding: 18px 0; background: #fff8e1; border-radius: 10px; letter-spacing: 8px; font-size: 32px; font-weight: 700; color: #222;">
         ${otp}
       </div>
       <p style="color: #888; font-size: 13px; margin: 24px 0 0;">
@@ -163,8 +181,11 @@ const buildOtpHtml = (otp, recipientName) => `
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
 `;
 
 const sendOtpEmail = async (to, otp, recipientName = '') =>
@@ -175,16 +196,34 @@ const sendOtpEmail = async (to, otp, recipientName = '') =>
     html: buildOtpHtml(otp, recipientName),
   });
 
-const buildResetHtml = (resetUrl, recipientName) => `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+const buildResetHtml = (resetUrl, recipientName) => `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #222; margin: 0 0 8px;">Reset your password</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} click the button below to choose a new password. The link expires in 15 minutes.
       </p>
       <div style="text-align: center; margin: 28px 0;">
         <a href="${resetUrl}"
-           style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px;">
+           class="em-btn" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px;">
           Reset password
         </a>
       </div>
@@ -199,8 +238,11 @@ const buildResetHtml = (resetUrl, recipientName) => `
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
 `;
 
 const sendResetEmail = async (to, resetUrl, recipientName = '') =>
@@ -238,9 +280,27 @@ const buildListingCreatedHtml = (recipientName, details, listingUrl) => {
     .join(' · ');
   const sizeText = size ? `${size} ${sizeUnit || ''}`.trim() : '';
 
-  return `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #00856f; margin: 0 0 8px;">Listing published 🎉</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} your property listing is now live on ApnaBnB. Here's a summary of what you posted:
@@ -272,7 +332,7 @@ const buildListingCreatedHtml = (recipientName, details, listingUrl) => {
       ${
         listingUrl
           ? `<div style="text-align: center; margin: 28px 0;">
-              <a href="${listingUrl}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">View your listing</a>
+              <a href="${listingUrl}" class="em-btn" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">View your listing</a>
             </div>`
           : ''
       }
@@ -282,8 +342,11 @@ const buildListingCreatedHtml = (recipientName, details, listingUrl) => {
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
   `;
 };
 
@@ -336,9 +399,27 @@ const buildRequirementCreatedHtml = (recipientName, details, requirementUrl) => 
     .filter(Boolean)
     .join(' · ');
 
-  return `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #00856f; margin: 0 0 8px;">Requirement posted ✅</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} your requirement is now live on ApnaBnB. We'll start matching it against listings straight away.
@@ -375,7 +456,7 @@ const buildRequirementCreatedHtml = (recipientName, details, requirementUrl) => 
       ${
         requirementUrl
           ? `<div style="text-align: center; margin: 28px 0;">
-              <a href="${requirementUrl}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">View your requirement</a>
+              <a href="${requirementUrl}" class="em-btn" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">View your requirement</a>
             </div>`
           : ''
       }
@@ -385,8 +466,11 @@ const buildRequirementCreatedHtml = (recipientName, details, requirementUrl) => 
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
   `;
 };
 
@@ -428,9 +512,27 @@ const buildMatchesHtml = (recipientName, { heading, intro, items = [], ctaUrl, c
     )
     .join('');
 
-  return `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #00856f; margin: 0 0 8px;">${heading}</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} ${intro}
@@ -441,7 +543,7 @@ const buildMatchesHtml = (recipientName, { heading, intro, items = [], ctaUrl, c
       ${
         ctaUrl
           ? `<div style="text-align: center; margin: 28px 0;">
-              <a href="${ctaUrl}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">${ctaLabel || 'View matches'}</a>
+              <a href="${ctaUrl}" class="em-btn" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px;">${ctaLabel || 'View matches'}</a>
             </div>`
           : ''
       }
@@ -451,8 +553,11 @@ const buildMatchesHtml = (recipientName, { heading, intro, items = [], ctaUrl, c
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
   `;
 };
 
@@ -484,9 +589,27 @@ const sendContactMessageEmail = async (to, { name, email, subject, message }) =>
       ? `[ApnaBnB contact] ${subject}`
       : `[ApnaBnB contact] New message from ${name}`,
     text: `From: ${name} <${email}>\n${subject ? `Subject: ${subject}\n` : ''}\n${message}`,
-    html: `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+    html: `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #00856f; margin: 0 0 8px;">New contact enquiry</h2>
       <table style="width: 100%; font-size: 14px; color: #333; border-collapse: collapse; margin: 0 0 20px;">
         <tr><td style="padding: 4px 0; color: #888;">Name</td><td style="padding: 4px 0; text-align: right; font-weight: 600;">${escapeHtml(name)}</td></tr>
@@ -497,15 +620,36 @@ const sendContactMessageEmail = async (to, { name, email, subject, message }) =>
       <p style="color: #888; font-size: 13px; margin: 20px 0 0;">Reply directly to this email to respond to ${escapeHtml(name)}.</p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB · Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
   `,
   });
 
 /* --- Two-factor sign-in code --- */
-const buildTwoFactorHtml = (code, recipientName) => `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+const buildTwoFactorHtml = (code, recipientName) => `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #222; margin: 0 0 8px;">Your sign-in code</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 24px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} use this code to finish signing in. It expires in 5 minutes.
@@ -521,8 +665,11 @@ const buildTwoFactorHtml = (code, recipientName) => `
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB &middot; Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
 `;
 
 const sendTwoFactorCodeEmail = async (to, code, recipientName = '') =>
@@ -536,9 +683,27 @@ const sendTwoFactorCodeEmail = async (to, code, recipientName = '') =>
 /* --- Security notifications ---
    Sent after the fact, so the account owner learns about a change they did
    not make. Never blocks the action that triggered it. */
-const buildSecurityAlertHtml = (headline, detail, recipientName) => `
-  <div style="font-family: Arial, sans-serif; background: #f7f7f7; padding: 32px;">
-    <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+const buildSecurityAlertHtml = (headline, detail, recipientName) => `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<style>
+  /* Phones: the two stacked 32px paddings ate 128px of a 375px screen. */
+  @media only screen and (max-width: 600px) {
+    .em-outer { padding: 16px 10px !important; }
+    .em-card { padding: 22px 18px !important; border-radius: 10px !important; }
+    .em-otp { font-size: 26px !important; letter-spacing: 5px !important; }
+    .em-btn { display: block !important; width: 100% !important;
+              box-sizing: border-box !important; text-align: center !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#f7f7f7; -webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f7f7f7;">
+  <tr><td align="center" class="em-outer" style="font-family: Arial, sans-serif; padding: 32px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; margin: 0 auto;">
+      <tr><td class="em-card" style="background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
       <h2 style="color: #222; margin: 0 0 8px;">${headline}</h2>
       <p style="color: #555; line-height: 1.5; margin: 0 0 16px;">
         ${recipientName ? `Hi ${recipientName},` : 'Hi,'} ${detail}
@@ -548,8 +713,11 @@ const buildSecurityAlertHtml = (headline, detail, recipientName) => `
       </p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0 12px;" />
       <p style="color: #aaa; font-size: 12px; margin: 0;">ApnaBnB &middot; Real Estate Marketplace</p>
-    </div>
-  </div>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body></html>
 `;
 
 const sendSecurityAlertEmail = async (to, headline, detail, recipientName = '') =>

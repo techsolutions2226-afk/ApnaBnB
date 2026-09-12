@@ -465,7 +465,7 @@
 
 @media (max-width: 640px) {
   .tr-page {
-    padding: 24px 16px 64px;
+    padding: 24px 0 64px;
   }
 
   .tr-card {

@@ -30,6 +30,7 @@ import {
   FiBox,
 } from "react-icons/fi";
 import ImageUpload from "../common/ImageUpload";
+import VideoUpload from "../common/VideoUpload";
 import LocationPicker from "../common/LocationPicker";
 import MapView from "../common/MapView";
 import Modal from "../common/Modal";
@@ -341,7 +342,9 @@ const validate = (data) => {
     errors.notes = `Notes must be at most ${NOTES_MAX} characters`;
 
   if (data.videoUrl?.trim() && !/^https?:\/\//i.test(data.videoUrl.trim()))
-    errors.videoUrl = "Video URL must start with http:// or https://";
+    errors.videoUrl = "Video upload incomplete — please re-upload the video";
+  if (data.videoUploading)
+    errors.videoUrl = "Wait for the video to finish uploading";
 
   if (!Array.isArray(data.amenities) || data.amenities.length === 0) {
     errors.amenities = "Select at least one amenity";
@@ -592,6 +595,7 @@ const ListingForm = ({
   // Local string state for the manual lat/lng inputs so partial typing doesn't blow up form.coordinates.
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
+  const [videoUploading, setVideoUploading] = useState(false);
 
   // Prefill contact details from the logged-in user's profile. Runs once on
   // mount + whenever `currentUser` becomes available. Never overwrites a value
@@ -889,7 +893,7 @@ const ListingForm = ({
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      const validationErrors = validate(form);
+      const validationErrors = validate({ ...form, videoUploading });
       setErrors(validationErrors);
 
       /* Mark all as touched so errors show */
@@ -960,7 +964,7 @@ const ListingForm = ({
 
       onSubmit(output);
     },
-    [form, onSubmit],
+    [form, onSubmit, videoUploading],
   );
 
   /* ── Error display helper ── */
@@ -2018,17 +2022,15 @@ const ListingForm = ({
         </div>
 
         <div className="lst-field">
-          <label className="lst-label" htmlFor="lst-video">
-            Video URL <span className="lst-label-hint">(optional)</span>
-          </label>
-          <input
-            id="lst-video"
-            type="url"
-            className={fieldClass("lst-input", "videoUrl")}
-            placeholder="https://…"
-            value={form.videoUrl}
-            onChange={(e) => handleChange("videoUrl", e.target.value)}
-            onBlur={() => handleBlur("videoUrl")}
+          <VideoUpload
+            value={form.videoUrl || ""}
+            onChange={(url) => {
+              handleChange("videoUrl", url || "");
+              setTouched((prev) => ({ ...prev, videoUrl: true }));
+            }}
+            onUploadingChange={setVideoUploading}
+            label="Property Video"
+            helperText="Drag & drop a walkthrough video or click to browse"
           />
           {showError("videoUrl") && (
             <div className="lst-error">{errors.videoUrl}</div>
@@ -2099,9 +2101,14 @@ const ListingForm = ({
         <button
           type="submit"
           className="lst-btn lst-btn--primary"
-          disabled={isSubmitting}
+          disabled={isSubmitting || videoUploading}
+          aria-busy={isSubmitting || videoUploading}
         >
-          {isSubmitting ? "Saving..." : submitLabel}
+          {isSubmitting
+            ? "Saving..."
+            : videoUploading
+              ? "Uploading video…"
+              : submitLabel}
         </button>
       </div>
 

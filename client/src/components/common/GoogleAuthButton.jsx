@@ -3,6 +3,8 @@
  * Used on Login and Signup. It opens Google's consent popup from the custom-
  * styled button, then routes the result through AuthContext:
  *   • existing account → authenticates + redirects to the dashboard
+ *   • 2FA is on       → no session yet; hands the challenge to /login/verify,
+ *                        the same code screen the password flow uses
  *   • new account      → shows a role-picker modal (Buyer / Seller / Dealer),
  *                        finishes account creation, then redirects
  *
@@ -51,7 +53,20 @@ const GoogleAuthButton = ({ className = "", lastUsed = false, lastUsedName = "" 
           if (!credential) return toast.error("Google sign-in was cancelled.");
           try {
             const res = await googleSignIn(credential);
-            if (res?.requiresRole) {
+            // 2FA is on for this account: Google proved the email, but that
+            // is only the first factor and no session exists yet. Same hand-
+            // off as Login.jsx — the challenge travels in router state, never
+            // the URL, so it cannot leak through history or a shared link.
+            if (res?.twoFactorRequired) {
+              navigate("/login/verify", {
+                replace: true,
+                state: {
+                  challengeToken: res.challengeToken,
+                  method: res.method,
+                  maskedEmail: res.maskedEmail,
+                },
+              });
+            } else if (res?.requiresRole) {
               setPendingRole({ idToken: credential, profile: res.profile });
             } else {
               toast.success("Login successful! Redirecting...");

@@ -8,6 +8,7 @@ import Modal from "../components/common/Modal";
 import PropertyReviews from "../components/property/detail/PropertyReviews";
 import PropertyGallery from "../components/property/detail/PropertyGallery";
 import PropertyThingsToKnow from "../components/property/detail/PropertyThingsToKnow";
+import PropertyVideo from "../components/common/PropertyVideo";
 import Skeleton from "../components/common/Skeleton";
 import {
   AiFillStar,
@@ -554,14 +555,7 @@ const PropertyDetail = () => {
             {videoUrl && (
               <section className="pd-card">
                 <h2 className="pd-section-heading">Video</h2>
-                <a
-                  href={videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="pd-show-more"
-                >
-                  Watch property video
-                </a>
+                <PropertyVideo url={videoUrl} title={`${title || "Property"} video`} />
               </section>
             )}
 

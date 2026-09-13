@@ -17,7 +17,7 @@ const {
 } = require('../utils/matchNotifier');
 const { buildPropertyData, validatePropertyData } = require('../utils/propertyData');
 const { isAllowedViewRole, viewRoleDeniedMessage } = require('../utils/roles');
-const { destroyRemovedPhotoUrls } = require('../utils/cloudinaryAssets');
+const { destroyRemovedUrls } = require('../utils/cloudinaryAssets');
 
 // Contact details are intentionally NOT on card-level fetches (list/search):
 // the detail page renders owner contact, but grids don't need it in their
@@ -299,7 +299,7 @@ const updateProperty = async (req, res, next) => {
 
     const existing = await prisma.property.findFirst({
       where: { id, listedById: req.user.id },
-      select: { id: true, photos: true },
+      select: { id: true, photos: true, videoUrl: true },
     });
     if (!existing) {
       return res.status(404).json({ message: 'Property not found or unauthorized.' });
@@ -316,8 +316,12 @@ const updateProperty = async (req, res, next) => {
 
     const property = await prisma.property.findUnique({ where: { id } });
 
+    // Drop Cloudinary assets that were removed/replaced in this save.
     if (Array.isArray(data.photos)) {
-      destroyRemovedPhotoUrls(existing.photos, property?.photos);
+      destroyRemovedUrls(existing.photos, property?.photos);
+    }
+    if (Object.prototype.hasOwnProperty.call(data, 'videoUrl')) {
+      destroyRemovedUrls(existing.videoUrl, property?.videoUrl);
     }
 
     res.status(200).json(property);
@@ -331,9 +335,20 @@ const deleteProperty = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const result = await prisma.property.deleteMany({
+    const target = await prisma.property.findFirst({
       where: { id, listedById: req.user.id },
+      select: { id: true, photos: true, videoUrl: true },
     });
+    if (!target) {
+      return res.status(404).json({ message: 'Property not found or unauthorized.' });
+    }
+
+    // Destroy the Cloudinary assets before the row (and its URLs) disappear.
+    // Fire-and-forget — a failed destroy must not abort the delete.
+    destroyRemovedUrls(target.photos, []);
+    destroyRemovedUrls(target.videoUrl, null);
+
+    const result = await prisma.property.deleteMany({ where: { id } });
     if (result.count === 0) {
       return res.status(404).json({ message: 'Property not found or unauthorized.' });
     }

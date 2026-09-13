@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../db/prisma');
+const { isSessionLive, TOUCH_INTERVAL_MS } = require('../utils/sessions');
 
 // Sessions are stateless JWTs, so a "deleted user" still holds a technically
 // valid token until it expires. The only way to make a deletion take effect
@@ -92,11 +93,45 @@ const verifyToken = async (req, res, next) => {
       });
     }
 
+    /* Per-device revocation. tokenVersion above is the account-wide switch;
+       this is the one sign-in. `sid` is absent only on tokens minted before
+       sessions existed — those keep working on tokenVersion alone so a deploy
+       does not sign everybody out, and they age out with their own 30-day exp. */
+    let session = null;
+    if (decoded.sid) {
+      session = await prisma.session.findUnique({ where: { id: decoded.sid } });
+      if (!isSessionLive(session, user.tokenVersion)) {
+        return res.status(401).json({
+          code: 'SESSION_REVOKED',
+          message: 'You were signed out on this device. Please log in again.',
+        });
+      }
+
+      /* "Last active" on the devices list does not need per-request accuracy,
+         and a write on every authenticated call would double the cost of the
+         whole API. Touch at most once per interval, and never block the
+         response on it. */
+      if (Date.now() - session.lastSeenAt.getTime() > TOUCH_INTERVAL_MS) {
+        prisma.session
+          .update({ where: { id: session.id }, data: { lastSeenAt: new Date() } })
+          .catch(() => {});
+      }
+    }
+
     // Attach the DB role, never the JWT role, so role changes (e.g. admin
     // demotes a user) take effect immediately instead of on next login.
     // viewRole must be carried through: effectiveRole() in utils/subscription
     // reads it to decide which plan tier the user may buy.
-    req.user = { id: user.id, role: user.role, viewRole: user.viewRole };
+    // tokenVersion rides along so the session endpoints can filter out rows
+    // stranded by a global revocation without re-reading the user.
+    req.user = {
+      id: user.id,
+      role: user.role,
+      viewRole: user.viewRole,
+      tokenVersion: user.tokenVersion ?? 0,
+    };
+    // Null for a pre-sessions token; logout falls back to tokenVersion then.
+    req.session = session;
     next();
   } catch (error) {
     next(error);

@@ -1,4 +1,5 @@
 import apiClient from '../api/apiClient';
+import { clearViewRole } from '../utils/viewRoleStore';
 
 const authService = {
   // Register a new user
@@ -89,6 +90,14 @@ const authService = {
           /* token may already be revoked or expired — local cleanup proceeds. */
         });
     }
+    // The "Viewing as" hat is device-local and must not outlive the session:
+    // left behind, the next account to sign in on this browser inherits it.
+    try {
+      const stored = localStorage.getItem('current_user');
+      clearViewRole(stored ? JSON.parse(stored)?.id : null);
+    } catch {
+      clearViewRole(null);
+    }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('current_user');
   },
@@ -118,6 +127,28 @@ const authService = {
         message: error.response?.data?.message || 'Session check failed',
       };
       throw err;
+    }
+  },
+
+  /* Signed-in devices. Every row is a live session for this account; the one
+     flagged `current` is this browser. */
+  listSessions: async () => {
+    try {
+      const response = await apiClient.get('/auth/sessions');
+      return response.data.sessions || [];
+    } catch (error) {
+      throw error.response?.data || { message: 'Could not load your devices' };
+    }
+  },
+
+  /* Ends every OTHER session and deliberately keeps this one, so the user is
+     not signed out of the device they are sitting at. */
+  revokeOtherSessions: async () => {
+    try {
+      const response = await apiClient.post('/auth/sessions/revoke-others');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Could not sign out your other devices' };
     }
   },
 

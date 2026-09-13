@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { disconnectSocket } from './socket';
+import { clearRequestCache } from '../utils/requestCache';
+import { clearViewRole } from '../utils/viewRoleStore';
 
 // Session-death codes the server sends for a deleted / suspended /
 // deactivated / unverified / revoked account. Any one of these while the user
@@ -52,9 +55,24 @@ const isAuthEndpoint = (url = '') =>
 
 // Wipe the local session. Centralised so the 401 and the 403 session-death
 // paths agree on exactly what gets cleared.
+//
+// Storage alone is not enough: the socket authenticates once at handshake
+// time and would otherwise stay connected to a dead session, and requestCache
+// would serve this user's GETs to whoever signs in next on this tab.
 const clearLocalSession = () => {
+  // Read the id before current_user goes, so this user's "Viewing as" hat can
+  // be dropped too — a hat left behind is inherited by the next account to
+  // sign in on this browser.
+  try {
+    const stored = localStorage.getItem('current_user');
+    clearViewRole(stored ? JSON.parse(stored)?.id : null);
+  } catch {
+    clearViewRole(null);
+  }
   localStorage.removeItem('auth_token');
   localStorage.removeItem('current_user');
+  disconnectSocket();
+  clearRequestCache();
 };
 
 // Response interceptor — redirect to login on any response that proves the

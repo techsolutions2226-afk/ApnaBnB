@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import securityService from "../services/securityService";
+import authService from "../services/authService";
 import Modal from "../components/common/Modal";
 import RecoveryCodesPanel from "../components/account/RecoveryCodesPanel";
 import useAccountPath from "../hooks/useAccountPath";
@@ -12,6 +13,7 @@ import {
   FiSmartphone,
   FiMail,
   FiKey,
+  FiMonitor,
 } from "react-icons/fi";
 import "../styles/Account.css";
 
@@ -24,6 +26,21 @@ import "../styles/Account.css";
 */
 
 const EMPTY_PASSWORDS = { current: "", next: "", confirm: "" };
+
+/* "3 minutes ago" reads better than a timestamp on a list whose whole purpose
+   is "is this me, right now, or something I should worry about". */
+const formatWhen = (value) => {
+  const then = new Date(value).getTime();
+  if (!Number.isFinite(then)) return "recently";
+  const mins = Math.floor((Date.now() - then) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return new Date(then).toLocaleDateString();
+};
 
 export default function LoginSecurity() {
   const { currentUser, logout } = useAuth();
@@ -58,6 +75,11 @@ export default function LoginSecurity() {
 
   const [alertsBusy, setAlertsBusy] = useState(false);
 
+  /* Signed-in devices — one row per live session (see Backend utils/sessions). */
+  const [sessions, setSessions] = useState([]);
+  const [sessionsBusy, setSessionsBusy] = useState(false);
+  const [revokeOthersOpen, setRevokeOthersOpen] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -67,6 +89,13 @@ export default function LoginSecurity() {
       setLoadError(err.message || "Could not load your security settings");
     } finally {
       setLoading(false);
+    }
+    // The devices list is secondary: a failure here should leave the rest of
+    // the page usable rather than blanking it with loadError.
+    try {
+      setSessions(await authService.listSessions());
+    } catch {
+      setSessions([]);
     }
   }, []);
 
@@ -79,6 +108,8 @@ export default function LoginSecurity() {
   }, [currentUser, navigate, load]);
 
   if (!currentUser) return null;
+
+  const otherSessionCount = sessions.filter((session) => !session.current).length;
 
   /* ── Password ── */
   const closePasswordForm = () => {
@@ -108,6 +139,31 @@ export default function LoginSecurity() {
       toast.error(err.message || "Could not change your password");
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  /* ── Signed-in devices ── */
+  const revokeOtherSessions = async () => {
+    setSessionsBusy(true);
+    try {
+      const result = await authService.revokeOtherSessions();
+      // Without a `sid` the server can only do an account-wide revocation,
+      // which takes this browser down too. It says so, and we log out locally
+      // rather than leaving the page holding a token that no longer works.
+      if (result.endedCurrentSession) {
+        toast.info(result.message);
+        setRevokeOthersOpen(false);
+        logout();
+        navigate("/login", { replace: true });
+        return;
+      }
+      toast.success(result.message);
+      setRevokeOthersOpen(false);
+      setSessions(await authService.listSessions());
+    } catch (err) {
+      toast.error(err.message || "Could not sign out your other devices");
+    } finally {
+      setSessionsBusy(false);
     }
   };
 
@@ -477,6 +533,63 @@ export default function LoginSecurity() {
               </div>
             </section>
 
+            {/* ── Signed-in devices ── */}
+            <section className="ac-sec-block">
+              <h2 className="ac-sec-heading">Signed-in devices</h2>
+
+              {sessions.length === 0 ? (
+                <p className="ac-sec-hint ac-sec-hint--block">
+                  No other sessions are being tracked yet. Devices appear here
+                  the next time you sign in on them.
+                </p>
+              ) : (
+                <ul className="ac-device-list">
+                  {sessions.map((session) => (
+                    <li key={session.id} className="ac-device-row">
+                      <span className="ac-device-icon" aria-hidden="true">
+                        <FiMonitor />
+                      </span>
+                      <div className="ac-notif-info">
+                        <p className="ac-notif-label">
+                          {session.device}
+                          {session.current && (
+                            <span className="ac-device-badge">This device</span>
+                          )}
+                        </p>
+                        <p className="ac-notif-desc">
+                          {session.ip ? `${session.ip} · ` : ""}
+                          Last active {formatWhen(session.lastSeenAt)} · Signed in{" "}
+                          {formatWhen(session.createdAt)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {otherSessionCount > 0 && (
+                <div className="ac-danger-row">
+                  <div className="ac-notif-info">
+                    <p className="ac-notif-label">Sign out all other devices</p>
+                    <p className="ac-notif-desc">
+                      Ends {otherSessionCount} other session
+                      {otherSessionCount === 1 ? "" : "s"}. You stay signed in
+                      here. Use this if you signed in somewhere you no longer
+                      trust.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="ac-btn-outline"
+                    onClick={() => setRevokeOthersOpen(true)}
+                    disabled={sessionsBusy}
+                  >
+                    Sign out others
+                  </button>
+                </div>
+              )}
+            </section>
+
             {/* ── Account ── */}
             <section className="ac-sec-block">
               <h2 className="ac-sec-heading">Account</h2>
@@ -683,6 +796,42 @@ export default function LoginSecurity() {
             className="ac-btn-ghost"
             onClick={closeGate}
             disabled={gateBusy}
+          >
+            Cancel
+          </button>
+        </div>
+      </Modal>
+
+      {/* ── Sign out other devices ──
+          No password gate here, unlike the modals above: this only ever
+          REMOVES access, so making it harder would just discourage the person
+          who has a good reason to be in a hurry. */}
+      <Modal
+        isOpen={revokeOthersOpen}
+        onClose={() => !sessionsBusy && setRevokeOthersOpen(false)}
+        title="Sign out all other devices?"
+        size="small"
+      >
+        <p className="ac-modal-note">
+          {otherSessionCount} other session
+          {otherSessionCount === 1 ? "" : "s"} will end immediately. This device
+          stays signed in. Anyone using your account elsewhere will have to sign
+          in again.
+        </p>
+        <div className="ac-sec-form-actions">
+          <button
+            type="button"
+            className="ac-btn-danger"
+            onClick={revokeOtherSessions}
+            disabled={sessionsBusy}
+          >
+            {sessionsBusy ? "Signing out…" : "Sign out others"}
+          </button>
+          <button
+            type="button"
+            className="ac-btn-ghost"
+            onClick={() => setRevokeOthersOpen(false)}
+            disabled={sessionsBusy}
           >
             Cancel
           </button>

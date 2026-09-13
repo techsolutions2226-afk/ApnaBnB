@@ -9,6 +9,8 @@
  * the logout is instant and does not depend on the next REST call failing.
  */
 import { io } from "socket.io-client";
+import { clearRequestCache } from "../utils/requestCache";
+import { clearViewRole } from "../utils/viewRoleStore";
 
 const SOCKET_URL = (
   import.meta.env.VITE_API_URL || "http://localhost:5000/api"
@@ -20,8 +22,18 @@ let socket = null;
    `session:revoked` push — the account was deleted / suspended / deactivated
    by an admin. */
 const handleSessionRevoked = () => {
+  // Same as every other teardown: drop this user's hat before their id goes.
+  try {
+    const stored = localStorage.getItem("current_user");
+    clearViewRole(stored ? JSON.parse(stored)?.id : null);
+  } catch {
+    clearViewRole(null);
+  }
   localStorage.removeItem("auth_token");
   localStorage.removeItem("current_user");
+  // Same reason as every other logout path: cached GETs must not survive into
+  // the next account's session on this tab.
+  clearRequestCache();
   if (socket) {
     socket.off("session:revoked");
     socket.disconnect();

@@ -99,9 +99,46 @@ const paymentProofUpload = multer({
   },
 });
 
+// Property walkthrough videos → apnaBnB/videos. Uploaded through Cloudinary's
+// video pipeline (resource_type: 'video') so streaming is handled for us.
+// Kept separate from photos so image-only code paths (avatars, proofs) never
+// see video assets, and so per-type file filters/limits can differ.
+const videoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: process.env.CLOUDINARY_VIDEO_FOLDER || 'apnaBnB/videos',
+    resource_type: 'video',
+    allowed_formats: ['mp4', 'm4v', 'mov', 'webm', 'mkv', 'avi'],
+  },
+});
+
+const videoUpload = multer({
+  storage: videoStorage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB max — plenty for a walkthrough clip
+    files: 1,
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'video/mp4',
+      'video/m4v',
+      'video/quicktime', // .mov
+      'video/webm',
+      'video/x-matroska', // .mkv
+      'video/x-msvideo', // .avi
+    ];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only MP4, MOV, WEBM, MKV, and AVI videos are allowed.'), false);
+    }
+  },
+});
+
 module.exports = {
   cloudinary,
   upload,
   profileUpload,
   paymentProofUpload,
+  videoUpload,
 };

@@ -14,20 +14,9 @@ const MONTHS = [
   "November",
   "December",
 ];
-export const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+/* Short month names + display formatters live in utils/dateRange (pure, so
+   search URLs and chips can use them too); re-exported for existing callers. */
+export { MONTHS_SHORT, formatDate, formatDateRange } from "../../utils/dateRange";
 
 export function getDaysInMonth(y, m) {
   return new Date(y, m + 1, 0).getDate();
@@ -53,17 +42,6 @@ export function isBetween(day, s, e) {
   if (!s || !e) return false;
   const [lo, hi] = s < e ? [s, e] : [e, s];
   return day > lo && day < hi;
-}
-
-/* Format: "Feb 28" for single / "Feb 28 – Mar 5" for range */
-export function formatDate(date) {
-  if (!date) return "";
-  return `${MONTHS_SHORT[date.getMonth()]} ${date.getDate()}`;
-}
-export function formatDateRange(start, end) {
-  if (!start) return "";
-  if (!end) return formatDate(start);
-  return `${formatDate(start)} – ${formatDate(end)}`;
 }
 
 /* ─── Month Grid ─── */

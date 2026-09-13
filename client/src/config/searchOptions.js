@@ -58,6 +58,17 @@ export const CITIES = [
   "Sheikhupura",
 ];
 
+/* ── Hero marketplace modes ──
+   Intents, not account roles. "search" modes browse listings of `purpose`
+   (results live at /sale and /rent); "listing" modes start Create Listing
+   with `purpose` preselected. `purpose` values follow the Prisma Purpose enum. */
+export const MARKETPLACE_MODES = [
+  { id: "buyer", label: "Buyer", kind: "search", purpose: "sale" },
+  { id: "tenant", label: "Tenant", kind: "search", purpose: "rent" },
+  { id: "seller", label: "Seller", kind: "listing", purpose: "sale" },
+  { id: "landlord", label: "Landlord", kind: "listing", purpose: "rent" },
+];
+
 /* ── Property type dropdown: Homes | Plots | Commercial ── */
 export const PROPERTY_TABS = [
   {

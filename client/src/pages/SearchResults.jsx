@@ -17,6 +17,8 @@ import {
 import "../styles/SearchDropdowns.css";
 import Seo from "../components/seo/Seo";
 import { PAGE_SEO } from "../config/seo";
+import { formatDateRange } from "../components/navbar/MonthGrid";
+import { fromDateKey } from "../utils/dateRange";
 
 /* ─── Constants ─── */
 const PER_PAGE = 12;
@@ -63,6 +65,10 @@ const SearchResults = () => {
 
   /* URL-synced state */
   const dest = searchParams.get("dest") || "";
+  /* Tenant "When" — move-in / move-out as "YYYY-MM-DD" keys from the home
+     hero. Move-in filters by the property's availableFrom. */
+  const checkIn = searchParams.get("checkIn") || "";
+  const checkOut = searchParams.get("checkOut") || "";
   /* Purpose comes from the pathname (/sale, /rent) so the URL stays clean.
      Falls back to the legacy ?purpose= query param if someone arrives that way. */
   const purpose = useMemo(() => {
@@ -181,6 +187,15 @@ const SearchResults = () => {
         }
       }
 
+      /* Tenant move-in — keep properties available on/before that day;
+         no availableFrom means available now. Compared as date keys so the
+         stored UTC midnight never shifts a day. */
+      if (checkIn) {
+        result = result.filter(
+          (p) => !p.availableFrom || String(p.availableFrom).slice(0, 10) <= checkIn
+        );
+      }
+
       /* Property type */
       if (flt.types.length > 0) {
         result = result.filter(
@@ -235,7 +250,7 @@ const SearchResults = () => {
 
       return result;
     },
-    [dest, properties, purpose, activeType]
+    [dest, properties, purpose, activeType, checkIn]
   );
 
   /* Applied results — respects the live `filters` + `sortBy`. */
@@ -262,6 +277,12 @@ const SearchResults = () => {
   const activeChips = useMemo(() => {
     const chips = [];
     if (dest) chips.push({ key: "dest", label: `"${dest}"`, removable: true });
+    if (checkIn)
+      chips.push({
+        key: "stayDates",
+        label: formatDateRange(fromDateKey(checkIn), fromDateKey(checkOut)),
+        removable: true,
+      });
     filters.types.forEach((t) =>
       chips.push({ key: `type-${t}`, label: t, removable: true })
     );
@@ -279,13 +300,17 @@ const SearchResults = () => {
     if (filters.superhost)
       chips.push({ key: "superhost", label: "Verified", removable: true });
     return chips;
-  }, [dest, filters]);
+  }, [dest, checkIn, checkOut, filters]);
 
   const removeChip = useCallback(
     (chipKey) => {
       const p = new URLSearchParams(searchParams);
       if (chipKey === "dest") {
         p.delete("dest");
+        setSearchParams(p);
+      } else if (chipKey === "stayDates") {
+        p.delete("checkIn");
+        p.delete("checkOut");
         setSearchParams(p);
       } else if (chipKey.startsWith("type-")) {
         const t = chipKey.replace("type-", "");
@@ -315,6 +340,8 @@ const SearchResults = () => {
     setFilters((f) => ({ ...f, types: [], superhost: false }));
     const p = new URLSearchParams(searchParams);
     p.delete("dest");
+    p.delete("checkIn");
+    p.delete("checkOut");
     p.delete("guests");
     p.delete("bedrooms");
     p.delete("minPrice");

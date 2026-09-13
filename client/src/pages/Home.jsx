@@ -8,6 +8,13 @@ import PropertyCard from "../components/property/PropertyCard";
 import Pagination from "../components/common/Pagination";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import SearchPanel from "../components/cinematic/SearchPanel";
+import { useAuth } from "../context/AuthContext";
+import {
+  setListingIntent,
+  clearListingIntent,
+  CREATE_LISTING_PATH,
+} from "../utils/listingIntent";
+import { MARKETPLACE_MODES } from "../config/searchOptions";
 import Seo, { buildOrganizationJsonLd } from "../components/seo/Seo";
 import { PAGE_SEO } from "../config/seo";
 import "../styles/cinematic.css";
@@ -46,7 +53,9 @@ const revealUp = {
 export default function Home() {
   const { t } = useTranslation("home");
   const navigate = useNavigate();
-  const [tab, setTab] = useState("buy");
+  const { isAuthenticated } = useAuth();
+  /* Active search mode — "buyer" | "tenant" (see MARKETPLACE_MODES). */
+  const [mode, setMode] = useState("buyer");
   const [city, setCity] = useState("");
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
@@ -60,11 +69,20 @@ export default function Home() {
   const [currency, setCurrency] = useState("PKR");
   const [openField, setOpenField] = useState(null);
   const [searchExpanded, setSearchExpanded] = useState(false);
+  /* Tenant search fields — dates are "YYYY-MM-DD" keys (utils/dateRange). */
+  const [stayDates, setStayDates] = useState({ checkIn: "", checkOut: "" });
+  const [guests, setGuests] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
   const popularSectionRef = useRef(null);
   const ctaSectionRef = useRef(null);
   const prevPageRef = useRef(page);
+
+  /* Coming back to the home page abandons a Seller/Landlord intent the user
+     started before deciding against signing in. */
+  useEffect(() => {
+    clearListingIntent();
+  }, []);
 
   const reduce = useReducedMotion();
   const inView = reduce
@@ -95,29 +113,52 @@ export default function Home() {
 
   const submitSearch = (overrides = {}) => {
     const params = new URLSearchParams();
-    const loc = location.trim();
-    const dest =
-      overrides.dest ??
-      (loc && city ? `${loc}, ${city}` : loc || city || "");
-    const type = overrides.propertyType ?? propertyType;
-    const price = overrides.maxPrice ?? maxPrice;
+    const searchMode = MARKETPLACE_MODES.find((m) => m.id === mode);
 
-    if (dest) params.set("dest", dest);
-    if (type) params.set("propertyType", type);
-    if (price) params.set("maxPrice", price);
-    if (beds) params.set("bedrooms", beds);
-    if (area) params.set("minArea", area);
-    if (maxArea) params.set("maxArea", maxArea);
-    if (minPrice) params.set("minPrice", minPrice);
+    if (mode === "tenant") {
+      /* Tenant row: Where | When | Who. Guests travel as `guests`, which the
+         results page already reads. */
+      if (city) params.set("dest", city);
+      if (stayDates.checkIn) params.set("checkIn", stayDates.checkIn);
+      if (stayDates.checkOut) params.set("checkOut", stayDates.checkOut);
+      if (guests) params.set("guests", String(guests));
+    } else {
+      const loc = location.trim();
+      const dest =
+        overrides.dest ??
+        (loc && city ? `${loc}, ${city}` : loc || city || "");
+      const type = overrides.propertyType ?? propertyType;
+      const price = overrides.maxPrice ?? maxPrice;
 
-    const base = (overrides.tab ?? tab) === "rent" ? "/rent" : "/sale";
+      if (dest) params.set("dest", dest);
+      if (type) params.set("propertyType", type);
+      if (price) params.set("maxPrice", price);
+      if (beds) params.set("bedrooms", beds);
+      if (area) params.set("minArea", area);
+      if (maxArea) params.set("maxArea", maxArea);
+      if (minPrice) params.set("minPrice", minPrice);
+    }
+
     const q = params.toString();
-    navigate(`${base}${q ? `?${q}` : ""}`);
+    navigate(`/${searchMode.purpose}${q ? `?${q}` : ""}`);
+  };
+
+  /* Seller / Landlord — signed-in users go straight to Create Listing with
+     the purpose preselected; guests go through Login/Signup first, carrying
+     the intent so they land on Create Listing instead of the dashboard. */
+  const handleListingIntent = (purpose) => {
+    if (isAuthenticated) {
+      navigate(CREATE_LISTING_PATH, { state: { purpose } });
+    } else {
+      setListingIntent(purpose);
+      navigate("/login");
+    }
   };
 
   const searchProps = {
-    tab,
-    setTab,
+    mode,
+    setMode,
+    onListingIntent: handleListingIntent,
     city,
     setCity,
     location,
@@ -145,6 +186,10 @@ export default function Home() {
     searchExpanded,
     setSearchExpanded,
     submitSearch,
+    stayDates,
+    setStayDates,
+    guests,
+    setGuests,
   };
 
   return (

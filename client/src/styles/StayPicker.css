@@ -322,9 +322,11 @@
     gap: 12px;
   }
 
-  /* Five cards: the odd one out spans the row. */
+  /* Five cards: the odd one out spans its row with its content centred. */
   .dd-stay__card:last-child:nth-child(odd) {
     grid-column: 1 / -1;
+    align-items: center;
+    text-align: center;
   }
 
   /* Five tabs scroll sideways instead of squeezing. */

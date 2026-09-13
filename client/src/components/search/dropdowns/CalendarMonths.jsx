@@ -14,6 +14,7 @@ export default function CalendarMonths({
   onDayClick,
   months = 2,
   hoverRange = false,
+  isDayDisabled = null,
 }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -29,6 +30,7 @@ export default function CalendarMonths({
     onDayClick,
     onDayHover: hoverRange ? setHoverDate : () => {},
     today,
+    isDayDisabled,
   };
   const shown = Array.from({ length: months }, (_, i) => addMonths(leftMonth, i));
 

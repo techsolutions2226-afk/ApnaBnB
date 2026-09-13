@@ -4,14 +4,15 @@
    period     an id from config/stayPeriods, or null (not chosen yet)
    checkIn    "YYYY-MM-DD" | ""   — booking / check-in / move-in day
    checkOut   "YYYY-MM-DD" | ""   — picked (range periods) or derived (Monthly)
-   startHour  0–23 | null         — Hourly start, or Few nights check-in time
-   endHour    1–24 | null         — Hourly end, or Few nights check-out time
+   startHour  0–23 | null         — Hourly start, or Nightly check-in time
+   endHour    1–24 | null         — Hourly end, or Nightly check-out time
    duration   number | 0          — months / years for counted periods
    Home builds it, the URL carries it, SearchResults reads it back — all
    through these helpers, so the picker, the query and the chip never drift. */
 
-import { STAY_PERIODS } from "../config/stayPeriods.js";
+import { STAY_PERIODS, STAY_PERIOD_ALIASES } from "../config/stayPeriods.js";
 import {
+  addDays,
   addMonthsClamped,
   formatDate,
   formatDateRange,
@@ -32,7 +33,10 @@ export const EMPTY_STAY = {
 
 export const STAY_PARAM_KEYS = ["stay", "checkIn", "checkOut", "startHour", "endHour", "duration"];
 
-export const getStayPeriod = (id) => STAY_PERIODS.find((p) => p.id === id) || null;
+export const getStayPeriod = (id) => {
+  const resolved = STAY_PERIOD_ALIASES[id] || id;
+  return STAY_PERIODS.find((p) => p.id === resolved) || null;
+};
 
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
@@ -71,18 +75,31 @@ export function selectStayPeriod(stay, periodId) {
 const dropPastStart = (stay, now) => {
   if (stay.startHour == null || !isPastHour(stay.checkIn, stay.startHour, now)) return stay;
   const def = getStayPeriod(stay.period);
-  // Hourly's end belongs to its start; Few nights' check-out time does not.
+  // Hourly's end belongs to its start; Nightly's check-out time does not.
   return { ...stay, startHour: null, endHour: def?.times === "range" ? null : stay.endHour };
 };
+
+/* Nightly: once check-in is picked (and check-out isn't), days more than
+   `nights.max` nights later can't be chosen. */
+export function isStayDayDisabled(stay, date) {
+  const def = getStayPeriod(stay.period);
+  const start = fromDateKey(stay.checkIn);
+  if (!def?.nights || !start || stay.checkOut) return false;
+  return nightsBetween(start, date) > def.nights.max;
+}
 
 export function selectStayDay(stay, date, now = new Date()) {
   const def = getStayPeriod(stay.period);
   if (!def?.dates) return stay;
   let next;
   if (def.dates === "range") {
-    const range = nextRange(fromDateKey(stay.checkIn), fromDateKey(stay.checkOut), date, {
-      allowSame: false,
-    });
+    if (isStayDayDisabled(stay, date)) return stay;
+    const start = fromDateKey(stay.checkIn);
+    // Clicking the check-in day a second time books exactly one night.
+    const range =
+      def.nights && start && !stay.checkOut && +date === +start
+        ? { start, end: addDays(start, 1) }
+        : nextRange(start, fromDateKey(stay.checkOut), date, { allowSame: false });
     next = { ...stay, checkIn: toDateKey(range.start), checkOut: toDateKey(range.end) };
   } else {
     const checkIn = toDateKey(date);
@@ -97,7 +114,7 @@ export function selectStayHour(stay, hour) {
   return { ...stay, startHour: range.start, endHour: range.end };
 }
 
-/* Few nights: check-in time (startHour) or check-out time (endHour). */
+/* Nightly: check-in time (startHour) or check-out time (endHour). */
 export function setStayTime(stay, field, hour) {
   if (field !== "startHour" && field !== "endHour") return stay;
   return { ...stay, [field]: stay[field] === hour ? null : hour };
@@ -134,10 +151,9 @@ export const stayHours = (stay) =>
   stay.startHour != null && stay.endHour != null ? stay.endHour - stay.startHour : 0;
 
 /* Short label for the trigger and the results chip.
-   Hourly "Oct 5 · 5 PM – 10 PM" · Nightly "Oct 5 – Oct 8" ·
-   Few nights "Oct 5, 2 PM – Oct 8, 11 AM" · Monthly "Oct 5 · 3 months" ·
-   Yearly "3 years"
-   `compact` (the narrow search-bar trigger) leaves out Few nights' times. */
+   Hourly "Oct 5 · 5 PM – 10 PM" · Nightly "Oct 5 – Oct 8", with times
+   "Oct 5, 2 PM – Oct 8, 11 AM" · Monthly "Oct 5 · 3 months" · Yearly "3 years"
+   `compact` (the narrow search-bar trigger) leaves out Nightly's times. */
 export function formatStay(stay, { compact = false } = {}) {
   const def = getStayPeriod(stay.period);
   if (!def) return "";
@@ -204,7 +220,10 @@ export function stayFromParams(params) {
     : 0;
 
   let checkOut = "";
-  if (def.dates === "range" && checkIn && fromDateKey(rawOut) && rawOut > checkIn) checkOut = rawOut;
+  if (def.dates === "range" && checkIn && fromDateKey(rawOut) && rawOut > checkIn) {
+    const nights = nightsBetween(fromDateKey(checkIn), fromDateKey(rawOut));
+    if (!def.nights || nights <= def.nights.max) checkOut = rawOut;
+  }
   if (def.dates === "day") checkOut = deriveCheckOut(def.id, checkIn, duration);
 
   let startHour = null;

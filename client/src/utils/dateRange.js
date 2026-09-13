@@ -47,6 +47,10 @@ export function nightsBetween(start, end) {
   return Math.round((utc(end) - utc(start)) / 86400000);
 }
 
+export function addDays(date, days) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
 /* Adds calendar months, clamping to the last day of the target month
    (Jan 31 + 1 month → Feb 28, not Mar 3). */
 export function addMonthsClamped(date, months) {

@@ -14,7 +14,7 @@ import "../../../styles/StayPicker.css";
 
 const EASE = [0.22, 1, 0.36, 1];
 const PHONE = "(max-width: 640px)";
-const PANEL_ROOM = 660; // px the tallest (Few nights) layout needs below the bar
+const PANEL_ROOM = 660; // px the tallest (Nightly with times) layout needs below the bar
 
 export default function StayPanel({
   label = "When",

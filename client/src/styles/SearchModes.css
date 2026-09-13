@@ -209,7 +209,7 @@
   cursor: default;
 }
 
-.dd-dates .cal-cell:not(.cal-cell--past):not(.cal-cell--empty):not(.cal-cell--start):not(.cal-cell--end):hover {
+.dd-dates .cal-cell:not(.cal-cell--past):not(.cal-cell--disabled):not(.cal-cell--empty):not(.cal-cell--start):not(.cal-cell--end):hover {
   background: var(--color-primary-50);
   color: var(--color-primary-700);
 }

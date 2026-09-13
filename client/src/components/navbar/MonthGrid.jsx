@@ -54,6 +54,8 @@ function MonthGrid({
   onDayClick,
   onDayHover,
   today,
+  // Optional extra rule for days that can't be picked (e.g. a max stay).
+  isDayDisabled = null,
 }) {
   const days = getDaysInMonth(year, month);
   const firstDay = getFirstDay(year, month);
@@ -78,12 +80,15 @@ function MonthGrid({
           if (!date)
             return <span key={i} className="cal-cell cal-cell--empty" />;
           const isPast = date < today;
+          const isDisabled = !isPast && Boolean(isDayDisabled?.(date));
+          const blocked = isPast || isDisabled;
           const isStart = isSameDay(date, startDate);
           const isEnd = isSameDay(date, endDate);
           const inRange = isBetween(date, startDate, endDate || hoverDate);
           const isToday = isSameDay(date, today);
           let cls = "cal-cell";
           if (isPast) cls += " cal-cell--past";
+          if (isDisabled) cls += " cal-cell--disabled";
           if (isStart) cls += " cal-cell--start";
           if (isEnd) cls += " cal-cell--end";
           if (inRange) cls += " cal-cell--range";
@@ -92,8 +97,9 @@ function MonthGrid({
             <span
               key={i}
               className={cls}
-              onClick={() => !isPast && onDayClick(date)}
-              onMouseEnter={() => !isPast && onDayHover(date)}
+              aria-disabled={blocked || undefined}
+              onClick={() => !blocked && onDayClick(date)}
+              onMouseEnter={() => !blocked && onDayHover(date)}
             >
               {date.getDate()}
             </span>

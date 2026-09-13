@@ -5,7 +5,7 @@ import { formatHour } from "../../../utils/stay";
      mode="range":  tap a start hour, then an end hour — the hours between
                     are tinted and the ends are solid, with a hover preview
                     (Hourly).
-     mode="single": one hour (Few nights check-in / check-out time).
+     mode="single": one hour (Nightly check-in / check-out time).
      Selection rules live in utils/stay; this only renders and reports taps. ─── */
 
 export default function HourPicker({

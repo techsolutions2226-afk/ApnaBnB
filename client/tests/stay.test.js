@@ -1,4 +1,4 @@
-/* Tenant stay model — Hourly / Nightly / Few nights / Monthly / Yearly.
+/* Tenant stay model — Hourly / Nightly / Monthly / Yearly.
  *
  * Run with: node --test tests/stay.test.js
  */
@@ -19,6 +19,7 @@ import {
   stayLeaseMonths,
   stayToParams,
   stayFromParams,
+  isStayDayDisabled,
 } from '../src/utils/stay.js';
 import { addMonthsClamped, nextRange, toDateKey } from '../src/utils/dateRange.js';
 
@@ -41,18 +42,36 @@ test('shared range rule: allowSame=false ignores a second click on the start', (
   assert.deepEqual(nextRange(5, null, 5), { start: 5, end: 5 });
 });
 
-test('nightly picks a check-in / check-out range of at least one night', () => {
+test('nightly: clicking the check-in date twice books one night', () => {
   let s = selectStayDay(pick('nightly'), d(2026, 10, 5), LATER);
   s = selectStayDay(s, d(2026, 10, 5), LATER);
-  assert.equal(s.checkOut, '', 'same day is not a night');
+  assert.deepEqual([s.checkIn, s.checkOut], ['2026-10-05', '2026-10-06']);
+  assert.equal(stayNights(s), 1);
+  assert.equal(formatStay(s), 'Oct 5 – Oct 6');
+});
+
+test('nightly: up to 29 nights — later check-out days are blocked', () => {
+  const open = selectStayDay(pick('nightly'), d(2026, 10, 5), LATER);
+  assert.equal(isStayDayDisabled(open, d(2026, 11, 3)), false, '29 nights is allowed');
+  assert.equal(isStayDayDisabled(open, d(2026, 11, 4)), true, '30 nights is blocked');
+  assert.equal(isStayDayDisabled(open, d(2026, 10, 1)), false, 'an earlier day restarts, not blocked');
+  assert.equal(selectStayDay(open, d(2026, 11, 4), LATER), open, 'a blocked click changes nothing');
+  const max = selectStayDay(open, d(2026, 11, 3), LATER);
+  assert.equal(stayNights(max), 29);
+  assert.equal(isStayDayDisabled(max, d(2027, 1, 1)), false, 'after a full range any day starts over');
+  assert.equal(isStayDayDisabled(pick('monthly'), d(2030, 1, 1)), false, 'only nightly has a limit');
+});
+
+test('nightly picks a check-in / check-out range', () => {
+  let s = selectStayDay(pick('nightly'), d(2026, 10, 5), LATER);
   s = selectStayDay(s, d(2026, 10, 8), LATER);
   assert.equal(formatStay(s), 'Oct 5 – Oct 8');
   assert.equal(stayNights(s), 3);
   assert.equal(stayLeaseMonths(s), null);
 });
 
-test('few nights = date range + check-in time + check-out time', () => {
-  let s = selectStayDay(pick('few-nights'), d(2026, 10, 5), LATER);
+test('nightly times: check-in time + check-out time are optional extras', () => {
+  let s = selectStayDay(pick('nightly'), d(2026, 10, 5), LATER);
   s = setStayTime(s, 'startHour', 14);
   assert.equal(formatStay(s), 'Oct 5, 2 PM');
   s = selectStayDay(s, d(2026, 10, 8), LATER);
@@ -81,7 +100,7 @@ test('picking today drops a start time that has already begun', () => {
   let s = selectStayHour(selectStayHour(selectStayDay(pick('hourly'), d(2026, 10, 6), now), 10), 12);
   s = selectStayDay(s, d(2026, 10, 5), now);
   assert.deepEqual([s.startHour, s.endHour], [null, null]);
-  let f = setStayTime(setStayTime(selectStayDay(pick('few-nights'), d(2026, 10, 6), now), 'startHour', 9), 'endHour', 11);
+  let f = setStayTime(setStayTime(selectStayDay(pick('nightly'), d(2026, 10, 6), now), 'startHour', 9), 'endHour', 11);
   f = selectStayDay(selectStayDay(f, d(2026, 10, 7), now), d(2026, 10, 5), now);
   assert.deepEqual([f.startHour, f.endHour], [null, 11], 'check-out time is kept');
 });
@@ -107,19 +126,17 @@ test('yearly is just a number of years — no dates', () => {
 
 test('switching keeps what still applies; clearing keeps the period', () => {
   let s = selectStayDay(selectStayDay(pick('nightly'), d(2026, 10, 5), LATER), d(2026, 10, 8), LATER);
-  const few = selectStayPeriod(s, 'few-nights');
-  assert.deepEqual([few.checkIn, few.checkOut], ['2026-10-05', '2026-10-08'], 'range → range keeps both days');
   const monthly = selectStayPeriod(s, 'monthly');
   assert.deepEqual([monthly.checkIn, monthly.checkOut], ['2026-10-05', '2026-11-05']);
-  const cleared = clearStayDates(few);
-  assert.deepEqual([cleared.period, cleared.checkIn, cleared.checkOut], ['few-nights', '', '']);
+  const cleared = clearStayDates(s);
+  assert.deepEqual([cleared.period, cleared.checkIn, cleared.checkOut], ['nightly', '', '']);
 });
 
 test('every period round-trips through the URL', () => {
   const stays = [
     selectStayHour(selectStayHour(selectStayDay(pick('hourly'), d(2026, 10, 5), LATER), 17), 24),
     selectStayDay(selectStayDay(pick('nightly'), d(2026, 10, 5), LATER), d(2026, 10, 8), LATER),
-    setStayTime(setStayTime(selectStayDay(selectStayDay(pick('few-nights'), d(2026, 10, 5), LATER), d(2026, 10, 8), LATER), 'startHour', 14), 'endHour', 11),
+    setStayTime(setStayTime(selectStayDay(selectStayDay(pick('nightly'), d(2026, 10, 5), LATER), d(2026, 10, 8), LATER), 'startHour', 14), 'endHour', 11),
     setStayDuration(selectStayDay(pick('monthly'), d(2026, 1, 31), LATER), 1),
     setStayDuration(pick('yearly'), 4),
   ];
@@ -137,6 +154,10 @@ test('tampered or legacy URLs are handled', () => {
   assert.equal(n.checkOut, '', 'check-out must be after check-in');
   const y = stayFromParams(params({ stay: 'yearly', checkIn: '2026-10-05', duration: '2' }));
   assert.deepEqual([y.checkIn, y.duration], ['', 2]);
+  const long = stayFromParams(params({ stay: 'nightly', checkIn: '2026-10-05', checkOut: '2026-11-04' }));
+  assert.deepEqual([long.period, long.checkIn, long.checkOut], ['nightly', '2026-10-05', ''], '30+ nights link keeps only check-in');
+  const few = stayFromParams(params({ stay: 'few-nights', checkIn: '2026-10-05', checkOut: '2026-10-08', startHour: '14' }));
+  assert.deepEqual([few.period, few.checkOut, few.startHour], ['nightly', '2026-10-08', 14], 'retired few-nights links open as nightly');
   const legacy = stayFromParams(params({ checkIn: '2026-10-05', checkOut: '2026-10-20' }));
   assert.deepEqual([legacy.period, legacy.checkOut], ['nightly', '2026-10-20']);
 });

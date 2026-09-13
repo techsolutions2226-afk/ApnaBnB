@@ -1,4 +1,5 @@
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { FiInfo } from "react-icons/fi";
 import GuestRow from "../../navbar/GuestRow";
 import { CHECK_TIME_HOURS, HOURLY_HOURS } from "../../../config/stayPeriods";
 import { fromDateKey, formatDate, formatDateLong } from "../../../utils/dateRange";
@@ -11,6 +12,7 @@ import {
   formatStay,
   formatDuration,
   isPastHour,
+  isStayDayDisabled,
   plural,
   stayHours,
 } from "../../../utils/stay";
@@ -19,11 +21,11 @@ import HourPicker from "./HourPicker";
 import CountPicker from "./CountPicker";
 
 /* ─── The picker for the chosen rental period (config/stayPeriods):
-     Hourly      one-month calendar + start → end hour range
-     Nightly     two-month check-in / check-out range
-     Few nights  two-month range + check-in time + check-out time
-     Monthly     one-month calendar + months stepper
-     Yearly      number buttons 1–5, no calendar ─── */
+     Hourly   one-month calendar + start → end hour range
+     Nightly  two-month check-in / check-out range (click a date twice for one
+              night; days past 29 nights are blocked) + optional times
+     Monthly  one-month calendar + months stepper
+     Yearly   number buttons 1–5, no calendar ─── */
 
 const capitalize = (s) => `${s[0].toUpperCase()}${s.slice(1)}`;
 
@@ -71,7 +73,20 @@ export default function StayPeriodBody({ stay, onChange }) {
   if (def.dates === "range") {
     return (
       <>
-        <CalendarMonths startDate={start} endDate={end} onDayClick={onDay} months={2} hoverRange />
+        <CalendarMonths
+          startDate={start}
+          endDate={end}
+          onDayClick={onDay}
+          months={2}
+          hoverRange
+          isDayDisabled={(date) => isStayDayDisabled(stay, date)}
+        />
+        {def.nights && (
+          <p className="dd-stay__cal-hint">
+            <FiInfo size={13} aria-hidden="true" />
+            Click a date twice for 1 night · up to {def.nights.max} nights
+          </p>
+        )}
         {def.times === "checkInOut" && (
           <div className="dd-stay__times">
             <div>

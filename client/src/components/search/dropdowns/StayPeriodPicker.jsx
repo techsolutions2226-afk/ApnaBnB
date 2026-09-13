@@ -1,19 +1,13 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { FiClock, FiMoon, FiSunset, FiCalendar, FiHome } from "react-icons/fi";
+import { FiClock, FiMoon, FiCalendar, FiHome } from "react-icons/fi";
 import { STAY_PERIODS } from "../../../config/stayPeriods";
 
 /* ─── Hourly / Nightly / Monthly / Yearly chooser.
      variant="cards": the first step — a period must be chosen before any
      calendar is shown. variant="tabs": compact switcher above the calendar. ─── */
 
-const ICONS = {
-  hourly: FiClock,
-  nightly: FiMoon,
-  "few-nights": FiSunset,
-  monthly: FiCalendar,
-  yearly: FiHome,
-};
+const ICONS = { hourly: FiClock, nightly: FiMoon, monthly: FiCalendar, yearly: FiHome };
 
 export default function StayPeriodPicker({ variant = "tabs", value, onChange }) {
   const reduce = useReducedMotion();

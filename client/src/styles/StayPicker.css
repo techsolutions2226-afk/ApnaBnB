@@ -15,10 +15,33 @@
   margin-bottom: 10px;
 }
 
+/* Nightly calendar tip ("Click a date twice for 1 night"). */
+.dd-stay__cal-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-slate-500);
+}
+
+.dd-stay__cal-hint svg {
+  flex-shrink: 0;
+  color: var(--color-primary-500);
+}
+
+/* Days past the Nightly limit look like past days and can't be picked.
+   Doubled class: SearchModes.css (loaded after) sets the base cell colour. */
+.dd-dates .cal-cell.cal-cell--disabled {
+  color: var(--color-slate-300);
+  cursor: not-allowed;
+}
+
 /* ── Step 1: period cards ── */
 .dd-stay__cards {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   padding-bottom: 2px;
 }
@@ -75,7 +98,7 @@
 /* ── Period tabs ── */
 .dd-stay__tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   margin-bottom: 14px;
   padding: 4px;
@@ -218,7 +241,7 @@
   animation: dd-day-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Few nights: check-in time | check-out time under the calendar ── */
+/* ── Nightly: check-in time | check-out time under the calendar ── */
 .dd-stay__times {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -322,14 +345,14 @@
     gap: 12px;
   }
 
-  /* Five cards: the odd one out spans its row with its content centred. */
+  /* Odd number of cards: the last one spans its row with its content centred. */
   .dd-stay__card:last-child:nth-child(odd) {
     grid-column: 1 / -1;
     align-items: center;
     text-align: center;
   }
 
-  /* Five tabs scroll sideways instead of squeezing. */
+  /* Tabs scroll sideways instead of squeezing when they don't fit. */
   .dd-stay__tabs {
     display: flex;
     overflow-x: auto;

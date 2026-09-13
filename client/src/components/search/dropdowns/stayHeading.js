@@ -31,18 +31,20 @@ export default function stayHeading(stay) {
   }
 
   if (def.dates === "range") {
-    if (!start) {
+    if (!start) return ["Select check-in date", "Then pick your check-out date"];
+    if (!stay.checkOut) {
       return [
-        "Select check-in date",
-        def.times ? "Then your check-out date and times" : "Then pick your check-out date",
+        "Select check-out date",
+        def.nights
+          ? `${formatStay(stay)} · click it again for 1 night`
+          : formatStay(stay),
       ];
     }
-    if (!stay.checkOut) return ["Select check-out date", formatStay(stay)];
     const nights = plural(stayNights(stay), "night");
     if (def.times && (stay.startHour == null || stay.endHour == null)) {
-      return ["Choose check-in and check-out times", `${formatStay(stay)} · ${nights}`];
+      return ["Your dates", `${formatStay(stay)} · ${nights} · add times below (optional)`];
     }
-    return [def.times ? "Your stay" : "Your dates", `${formatStay(stay)} · ${nights}`];
+    return ["Your stay", `${formatStay(stay)} · ${nights}`];
   }
 
   if (!start) return ["Select move-in date", `Then set how many ${def.count.unit}s`];

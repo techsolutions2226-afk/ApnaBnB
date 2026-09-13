@@ -1,14 +1,15 @@
 /* ─── Tenant "When" rental periods ───
-   The one definition of the Hourly / Nightly / Few nights / Monthly / Yearly
-   choice in the hero search. Pure data (no icons) so utils/stay.js can be
-   unit-tested.
+   The one definition of the Hourly / Nightly / Monthly / Yearly choice in
+   the hero search. Pure data (no icons) so utils/stay.js can be unit-tested.
 
-   dates:  "day"   — one calendar day (move-in / booking day)
+   dates:  "day"   — one calendar day (booking / move-in day)
            "range" — check-in → check-out days (at least one night)
            null    — no calendar
+   nights: for range periods — `max` nights; later check-out days can't be
+           picked. Clicking the check-in day again books one night.
    times:  "range"      — start → end hour on the same day (Hourly)
-           "checkInOut" — check-in hour on the first day, check-out hour
-                          on the last day (Few nights)
+           "checkInOut" — optional check-in hour on the first day and
+                          check-out hour on the last day (Nightly)
            null         — no times
    count:  a number the tenant picks — `input` "stepper" (− / +) or
            "chips" (1 2 3 …); `default` 0 means nothing picked yet.
@@ -30,17 +31,9 @@ export const STAY_PERIODS = [
   {
     id: "nightly",
     label: "Nightly",
-    hint: "Pick your dates",
+    hint: "1–29 nights",
     dates: "range",
-    times: null,
-    count: null,
-    leaseMonths: null,
-  },
-  {
-    id: "few-nights",
-    label: "Few nights",
-    hint: "Dates + check-in/out times",
-    dates: "range",
+    nights: { max: 29 },
     times: "checkInOut",
     count: null,
     leaseMonths: null,
@@ -64,6 +57,9 @@ export const STAY_PERIODS = [
     leaseMonths: 12,
   },
 ];
+
+/* Retired period ids still found in shared links → their current period. */
+export const STAY_PERIOD_ALIASES = { "few-nights": "nightly" };
 
 /* Hour chips (24h). Hourly can end at midnight (24 → "12 AM"). */
 export const CHECK_TIME_HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6 AM – 11 PM

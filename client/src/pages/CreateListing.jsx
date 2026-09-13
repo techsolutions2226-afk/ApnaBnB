@@ -4,8 +4,8 @@
    Calls real backend API to create property and listing.
    ─────────────────────────────────────────────── */
 
-import { useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import useViewRole from "../hooks/useViewRole";
@@ -13,6 +13,7 @@ import { useCreateProperty } from "../hooks/useProperties";
 import { useCreateListing } from "../hooks/useListings";
 import propertyService from "../services/propertyService";
 import { clearListingDraft } from "../utils/listingDraft";
+import { isListingPurpose, clearListingIntent } from "../utils/listingIntent";
 import { FiArrowLeft, FiPlusCircle } from "react-icons/fi";
 import "../styles/Dashboard.css"; /* breadcrumb styles */
 import ListingForm from "../components/listing/ListingForm";
@@ -22,6 +23,17 @@ import "../styles/Listing.css";
 const CreateListing = () => {
   const { currentUser, getDashboardPath } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  /* Purpose preselected by the Seller/Landlord hero intents — Sale for
+     Seller, Rent for Landlord. Falls back to the form's default (Sale). */
+  const presetPurpose = isListingPurpose(location.state?.purpose)
+    ? location.state.purpose
+    : null;
+  /* Arriving here fulfils any pending hero intent, so a later login in this
+     tab goes to the dashboard as usual. */
+  useEffect(() => {
+    clearListingIntent();
+  }, []);
   /* The hat the user is wearing in the dashboard — NOT their signup role.
      Recorded on the property so match types derive from it. */
   const { viewRole } = useViewRole();
@@ -110,6 +122,7 @@ const CreateListing = () => {
         submitLabel="Create Listing"
         draftKey={currentUser?.id}
         requireTermsAgreement
+        initialPurpose={presetPurpose}
       />
     </div>
   );

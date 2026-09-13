@@ -12,6 +12,7 @@ import {
   FiCircle,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
+import { getPostAuthRedirect } from "../utils/listingIntent";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
 import Seo from "../components/seo/Seo";
@@ -144,10 +145,12 @@ const Signup = () => {
     ? { initial: false, animate: "show" }
     : { initial: "hidden", animate: "show" };
 
-  /* Redirect authenticated users to their dashboard */
+  /* Redirect authenticated users to their dashboard — or Create Listing when
+     a Seller/Landlord intent is pending (e.g. Google sign-up on this page) */
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(getDashboardPath(), { replace: true });
+      const { to, options } = getPostAuthRedirect(getDashboardPath());
+      navigate(to, options);
     }
   }, [isAuthenticated, getDashboardPath, navigate]);
 

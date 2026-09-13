@@ -23,6 +23,7 @@ import { toast } from "react-toastify";
 import { FcGoogle } from "react-icons/fc";
 import { openGooglePopup } from "../../utils/googleAuth";
 import { useAuth } from "../../context/AuthContext";
+import { getPostAuthRedirect } from "../../utils/listingIntent";
 import Modal from "../ui/Modal";
 import GoogleSignupDetails from "./GoogleSignupDetails";
 
@@ -36,6 +37,13 @@ const GoogleAuthButton = ({ className = "", lastUsed = false, lastUsedName = "" 
 
   const dashboardPathFor = (userRole) =>
     userRole === "admin" ? "/admin" : `/dashboard/${userRole}`;
+
+  /* Redirect after successful authentication — honor a pending Seller/
+     Landlord intent, otherwise fall back to the role dashboard. */
+  const redirectAfterAuth = (userRole) => {
+    const { to, options } = getPostAuthRedirect(dashboardPathFor(userRole));
+    navigate(to, options);
+  };
 
   const handleClick = async () => {
     if (isLoading || busy) return;
@@ -70,7 +78,7 @@ const GoogleAuthButton = ({ className = "", lastUsed = false, lastUsedName = "" 
               setPendingRole({ idToken: credential, profile: res.profile });
             } else {
               toast.success("Login successful! Redirecting...");
-              navigate(dashboardPathFor(res.role), { replace: true });
+              redirectAfterAuth(res.role);
             }
           } catch (err) {
             toast.error(err.message || "Google sign-in failed. Please try again.");
@@ -90,7 +98,7 @@ const GoogleAuthButton = ({ className = "", lastUsed = false, lastUsedName = "" 
       const user = await googleComplete(pendingRole.idToken, role, { phone });
       toast.success("Account created! Redirecting...");
       setPendingRole(null);
-      navigate(dashboardPathFor(user.role), { replace: true });
+      redirectAfterAuth(user.role);
     } catch (err) {
       toast.error(err.message || "Could not finish creating your account.");
     }

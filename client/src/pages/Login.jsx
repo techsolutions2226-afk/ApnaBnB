@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
+import { getPostAuthRedirect } from "../utils/listingIntent";
 import Logo from "../components/common/Logo";
 import GoogleAuthButton from "../components/common/GoogleAuthButton";
 import Seo from "../components/seo/Seo";
@@ -25,10 +26,12 @@ const Login = () => {
   // Google", exactly like GitHub / Vercel / Cloudinary remind returning users.
   const lastLogin = getLastLogin();
 
-  /* Redirect authenticated users to their dashboard */
+  /* Redirect authenticated users — to Create Listing when a Seller/Landlord
+     intent is pending, otherwise to their role dashboard */
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(getDashboardPath(), { replace: true });
+      const { to, options } = getPostAuthRedirect(getDashboardPath());
+      navigate(to, options);
     }
   }, [isAuthenticated, getDashboardPath, navigate]);
 
@@ -70,12 +73,14 @@ const Login = () => {
 
       const user = result;
       toast.success("Login successful! Redirecting...");
-      /* Navigate to role-based dashboard */
+      /* Navigate to role-based dashboard — or Create Listing when a
+         Seller/Landlord intent is pending */
       const dashboardPath =
         user.role === "admin"
           ? "/admin"
           : `/dashboard/${user.role}`;
-      navigate(dashboardPath, { replace: true });
+      const { to, options } = getPostAuthRedirect(dashboardPath);
+      navigate(to, options);
     } catch (err) {
       // Backend returns { code, message } so we can show targeted toasts.
       const code = err?.code;

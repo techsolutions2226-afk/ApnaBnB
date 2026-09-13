@@ -499,6 +499,9 @@ const ListingForm = ({
   // auto-saves form state to localStorage so a closed tab doesn't lose work.
   // Ignored when editing — that flow always seeds from the server.
   draftKey = null,
+  // Optional repo the listing starts in (Seller→sale, Landlord→rent). Highest
+  // priority over defaults and any restored draft, so the hero intent wins.
+  initialPurpose = null,
   // Optional — notified when Sale/Rent purpose changes (admin status options).
   onPurposeChange = null,
   // Create flow only: require agreeing to listing Terms before submit.
@@ -661,7 +664,12 @@ const ListingForm = ({
   }, [initialData, draftKey]);
 
   const [form, setForm] = useState(() => {
-    const base = restoredDraft?.form ? { ...defaults, ...restoredDraft.form } : defaults;
+    let base = restoredDraft?.form ? { ...defaults, ...restoredDraft.form } : defaults;
+    /* Explicit purpose preset overrides draft/default — Seller clicks always
+       start with Sale, Landlord clicks with Rent. */
+    if (!initialData && initialPurpose) {
+      base = { ...base, purpose: initialPurpose };
+    }
     return {
       ...base,
       contactPhone: sanitizePkPhoneDigits(base.contactPhone || ""),

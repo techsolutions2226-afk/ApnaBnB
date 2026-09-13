@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
+import { getPostAuthRedirect } from "../utils/listingIntent";
 import Logo from "../components/common/Logo";
 
 const OTP_LENGTH = 6;
@@ -53,8 +54,12 @@ export default function VerifyTwoFactor() {
         );
       }
       toast.success("Signed in");
+      /* A pending Seller/Landlord intent wins over the dashboard. */
       const role = result.user?.role;
-      navigate(role === "admin" ? "/admin" : getDashboardPath(), { replace: true });
+      const { to, options } = getPostAuthRedirect(
+        role === "admin" ? "/admin" : getDashboardPath(),
+      );
+      navigate(to, options);
     } catch (err) {
       // An expired or exhausted challenge cannot be retried from this screen,
       // so send them back to the password step rather than leaving them stuck.

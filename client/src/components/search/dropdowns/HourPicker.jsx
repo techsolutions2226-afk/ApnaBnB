@@ -1,27 +1,54 @@
-import { HOURLY_START_HOURS } from "../../../config/stayPeriods";
+import { useState } from "react";
 import { formatHour } from "../../../utils/stay";
-import { toDateKey } from "../../../utils/dateRange";
 
-/* ─── Start-time chips for Hourly stays. On today's date, hours that have
-     already started are disabled. Reuses the Beds chip styling. ─── */
+/* ─── Hour chips that behave like the calendar.
+     mode="range":  tap a start hour, then an end hour — the hours between
+                    are tinted and the ends are solid, with a hover preview
+                    (Hourly).
+     mode="single": one hour (Few nights check-in / check-out time).
+     Selection rules live in utils/stay; this only renders and reports taps. ─── */
 
-export default function HourPicker({ value, onChange, dateKey }) {
-  const now = new Date();
-  const isToday = dateKey === toDateKey(now);
+export default function HourPicker({
+  hours,
+  mode = "single",
+  value = null, // single
+  start = null, // range
+  end = null, // range
+  onPick, // (hour) => void
+  isDisabled = () => false,
+  label,
+}) {
+  const [hover, setHover] = useState(null);
+  const ranged = mode === "range";
+  const previewEnd = ranged && start != null && end == null && hover > start ? hover : null;
+  const bandEnd = end ?? previewEnd;
 
   return (
-    <div className="dd-stay__hours" role="group" aria-label="Start time">
-      {HOURLY_START_HOURS.map((hour) => {
-        const past = isToday && hour <= now.getHours();
-        const active = value === hour;
+    <div
+      className={`dd-hours dd-hours--${mode}`}
+      role="group"
+      aria-label={label}
+      onMouseLeave={() => setHover(null)}
+    >
+      {hours.map((hour) => {
+        const disabled = isDisabled(hour);
+        const isStart = ranged ? hour === start : hour === value;
+        const isEnd = ranged && hour === end;
+        const inBand = ranged && start != null && bandEnd != null && hour > start && hour < bandEnd;
+        let cls = "dd-hour";
+        if (isStart) cls += " dd-hour--start";
+        if (isEnd) cls += " dd-hour--end";
+        if (inBand) cls += " dd-hour--range";
+        if (hour === previewEnd) cls += " dd-hour--preview";
         return (
           <button
             key={hour}
             type="button"
-            className={`dd-beds-chip${active ? " dd-beds-chip--active" : ""}`}
-            aria-pressed={active}
-            disabled={past}
-            onClick={() => onChange(hour)}
+            className={cls}
+            disabled={disabled}
+            aria-pressed={isStart || isEnd}
+            onClick={() => onPick(hour)}
+            onMouseEnter={() => setHover(hour)}
           >
             {formatHour(hour)}
           </button>

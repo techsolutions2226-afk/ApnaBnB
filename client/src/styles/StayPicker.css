@@ -18,7 +18,7 @@
 /* ── Step 1: period cards ── */
 .dd-stay__cards {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   padding-bottom: 2px;
 }
@@ -75,7 +75,7 @@
 /* ── Period tabs ── */
 .dd-stay__tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
   margin-bottom: 14px;
   padding: 4px;
@@ -85,6 +85,7 @@
 
 .dd-stay__tab {
   position: relative;
+  white-space: nowrap;
   height: 34px;
   border: 0;
   border-radius: 9999px;
@@ -157,27 +158,139 @@
   color: var(--color-slate-700);
 }
 
-.dd-stay__hours {
+.dd-stay__side-hint {
+  margin: -4px 0 8px;
+  font-size: 12px;
+  color: var(--color-slate-500);
+}
+
+/* ── Hour chips: look and behave like calendar cells ── */
+.dd-hours {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  max-height: 196px;
-  overflow-y: auto;
-  padding: 2px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  row-gap: 6px;
 }
 
-.dd-stay__hours .dd-beds-chip {
+.dd-hour {
+  height: 36px;
   min-width: 0;
-  height: 34px;
-  padding: 0 6px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  font-family: inherit;
   font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-slate-800);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.dd-stay__hours .dd-beds-chip:disabled {
-  opacity: 0.35;
+.dd-hour:hover:not(:disabled):not(.dd-hour--start):not(.dd-hour--end) {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.dd-hour:disabled {
+  color: var(--color-slate-300);
   cursor: not-allowed;
-  border-color: var(--color-border);
-  color: var(--color-slate-400);
+}
+
+/* Between the start and end: a continuous tinted band, like calendar days. */
+.dd-hour--range,
+.dd-hour--range:hover:not(:disabled) {
+  border-radius: 0;
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
+}
+
+.dd-hour--preview {
+  box-shadow: inset 0 0 0 1.5px var(--color-primary-400);
+}
+
+.dd-hour--start,
+.dd-hour--end {
+  background: var(--color-primary-600);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 14px -6px rgba(79, 70, 229, 0.7);
+  animation: dd-day-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Few nights: check-in time | check-out time under the calendar ── */
+.dd-stay__times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.dd-stay__times .dd-hours {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+/* ── Yearly: big number buttons ── */
+.dd-stay__count {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dd-count {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dd-count__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 88px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: #fff;
+  font-family: inherit;
+  color: var(--color-slate-800);
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dd-count__opt:hover:not(.dd-count__opt--active) {
+  border-color: var(--color-primary-400);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.dd-count__opt--active {
+  border-color: var(--color-primary-600);
+  background: var(--color-primary-600);
+  color: #fff;
+  box-shadow: 0 10px 22px -10px rgba(79, 70, 229, 0.7);
+}
+
+.dd-count__num {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.dd-count__unit {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dd-hour--start,
+  .dd-hour--end {
+    animation: none;
+  }
 }
 
 .dd-stay__summary {
@@ -209,11 +322,43 @@
     gap: 12px;
   }
 
-  /* The whole panel scrolls on phones — no nested scroll for the chips. */
-  .dd-stay__hours {
+  /* Five cards: the odd one out spans the row. */
+  .dd-stay__card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  /* Five tabs scroll sideways instead of squeezing. */
+  .dd-stay__tabs {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .dd-stay__tab {
+    flex: 0 0 auto;
+    padding: 0 12px;
+  }
+
+  .dd-stay__times {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .dd-stay__times .dd-hours {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    max-height: none;
-    overflow: visible;
+  }
+
+  .dd-count {
+    gap: 6px;
+  }
+
+  .dd-count__opt {
+    height: 72px;
+    border-radius: 14px;
+  }
+
+  .dd-count__num {
+    font-size: 22px;
   }
 }
 

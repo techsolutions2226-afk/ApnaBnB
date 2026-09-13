@@ -26,12 +26,25 @@ export function formatDateLong(date) {
   return `${formatDate(date)}, ${date.getFullYear()}`;
 }
 
-/* Click-to-select range rule used by every two-click calendar:
-   first click (or a click after a full range) starts a new range; a click
-   before the start restarts from that day; otherwise it sets the end. */
-export function nextDateRange(start, end, date) {
-  if (!start || end || date < start) return { start: date, end: null };
-  return { start, end: date };
+/* Click-to-select range rule used by every two-click picker (calendar days
+   and hour chips): the first click (or a click after a full range) starts a
+   new range; a click before the start restarts from there; otherwise it sets
+   the end. `allowSame: false` makes a second click on the start a no-op, for
+   ranges that need a length (at least one night / one hour). Works for Date
+   objects and numbers. */
+export function nextRange(start, end, value, { allowSame = true } = {}) {
+  if (start == null || end != null || value < start) return { start: value, end: null };
+  if (!allowSame && +value === +start) return { start, end: null };
+  return { start, end: value };
+}
+
+export const nextDateRange = (start, end, date) => nextRange(start, end, date);
+
+/* Whole nights between two local dates (DST-safe). */
+export function nightsBetween(start, end) {
+  if (!start || !end) return 0;
+  const utc = (d) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((utc(end) - utc(start)) / 86400000);
 }
 
 /* Adds calendar months, clamping to the last day of the target month

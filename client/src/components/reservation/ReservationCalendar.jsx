@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import MonthGrid, { addMonths, formatDate } from "../navbar/MonthGrid";
+import { nextDateRange } from "../../utils/dateRange";
 
 /* ─── Calendar dropdown for the reservation card ─── */
 const ReservationCalendar = ({ startDate, endDate, onStartChange, onEndChange, onClose }) => {
@@ -14,17 +15,9 @@ const ReservationCalendar = ({ startDate, endDate, onStartChange, onEndChange, o
   const rightMonth = addMonths(leftMonth, 1);
 
   const handleDay = (date) => {
-    if (!startDate || (startDate && endDate)) {
-      onStartChange(date);
-      onEndChange(null);
-    } else {
-      if (date < startDate) {
-        onStartChange(date);
-        onEndChange(null);
-      } else {
-        onEndChange(date);
-      }
-    }
+    const range = nextDateRange(startDate, endDate, date);
+    onStartChange(range.start);
+    onEndChange(range.end);
   };
 
   const handleClear = () => {

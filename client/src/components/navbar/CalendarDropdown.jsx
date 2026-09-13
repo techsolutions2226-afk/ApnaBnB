@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import MonthGrid, { addMonths } from "./MonthGrid";
+import { nextDateRange } from "../../utils/dateRange";
 
 /* ─── Calendar Dropdown — receives state from parent ─── */
 function CalendarDropdown({
@@ -20,17 +21,9 @@ function CalendarDropdown({
   const rightMonth = addMonths(leftMonth, 1);
 
   const handleDay = (date) => {
-    if (!startDate || (startDate && endDate)) {
-      onStartChange(date);
-      onEndChange(null);
-    } else {
-      if (date < startDate) {
-        onStartChange(date);
-        onEndChange(null);
-      } else {
-        onEndChange(date);
-      }
-    }
+    const range = nextDateRange(startDate, endDate, date);
+    onStartChange(range.start);
+    onEndChange(range.end);
   };
 
   return (

@@ -16,7 +16,6 @@ import { readViewRole, writeViewRole } from "../../utils/viewRoleStore";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
-import LanguageSwitcher from "../common/LanguageSwitcher";
 import Seo from "../seo/Seo";
 import { privateAreaTitle } from "../../config/seo";
 
@@ -307,9 +306,7 @@ function MemberDashboardShell() {
         </nav>
 
         <div className="p-3 border-t border-white/[0.08] space-y-1 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3">
-          {/* Sits with the theme toggle: both are "how this panel looks/reads"
-              rather than navigation. */}
-          <LanguageSwitcher tone="dark" className="mb-2" />
+          {/* Panel theme — how this panel looks rather than navigation. */}
           <div
             className="flex flex-nowrap items-stretch gap-1 p-[3px] mb-2 rounded-[10px] border border-white/12 bg-black/35"
             role="radiogroup"

@@ -17,8 +17,13 @@ import {
 import "../styles/SearchDropdowns.css";
 import Seo from "../components/seo/Seo";
 import { PAGE_SEO } from "../config/seo";
-import { formatDateRange } from "../components/navbar/MonthGrid";
-import { fromDateKey } from "../utils/dateRange";
+import {
+  STAY_PARAM_KEYS,
+  formatStay,
+  getStayPeriod,
+  stayFromParams,
+  stayLeaseMonths,
+} from "../utils/stay";
 
 /* ─── Constants ─── */
 const PER_PAGE = 12;
@@ -65,10 +70,9 @@ const SearchResults = () => {
 
   /* URL-synced state */
   const dest = searchParams.get("dest") || "";
-  /* Tenant "When" — move-in / move-out as "YYYY-MM-DD" keys from the home
-     hero. Move-in filters by the property's availableFrom. */
-  const checkIn = searchParams.get("checkIn") || "";
-  const checkOut = searchParams.get("checkOut") || "";
+  /* Tenant "When" from the home hero — period + dates (utils/stay). */
+  const stay = useMemo(() => stayFromParams(searchParams), [searchParams]);
+  const stayLabel = formatStay(stay);
   /* Purpose comes from the pathname (/sale, /rent) so the URL stays clean.
      Falls back to the legacy ?purpose= query param if someone arrives that way. */
   const purpose = useMemo(() => {
@@ -190,10 +194,18 @@ const SearchResults = () => {
       /* Tenant move-in — keep properties available on/before that day;
          no availableFrom means available now. Compared as date keys so the
          stored UTC midnight never shifts a day. */
-      if (checkIn) {
+      if (stay.checkIn) {
         result = result.filter(
-          (p) => !p.availableFrom || String(p.availableFrom).slice(0, 10) <= checkIn
+          (p) => !p.availableFrom || String(p.availableFrom).slice(0, 10) <= stay.checkIn
         );
+      }
+
+      /* Monthly / Yearly stay — hide listings whose minimum rental period
+         (leaseTerm, months; backend default 12) is longer than the stay.
+         Hourly / Nightly have no listing data to compare, so no filter. */
+      const leaseMonths = stayLeaseMonths(stay);
+      if (leaseMonths) {
+        result = result.filter((p) => (p.leaseTerm ?? 12) <= leaseMonths);
       }
 
       /* Property type */
@@ -250,7 +262,7 @@ const SearchResults = () => {
 
       return result;
     },
-    [dest, properties, purpose, activeType, checkIn]
+    [dest, properties, purpose, activeType, stay]
   );
 
   /* Applied results — respects the live `filters` + `sortBy`. */
@@ -277,10 +289,12 @@ const SearchResults = () => {
   const activeChips = useMemo(() => {
     const chips = [];
     if (dest) chips.push({ key: "dest", label: `"${dest}"`, removable: true });
-    if (checkIn)
+    if (stay.period)
       chips.push({
-        key: "stayDates",
-        label: formatDateRange(fromDateKey(checkIn), fromDateKey(checkOut)),
+        key: "stay",
+        label: stayLabel
+          ? `${getStayPeriod(stay.period).label} · ${stayLabel}`
+          : getStayPeriod(stay.period).label,
         removable: true,
       });
     filters.types.forEach((t) =>
@@ -300,7 +314,7 @@ const SearchResults = () => {
     if (filters.superhost)
       chips.push({ key: "superhost", label: "Verified", removable: true });
     return chips;
-  }, [dest, checkIn, checkOut, filters]);
+  }, [dest, stay, stayLabel, filters]);
 
   const removeChip = useCallback(
     (chipKey) => {
@@ -308,9 +322,8 @@ const SearchResults = () => {
       if (chipKey === "dest") {
         p.delete("dest");
         setSearchParams(p);
-      } else if (chipKey === "stayDates") {
-        p.delete("checkIn");
-        p.delete("checkOut");
+      } else if (chipKey === "stay") {
+        STAY_PARAM_KEYS.forEach((key) => p.delete(key));
         setSearchParams(p);
       } else if (chipKey.startsWith("type-")) {
         const t = chipKey.replace("type-", "");
@@ -340,8 +353,7 @@ const SearchResults = () => {
     setFilters((f) => ({ ...f, types: [], superhost: false }));
     const p = new URLSearchParams(searchParams);
     p.delete("dest");
-    p.delete("checkIn");
-    p.delete("checkOut");
+    STAY_PARAM_KEYS.forEach((key) => p.delete(key));
     p.delete("guests");
     p.delete("bedrooms");
     p.delete("minPrice");

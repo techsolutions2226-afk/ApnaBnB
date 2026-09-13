@@ -63,8 +63,8 @@ export default function SearchPanel({
   searchExpanded,
   setSearchExpanded,
   submitSearch,
-  stayDates,
-  setStayDates,
+  stay,
+  setStay,
   guests,
   setGuests,
 }) {
@@ -131,8 +131,8 @@ export default function SearchPanel({
                 cityOptions={CITY_OPTIONS}
                 city={city}
                 setCity={setCity}
-                stayDates={stayDates}
-                setStayDates={setStayDates}
+                stay={stay}
+                setStay={setStay}
                 guests={guests}
                 setGuests={setGuests}
                 openField={openField}

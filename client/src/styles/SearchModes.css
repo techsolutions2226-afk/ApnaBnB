@@ -253,7 +253,8 @@
   padding: 14px;
 }
 
-.dd-guests .guest-row {
+/* GuestRow counters — Who guests and the When duration stepper. */
+:is(.dd-guests, .dd-stay) .guest-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -261,31 +262,31 @@
   padding: 6px 0 2px;
 }
 
-.dd-guests .guest-info {
+:is(.dd-guests, .dd-stay) .guest-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.dd-guests .guest-label {
+:is(.dd-guests, .dd-stay) .guest-label {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-slate-900);
 }
 
-.dd-guests .guest-sub {
+:is(.dd-guests, .dd-stay) .guest-sub {
   font-size: 12px;
   color: var(--color-slate-500);
 }
 
-.dd-guests .guest-counter {
+:is(.dd-guests, .dd-stay) .guest-counter {
   display: flex;
   align-items: center;
   gap: 14px;
   flex-shrink: 0;
 }
 
-.dd-guests .guest-btn {
+:is(.dd-guests, .dd-stay) .guest-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -299,22 +300,22 @@
   transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.12s ease;
 }
 
-.dd-guests .guest-btn:hover:not(:disabled) {
+:is(.dd-guests, .dd-stay) .guest-btn:hover:not(:disabled) {
   border-color: var(--color-primary-500);
   background: var(--color-primary-50);
   color: var(--color-primary-700);
 }
 
-.dd-guests .guest-btn:active:not(:disabled) {
+:is(.dd-guests, .dd-stay) .guest-btn:active:not(:disabled) {
   transform: scale(0.92);
 }
 
-.dd-guests .guest-btn:disabled {
+:is(.dd-guests, .dd-stay) .guest-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.dd-guests .guest-count {
+:is(.dd-guests, .dd-stay) .guest-count {
   min-width: 24px;
   text-align: center;
   font-size: 16px;

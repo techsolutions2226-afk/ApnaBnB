@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
 import SearchableList from "../search/dropdowns/SearchableList";
-import DateRangePanel from "../search/dropdowns/DateRangePanel";
+import StayPanel from "../search/dropdowns/StayPanel";
 import GuestCountPanel from "../search/dropdowns/GuestCountPanel";
 import "../../styles/SearchModes.css";
 
@@ -19,8 +19,8 @@ export default function TenantSearchBar({
   cityOptions,
   city,
   setCity,
-  stayDates,
-  setStayDates,
+  stay,
+  setStay,
   guests,
   setGuests,
   openField,
@@ -54,12 +54,7 @@ export default function TenantSearchBar({
       </div>
 
       <div className={cellClass("dates", "when")}>
-        <DateRangePanel
-          checkIn={stayDates.checkIn}
-          checkOut={stayDates.checkOut}
-          onChange={setStayDates}
-          {...sectionProps("dates")}
-        />
+        <StayPanel stay={stay} onChange={setStay} {...sectionProps("dates")} />
       </div>
 
       <div className={cellClass("guests", "who")}>

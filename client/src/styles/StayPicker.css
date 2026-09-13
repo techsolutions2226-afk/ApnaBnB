@@ -1,0 +1,223 @@
+/* ====================================================
+   StayPicker.css — Tenant "When" panel (StayPanel):
+   period cards / tabs, single-month split layout, start-time chips,
+   duration summary. Calendar cells and GuestRow styling come from
+   SearchModes.css (.dd-dates / .dd-stay scopes).
+   ==================================================== */
+
+.dd-panel.dd-stay {
+  width: 660px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dd-stay__head {
+  margin-bottom: 10px;
+}
+
+/* ── Step 1: period cards ── */
+.dd-stay__cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding-bottom: 2px;
+}
+
+.dd-stay__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.dd-stay__card:hover {
+  border-color: var(--color-primary-400);
+  box-shadow: 0 10px 24px -14px rgba(79, 70, 229, 0.55);
+  transform: translateY(-2px);
+}
+
+.dd-stay__card:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.dd-stay__card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 6px;
+  border-radius: 9999px;
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+}
+
+.dd-stay__card-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-slate-900);
+}
+
+.dd-stay__card-hint {
+  font-size: 12px;
+  color: var(--color-slate-500);
+}
+
+/* ── Period tabs ── */
+.dd-stay__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: 9999px;
+  background: var(--color-slate-100);
+}
+
+.dd-stay__tab {
+  position: relative;
+  height: 34px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-slate-600);
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.dd-stay__tab:hover {
+  color: var(--color-slate-900);
+}
+
+.dd-stay__tab--active,
+.dd-stay__tab--active:hover {
+  color: var(--color-primary-700);
+}
+
+.dd-stay__tab-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+}
+
+.dd-stay__tab-label {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Hourly / Monthly / Yearly: calendar + controls ── */
+.dd-stay__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Doubled class: SearchModes.css (loaded after) sets two columns. */
+.dd-dates__months.dd-dates__months--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Clear / Done stay reachable while the panel scrolls. */
+.dd-panel.dd-stay .dd-range-actions {
+  position: sticky;
+  bottom: -14px;
+  z-index: 2;
+  margin-bottom: -14px;
+  padding-bottom: 14px;
+  background: #fff;
+}
+
+.dd-stay__side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.dd-stay__side-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-slate-700);
+}
+
+.dd-stay__hours {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 196px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.dd-stay__hours .dd-beds-chip {
+  min-width: 0;
+  height: 34px;
+  padding: 0 6px;
+  font-size: 12.5px;
+}
+
+.dd-stay__hours .dd-beds-chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  color: var(--color-slate-400);
+}
+
+.dd-stay__summary {
+  margin: 0;
+  overflow: hidden;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--color-primary-50);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-800);
+}
+
+@media (max-width: 640px) {
+  .dd-panel.dd-stay {
+    width: 340px;
+  }
+
+  .dd-stay__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dd-stay__tab {
+    font-size: 12px;
+  }
+
+  .dd-stay__split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  /* The whole panel scrolls on phones — no nested scroll for the chips. */
+  .dd-stay__hours {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* Keep the tenant bar clear of the fixed header when scrolled into view. */
+.tsearch-cell > .abn-s2-field {
+  scroll-margin-top: 84px;
+}

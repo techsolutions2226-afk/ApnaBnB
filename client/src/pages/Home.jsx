@@ -15,6 +15,7 @@ import {
   CREATE_LISTING_PATH,
 } from "../utils/listingIntent";
 import { MARKETPLACE_MODES } from "../config/searchOptions";
+import { EMPTY_STAY, stayToParams } from "../utils/stay";
 import Seo, { buildOrganizationJsonLd } from "../components/seo/Seo";
 import { PAGE_SEO } from "../config/seo";
 import "../styles/cinematic.css";
@@ -69,8 +70,9 @@ export default function Home() {
   const [currency, setCurrency] = useState("PKR");
   const [openField, setOpenField] = useState(null);
   const [searchExpanded, setSearchExpanded] = useState(false);
-  /* Tenant search fields — dates are "YYYY-MM-DD" keys (utils/dateRange). */
-  const [stayDates, setStayDates] = useState({ checkIn: "", checkOut: "" });
+  /* Tenant search fields — `stay` is the When value (period + dates), see
+     utils/stay. */
+  const [stay, setStay] = useState(EMPTY_STAY);
   const [guests, setGuests] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
@@ -119,8 +121,7 @@ export default function Home() {
       /* Tenant row: Where | When | Who. Guests travel as `guests`, which the
          results page already reads. */
       if (city) params.set("dest", city);
-      if (stayDates.checkIn) params.set("checkIn", stayDates.checkIn);
-      if (stayDates.checkOut) params.set("checkOut", stayDates.checkOut);
+      stayToParams(stay).forEach(([key, value]) => params.set(key, value));
       if (guests) params.set("guests", String(guests));
     } else {
       const loc = location.trim();
@@ -186,8 +187,8 @@ export default function Home() {
     searchExpanded,
     setSearchExpanded,
     submitSearch,
-    stayDates,
-    setStayDates,
+    stay,
+    setStay,
     guests,
     setGuests,
   };

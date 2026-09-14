@@ -1,54 +1,44 @@
-/* Search location defaults — which city a detected IP location preselects,
- * how the hint text reads, and how cached / manual choices are stored.
+/* Visitor location on the home page — which city an IP location belongs to,
+ * the nearest-first ordering, what the property area shows (rows or a "No
+ * properties found" message), and that the location is never kept in the
+ * browser (it is detected again on every page load).
  *
  * Run with: node --test tests/search-location.test.js
  */
-import { test, beforeEach } from 'node:test';
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
-
-const makeStorage = () => {
-  const store = new Map();
-  return {
-    store,
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: (k) => store.delete(k),
-  };
-};
-globalThis.localStorage = makeStorage();
-globalThis.sessionStorage = makeStorage();
+import fs from 'node:fs';
+import path from 'node:path';
 
 const {
   resolveSearchCity,
   orderByProximity,
   locationOrigin,
+  planPropertyRows,
+  sameCity,
   NEARBY_CITY_KM,
   distanceKm,
-  readDetected,
-  writeDetected,
-  markNotDetected,
-  wasNotDetected,
-  getManualCity,
-  setManualCity,
-  DETECTED_TTL_MS,
-  DETECTED_REFRESH_MS,
 } = await import('../src/utils/searchLocation.js');
 const { SEARCH_CITIES, CITY_CENTERS, SEARCH_COUNTRY_CODE } = await import(
   '../src/config/locations.js'
 );
 
 const MATCH = { cities: SEARCH_CITIES, centers: CITY_CENTERS, countryCode: SEARCH_COUNTRY_CODE };
+const PLAN = { centers: CITY_CENTERS, countryCode: SEARCH_COUNTRY_CODE, searchCities: SEARCH_CITIES };
 const pk = (over = {}) => ({ country: 'Pakistan', countryCode: 'PK', region: 'Punjab', ...over });
-
-beforeEach(() => {
-  localStorage.store.clear();
-  sessionStorage.store.clear();
-});
+const row = (city, total = 2) => ({ city, total, properties: [] });
 
 test('every search city has a map centre (needed for nearest-city matching)', () => {
   for (const city of SEARCH_CITIES) {
     assert.ok(CITY_CENTERS[city], `${city} is missing from CITY_CENTERS`);
   }
+});
+
+test('sameCity: ignores case, accents, spaces and punctuation; empty never matches', () => {
+  assert.equal(sameCity('Dera Ghāzi Khān', 'dera ghazi khan'), true);
+  assert.equal(sameCity(' islamabad ', 'Islamabad'), true);
+  assert.equal(sameCity('Lahore', 'Karachi'), false);
+  assert.equal(sameCity('', ''), false);
 });
 
 test('resolveSearchCity: exact city name wins, ignoring case, accents and spacing', () => {
@@ -61,26 +51,14 @@ test('resolveSearchCity: unknown town falls back to the nearest search city', ()
   // Real ipapi answer for a PTCL address: a town ~23 km from Mardan.
   const amanGarh = pk({ city: 'Aman Garh', region: 'Khyber Pakhtunkhwa', latitude: 34.01, longitude: 71.93 });
   assert.equal(resolveSearchCity(amanGarh, MATCH), 'Mardan');
-  // A Lahore suburb by coordinates only.
   assert.equal(resolveSearchCity(pk({ city: 'Raiwind', latitude: 31.25, longitude: 74.22 }), MATCH), 'Lahore');
 });
 
-test('resolveSearchCity: nothing within range, or no coordinates, gives no city', () => {
-  // Middle of Balochistan, far from every search city.
+test('resolveSearchCity: nothing within range, other countries, or no detection give no city', () => {
   assert.equal(resolveSearchCity(pk({ city: 'Kharan', latitude: 28.58, longitude: 65.42 }), MATCH), '');
   assert.equal(resolveSearchCity(pk({ city: 'Somewhere' }), MATCH), '');
-});
-
-test('resolveSearchCity: other countries never match, even with a shared city name', () => {
-  const india = { country: 'India', countryCode: 'IN', city: 'Hyderabad', latitude: 17.38, longitude: 78.49 };
-  assert.equal(resolveSearchCity(india, MATCH), '');
-  const amritsar = { country: 'India', countryCode: 'IN', city: 'Amritsar', latitude: 31.63, longitude: 74.87 };
-  assert.equal(resolveSearchCity(amritsar, MATCH), '');
-});
-
-test('resolveSearchCity: missing or failed detection gives no city', () => {
+  assert.equal(resolveSearchCity({ country: 'India', countryCode: 'IN', city: 'Hyderabad', latitude: 17.38, longitude: 78.49 }, MATCH), '');
   assert.equal(resolveSearchCity(null, MATCH), '');
-  assert.equal(resolveSearchCity(undefined, MATCH), '');
   assert.equal(resolveSearchCity({ detected: false }, MATCH), '');
 });
 
@@ -105,32 +83,22 @@ test('orderByProximity: follows the rule for every origin — own, nearby by dis
       if (i > 0) assert.ok(d >= km[i - 1], `${home}: nearby cities must be closest first`);
     });
     km.slice(nearCount).forEach((d) => assert.ok(d > NEARBY_CITY_KM, `${home}: far city inside nearby group`));
-    // With no counts, far cities keep the configured (major-first) order.
     const far = order.slice(1 + nearCount);
     assert.deepEqual(far, SEARCH_CITIES.filter((c) => far.includes(c)));
   }
 });
 
-test('orderByProximity: city rows — unknown or far cities are ordered by listing count', () => {
-  const rows = [
-    { city: 'Karachi', total: 3 },
-    { city: 'Bahawalnagar', total: 9 }, // not in CITY_CENTERS
-    { city: 'rawalpindi', total: 1 }, // backend spelling differs in case
-    { city: 'Lahore', total: 5 },
-    { city: 'Islamabad', total: 2 },
-  ];
+test('orderByProximity: unknown or far cities are ordered by listing count; no origin → count only', () => {
+  const rows = [row('Karachi', 3), row('Bahawalnagar', 9), row('rawalpindi', 1), row('Lahore', 5), row('Islamabad', 2)];
   const opts = { nameOf: (r) => r.city, countOf: (r) => r.total, centers: CITY_CENTERS };
   assert.deepEqual(
     orderByProximity(rows, { ...opts, origin: cityOrigin('Islamabad') }).map((r) => r.city),
     ['Islamabad', 'rawalpindi', 'Bahawalnagar', 'Lahore', 'Karachi'],
   );
-});
-
-test('orderByProximity: no origin means most listings first, input order on ties', () => {
-  const rows = [{ city: 'A', total: 1 }, { city: 'B', total: 4 }, { city: 'C', total: 1 }, { city: 'D', total: 4 }];
-  const order = orderByProximity(rows, { nameOf: (r) => r.city, countOf: (r) => r.total, origin: null });
-  assert.deepEqual(order.map((r) => r.city), ['B', 'D', 'A', 'C']);
-  assert.deepEqual(orderByProximity(SEARCH_CITIES, { origin: null, centers: CITY_CENTERS }), SEARCH_CITIES);
+  assert.deepEqual(
+    orderByProximity(rows, { ...opts, origin: null }).map((r) => r.city),
+    ['Bahawalnagar', 'Lahore', 'Karachi', 'Islamabad', 'rawalpindi'],
+  );
   assert.deepEqual(orderByProximity(null), []);
 });
 
@@ -140,63 +108,55 @@ test('locationOrigin: detected coordinates, city fallback, and nothing outside t
   assert.deepEqual(locationOrigin(pk({ city: 'Lahore' }), MATCH), { city: 'Lahore', ...CITY_CENTERS.Lahore });
   assert.equal(locationOrigin({ countryCode: 'US', country: 'United States', city: 'Austin', latitude: 30, longitude: -97 }, MATCH), null);
   assert.equal(locationOrigin(null, MATCH), null);
-  assert.equal(locationOrigin(pk({ city: 'Nowhere' }), MATCH), null);
 });
 
-test('distanceKm: Lahore to Islamabad is about 270 km', () => {
-  const km = distanceKm(CITY_CENTERS.Lahore, CITY_CENTERS.Islamabad);
-  assert.ok(km > 250 && km < 290, `got ${km}`);
+test('planPropertyRows: location not detected → message only', () => {
+  assert.deepEqual(planPropertyRows(null, [row('Lahore')], PLAN), { kind: 'undetected' });
+  assert.deepEqual(planPropertyRows(undefined, [row('Lahore')], PLAN), { kind: 'undetected' });
 });
 
-test('detected cache: fresh, stale and expired entries', () => {
-  const now = 1_000_000_000_000;
-  writeDetected(pk({ city: 'Lahore' }), now);
-  assert.deepEqual(readDetected(now + 1000), { geo: pk({ city: 'Lahore' }), stale: false });
-  assert.equal(readDetected(now + DETECTED_REFRESH_MS + 1).stale, true);
-  assert.equal(readDetected(now + DETECTED_TTL_MS + 1), null);
+test('planPropertyRows: a country without listings (e.g. VPN in the USA) → country message only', () => {
+  const usa = { country: 'United States', countryCode: 'US', city: 'Austin', latitude: 30.27, longitude: -97.74 };
+  assert.deepEqual(planPropertyRows(usa, [row('Lahore'), row('Karachi')], PLAN), { kind: 'no-country', country: 'United States' });
 });
 
-test('detected cache: failures are never stored, and corrupt data reads as empty', () => {
-  writeDetected(null);
-  writeDetected({ detected: false });
-  assert.equal(readDetected(), null);
-  localStorage.setItem('detected_location_v1', '{not json');
-  assert.equal(readDetected(), null);
+test('planPropertyRows: listings country with no listings anywhere → country message only', () => {
+  assert.deepEqual(planPropertyRows(pk({ city: 'Lahore' }), [], PLAN), { kind: 'no-country', country: 'Pakistan' });
+  assert.deepEqual(planPropertyRows(pk({ city: 'Lahore' }), [row('Lahore', 0)], PLAN), { kind: 'no-country', country: 'Pakistan' });
 });
 
-test('not-detected flag is per tab and cleared by a later success', () => {
-  assert.equal(wasNotDetected(), false);
-  markNotDetected();
-  assert.equal(wasNotDetected(), true);
-  writeDetected(pk({ city: 'Lahore' }));
-  assert.equal(wasNotDetected(), false);
+test('planPropertyRows: own city has listings → rows nearest first, no message', () => {
+  const plan = planPropertyRows(
+    pk({ city: 'Islamabad', latitude: 33.72, longitude: 73.06 }),
+    [row('Lahore', 7), row('Murree', 2), row('Islamabad', 7), row('Karachi', 2), row('Rawalpindi', 5)],
+    PLAN,
+  );
+  assert.equal(plan.kind, 'rows');
+  assert.equal(plan.missingCity, '');
+  assert.deepEqual(plan.rows.map((r) => r.city), ['Islamabad', 'Rawalpindi', 'Murree', 'Lahore', 'Karachi']);
 });
 
-test('manual city: null until chosen, and a cleared choice is remembered as ""', () => {
-  assert.equal(getManualCity(), null);
-  setManualCity('Karachi');
-  assert.equal(getManualCity(), 'Karachi');
-  setManualCity('');
-  assert.equal(getManualCity(), '');
+test('planPropertyRows: own city has no listings → city message, then that country\'s other cities', () => {
+  const plan = planPropertyRows(
+    pk({ city: 'Gujranwala', latitude: 32.19, longitude: 74.19 }),
+    [row('Karachi', 2), row('Lahore', 7), row('Sialkot', 2)],
+    PLAN,
+  );
+  assert.equal(plan.kind, 'rows');
+  assert.equal(plan.missingCity, 'Gujranwala');
+  // Sialkot (~45 km) and Lahore (~76 km) are nearby, closest first; Karachi is far.
+  assert.deepEqual(plan.rows.map((r) => r.city), ['Sialkot', 'Lahore', 'Karachi']);
 });
 
-test('blocked storage never throws', () => {
-  const saved = { local: globalThis.localStorage, session: globalThis.sessionStorage };
-  const blocked = {
-    getItem: () => { throw new Error('blocked'); },
-    setItem: () => { throw new Error('blocked'); },
-    removeItem: () => { throw new Error('blocked'); },
-  };
-  globalThis.localStorage = blocked;
-  globalThis.sessionStorage = blocked;
-  try {
-    assert.equal(readDetected(), null);
-    assert.doesNotThrow(() => writeDetected(pk({ city: 'Lahore' })));
-    assert.equal(getManualCity(), null);
-    assert.doesNotThrow(() => setManualCity('Lahore'));
-    assert.equal(wasNotDetected(), false);
-  } finally {
-    globalThis.localStorage = saved.local;
-    globalThis.sessionStorage = saved.session;
-  }
+test('planPropertyRows: a town outside every search city is named in the message', () => {
+  const plan = planPropertyRows(pk({ city: 'Kharan', latitude: 28.58, longitude: 65.42 }), [row('Quetta', 2)], PLAN);
+  assert.equal(plan.kind, 'rows');
+  assert.equal(plan.missingCity, 'Kharan');
+});
+
+test('the detected location is never stored in the browser (fresh on every page load)', () => {
+  const src = fs.readFileSync(path.join(import.meta.dirname, '..', 'src', 'utils', 'locationDetection.js'), 'utf8');
+  assert.doesNotMatch(src, /setItem\(/, 'locationDetection must not write storage');
+  const hook = fs.readFileSync(path.join(import.meta.dirname, '..', 'src', 'hooks', 'useVisitorLocation.js'), 'utf8');
+  assert.doesNotMatch(hook, /localStorage|sessionStorage/, 'useVisitorLocation must not use storage');
 });

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import SearchPanel from "../components/cinematic/SearchPanel";
 import PropertySections from "../components/property/PropertySections";
 import { useAuth } from "../context/AuthContext";
-import useSearchLocation from "../hooks/useSearchLocation";
+import useVisitorLocation from "../hooks/useVisitorLocation";
 import { SEARCH_CITIES, CITY_CENTERS } from "../config/locations";
 import { orderByProximity } from "../utils/searchLocation";
 import {
@@ -29,10 +29,11 @@ export default function Home() {
   const { isAuthenticated } = useAuth();
   /* Active search mode — "buyer" | "tenant" (see MARKETPLACE_MODES). */
   const [mode, setMode] = useState("buyer");
-  /* Where the visitor is (IP-based, silent). City defaults to it until they
-     pick one, `origin` orders cities nearest first, and `ready` holds the
-     search bar and city rows back until that is known. */
-  const { city, setCity, origin, ready: searchReady } = useSearchLocation();
+  /* Where the visitor is, detected silently from their IP on every page load.
+     It orders the city rows and the City list; the City input itself stays
+     empty until the visitor picks one. */
+  const { detected, origin, ready: locationReady } = useVisitorLocation();
+  const [city, setCity] = useState("");
   /* City / Where list: the visitor's own and nearby cities first. */
   const cityOptions = useMemo(
     () =>
@@ -187,14 +188,10 @@ export default function Home() {
           >
             {t("hero.subtitle")}
           </motion.p>
-          {/* Kept in the layout but invisible until the default city is known,
-              so the hero never shifts and the fields never show empty first. */}
           <motion.div
             className="mt-6 w-full max-w-3xl px-1 sm:px-2"
-            style={{ visibility: searchReady ? "visible" : "hidden" }}
-            aria-hidden={!searchReady}
             initial={{ opacity: 0, y: 24 }}
-            animate={searchReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: EASE }}
           >
             <SearchPanel {...searchProps} variant="card" />
@@ -202,8 +199,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══ POPULAR HOMES BY CITY — the visitor's own and nearby cities first ══ */}
-      <PropertySections origin={origin} ready={searchReady} />
+      {/* ══ POPULAR HOMES BY CITY — for the visitor's detected location ══ */}
+      <PropertySections detected={detected} ready={locationReady} />
     </div>
   );
 }

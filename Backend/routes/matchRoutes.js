@@ -13,7 +13,7 @@ const {
   getMatchContact,
   deleteMatch,
 } = require('../controllers/matchController');
-const { generateMatchesForProperty } = require('../controllers/propertyController');
+const { generateMatchesForProperty } = require('../utils/propertyMatches');
 const { generateMatchesForRequirement } = require('../controllers/requirementController');
 const prisma = require('../db/prisma');
 const verifyToken = require('../middleware/authMiddleware');

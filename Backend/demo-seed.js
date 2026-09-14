@@ -15,7 +15,7 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const prisma = require('./db/prisma');
-const { generateMatchesForProperty } = require('./controllers/propertyController');
+const { generateMatchesForProperty } = require('./utils/propertyMatches');
 const { toPropertyCreateData } = require('./utils/seedPropertyFields');
 
 const TEST_EMAILS = [

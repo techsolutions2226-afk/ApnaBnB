@@ -1,12 +1,17 @@
 /* Mock users + data seeder (Postgres / Prisma).
  *
- * Adds 30 realistic test users straight into the database (bypassing the API),
+ * Adds 35 realistic test users straight into the database (bypassing the API),
  * all with the password Test@123, plus mock supply-side data:
  *   - every seller / dealer user gets 2 properties, each with its own DISTINCT
  *     photo set (no image is reused across properties — asserted below),
  *   - every property is wrapped in a Listing so it shows on My Listings,
  *   - the buyer users get requirements tuned to match several properties,
  *   - matches are created from those genuine overlaps.
+ *
+ * Cities cover the whole country, including the ones around Islamabad (Murree,
+ * Abbottabad, Muzaffarabad, Jhelum) and Mardan, so the home page's
+ * "Popular homes in <city>" rows show a real nearest-first order. Test a
+ * location locally with GEO_DEV_IP in .env (see .env.example).
  *
  * Run with:
  *   cd Backend && node mock-users-seed.js
@@ -55,6 +60,11 @@ const PEOPLE = [
   { key: 'mahnoor',  name: 'Mahnoor Saleem', role: 'buyer',  phone: '+92 334 1234528', location: 'Westridge, Rawalpindi',      latitude: 33.6050, longitude: 73.0720 },
   { key: 'farhan',   name: 'Farhan Afzal',   role: 'buyer',  phone: '+92 341 1234529', location: 'D-Ground, Faisalabad',       latitude: 31.4400, longitude: 73.0980 },
   { key: 'zehra',    name: 'Zehra Naqvi',    role: 'buyer',  phone: '+92 349 1234530', location: 'Qasimabad, Hyderabad',       latitude: 25.3860, longitude: 68.3560 },
+  { key: 'usman',    name: 'Usman Abbasi',   role: 'dealer', phone: '+92 300 1234531', location: 'Mall Road, Murree',          latitude: 33.9070, longitude: 73.3943 },
+  { key: 'sana',     name: 'Sana Jadoon',    role: 'seller', phone: '+92 301 1234532', location: 'Jinnahabad, Abbottabad',     latitude: 34.1688, longitude: 73.2215 },
+  { key: 'waqas',    name: 'Waqas Yousafzai', role: 'dealer', phone: '+92 321 1234533', location: 'Sheikh Maltoon Town, Mardan', latitude: 34.1986, longitude: 72.0404 },
+  { key: 'bilal',    name: 'Bilal Janjua',   role: 'seller', phone: '+92 333 1234534', location: 'Cantt, Jhelum',              latitude: 32.9425, longitude: 73.7257 },
+  { key: 'mehwish',  name: 'Mehwish Mughal', role: 'dealer', phone: '+92 345 1234535', location: 'Upper Chattar, Muzaffarabad', latitude: 34.3700, longitude: 73.4711 },
 ];
 
 /* Distinct photo set per property — two exterior/interior shots each. Every id
@@ -102,6 +112,17 @@ const PHOTO_SETS = [
   ['photo-1616137466211-f939a420be84', 'photo-1584622650111-993a426fbf0a'],
   ['photo-1493655161922-ef989dde9d96', 'photo-1493663284031-b7e3aefcae8e'],
   ['photo-1581858726788-75bc0f6a952d', 'photo-1599427303058-f04cbcf4756f'],
+  // Murree, Abbottabad, Mardan, Jhelum, Muzaffarabad (each id checked to load).
+  ['photo-1449158743715-0a90ebb6d2d8', 'photo-1600210491892-03d54c0aaf87'],
+  ['photo-1464822759023-fed622ff2c3b', 'photo-1600585154526-990dced4db0d'],
+  ['photo-1605146769289-440113cc3d00', 'photo-1600607687644-c7171b42498f'],
+  ['photo-1602343168117-bb8ffe3e2e9f', 'photo-1600566752355-35792bedcfea'],
+  ['photo-1600047509358-9dc75507daeb', 'photo-1600566753151-384129cf4e3e'],
+  ['photo-1605276373954-0c4a0dac5b12', 'photo-1600573472592-401b489a3cdc'],
+  ['photo-1512918728675-ed5a9ecdebfd', 'photo-1513694203232-719a280e022f'],
+  ['photo-1600585154084-4e5fe7c39198', 'photo-1586023492125-27b2c045efd7'],
+  ['photo-1470770841072-f978cf4d019e', 'photo-1600607688969-a5bfcd646154'],
+  ['photo-1506905925346-21bda4d32df4', 'photo-1513584684374-8bab748fbf90'],
 ];
 const img = (id) => `https://images.unsplash.com/${id}?w=1000&q=80&auto=format&fit=crop`;
 
@@ -110,7 +131,7 @@ const img = (id) => `https://images.unsplash.com/${id}?w=1000&q=80&auto=format&f
 const PROPERTIES = [
   { owner: 'ali',    title: '10 Marla House in Gulberg III',     city: 'Lahore',     area: 'Gulberg',            locality: 'Gulberg III', block: 'Block C', street: 'Main Boulevard', lat: 31.5204, lng: 74.3587, purpose: 'sale', category: 'home',       propertyType: 'house',              price: 48000000, size: 10, unit: 'Marla',  bed: 4, bath: 4, status: 'active',   condition: 'good', facing: 'East', amenities: ['Parking', 'Security', 'Generator', 'Lawn', 'Drawing room', 'Servant quarter'] },
   { owner: 'ali',    title: '5 Marla Upper Portion, Johar Town', city: 'Lahore',     area: 'Johar Town',         locality: 'Phase 1', block: 'Block H', lat: 31.4697, lng: 74.2728, purpose: 'rent', category: 'home',       propertyType: 'upper-portion',      price: 65000,   size: 5,  unit: 'Marla',  bed: 2, bath: 2, status: 'active',   condition: 'like-new', amenities: ['Parking', 'Security', 'Balcony'], deposit: 130000, advanceRent: 65000, furnished: 'semi-furnished', leaseTerm: 12 },
-  { owner: 'hamza',  title: '7 Marla House in F-8',              city: 'Islamabad',  area: 'F-8',                locality: 'F-8/1', street: 'Street 12', lat: 33.7005, lng: 73.0553, purpose: 'sale', category: 'home',       propertyType: 'house',              price: 78000000, size: 7,  unit: 'Marla',  bed: 4, bath: 5, status: 'active',   condition: 'good', amenities: ['Parking', 'Security', 'Central heating', 'Lawn'] },
+  { owner: 'hamza',  title: '7 Marla House in F-8',              city: 'Islamabad',  area: 'F-8',                locality: 'F-8/1', street: 'Street 12', lat: 33.7005, lng: 73.0553, purpose: 'sale', category: 'home',       propertyType: 'house',              price: 78000000, size: 7,  unit: 'Marla',  bed: 4, bath: 5, status: 'featured', condition: 'good', amenities: ['Parking', 'Security', 'Central heating', 'Lawn'] },
   { owner: 'hamza',  title: '2 Bed Apartment, F-11 Markaz',      city: 'Islamabad',  area: 'F-11',               locality: 'Markaz', buildingName: 'F-11 Heights', apartmentNumber: '4B', floorNumber: 4, totalFloors: 8, lat: 33.6844, lng: 72.9992, purpose: 'rent', category: 'home',       propertyType: 'flat',               price: 95000,    size: 1200, unit: 'Sq Ft', bed: 2, bath: 2, status: 'active',  condition: 'like-new', amenities: ['Elevator', 'Security', 'Parking', 'Balcony'], deposit: 190000, advanceRent: 95000, furnished: 'furnished' },
   { owner: 'zara',   title: '1 Kanal Corner House, DHA Phase 5', city: 'Lahore',     area: 'DHA',                locality: 'Phase 5', block: 'XX', street: 'Khhyaban-e-Iqbal', lat: 31.4697, lng: 74.4131, purpose: 'sale', category: 'home',       propertyType: 'house',              price: 92000000, size: 1,  unit: 'Kanal',  bed: 6, bath: 6, status: 'featured', condition: 'brand-new', servantQuarters: 1, amenities: ['Parking', 'Security', 'Swimming pool', 'Servant quarter', 'Lawn', 'Generator'] },
   { owner: 'zara',   title: 'Office Floor on Main Boulevard',    city: 'Lahore',     area: 'Gulberg',            locality: 'MM Alam Road', buildingName: 'Alliance Tower', floorNumber: 3, totalFloors: 12, lat: 31.5150, lng: 74.3450, purpose: 'rent', category: 'commercial', propertyType: 'office',              price: 350000,   size: 2000, unit: 'Sq Ft', bed: 0, bath: 4, status: 'active',  condition: 'good', amenities: ['Elevator', 'Security', 'Parking', 'Generator', 'Reception'], deposit: 1050000, advanceRent: 350000 },
@@ -150,6 +171,16 @@ const PROPERTIES = [
   { owner: 'azhar', title: '5 Marla House in Okara Cantt',         city: 'Okara',      area: 'Cantt',          locality: 'Cantt', lat: 30.7560, lng: 73.3760, purpose: 'rent', category: 'home',       propertyType: 'house',              price: 28000,    size: 5,  unit: 'Marla', bed: 3, bath: 2, status: 'active', condition: 'good', amenities: ['Parking'], deposit: 56000, advanceRent: 28000 },
   { owner: 'saman', title: '5 Marla House in Gulgasht Block C',    city: 'Multan',     area: 'Gulgasht',       locality: 'Block C', street: 'Street 9', lat: 30.1984, lng: 71.4687, purpose: 'sale', category: 'home',       propertyType: 'house',              price: 14000000, size: 5,  unit: 'Marla', bed: 3, bath: 3, status: 'active',   condition: 'good', amenities: ['Parking', 'Security'] },
   { owner: 'saman', title: '3 Bed Flat in Gulgasht',               city: 'Multan',     area: 'Gulgasht',       locality: 'Gulgasht', buildingName: 'Gulgasht Heights', floorNumber: 2, totalFloors: 5, lat: 30.1920, lng: 71.4730, purpose: 'rent', category: 'home',       propertyType: 'flat',               price: 35000,    size: 1100, unit: 'Sq Ft', bed: 3, bath: 2, status: 'active', condition: 'good', amenities: ['Security', 'Parking'], deposit: 70000, advanceRent: 35000, furnished: 'semi-furnished' },
+  { owner: 'usman',   title: 'Pine View Cottage on Mall Road',      city: 'Murree',       area: 'Mall Road',       locality: 'Kashmir Point', street: 'Upper Mall', lat: 33.9070, lng: 73.3943, purpose: 'rent', category: 'home', propertyType: 'house', price: 120000, size: 8,  unit: 'Marla', bed: 3, bath: 3, status: 'featured', condition: 'like-new', amenities: ['Parking', 'Security', 'Central heating', 'Lawn'], deposit: 240000, advanceRent: 120000, furnished: 'furnished' },
+  { owner: 'usman',   title: '1 Kanal Hillside Villa in Bhurban',   city: 'Murree',       area: 'Bhurban',         locality: 'Bhurban', lat: 33.9580, lng: 73.4550, purpose: 'sale', category: 'home', propertyType: 'house', price: 85000000, size: 1, unit: 'Kanal', bed: 5, bath: 5, status: 'active', condition: 'good', amenities: ['Parking', 'Security', 'Lawn', 'Generator', 'Servant quarter'] },
+  { owner: 'sana',    title: '10 Marla House in Jinnahabad',        city: 'Abbottabad',   area: 'Jinnahabad',      locality: 'Jinnahabad', street: 'Street 3', lat: 34.1688, lng: 73.2215, purpose: 'sale', category: 'home', propertyType: 'house', price: 32000000, size: 10, unit: 'Marla', bed: 4, bath: 4, status: 'active', condition: 'good', amenities: ['Parking', 'Security', 'Lawn'] },
+  { owner: 'sana',    title: '2 Bed Flat on Mansehra Road',         city: 'Abbottabad',   area: 'Mansehra Road',   locality: 'Supply Bazaar', buildingName: 'Hazara Heights', floorNumber: 2, totalFloors: 5, lat: 34.1750, lng: 73.2300, purpose: 'rent', category: 'home', propertyType: 'flat', price: 40000, size: 1000, unit: 'Sq Ft', bed: 2, bath: 2, status: 'active', condition: 'good', amenities: ['Security', 'Parking'], deposit: 80000, advanceRent: 40000, furnished: 'semi-furnished' },
+  { owner: 'waqas',   title: '7 Marla House in Sheikh Maltoon Town', city: 'Mardan',      area: 'Sheikh Maltoon Town', locality: 'Sector C', lat: 34.1986, lng: 72.0404, purpose: 'sale', category: 'home', propertyType: 'house', price: 21000000, size: 7, unit: 'Marla', bed: 4, bath: 4, status: 'active', condition: 'good', amenities: ['Parking', 'Security'] },
+  { owner: 'waqas',   title: '5 Marla House on Nowshera Road',      city: 'Mardan',       area: 'Nowshera Road',   locality: 'Nowshera Road', lat: 34.1900, lng: 72.0300, purpose: 'rent', category: 'home', propertyType: 'house', price: 32000, size: 5, unit: 'Marla', bed: 3, bath: 2, status: 'active', condition: 'good', amenities: ['Parking'], deposit: 64000, advanceRent: 32000 },
+  { owner: 'bilal',   title: '10 Marla House in Jhelum Cantt',      city: 'Jhelum',       area: 'Cantt',           locality: 'Cantt', lat: 32.9425, lng: 73.7257, purpose: 'sale', category: 'home', propertyType: 'house', price: 27000000, size: 10, unit: 'Marla', bed: 4, bath: 4, status: 'active', condition: 'good', amenities: ['Parking', 'Security', 'Lawn'] },
+  { owner: 'bilal',   title: 'Shop near GTS Chowk',                 city: 'Jhelum',       area: 'GTS Chowk',       locality: 'Civil Lines', street: 'Main GT Road', lat: 32.9330, lng: 73.7300, purpose: 'sale', category: 'commercial', propertyType: 'shop', price: 12000000, size: 3, unit: 'Marla', bed: 0, bath: 1, status: 'active', condition: 'good', amenities: ['Security', 'Parking'] },
+  { owner: 'mehwish', title: 'Riverside House in Upper Chattar',    city: 'Muzaffarabad', area: 'Upper Chattar',   locality: 'Upper Chattar', lat: 34.3700, lng: 73.4711, purpose: 'sale', category: 'home', propertyType: 'house', price: 24000000, size: 8, unit: 'Marla', bed: 4, bath: 3, status: 'active', condition: 'good', amenities: ['Parking', 'Security', 'Lawn'] },
+  { owner: 'mehwish', title: '2 Bed Flat near Chattar Klas',        city: 'Muzaffarabad', area: 'Chattar Klas',    locality: 'Chattar Klas', buildingName: 'Neelum View Apartments', floorNumber: 3, totalFloors: 5, lat: 34.3600, lng: 73.4800, purpose: 'rent', category: 'home', propertyType: 'flat', price: 35000, size: 950, unit: 'Sq Ft', bed: 2, bath: 2, status: 'active', condition: 'good', amenities: ['Security', 'Parking'], deposit: 70000, advanceRent: 35000, furnished: 'semi-furnished' },
 ];
 
 /* Buyer requirements — tuned so the overlap matcher below pairs several. */

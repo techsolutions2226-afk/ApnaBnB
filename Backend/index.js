@@ -111,6 +111,8 @@ const planRoutes = require("./routes/planRoutes");
 app.use("/api/plans", planRoutes);
 const contactRoutes = require("./routes/contactRoutes");
 app.use("/api/contact", contactRoutes);
+const locationRoutes = require("./routes/locationRoutes");
+app.use("/api/location", locationRoutes);
 
 // Global error handler
 app.use(errorHandler);

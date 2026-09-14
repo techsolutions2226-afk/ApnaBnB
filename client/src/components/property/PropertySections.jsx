@@ -62,7 +62,7 @@ export default function PropertySections({ origin, ready = true }) {
   return (
     <section
       id="popular-homes"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-12 sm:pb-16 scroll-mt-16"
+      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 sm:pb-16 scroll-mt-16"
       aria-busy={loading}
     >
       {loading ? (

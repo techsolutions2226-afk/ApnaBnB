@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, useReducedMotion } from "framer-motion";
-import { FiArrowRight } from "react-icons/fi";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import SearchPanel from "../components/cinematic/SearchPanel";
 import PropertySections from "../components/property/PropertySections";
@@ -22,34 +21,7 @@ import "../styles/cinematic.css";
 import "../styles/SearchFields.css";
 import "../styles/SearchDropdowns.css";
 
-/* Route and artwork are fixed; the copy lives in the `home` namespace under
-   cta.<key> so it can be translated without touching this file. */
-const CTA_CARDS = [
-  {
-    key: "buy",
-    href: "/sale",
-    image:
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1000&q=80&auto=format&fit=crop",
-  },
-  {
-    key: "rent",
-    href: "/rent",
-    image:
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1000&q=80&auto=format&fit=crop",
-  },
-];
-
 const EASE = [0.22, 1, 0.36, 1];
-
-const heroStagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.09, delayChildren: 0.08 } },
-};
-
-const revealUp = {
-  hidden: { opacity: 0, y: 34 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } },
-};
 
 export default function Home() {
   const { t } = useTranslation("home");
@@ -86,22 +58,12 @@ export default function Home() {
      utils/stay. */
   const [stay, setStay] = useState(EMPTY_STAY);
   const [guests, setGuests] = useState(0);
-  const ctaSectionRef = useRef(null);
 
   /* Coming back to the home page abandons a Seller/Landlord intent the user
      started before deciding against signing in. */
   useEffect(() => {
     clearListingIntent();
   }, []);
-
-  const reduce = useReducedMotion();
-  const inView = reduce
-    ? { initial: false, animate: "show" }
-    : {
-        initial: "hidden",
-        whileInView: "show",
-        viewport: { once: true, amount: 0.2 },
-      };
 
   const submitSearch = (overrides = {}) => {
     const params = new URLSearchParams();
@@ -239,47 +201,6 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-
-      {/* ══ BUY / RENT CARDS ══ */}
-      <motion.section
-        ref={ctaSectionRef}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-2 sm:pt-14"
-        variants={heroStagger}
-        {...inView}
-      >
-        <div className="grid grid-cols-2 gap-3">
-          {CTA_CARDS.map((card) => (
-            <motion.button
-              key={card.href}
-              type="button"
-              className="group relative aspect-[3/4] sm:aspect-[4/3] lg:aspect-[16/9] rounded-xl sm:rounded-2xl overflow-hidden text-left min-w-0"
-              onClick={() => navigate(card.href)}
-              variants={revealUp}
-              whileHover={reduce ? undefined : { y: -4 }}
-              transition={{ duration: 0.28, ease: EASE }}
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                style={{ backgroundImage: `url(${card.image})` }}
-                aria-hidden="true"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-slate-900/10" aria-hidden="true" />
-              <div className="relative h-full flex flex-col justify-end p-3 sm:p-6">
-                <h3 className="text-sm sm:text-2xl font-bold text-white font-heading leading-tight mb-1 sm:mb-1.5">
-                  {t(`cta.${card.key}.title`)}
-                </h3>
-                <p className="hidden sm:block text-sm text-slate-300 mb-3 line-clamp-2 max-w-xs">
-                  {t(`cta.${card.key}.text`)}
-                </p>
-                <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-primary-400 group-hover:text-primary-300 transition-colors">
-                  {t(`cta.${card.key}.action`)}
-                  <FiArrowRight className="h-3 w-3 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </div>
-            </motion.button>
-          ))}
-        </div>
-      </motion.section>
 
       {/* ══ POPULAR HOMES BY CITY — the visitor's own and nearby cities first ══ */}
       <PropertySections origin={origin} ready={searchReady} />

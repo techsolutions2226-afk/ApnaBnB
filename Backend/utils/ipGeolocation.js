@@ -1,12 +1,15 @@
 /* ─── ipGeolocation — approximate visitor location from the request IP ───
-   Powers the home page's default search city. The result is a GUESS, never
-   the user's real location: it is not written to the database, and the raw
-   IP never leaves this module (not in responses, logs or cache keys).
+   Powers the home page's location-ordered property rows. The result is a
+   GUESS, never the user's real location: it is not written to the database,
+   and the raw IP never leaves this module (not in responses, logs or cache
+   keys). Behind a VPN the request IP is the VPN's, so that is what is located.
 
-   Provider: ipapi.co over HTTPS with Node's built-in fetch. Works without a
-   key at low volume; IPAPI_KEY raises the quota. Every lookup is cached per
-   IP (hashed) so a visitor costs one provider call, and failures are cached
-   briefly so a provider outage or 429 cannot turn into a request storm.
+   Providers are tried in order until one answers, so one service being down,
+   slow or rate-limited does not stop detection. All are HTTPS via Node's
+   built-in fetch; ipapi.co also takes an optional IPAPI_KEY for more quota.
+   Every lookup is cached per IP (hashed) so a visitor costs one provider call,
+   and a total failure is cached briefly so an outage cannot become a request
+   storm.
 
    Always resolves — null means "unknown", which callers treat as normal.
    ─────────────────────────────────────────────── */
@@ -15,8 +18,7 @@ const crypto = require('crypto');
 const cache = require('./cache');
 const { clientIp } = require('./sessions');
 
-const PROVIDER_URL = 'https://ipapi.co';
-// Kept short: the home search bar waits on this before it renders.
+// Per provider; the home page rows wait for the whole chain to settle.
 const LOOKUP_TIMEOUT_MS = 1500;
 const SUCCESS_TTL_MS = 6 * 60 * 60 * 1000;
 const FAILURE_TTL_MS = 5 * 60 * 1000;
@@ -68,7 +70,8 @@ const isPublicIp = (rawIp) => {
 /* ── Response shaping ── */
 const text = (value) => {
   const s = typeof value === 'string' ? value.trim() : '';
-  return s ? s.slice(0, 100) : null;
+  // Some providers use "-" for an unknown field.
+  return s && s !== '-' ? s.slice(0, 100) : null;
 };
 
 // 2 dp (~1 km) — the IP guess is city-level anyway, so extra precision would
@@ -80,40 +83,80 @@ const coord = (value, limit) => {
   return Math.round(n * 100) / 100;
 };
 
-const normalizeGeo = (raw) => {
-  if (!raw || typeof raw !== 'object' || raw.error) return null;
+/* Provider fields → { country, countryCode, region, city, latitude, longitude }. */
+const shapeGeo = (fields) => {
+  if (!fields) return null;
+  const countryCode = text(fields.countryCode);
   const geo = {
-    country: text(raw.country_name),
-    countryCode: text(raw.country_code || raw.country),
-    region: text(raw.region),
-    city: text(raw.city),
-    latitude: coord(raw.latitude, 90),
-    longitude: coord(raw.longitude, 180),
+    country: text(fields.country),
+    countryCode: countryCode ? countryCode.toUpperCase() : null,
+    region: text(fields.region),
+    city: text(fields.city),
+    latitude: coord(fields.latitude, 90),
+    longitude: coord(fields.longitude, 180),
   };
   // Without a country there is nothing useful to personalise with.
   return geo.country || geo.countryCode ? geo : null;
 };
 
-/* ── Provider call ── */
-const lookupIp = async (ip) => {
-  const key = process.env.IPAPI_KEY;
-  const url = `${PROVIDER_URL}/${encodeURIComponent(ip)}/json/${key ? `?key=${encodeURIComponent(key)}` : ''}`;
+/* ── Providers, tried in this order ──
+   `map` returns the provider's fields in our names, or null when the body
+   says the lookup failed (reserved range, quota, bad input). */
+const PROVIDERS = [
+  {
+    name: 'ipapi.co',
+    url: (ip) => {
+      const key = process.env.IPAPI_KEY;
+      return `https://ipapi.co/${encodeURIComponent(ip)}/json/${key ? `?key=${encodeURIComponent(key)}` : ''}`;
+    },
+    map: (raw) =>
+      raw.error
+        ? null
+        : { country: raw.country_name, countryCode: raw.country_code, region: raw.region, city: raw.city, latitude: raw.latitude, longitude: raw.longitude },
+  },
+  {
+    name: 'ipwho.is',
+    url: (ip) => `https://ipwho.is/${encodeURIComponent(ip)}`,
+    map: (raw) =>
+      raw.success === false
+        ? null
+        : { country: raw.country, countryCode: raw.country_code, region: raw.region, city: raw.city, latitude: raw.latitude, longitude: raw.longitude },
+  },
+  {
+    name: 'freeipapi.com',
+    url: (ip) => `https://freeipapi.com/api/json/${encodeURIComponent(ip)}`,
+    map: (raw) => ({ country: raw.countryName, countryCode: raw.countryCode, region: raw.regionName, city: raw.cityName, latitude: raw.latitude, longitude: raw.longitude }),
+  },
+];
+
+/* One provider: the shaped location, or null (logged without the IP). */
+const queryProvider = async (provider, ip) => {
   try {
-    const response = await fetch(url, {
+    const response = await fetch(provider.url(ip), {
       headers: { Accept: 'application/json', 'User-Agent': 'ApnaBnB/1.0' },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
     if (!response.ok) {
-      console.warn(`IP geolocation: provider returned HTTP ${response.status}`);
+      console.warn(`IP geolocation: ${provider.name} returned HTTP ${response.status}`);
       return null;
     }
-    const geo = normalizeGeo(await response.json());
-    if (!geo) console.warn('IP geolocation: provider returned no usable location');
+    const raw = await response.json();
+    const geo = raw && typeof raw === 'object' ? shapeGeo(provider.map(raw)) : null;
+    if (!geo) console.warn(`IP geolocation: ${provider.name} returned no usable location`);
     return geo;
   } catch (error) {
-    console.warn(`IP geolocation: lookup failed (${error.name})`);
+    console.warn(`IP geolocation: ${provider.name} failed (${error.name})`);
     return null;
   }
+};
+
+/* First provider that answers wins. */
+const lookupIp = async (ip, providers = PROVIDERS) => {
+  for (const provider of providers) {
+    const geo = await queryProvider(provider, ip);
+    if (geo) return geo;
+  }
+  return null;
 };
 
 /* ── Entry point ── */
@@ -151,8 +194,9 @@ const detectLocation = async (req) => {
 
 module.exports = {
   LOOKUP_TIMEOUT_MS,
+  PROVIDERS,
   isPublicIp,
-  normalizeGeo,
+  shapeGeo,
   lookupIp,
   detectLocation,
 };

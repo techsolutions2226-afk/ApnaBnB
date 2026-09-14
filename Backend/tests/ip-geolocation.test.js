@@ -1,7 +1,8 @@
-/* IP geolocation — address filtering, response shaping and failure handling.
+/* IP geolocation — address filtering, provider fallback, response shaping and
+ * failure handling.
  *
- * The provider is never called for real: global fetch is stubbed per test, so
- * these run offline and prove the "always resolves, never throws" contract.
+ * No provider is called for real: global fetch is stubbed per test (by URL),
+ * so these run offline and prove the "always resolves, never throws" contract.
  *
  * Run with: npm test (node --test tests)
  */
@@ -10,8 +11,9 @@ const assert = require('node:assert/strict');
 
 const cache = require('../utils/cache');
 const {
+  PROVIDERS,
   isPublicIp,
-  normalizeGeo,
+  shapeGeo,
   lookupIp,
   detectLocation,
 } = require('../utils/ipGeolocation');
@@ -20,22 +22,16 @@ const realFetch = globalThis.fetch;
 const realWarn = console.warn;
 let calls;
 
-const IPAPI_LAHORE = {
-  ip: '203.0.113.7',
-  city: 'Lahore',
-  region: 'Punjab',
-  region_code: 'PB',
-  country_code: 'PK',
-  country_name: 'Pakistan',
-  latitude: 31.558,
-  longitude: 74.3507,
+// Real response shapes captured from each provider for a PTCL (Pakistan) IP.
+const BODIES = {
+  'ipapi.co': { ip: '39.32.0.1', city: 'Aman Garh', region: 'Khyber Pakhtunkhwa', country: 'PK', country_name: 'Pakistan', country_code: 'PK', latitude: 34.00583, longitude: 71.93 },
+  'ipwho.is': { ip: '39.32.0.1', success: true, country: 'Pakistan', country_code: 'PK', region: 'Khyber Pakhtunkhwa', city: 'Peshawar', latitude: 34.0076944, longitude: 71.5784923 },
+  'freeipapi.com': { ipAddress: '39.32.0.1', latitude: 33.6844, longitude: 73.0479, countryName: 'Pakistan', countryCode: 'PK', cityName: 'Islamabad', regionName: 'Islamabad', zipCode: '22511' },
 };
-
-const stubFetch = (impl) => {
-  globalThis.fetch = async (url, options) => {
-    calls.push({ url, options });
-    return impl(url, options);
-  };
+const FAILED_BODIES = {
+  'ipapi.co': { ip: '10.0.0.1', error: true, reason: 'Reserved IP Address' },
+  'ipwho.is': { ip: '10.0.0.1', success: false, message: 'Reserved range' },
+  'freeipapi.com': { ipAddress: null, countryName: null, countryCode: null, cityName: null, zipCode: '-' },
 };
 
 const jsonResponse = (body, status = 200) => ({
@@ -43,6 +39,28 @@ const jsonResponse = (body, status = 200) => ({
   status,
   json: async () => body,
 });
+
+// Exact hostname — "freeipapi.com" contains the text "ipapi.co".
+const providerOf = (url) => PROVIDERS.find((p) => new URL(url).hostname === p.name).name;
+
+/* behaviour: { 'ipapi.co': 'ok' | 'fail' | 429 | 'throw' | 'html', ... } */
+const stubProviders = (behaviour) => {
+  globalThis.fetch = async (url, options) => {
+    const name = providerOf(url);
+    calls.push({ name, url, options });
+    const mode = behaviour[name] ?? 'ok';
+    if (mode === 'throw') {
+      const err = new Error('timed out');
+      err.name = 'TimeoutError';
+      throw err;
+    }
+    if (mode === 'html') {
+      return { ok: true, status: 200, json: async () => JSON.parse('<!DOCTYPE html><title>Just a moment...</title>') };
+    }
+    if (typeof mode === 'number') return jsonResponse({}, mode);
+    return jsonResponse(mode === 'fail' ? FAILED_BODIES[name] : BODIES[name]);
+  };
+};
 
 beforeEach(() => {
   calls = [];
@@ -73,109 +91,109 @@ test('isPublicIp: public IPv4, IPv4-mapped and IPv6 addresses are accepted', () 
   }
 });
 
-test('normalizeGeo: maps ipapi fields and rounds coordinates to 2 dp', () => {
-  assert.deepEqual(normalizeGeo(IPAPI_LAHORE), {
-    country: 'Pakistan',
-    countryCode: 'PK',
-    region: 'Punjab',
-    city: 'Lahore',
-    latitude: 31.56,
-    longitude: 74.35,
+test('providers are tried in order: ipapi.co, ipwho.is, freeipapi.com', () => {
+  assert.deepEqual(PROVIDERS.map((p) => p.name), ['ipapi.co', 'ipwho.is', 'freeipapi.com']);
+  for (const p of PROVIDERS) assert.match(p.url('1.2.3.4'), /^https:\/\//);
+});
+
+test('every provider body maps to the same shape, coordinates rounded to 2 dp', () => {
+  const shaped = Object.fromEntries(PROVIDERS.map((p) => [p.name, shapeGeo(p.map(BODIES[p.name]))]));
+  assert.deepEqual(shaped['ipapi.co'], { country: 'Pakistan', countryCode: 'PK', region: 'Khyber Pakhtunkhwa', city: 'Aman Garh', latitude: 34.01, longitude: 71.93 });
+  assert.deepEqual(shaped['ipwho.is'], { country: 'Pakistan', countryCode: 'PK', region: 'Khyber Pakhtunkhwa', city: 'Peshawar', latitude: 34.01, longitude: 71.58 });
+  assert.deepEqual(shaped['freeipapi.com'], { country: 'Pakistan', countryCode: 'PK', region: 'Islamabad', city: 'Islamabad', latitude: 33.68, longitude: 73.05 });
+});
+
+test('every provider failure body is unusable', () => {
+  for (const p of PROVIDERS) {
+    assert.equal(shapeGeo(p.map(FAILED_BODIES[p.name])), null, `${p.name} failure must be null`);
+  }
+});
+
+test('shapeGeo: partial data keeps what exists; "-" and junk become null', () => {
+  assert.deepEqual(shapeGeo({ country: 'Pakistan', countryCode: 'pk', city: '-', latitude: 'x' }), {
+    country: 'Pakistan', countryCode: 'PK', region: null, city: null, latitude: null, longitude: null,
   });
+  assert.equal(shapeGeo(null), null);
+  assert.equal(shapeGeo({ city: 'Lahore' }), null);
 });
 
-test('normalizeGeo: partial data keeps what exists and nulls the rest', () => {
-  assert.deepEqual(normalizeGeo({ country_name: 'Pakistan', country_code: 'PK', latitude: 'x' }), {
-    country: 'Pakistan',
-    countryCode: 'PK',
-    region: null,
-    city: null,
-    latitude: null,
-    longitude: null,
-  });
-});
-
-test('normalizeGeo: provider errors and country-less payloads are unusable', () => {
-  assert.equal(normalizeGeo(null), null);
-  assert.equal(normalizeGeo({ error: true, reason: 'RateLimited' }), null);
-  assert.equal(normalizeGeo({ city: 'Lahore' }), null);
-});
-
-test('lookupIp: success returns the shaped location and sends a timeout signal', async () => {
-  stubFetch(() => jsonResponse(IPAPI_LAHORE));
+test('lookupIp: first provider answering wins and later ones are not called', async () => {
+  stubProviders({});
   const geo = await lookupIp('39.32.10.5');
-  assert.equal(geo.city, 'Lahore');
-  assert.equal(calls.length, 1);
-  assert.match(calls[0].url, /^https:\/\/ipapi\.co\/39\.32\.10\.5\/json\/$/);
+  assert.equal(geo.city, 'Aman Garh');
+  assert.deepEqual(calls.map((c) => c.name), ['ipapi.co']);
   assert.ok(calls[0].options.signal, 'request must be abortable');
 });
 
-test('lookupIp: IPAPI_KEY is passed as a query parameter when set', async () => {
+test('lookupIp: falls back when a provider is down, rate limited or blocked', async () => {
+  stubProviders({ 'ipapi.co': 429, 'ipwho.is': 'throw' });
+  const geo = await lookupIp('39.32.10.5');
+  assert.equal(geo.city, 'Islamabad');
+  assert.deepEqual(calls.map((c) => c.name), ['ipapi.co', 'ipwho.is', 'freeipapi.com']);
+
+  calls = [];
+  stubProviders({ 'ipapi.co': 'html' });
+  assert.equal((await lookupIp('39.32.10.5')).city, 'Peshawar');
+  assert.deepEqual(calls.map((c) => c.name), ['ipapi.co', 'ipwho.is']);
+});
+
+test('lookupIp: all providers failing resolves null', async () => {
+  stubProviders({ 'ipapi.co': 'fail', 'ipwho.is': 503, 'freeipapi.com': 'throw' });
+  assert.equal(await lookupIp('39.32.10.5'), null);
+  assert.equal(calls.length, 3);
+});
+
+test('lookupIp: IPAPI_KEY is passed to ipapi.co only', async () => {
   process.env.IPAPI_KEY = 'k 1';
-  stubFetch(() => jsonResponse(IPAPI_LAHORE));
+  stubProviders({ 'ipapi.co': 'fail' });
   await lookupIp('39.32.10.5');
-  assert.match(calls[0].url, /\?key=k%201$/);
+  assert.match(calls[0].url, /ipapi\.co\/39\.32\.10\.5\/json\/\?key=k%201$/);
+  assert.ok(!calls[1].url.includes('key='));
 });
 
-test('lookupIp: error payload, HTTP 429, HTML body and network failures resolve null', async () => {
-  stubFetch(() => jsonResponse({ error: true, reason: 'RateLimited' }));
-  assert.equal(await lookupIp('39.32.10.5'), null);
-
-  stubFetch(() => jsonResponse({}, 429));
-  assert.equal(await lookupIp('39.32.10.5'), null);
-
-  // ipapi.co sits behind Cloudflare and can answer with an HTML challenge page.
-  stubFetch(() => ({
-    ok: true,
-    status: 200,
-    json: async () => JSON.parse('<!DOCTYPE html><title>Just a moment...</title>'),
-  }));
-  assert.equal(await lookupIp('39.32.10.5'), null);
-
-  stubFetch(() => {
-    const err = new Error('timed out');
-    err.name = 'TimeoutError';
-    throw err;
-  });
-  assert.equal(await lookupIp('39.32.10.5'), null);
-});
-
-test('detectLocation: a private request IP never calls the provider', async () => {
-  stubFetch(() => jsonResponse(IPAPI_LAHORE));
+test('detectLocation: a private request IP never calls a provider', async () => {
+  stubProviders({});
   assert.equal(await detectLocation({ ip: '127.0.0.1' }), null);
   assert.equal(await detectLocation({ ip: '::ffff:10.0.0.4' }), null);
   assert.equal(calls.length, 0);
 });
 
 test('detectLocation: caches per IP and never puts the raw IP in the cache key', async () => {
-  stubFetch(() => jsonResponse(IPAPI_LAHORE));
+  stubProviders({});
   const first = await detectLocation({ ip: '39.32.10.5' });
   const second = await detectLocation({ ip: '39.32.10.5' });
-  assert.equal(first.city, 'Lahore');
+  assert.equal(first.city, 'Aman Garh');
   assert.deepEqual(second, first);
   assert.equal(calls.length, 1, 'second lookup must come from cache');
   assert.ok(cache.get('geo:39.32.10.5') === undefined);
 });
 
-test('detectLocation: concurrent requests share one provider call', async () => {
-  stubFetch(() => jsonResponse(IPAPI_LAHORE));
+test('detectLocation: a different IP (e.g. a VPN) is looked up on its own', async () => {
+  stubProviders({});
+  await detectLocation({ ip: '39.32.10.5' });
+  await detectLocation({ ip: '8.8.4.4' });
+  assert.equal(calls.length, 2);
+});
+
+test('detectLocation: concurrent requests share one lookup', async () => {
+  stubProviders({});
   const results = await Promise.all([
     detectLocation({ ip: '39.32.10.6' }),
     detectLocation({ ip: '39.32.10.6' }),
   ]);
   assert.equal(calls.length, 1);
-  assert.equal(results[1].city, 'Lahore');
+  assert.equal(results[1].city, 'Aman Garh');
 });
 
-test('detectLocation: a failure is cached briefly instead of retried per request', async () => {
-  stubFetch(() => jsonResponse({}, 429));
+test('detectLocation: a total failure is cached briefly instead of retried per request', async () => {
+  stubProviders({ 'ipapi.co': 429, 'ipwho.is': 429, 'freeipapi.com': 429 });
   assert.equal(await detectLocation({ ip: '39.32.10.7' }), null);
   assert.equal(await detectLocation({ ip: '39.32.10.7' }), null);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 3, 'one pass through the chain, then cached');
 });
 
 test('detectLocation: GEO_DEV_IP overrides loopback outside production only', async () => {
-  stubFetch(() => jsonResponse(IPAPI_LAHORE));
+  stubProviders({});
   const env = process.env.NODE_ENV;
   process.env.GEO_DEV_IP = '39.32.10.8';
   try {
@@ -185,7 +203,7 @@ test('detectLocation: GEO_DEV_IP overrides loopback outside production only', as
 
     process.env.NODE_ENV = 'development';
     const geo = await detectLocation({ ip: '127.0.0.1' });
-    assert.equal(geo.city, 'Lahore');
+    assert.equal(geo.city, 'Aman Garh');
     assert.equal(calls.length, 1);
   } finally {
     if (env === undefined) delete process.env.NODE_ENV;

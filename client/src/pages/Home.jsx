@@ -12,6 +12,8 @@ import DetectedLocationHint from "../components/cinematic/DetectedLocationHint";
 import LocalProperties from "../components/property/LocalProperties";
 import { useAuth } from "../context/AuthContext";
 import useSearchLocation from "../hooks/useSearchLocation";
+import { SEARCH_CITIES, CITY_CENTERS } from "../config/locations";
+import { orderByProximity } from "../utils/searchLocation";
 import {
   setListingIntent,
   clearListingIntent,
@@ -66,9 +68,19 @@ export default function Home() {
     city,
     setCity,
     detected,
+    origin,
     isManual,
     ready: searchReady,
   } = useSearchLocation();
+  /* City / Where list: the visitor's own and nearby cities first. */
+  const cityOptions = useMemo(
+    () =>
+      orderByProximity(SEARCH_CITIES, { origin, centers: CITY_CENTERS }).map((c) => ({
+        value: c,
+        label: c,
+      })),
+    [origin],
+  );
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [propertyTab, setPropertyTab] = useState("home");
@@ -171,6 +183,7 @@ export default function Home() {
     mode,
     setMode,
     onListingIntent: handleListingIntent,
+    cityOptions,
     city,
     setCity,
     location,

@@ -1,11 +1,16 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SEARCH_CITIES,
   CITY_CENTERS,
   SEARCH_COUNTRY_CODE,
 } from "../config/locations";
 import { getLocationSync, waitForLocation } from "../utils/locationDetection";
-import { getManualCity, setManualCity, resolveSearchCity } from "../utils/searchLocation";
+import {
+  getManualCity,
+  setManualCity,
+  resolveSearchCity,
+  locationOrigin,
+} from "../utils/searchLocation";
 
 const MATCH = {
   cities: SEARCH_CITIES,
@@ -47,6 +52,10 @@ const initialState = () => {
 
    A detection landing after the cap is ignored for this view (the field would
    change under the user). It is cached, so the next visit gets it instantly.
+
+   `origin` is where the visitor is ({ city, lat, lng } or null) — what the
+   page sorts cities by. It follows detection only: picking a city in the
+   search changes the search, not the order of the home page.
    ═════════════════════════════════════════════════════════ */
 export default function useSearchLocation() {
   const [state, setState] = useState(initialState);
@@ -74,10 +83,13 @@ export default function useSearchLocation() {
     setState((prev) => ({ ...prev, city: value, isManual: true, ready: true }));
   }, []);
 
+  const origin = useMemo(() => locationOrigin(state.detected, MATCH), [state.detected]);
+
   return {
     city: state.city,
     setCity,
     detected: state.detected,
+    origin,
     isManual: state.isManual,
     ready: state.ready,
   };

@@ -13,7 +13,7 @@ import {
 } from "../../config/searchOptions";
 import { SEARCH_CITIES } from "../../config/locations";
 
-const CITY_OPTIONS = SEARCH_CITIES.map((c) => ({ value: c, label: c }));
+const DEFAULT_CITY_OPTIONS = SEARCH_CITIES.map((c) => ({ value: c, label: c }));
 const AREA_UNIT_OPTIONS = AREA_UNITS.map((u) => ({ value: u, label: u }));
 const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({ value: c, label: c }));
 
@@ -36,6 +36,7 @@ export default function SearchPanel({
   mode,
   setMode,
   onListingIntent,
+  cityOptions = DEFAULT_CITY_OPTIONS, // [{ value, label }] — Home orders them nearest first
   city,
   setCity,
   location,
@@ -128,7 +129,7 @@ export default function SearchPanel({
           {mode === "tenant" ? (
             <motion.div key="tenant" {...rowMotion}>
               <TenantSearchBar
-                cityOptions={CITY_OPTIONS}
+                cityOptions={cityOptions}
                 city={city}
                 setCity={setCity}
                 stay={stay}
@@ -145,7 +146,7 @@ export default function SearchPanel({
               <div className="search-fields-row">
                 <div className="search-cell search-cell--city">
                   <SearchableList
-                    options={CITY_OPTIONS}
+                    options={cityOptions}
                     value={city}
                     onChange={setCity}
                     placeholder="City"

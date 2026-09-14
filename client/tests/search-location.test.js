@@ -21,6 +21,9 @@ globalThis.sessionStorage = makeStorage();
 const {
   resolveSearchCity,
   formatDetectedPlace,
+  orderByProximity,
+  locationOrigin,
+  NEARBY_CITY_KM,
   distanceKm,
   readDetected,
   writeDetected,
@@ -80,6 +83,65 @@ test('resolveSearchCity: missing or failed detection gives no city', () => {
   assert.equal(resolveSearchCity(null, MATCH), '');
   assert.equal(resolveSearchCity(undefined, MATCH), '');
   assert.equal(resolveSearchCity({ detected: false }, MATCH), '');
+});
+
+const cityOrigin = (city) => ({ city, ...CITY_CENTERS[city] });
+
+test('orderByProximity: Islamabad visitor sees Islamabad, Rawalpindi, Murree first; Lahore after nearby', () => {
+  const order = orderByProximity(SEARCH_CITIES, { origin: cityOrigin('Islamabad'), centers: CITY_CENTERS });
+  assert.deepEqual(order.slice(0, 3), ['Islamabad', 'Rawalpindi', 'Murree']);
+  assert.equal(order.length, SEARCH_CITIES.length);
+  assert.ok(order.indexOf('Lahore') > order.indexOf('Jhelum'), 'Lahore (far) must follow Jhelum (nearby)');
+});
+
+test('orderByProximity: follows the rule for every origin — own, nearby by distance, then the rest', () => {
+  for (const home of ['Islamabad', 'Lahore', 'Karachi', 'Peshawar', 'Quetta']) {
+    const origin = cityOrigin(home);
+    const order = orderByProximity(SEARCH_CITIES, { origin, centers: CITY_CENTERS });
+    assert.equal(order[0], home);
+    const km = order.slice(1).map((c) => distanceKm(origin, CITY_CENTERS[c]));
+    const nearCount = km.filter((d) => d <= NEARBY_CITY_KM).length;
+    km.slice(0, nearCount).forEach((d, i) => {
+      assert.ok(d <= NEARBY_CITY_KM, `${home}: ${order[i + 1]} listed as nearby at ${d} km`);
+      if (i > 0) assert.ok(d >= km[i - 1], `${home}: nearby cities must be closest first`);
+    });
+    km.slice(nearCount).forEach((d) => assert.ok(d > NEARBY_CITY_KM, `${home}: far city inside nearby group`));
+    // With no counts, far cities keep the configured (major-first) order.
+    const far = order.slice(1 + nearCount);
+    assert.deepEqual(far, SEARCH_CITIES.filter((c) => far.includes(c)));
+  }
+});
+
+test('orderByProximity: city rows — unknown or far cities are ordered by listing count', () => {
+  const rows = [
+    { city: 'Karachi', total: 3 },
+    { city: 'Bahawalnagar', total: 9 }, // not in CITY_CENTERS
+    { city: 'rawalpindi', total: 1 }, // backend spelling differs in case
+    { city: 'Lahore', total: 5 },
+    { city: 'Islamabad', total: 2 },
+  ];
+  const opts = { nameOf: (r) => r.city, countOf: (r) => r.total, centers: CITY_CENTERS };
+  assert.deepEqual(
+    orderByProximity(rows, { ...opts, origin: cityOrigin('Islamabad') }).map((r) => r.city),
+    ['Islamabad', 'rawalpindi', 'Bahawalnagar', 'Lahore', 'Karachi'],
+  );
+});
+
+test('orderByProximity: no origin means most listings first, input order on ties', () => {
+  const rows = [{ city: 'A', total: 1 }, { city: 'B', total: 4 }, { city: 'C', total: 1 }, { city: 'D', total: 4 }];
+  const order = orderByProximity(rows, { nameOf: (r) => r.city, countOf: (r) => r.total, origin: null });
+  assert.deepEqual(order.map((r) => r.city), ['B', 'D', 'A', 'C']);
+  assert.deepEqual(orderByProximity(SEARCH_CITIES, { origin: null, centers: CITY_CENTERS }), SEARCH_CITIES);
+  assert.deepEqual(orderByProximity(null), []);
+});
+
+test('locationOrigin: detected coordinates, city fallback, and nothing outside the country', () => {
+  const amanGarh = pk({ city: 'Aman Garh', latitude: 34.01, longitude: 71.93 });
+  assert.deepEqual(locationOrigin(amanGarh, MATCH), { city: 'Mardan', lat: 34.01, lng: 71.93 });
+  assert.deepEqual(locationOrigin(pk({ city: 'Lahore' }), MATCH), { city: 'Lahore', ...CITY_CENTERS.Lahore });
+  assert.equal(locationOrigin({ countryCode: 'US', country: 'United States', city: 'Austin', latitude: 30, longitude: -97 }, MATCH), null);
+  assert.equal(locationOrigin(null, MATCH), null);
+  assert.equal(locationOrigin(pk({ city: 'Nowhere' }), MATCH), null);
 });
 
 test('distanceKm: Lahore to Islamabad is about 270 km', () => {

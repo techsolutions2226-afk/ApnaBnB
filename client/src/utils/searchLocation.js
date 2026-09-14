@@ -23,6 +23,9 @@ export const DETECTED_TTL_MS = 24 * 60 * 60 * 1000;
 export const DETECTED_REFRESH_MS = 6 * 60 * 60 * 1000;
 // Towns further than this from every search city get no default city.
 export const NEAREST_CITY_MAX_KM = 100;
+// Cities within this distance of the visitor count as "nearby" and are listed
+// right after their own city, closest first.
+export const NEARBY_CITY_KM = 150;
 
 /* ── Storage ── */
 const safe = (fn, fallback) => {
@@ -125,6 +128,78 @@ export const resolveSearchCity = (geo, { cities, centers, countryCode }) => {
     }
   }
   return best;
+};
+
+/* The visitor's location as an ordering origin — { city, lat, lng } — or null
+   when there is nothing usable (not detected, or outside `countryCode`).
+   Coordinates are the detected ones when present, else the city's centre. */
+export const locationOrigin = (geo, match) => {
+  if (!isGeo(geo)) return null;
+  if (String(geo.countryCode || "").toUpperCase() !== match.countryCode) return null;
+  const city = resolveSearchCity(geo, match);
+  const detectedPoint =
+    geo.latitude != null &&
+    geo.longitude != null &&
+    Number.isFinite(Number(geo.latitude)) &&
+    Number.isFinite(Number(geo.longitude));
+  const point = detectedPoint
+    ? { lat: Number(geo.latitude), lng: Number(geo.longitude) }
+    : match.centers[city] || null;
+  if (!city && !point) return null;
+  return { city, lat: point?.lat ?? null, lng: point?.lng ?? null };
+};
+
+/* "Nearest first" — the one ordering for everything location-sorted on the
+   home page (search City list and the "Popular homes in <city>" rows):
+     1. the visitor's own city
+     2. cities within `nearbyKm`, closest first
+     3. everything else by `countOf` (e.g. listings), highest first
+   Ties keep the input order. With no origin only step 3 applies, so a visitor
+   whose location is unknown sees the most popular cities first. */
+export const orderByProximity = (
+  items,
+  {
+    nameOf = (item) => item,
+    countOf = () => 0,
+    origin = null,
+    centers = {},
+    nearbyKm = NEARBY_CITY_KM,
+  } = {},
+) => {
+  const centerByName = new Map(
+    Object.entries(centers).map(([name, point]) => [normName(name), point]),
+  );
+  const originKey = normName(origin?.city);
+  const hasPoint =
+    origin != null &&
+    origin.lat != null &&
+    origin.lng != null &&
+    Number.isFinite(Number(origin.lat)) &&
+    Number.isFinite(Number(origin.lng));
+
+  const own = [];
+  const near = [];
+  const rest = [];
+  (Array.isArray(items) ? items : []).forEach((item, index) => {
+    const key = normName(nameOf(item));
+    if (originKey && key === originKey) {
+      own.push(item);
+      return;
+    }
+    const center = centerByName.get(key);
+    if (hasPoint && center) {
+      const km = distanceKm({ lat: Number(origin.lat), lng: Number(origin.lng) }, center);
+      if (km <= nearbyKm) {
+        near.push({ item, km, index });
+        return;
+      }
+    }
+    rest.push({ item, count: Number(countOf(item)) || 0, index });
+  });
+
+  near.sort((a, b) => a.km - b.km || a.index - b.index);
+  rest.sort((a, b) => b.count - a.count || a.index - b.index);
+  return [...own, ...near.map((e) => e.item), ...rest.map((e) => e.item)];
 };
 
 /* "Lahore, Punjab, Pakistan" — skips blanks and repeats such as

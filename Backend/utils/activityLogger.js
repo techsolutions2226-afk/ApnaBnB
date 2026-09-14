@@ -11,13 +11,11 @@
  */
 
 const prisma = require('../db/prisma');
+const { clientIp } = require('./sessions');
 
-const getIp = (req) => {
-  if (!req) return null;
-  const fwd = req.headers?.['x-forwarded-for'];
-  if (typeof fwd === 'string') return fwd.split(',')[0].trim();
-  return req.ip || req.socket?.remoteAddress || null;
-};
+// req.ip, not the raw X-Forwarded-For header: the header is client-controlled,
+// so reading it directly let anyone write an arbitrary IP into the audit log.
+const getIp = (req) => (req ? clientIp(req) || null : null);
 
 const logActivity = async ({ action, entityType = 'system', entityId = null, meta = null, req = null }) => {
   try {

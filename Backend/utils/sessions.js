@@ -29,9 +29,10 @@ const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
    touch is throttled to this interval. */
 const TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 
-/* Best-effort client IP. Express already resolves req.ip correctly behind
-   Render's proxy (index.js sets `trust proxy` in production). */
-const clientIp = (req) => String(req?.ip || '').slice(0, 45);
+/* Best-effort client IP — the one place the app derives it. Express already
+   resolves req.ip correctly behind Render's proxy (index.js sets `trust proxy`
+   in production), so a client-supplied X-Forwarded-For cannot spoof it. */
+const clientIp = (req) => String(req?.ip || req?.socket?.remoteAddress || '').slice(0, 45);
 
 const clientUserAgent = (req) =>
   String(req?.headers?.['user-agent'] || '').slice(0, 255);
@@ -86,6 +87,7 @@ const describeDevice = (userAgent = '') => {
 module.exports = {
   SESSION_TTL_MS,
   TOUCH_INTERVAL_MS,
+  clientIp,
   createSession,
   isSessionLive,
   describeDevice,

@@ -23,7 +23,82 @@
   bottom: 0;
   left: 0;
   z-index: 60;
-  transition: transform 0.25s ease;
+  overflow-x: hidden;
+  /* width: desktop collapse / resize (AdminShell sets the width inline). */
+  transition: transform 0.25s ease, width 0.2s ease;
+}
+
+/* Sidebar labels truncate when the sidebar is dragged narrow. */
+.ash-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Collapsed icon rail (desktop only; AdminShell adds the class) ── */
+.ash-sidebar--rail .ash-label,
+.ash-sidebar--rail .ash-logo-tag,
+.ash-sidebar--rail .ash-brand-text,
+.ash-sidebar--rail .ash-nav-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Logo mark only: the image is cropped to its left (icon) part. Side spacing
+   is margin, not padding — overflow clips at the padding edge. */
+.ash-sidebar--rail .ash-logo {
+  width: 34px;
+  padding: 22px 0 18px;
+  margin: 0 19px;
+  overflow: hidden;
+}
+.ash-sidebar--rail .ash-logo img {
+  flex-shrink: 0;
+}
+
+.ash-sidebar--rail .ash-brand {
+  justify-content: center;
+  padding: 8px 0;
+  margin: 4px 8px 16px;
+}
+
+.ash-sidebar--rail .ash-nav {
+  padding: 0 8px;
+}
+
+.ash-sidebar--rail .ash-navlink,
+.ash-sidebar--rail .ash-foot-link,
+.ash-sidebar--rail .ash-foot-logout {
+  position: relative;
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Count badge becomes a dot on the icon. */
+.ash-sidebar--rail .ash-navlink-badge {
+  position: absolute;
+  top: 5px;
+  right: 12px;
+  min-width: 0;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  font-size: 0;
+  box-shadow: 0 0 0 2px #0f172a;
+}
+
+.ash-sidebar--rail .ash-sidebar-foot {
+  padding: 12px 8px;
+}
+
+.ash-sidebar--rail .ash-theme {
+  flex-direction: column;
 }
 
 .ash-logo {
@@ -292,6 +367,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  transition: margin-left 0.2s ease;
 }
 
 .ash-topbar {

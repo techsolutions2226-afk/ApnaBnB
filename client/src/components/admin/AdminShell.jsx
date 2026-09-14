@@ -25,6 +25,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useAdminSectionUnviewed } from "../../hooks/useAdminSectionUnviewed";
 import MobileBottomNav from "../layout/MobileBottomNav";
 import Logo from "../common/Logo";
+import SidebarEdge from "../common/SidebarEdge";
+import useResizableSidebar from "../../hooks/useResizableSidebar";
 import Seo from "../seo/Seo";
 import { privateAreaTitle } from "../../config/seo";
 import "../../styles/AdminShell.css";
@@ -56,6 +58,15 @@ export default function AdminShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
+  /* Desktop sidebar: open ↔ icon rail and drag-to-resize, remembered per
+     browser. At 900px and below it stays the slide-in drawer (navOpen). */
+  const sidebar = useResizableSidebar({
+    storageKey: "apnabnb_admin_sidebar",
+    defaultWidth: 250,
+    desktopQuery: "(min-width: 901px)",
+  });
+  const rail = sidebar.isDesktop && sidebar.collapsed;
+  const widthTransition = sidebar.resizing ? "none" : undefined;
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem(THEME_KEY) || "light";
@@ -107,7 +118,8 @@ export default function AdminShell() {
       />
       {/* ── Fixed sidebar ── */}
       <aside
-        className={`ash-sidebar${navOpen ? " ash-sidebar--open" : ""}`}
+        className={`ash-sidebar${navOpen ? " ash-sidebar--open" : ""}${rail ? " ash-sidebar--rail" : ""}`}
+        style={sidebar.isDesktop ? { width: sidebar.width, transition: widthTransition } : undefined}
       >
         {/* apnabnb logo → home */}
         <Link to="/" className="ash-logo" aria-label="ApnaBnB home">
@@ -115,7 +127,7 @@ export default function AdminShell() {
           <span className="ash-logo-tag">Admin</span>
         </Link>
 
-        <div className="ash-brand">
+        <div className="ash-brand" title={rail ? currentUser?.name || "Admin" : undefined}>
           {currentUser?.avatar ? (
             <img
               className="ash-avatar"
@@ -154,9 +166,10 @@ export default function AdminShell() {
                   `ash-navlink${isActive ? " ash-navlink--active" : ""}`
                 }
                 onClick={() => setNavOpen(false)}
+                title={rail ? item.label : undefined}
               >
                 <Icon size={17} className="ash-navicon" />
-                <span>{item.label}</span>
+                <span className="ash-label">{item.label}</span>
                 {sectionBadge > 0 && (
                   <span className="ash-navlink-badge">
                     {sectionBadge > 9 ? "9+" : sectionBadge}
@@ -175,9 +188,10 @@ export default function AdminShell() {
               aria-checked={theme === "light"}
               className={`ash-theme-opt${theme === "light" ? " ash-theme-opt--active" : ""}`}
               onClick={() => setThemePref("light")}
+              title={rail ? "Light" : undefined}
             >
               <FiSun size={14} />
-              <span>Light</span>
+              <span className="ash-label">Light</span>
             </button>
             <button
               type="button"
@@ -185,9 +199,10 @@ export default function AdminShell() {
               aria-checked={theme === "dark"}
               className={`ash-theme-opt${theme === "dark" ? " ash-theme-opt--active" : ""}`}
               onClick={() => setThemePref("dark")}
+              title={rail ? "Dark" : undefined}
             >
               <FiMoon size={14} />
-              <span>Dark</span>
+              <span className="ash-label">Dark</span>
             </button>
           </div>
 
@@ -199,31 +214,38 @@ export default function AdminShell() {
                 : ""
             }`}
             onClick={() => setNavOpen(false)}
+            title={rail ? "Account" : undefined}
           >
             <FiUser size={16} />
-            <span>Account</span>
+            <span className="ash-label">Account</span>
           </Link>
           <Link
             to="/"
             className="ash-foot-link"
             onClick={() => setNavOpen(false)}
+            title={rail ? "Back to site" : undefined}
           >
             <FiChevronRight size={15} />
-            <span>Back to site</span>
+            <span className="ash-label">Back to site</span>
           </Link>
           <button
             type="button"
             className="ash-foot-logout"
             onClick={handleLogout}
+            title={rail ? "Log out" : undefined}
           >
             <FiLogOut size={16} />
-            <span>Log out</span>
+            <span className="ash-label">Log out</span>
           </button>
         </div>
       </aside>
+      <SidebarEdge sidebar={sidebar} />
 
       {/* ── Scrolling main column ── */}
-      <div className="ash-main">
+      <div
+        className="ash-main"
+        style={sidebar.isDesktop ? { marginLeft: sidebar.width, transition: widthTransition } : undefined}
+      >
         <div className="ash-topbar">
           <button
             type="button"

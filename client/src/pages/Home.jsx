@@ -9,6 +9,7 @@ import Pagination from "../components/common/Pagination";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import SearchPanel from "../components/cinematic/SearchPanel";
 import { useAuth } from "../context/AuthContext";
+import useSearchLocation from "../hooks/useSearchLocation";
 import {
   setListingIntent,
   clearListingIntent,
@@ -57,7 +58,9 @@ export default function Home() {
   const { isAuthenticated } = useAuth();
   /* Active search mode — "buyer" | "tenant" (see MARKETPLACE_MODES). */
   const [mode, setMode] = useState("buyer");
-  const [city, setCity] = useState("");
+  /* City defaults to the visitor's IP location until they pick one; `ready`
+     holds the search bar back until that default is known. */
+  const { city, setCity, ready: searchReady } = useSearchLocation();
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [propertyTab, setPropertyTab] = useState("home");
@@ -234,10 +237,14 @@ export default function Home() {
           >
             {t("hero.subtitle")}
           </motion.p>
+          {/* Kept in the layout but invisible until the default city is known,
+              so the hero never shifts and the fields never show empty first. */}
           <motion.div
             className="mt-6 w-full max-w-3xl px-1 sm:px-2"
+            style={{ visibility: searchReady ? "visible" : "hidden" }}
+            aria-hidden={!searchReady}
             initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={searchReady ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
             transition={{ duration: 0.7, delay: 0.2, ease: EASE }}
           >
             <SearchPanel {...searchProps} variant="card" />

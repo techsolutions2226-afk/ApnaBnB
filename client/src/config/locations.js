@@ -128,7 +128,14 @@ export const SEARCH_CITIES = [
   "Sheikhupura",
 ];
 
-// Map centre per city — the LocationPicker default when there is no pin yet.
+/* Every city above is in Pakistan. Location detection only matches a visitor
+   to these cities when their IP resolves to this country, so e.g. Hyderabad
+   (India) can never be mistaken for Hyderabad (Sindh). */
+export const SEARCH_COUNTRY_CODE = "PK";
+
+// Map centre per city. The forms use it as the LocationPicker default when
+// there is no pin yet; location detection uses it to find the nearest search
+// city when the IP resolves to a town that is not in SEARCH_CITIES.
 export const CITY_CENTERS = {
   Lahore: { lat: 31.5204, lng: 74.3587 },
   Islamabad: { lat: 33.6844, lng: 73.0479 },
@@ -138,6 +145,28 @@ export const CITY_CENTERS = {
   Multan: { lat: 30.1575, lng: 71.5249 },
   Peshawar: { lat: 34.0151, lng: 71.5249 },
   Quetta: { lat: 30.1798, lng: 66.975 },
+  Sialkot: { lat: 32.4945, lng: 74.5229 },
+  Gujranwala: { lat: 32.1877, lng: 74.1945 },
+  Abbottabad: { lat: 34.1688, lng: 73.2215 },
+  "Abdul Hakim": { lat: 30.5522, lng: 72.1274 },
+  Bahawalpur: { lat: 29.3544, lng: 71.6911 },
+  Sargodha: { lat: 32.0836, lng: 72.6711 },
+  Hyderabad: { lat: 25.396, lng: 68.3578 },
+  Sukkur: { lat: 27.7052, lng: 68.8574 },
+  Larkana: { lat: 27.557, lng: 68.2264 },
+  Mardan: { lat: 34.1986, lng: 72.0404 },
+  Sahiwal: { lat: 30.6682, lng: 73.1114 },
+  Nawabshah: { lat: 26.2442, lng: 68.41 },
+  "Dera Ghazi Khan": { lat: 30.0459, lng: 70.6403 },
+  Muzaffarabad: { lat: 34.37, lng: 73.4711 },
+  Mirpur: { lat: 33.1478, lng: 73.7517 },
+  Gilgit: { lat: 35.9208, lng: 74.3144 },
+  Skardu: { lat: 35.2971, lng: 75.6333 },
+  Murree: { lat: 33.907, lng: 73.3943 },
+  Jhelum: { lat: 32.9425, lng: 73.7257 },
+  "Rahim Yar Khan": { lat: 28.4202, lng: 70.2952 },
+  Okara: { lat: 30.8138, lng: 73.4534 },
+  Sheikhupura: { lat: 31.7131, lng: 73.9783 },
 };
 
 // Hand-tuned approximate centres for popular areas so picking an area zooms

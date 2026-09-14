@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink, Link, Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { FiChevronDown, FiSettings, FiLogOut, FiSun, FiMoon } from "react-icons/fi";
+import { Navigate, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { FiChevronDown } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -15,7 +15,9 @@ import {
 import { readViewRole, writeViewRole } from "../../utils/viewRoleStore";
 import NotificationBell from "../navbar/NotificationBell";
 import MobileBottomNav from "../layout/MobileBottomNav";
-import Logo from "../common/Logo";
+import SidebarEdge from "../common/SidebarEdge";
+import DashboardSidebar from "./DashboardSidebar";
+import useResizableSidebar from "../../hooks/useResizableSidebar";
 import Seo from "../seo/Seo";
 import { privateAreaTitle } from "../../config/seo";
 
@@ -129,6 +131,13 @@ function MemberDashboardShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realRole, currentUser?.id]);
 
+  /* Desktop sidebar: open ↔ icon rail and drag-to-resize, remembered per
+     browser. Below lg the sidebar stays the slide-in drawer (navOpen). */
+  const sidebar = useResizableSidebar({
+    storageKey: "apnabnb_dashboard_sidebar",
+    defaultWidth: 288,
+    desktopQuery: "(min-width: 1024px)",
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [theme, setTheme] = useState(() => {
@@ -231,136 +240,35 @@ function MemberDashboardShell() {
         path={location.pathname}
         noindex
       />
-      <aside
-        className={`fixed inset-y-0 left-0 z-[60] h-[100dvh] max-h-[100dvh] w-72 flex flex-col overflow-hidden overscroll-none bg-slate-900 text-slate-400 transform transition-transform duration-200 ease-out lg:translate-x-0 ${
-          navOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-        style={{ "--role-accent": meta.accent }}
-        aria-label={t("nav.ariaLabel")}
+      <DashboardSidebar
+        currentUser={currentUser}
+        meta={meta}
+        items={items}
+        sectionCounts={sectionCounts}
+        theme={theme}
+        onThemeChange={setThemePref}
+        navOpen={navOpen}
+        onNavigate={() => setNavOpen(false)}
+        onLogout={handleLogout}
+        desktopWidth={sidebar.isDesktop ? sidebar.width : undefined}
+        collapsed={sidebar.isDesktop && sidebar.collapsed}
+        resizing={sidebar.resizing}
+      />
+      <SidebarEdge
+        sidebar={sidebar}
+        collapseLabel={t("nav.collapseSidebar")}
+        expandLabel={t("nav.expandSidebar")}
+        resizeLabel={t("nav.resizeSidebar")}
+      />
+
+      <div
+        className="flex-1 flex flex-col min-w-0"
+        style={
+          sidebar.isDesktop
+            ? { marginLeft: sidebar.width, transition: sidebar.resizing ? "none" : "margin-left 200ms ease" }
+            : undefined
+        }
       >
-        <Link
-          to="/"
-          className="flex items-center gap-2 px-5 py-5 border-b border-white/[0.08]"
-          aria-label={t("common:nav.homeAriaLabel")}
-          onClick={() => setNavOpen(false)}
-        >
-          <Logo size={40} />
-        </Link>
-
-        <div className="flex items-center gap-3 mx-3 mt-4 mb-3 px-3 py-3 bg-white/[0.05] border border-white/[0.07] rounded-xl">
-          {currentUser?.avatar ? (
-            <img
-              className="h-10 w-10 rounded-full object-cover border border-white/[0.18]"
-              src={currentUser.avatar}
-              alt={currentUser.name || "Profile"}
-            />
-          ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-white font-semibold text-sm">
-              {(currentUser?.name?.trim()?.[0] || "U").toUpperCase()}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-white">
-              {currentUser?.name || "My Account"}
-            </p>
-            <p className="text-xs text-slate-400">{t(meta.labelKey)}</p>
-          </div>
-        </div>
-
-        <nav
-          className="flex-1 min-h-0 px-3 py-2 overflow-y-auto overscroll-contain"
-          aria-label={t("nav.mainAriaLabel")}
-        >
-          {items.map((item) => {
-            const Icon = item.icon;
-            const sectionBadge =
-              item.to === "/trips"
-                ? sectionCounts.trip || 0
-                : item.to === "/matches"
-                  ? sectionCounts.match || 0
-                  : 0;
-            return (
-              <NavLink
-                key={item.to + item.labelKey}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-primary-600 text-white shadow-lg shadow-primary-600/30"
-                      : "text-slate-400 hover:bg-white/[0.08] hover:text-white"
-                  }`
-                }
-                onClick={() => setNavOpen(false)}
-              >
-                <Icon size={17} aria-hidden="true" />
-                <span>{t(item.labelKey)}</span>
-                {sectionBadge > 0 && (
-                  <span className="ml-auto min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-accent-500 text-white text-xs font-bold">
-                    {sectionBadge > 9 ? "9+" : sectionBadge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        <div className="p-3 border-t border-white/[0.08] space-y-1 pb-[calc(0.75rem+4.5rem+env(safe-area-inset-bottom,0px))] md:pb-3">
-          {/* Panel theme — how this panel looks rather than navigation. */}
-          <div
-            className="flex flex-nowrap items-stretch gap-1 p-[3px] mb-2 rounded-[10px] border border-white/12 bg-black/35"
-            role="radiogroup"
-            aria-label={t("nav.panelTheme")}
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={theme === "light"}
-              className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[7px] text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
-                theme === "light"
-                  ? "bg-primary-600 text-white"
-                  : "bg-transparent text-slate-500 hover:text-slate-300"
-              }`}
-              onClick={() => setThemePref("light")}
-            >
-              <FiSun size={14} />
-              <span>{t("menu.lightMode")}</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={theme === "dark"}
-              className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[7px] text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
-                theme === "dark"
-                  ? "bg-primary-600 text-white"
-                  : "bg-transparent text-slate-500 hover:text-slate-300"
-              }`}
-              onClick={() => setThemePref("dark")}
-            >
-              <FiMoon size={14} />
-              <span>{t("menu.darkMode")}</span>
-            </button>
-          </div>
-          <Link
-            to="/account"
-            className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-white/[0.08] hover:text-white rounded-lg transition-colors"
-            onClick={() => setNavOpen(false)}
-          >
-            <FiSettings size={16} />
-            <span>Account</span>
-          </Link>
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/[0.15] hover:text-red-300 rounded-lg transition-colors"
-            onClick={handleLogout}
-          >
-            <FiLogOut size={16} />
-            <span>Log out</span>
-          </button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-72">
         <header
           className={`flex h-14 sm:h-16 items-center gap-3 px-4 sm:px-6 border-b sticky top-0 z-[40] ${
             isDark

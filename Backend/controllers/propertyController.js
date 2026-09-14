@@ -13,7 +13,9 @@ const { scrubPropertyContact } = require('../utils/contactVisibility');
 const {
   rankRelatedProperties,
   buildCandidateTiers,
+  VISIBLE_STATUSES,
 } = require('../utils/relatedProperties');
+const { groupPopularByCity } = require('../utils/popularByCity');
 const { destroyRemovedUrls } = require('../utils/cloudinaryAssets');
 
 // Contact details are intentionally NOT on card-level fetches (list/search):
@@ -170,6 +172,46 @@ const getProperties = async (req, res, next) => {
     }
 
     res.status(200).json(properties);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/* GET /api/properties/popular-by-city — home page "Popular homes in <city>"
+   rows. Cities come back by listing count; the client puts the visitor's own
+   and nearby cities first. Identical for every visitor, so one cached result
+   serves them all. Card fields only — no contact details. */
+const POPULAR_BY_CITY_TTL_MS = 60 * 1000;
+const popularCardSelect = {
+  id: true,
+  title: true,
+  photos: true,
+  location: true,
+  price: true,
+  purpose: true,
+  category: true,
+  propertyType: true,
+  size: true,
+  sizeUnit: true,
+  status: true,
+  createdAt: true,
+  listedBy: listedBySelect,
+  listings: { select: { views: true } },
+};
+
+const getPopularByCity = async (req, res, next) => {
+  const requested = Number.parseInt(req.query.perCity, 10);
+  const perCity = Number.isFinite(requested) ? Math.min(Math.max(requested, 1), 12) : 10;
+
+  try {
+    const cities = await cache.wrap(`popular-by-city:${perCity}`, POPULAR_BY_CITY_TTL_MS, async () => {
+      const properties = await prisma.property.findMany({
+        where: { status: { in: VISIBLE_STATUSES } },
+        select: popularCardSelect,
+      });
+      return groupPopularByCity(properties, { perCity });
+    });
+    res.status(200).json({ cities });
   } catch (error) {
     next(error);
   }
@@ -422,6 +464,7 @@ const getRelatedProperties = async (req, res, next) => {
 module.exports = {
   createProperty,
   getProperties,
+  getPopularByCity,
   getPropertyById,
   searchProperties,
   updateProperty,

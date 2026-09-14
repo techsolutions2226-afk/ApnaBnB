@@ -1,5 +1,5 @@
 const express = require('express');
-const { createProperty, getProperties, getPropertyById, searchProperties, updateProperty, deleteProperty, getPropertyContact, getRelatedProperties } = require('../controllers/propertyController');
+const { createProperty, getProperties, getPopularByCity, getPropertyById, searchProperties, updateProperty, deleteProperty, getPropertyContact, getRelatedProperties } = require('../controllers/propertyController');
 const verifyToken = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -7,6 +7,8 @@ const router = express.Router();
 // Property endpoints
 router.post('/', verifyToken, createProperty);
 router.get('/search', searchProperties);
+// Public: home page city rows. Before '/:id' so it is not read as an id.
+router.get('/popular-by-city', getPopularByCity);
 // Declared before '/:id' for clarity; the two-segment path can't collide with it.
 // Public — owner contact is shown for everyone on the property detail page.
 router.get('/:id/contact', getPropertyContact);

@@ -8,6 +8,8 @@ import PropertyCard from "../components/property/PropertyCard";
 import Pagination from "../components/common/Pagination";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import SearchPanel from "../components/cinematic/SearchPanel";
+import DetectedLocationHint from "../components/cinematic/DetectedLocationHint";
+import LocalProperties from "../components/property/LocalProperties";
 import { useAuth } from "../context/AuthContext";
 import useSearchLocation from "../hooks/useSearchLocation";
 import {
@@ -60,7 +62,13 @@ export default function Home() {
   const [mode, setMode] = useState("buyer");
   /* City defaults to the visitor's IP location until they pick one; `ready`
      holds the search bar back until that default is known. */
-  const { city, setCity, ready: searchReady } = useSearchLocation();
+  const {
+    city,
+    setCity,
+    detected,
+    isManual,
+    ready: searchReady,
+  } = useSearchLocation();
   const [location, setLocation] = useState("");
   const [propertyType, setPropertyType] = useState("");
   const [propertyTab, setPropertyTab] = useState("home");
@@ -248,6 +256,12 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.2, ease: EASE }}
           >
             <SearchPanel {...searchProps} variant="card" />
+            <DetectedLocationHint
+              city={city}
+              detected={detected}
+              isManual={isManual}
+              onChange={() => setOpenField("city")}
+            />
           </motion.div>
         </div>
       </section>
@@ -292,6 +306,9 @@ export default function Home() {
           ))}
         </div>
       </motion.section>
+
+      {/* ══ PROPERTIES IN THE SEARCH CITY (detected or picked) ══ */}
+      <LocalProperties city={city} />
 
       {/* ══ POPULAR HOMES ══ */}
       <motion.section

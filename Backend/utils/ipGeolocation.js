@@ -18,10 +18,14 @@ const crypto = require('crypto');
 const cache = require('./cache');
 const { clientIp } = require('./sessions');
 
-// Per provider; the home page rows wait for the whole chain to settle.
-const LOOKUP_TIMEOUT_MS = 1500;
+/* Per provider. Generous enough that a normally-slow answer still counts:
+   a provider timing out used to cost the visitor their location for the whole
+   failure-cache window, which showed up as "no properties found". */
+const LOOKUP_TIMEOUT_MS = 3000;
 const SUCCESS_TTL_MS = 6 * 60 * 60 * 1000;
-const FAILURE_TTL_MS = 5 * 60 * 1000;
+/* Short: a failure is usually a blip (slow provider, momentary quota), so the
+   next page load should try again rather than keep the visitor location-less. */
+const FAILURE_TTL_MS = 20 * 1000;
 
 /* ── Public-address check ──
    Loopback, private, link-local and CGNAT ranges have no geography, so they
@@ -192,6 +196,21 @@ const detectLocation = async (req) => {
   return pending;
 };
 
+/* Why detection did or did not work, WITHOUT revealing the address.
+   `publicIp: false` behind a proxy means the app is not trusting that proxy
+   (see TRUST_PROXY in index.js) — the usual cause of every visitor appearing
+   to be in the same city. */
+const describeRequestIp = (req) => {
+  const ip = resolveIp(req);
+  return {
+    publicIp: isPublicIp(ip),
+    proxyTrusted: Boolean(req?.app?.get?.('trust proxy')),
+    forwardedHeader: Boolean(req?.headers?.['x-forwarded-for']),
+    usingDevIp: Boolean(process.env.NODE_ENV !== 'production' && process.env.GEO_DEV_IP),
+    nodeEnv: process.env.NODE_ENV || 'development',
+  };
+};
+
 module.exports = {
   LOOKUP_TIMEOUT_MS,
   PROVIDERS,
@@ -199,4 +218,5 @@ module.exports = {
   shapeGeo,
   lookupIp,
   detectLocation,
+  describeRequestIp,
 };

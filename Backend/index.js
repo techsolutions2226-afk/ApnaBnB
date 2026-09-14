@@ -21,11 +21,24 @@ app.set("json escape", true);
 // Weak ETags on JSON so repeat public GETs can answer 304 (see middleware/cacheHeaders).
 app.set("etag", "weak");
 
-// Behind a reverse proxy (Render) the rate limiter + req.ip need the real
-// client IP. Only trust one hop, and only in production.
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
+/* Behind a reverse proxy (Render, Vercel, Nginx, a tunnel) the visitor's real
+   address only arrives in X-Forwarded-For; without this Express reports the
+   proxy's own address and every visitor looks like they are in one place —
+   which broke the home page's location-based rows for everyone.
+   Only ever trust ONE hop, so a client-sent X-Forwarded-For cannot spoof it.
+
+   TRUST_PROXY: "1"/"true" to trust the hop, "0"/"false" to force it off,
+   or a number of hops. Unset = trust it when NODE_ENV is production. */
+const trustProxySetting = () => {
+  const raw = String(process.env.TRUST_PROXY ?? "").trim().toLowerCase();
+  if (raw === "") return process.env.NODE_ENV === "production" ? 1 : 0;
+  if (["0", "false", "off", "no"].includes(raw)) return 0;
+  if (["1", "true", "on", "yes"].includes(raw)) return 1;
+  const hops = Number.parseInt(raw, 10);
+  return Number.isFinite(hops) && hops > 0 ? hops : 1;
+};
+const trustProxy = trustProxySetting();
+if (trustProxy) app.set("trust proxy", trustProxy);
 
 // Middleware
 app.use(securityHeaders);

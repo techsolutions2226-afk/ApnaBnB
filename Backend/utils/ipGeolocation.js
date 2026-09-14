@@ -104,6 +104,8 @@ const shapeGeo = (fields) => {
 };
 
 /* ── Providers, tried in this order ──
+   `url(ip)` — with ip = null the provider locates the CALLER, i.e. this
+   server's own public IP (used for local development, see detectLocation).
    `map` returns the provider's fields in our names, or null when the body
    says the lookup failed (reserved range, quota, bad input). */
 const PROVIDERS = [
@@ -111,7 +113,8 @@ const PROVIDERS = [
     name: 'ipapi.co',
     url: (ip) => {
       const key = process.env.IPAPI_KEY;
-      return `https://ipapi.co/${encodeURIComponent(ip)}/json/${key ? `?key=${encodeURIComponent(key)}` : ''}`;
+      const path = ip ? `${encodeURIComponent(ip)}/json/` : 'json/';
+      return `https://ipapi.co/${path}${key ? `?key=${encodeURIComponent(key)}` : ''}`;
     },
     map: (raw) =>
       raw.error
@@ -120,7 +123,7 @@ const PROVIDERS = [
   },
   {
     name: 'ipwho.is',
-    url: (ip) => `https://ipwho.is/${encodeURIComponent(ip)}`,
+    url: (ip) => `https://ipwho.is/${ip ? encodeURIComponent(ip) : ''}`,
     map: (raw) =>
       raw.success === false
         ? null
@@ -128,7 +131,7 @@ const PROVIDERS = [
   },
   {
     name: 'freeipapi.com',
-    url: (ip) => `https://freeipapi.com/api/json/${encodeURIComponent(ip)}`,
+    url: (ip) => `https://freeipapi.com/api/json/${ip ? encodeURIComponent(ip) : ''}`,
     map: (raw) => ({ country: raw.countryName, countryCode: raw.countryCode, region: raw.regionName, city: raw.cityName, latitude: raw.latitude, longitude: raw.longitude }),
   },
 ];
@@ -176,24 +179,37 @@ const resolveIp = (req) => {
   return devIp ? devIp.trim() : clientIp(req);
 };
 
-const detectLocation = async (req) => {
-  const ip = resolveIp(req);
-  if (!isPublicIp(ip)) return null;
+/* Local development: the site is opened on this machine, so the request comes
+   from loopback / the LAN and has no location. Locate this machine's own
+   public IP instead — which is the developer's real connection, and changes
+   when they switch VPN. Never in production, where a private request IP means
+   a misconfigured proxy and must not be replaced by the server's location. */
+const SELF_KEY = 'geo:self';
+// Short, so switching VPN shows up within a minute.
+const SELF_TTL_MS = 60 * 1000;
+const useMachineIp = (ip) => process.env.NODE_ENV !== 'production' && !isPublicIp(ip);
 
-  const key = cacheKeyFor(ip);
+const cachedLookup = (key, ip, successTtl) => {
   const hit = cache.get(key);
-  if (hit !== undefined) return hit.geo;
+  if (hit !== undefined) return Promise.resolve(hit.geo);
 
   // Concurrent requests from one visitor share a single provider call.
   if (inFlight.has(key)) return inFlight.get(key);
   const pending = lookupIp(ip)
     .then((geo) => {
-      cache.set(key, { geo }, geo ? SUCCESS_TTL_MS : FAILURE_TTL_MS);
+      cache.set(key, { geo }, geo ? successTtl : FAILURE_TTL_MS);
       return geo;
     })
     .finally(() => inFlight.delete(key));
   inFlight.set(key, pending);
   return pending;
+};
+
+const detectLocation = async (req) => {
+  const ip = resolveIp(req);
+  if (isPublicIp(ip)) return cachedLookup(cacheKeyFor(ip), ip, SUCCESS_TTL_MS);
+  if (useMachineIp(ip)) return cachedLookup(SELF_KEY, null, SELF_TTL_MS);
+  return null;
 };
 
 /* Why detection did or did not work, WITHOUT revealing the address.
@@ -207,6 +223,7 @@ const describeRequestIp = (req) => {
     proxyTrusted: Boolean(req?.app?.get?.('trust proxy')),
     forwardedHeader: Boolean(req?.headers?.['x-forwarded-for']),
     usingDevIp: Boolean(process.env.NODE_ENV !== 'production' && process.env.GEO_DEV_IP),
+    usingMachineIp: useMachineIp(ip),
     nodeEnv: process.env.NODE_ENV || 'development',
   };
 };

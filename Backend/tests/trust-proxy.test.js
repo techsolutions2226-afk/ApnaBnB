@@ -93,6 +93,6 @@ test('diagnostics never expose the address itself', async () => {
   const text = JSON.stringify(diagnostics);
   assert.ok(!text.includes(LAHORE), 'diagnostics must not contain the IP');
   assert.deepEqual(Object.keys(diagnostics).sort(), [
-    'forwardedHeader', 'nodeEnv', 'proxyTrusted', 'publicIp', 'usingDevIp',
+    'forwardedHeader', 'nodeEnv', 'proxyTrusted', 'publicIp', 'usingDevIp', 'usingMachineIp',
   ]);
 });

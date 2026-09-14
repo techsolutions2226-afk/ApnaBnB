@@ -151,11 +151,36 @@ test('lookupIp: IPAPI_KEY is passed to ipapi.co only', async () => {
   assert.ok(!calls[1].url.includes('key='));
 });
 
-test('detectLocation: a private request IP never calls a provider', async () => {
+test('detectLocation: in production a private request IP never calls a provider', async () => {
   stubProviders({});
-  assert.equal(await detectLocation({ ip: '127.0.0.1' }), null);
-  assert.equal(await detectLocation({ ip: '::ffff:10.0.0.4' }), null);
-  assert.equal(calls.length, 0);
+  const env = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  try {
+    assert.equal(await detectLocation({ ip: '127.0.0.1' }), null);
+    assert.equal(await detectLocation({ ip: '::ffff:10.0.0.4' }), null);
+    assert.equal(calls.length, 0);
+  } finally {
+    if (env === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = env;
+  }
+});
+
+test('detectLocation: in development a local request locates this machine\'s public IP', async () => {
+  stubProviders({});
+  const env = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'development';
+  try {
+    const geo = await detectLocation({ ip: '127.0.0.1' });
+    assert.equal(geo.city, 'Aman Garh');
+    assert.equal(calls.length, 1);
+    // No IP in the URL: the provider locates the caller.
+    assert.equal(calls[0].url, 'https://ipapi.co/json/');
+    await detectLocation({ ip: '::1' });
+    assert.equal(calls.length, 1, 'cached briefly');
+  } finally {
+    if (env === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = env;
+  }
 });
 
 test('detectLocation: caches per IP and never puts the raw IP in the cache key', async () => {

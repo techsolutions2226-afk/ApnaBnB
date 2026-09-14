@@ -12,6 +12,7 @@ const assert = require('node:assert/strict');
 const cache = require('../utils/cache');
 const {
   PROVIDERS,
+  resetProviderCooldowns,
   isPublicIp,
   shapeGeo,
   lookupIp,
@@ -65,6 +66,7 @@ const stubProviders = (behaviour) => {
 beforeEach(() => {
   calls = [];
   cache.clear();
+  resetProviderCooldowns();
   delete process.env.GEO_DEV_IP;
   delete process.env.IPAPI_KEY;
   console.warn = () => {};
@@ -132,9 +134,20 @@ test('lookupIp: falls back when a provider is down, rate limited or blocked', as
   assert.deepEqual(calls.map((c) => c.name), ['ipapi.co', 'ipwho.is', 'freeipapi.com']);
 
   calls = [];
+  resetProviderCooldowns(); // the 429 above put ipapi.co on cooldown
   stubProviders({ 'ipapi.co': 'html' });
   assert.equal((await lookupIp('39.32.10.5')).city, 'Peshawar');
   assert.deepEqual(calls.map((c) => c.name), ['ipapi.co', 'ipwho.is']);
+});
+
+test('lookupIp: a provider that refuses (403/429) is skipped on later lookups', async () => {
+  stubProviders({ 'ipapi.co': 403 });
+  assert.equal((await lookupIp('39.32.10.5')).city, 'Peshawar');
+  assert.deepEqual(calls.map((c) => c.name), ['ipapi.co', 'ipwho.is']);
+
+  calls = [];
+  assert.equal((await lookupIp('8.8.4.4')).city, 'Peshawar');
+  assert.deepEqual(calls.map((c) => c.name), ['ipwho.is'], 'ipapi.co is not asked again');
 });
 
 test('lookupIp: all providers failing resolves null', async () => {

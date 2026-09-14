@@ -136,15 +136,27 @@ const PROVIDERS = [
   },
 ];
 
+/* A provider that refuses us (403 blocked, 429 rate limited) keeps refusing
+   for a while, so it is skipped for this long instead of being asked — and
+   logged — on every lookup. */
+const REFUSED_COOLDOWN_MS = 10 * 60 * 1000;
+const refusedUntil = new Map(); // provider name -> timestamp
+
 /* One provider: the shaped location, or null (logged without the IP). */
 const queryProvider = async (provider, ip) => {
+  if ((refusedUntil.get(provider.name) || 0) > Date.now()) return null;
   try {
     const response = await fetch(provider.url(ip), {
       headers: { Accept: 'application/json', 'User-Agent': 'ApnaBnB/1.0' },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
     if (!response.ok) {
-      console.warn(`IP geolocation: ${provider.name} returned HTTP ${response.status}`);
+      if (response.status === 403 || response.status === 429) {
+        refusedUntil.set(provider.name, Date.now() + REFUSED_COOLDOWN_MS);
+        console.warn(`IP geolocation: ${provider.name} refused (HTTP ${response.status}); using the next provider for 10 minutes`);
+      } else {
+        console.warn(`IP geolocation: ${provider.name} returned HTTP ${response.status}`);
+      }
       return null;
     }
     const raw = await response.json();
@@ -228,8 +240,12 @@ const describeRequestIp = (req) => {
   };
 };
 
+/* Test hook: forget provider cooldowns. */
+const resetProviderCooldowns = () => refusedUntil.clear();
+
 module.exports = {
   LOOKUP_TIMEOUT_MS,
+  resetProviderCooldowns,
   PROVIDERS,
   isPublicIp,
   shapeGeo,

@@ -120,6 +120,13 @@ test('planPropertyRows: a country without listings (e.g. VPN in the USA) → cou
   assert.deepEqual(planPropertyRows(usa, [row('Lahore'), row('Karachi')], PLAN), { kind: 'no-country', country: 'United States' });
 });
 
+test('planPropertyRows: VPN in California shows California listings when they exist', () => {
+  const ca = { country: 'United States', countryCode: 'US', region: 'California', city: 'Mountain View', latitude: 37.42, longitude: -122.08 };
+  const plan = planPropertyRows(ca, [row('Lahore', 7), row('California', 3), row('Mountain View', 1)], PLAN);
+  assert.equal(plan.kind, 'rows');
+  assert.deepEqual(plan.rows.map((r) => r.city), ['Mountain View', 'California']);
+});
+
 test('planPropertyRows: listings country with no listings anywhere → country message only', () => {
   assert.deepEqual(planPropertyRows(pk({ city: 'Lahore' }), [], PLAN), { kind: 'no-country', country: 'Pakistan' });
   assert.deepEqual(planPropertyRows(pk({ city: 'Lahore' }), [row('Lahore', 0)], PLAN), { kind: 'no-country', country: 'Pakistan' });

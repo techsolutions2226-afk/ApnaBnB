@@ -159,8 +159,16 @@ export const orderByProximity = (
 export const planPropertyRows = (geo, cities, { centers, countryCode, searchCities }) => {
   if (!isGeo(geo)) return { kind: "undetected" };
   const country = geo.country || geo.countryCode;
-  if (!inCountry(geo, countryCode)) return { kind: "no-country", country };
   const list = Array.isArray(cities) ? cities.filter((c) => c?.total > 0) : [];
+
+  // Outside the main listings country: show listings in the visitor's city or
+  // region (e.g. "California") if there are any, otherwise the country message.
+  if (!inCountry(geo, countryCode)) {
+    const local = list
+      .filter((c) => sameCity(c.city, geo.city) || sameCity(c.city, geo.region))
+      .sort((a, b) => Number(sameCity(b.city, geo.city)) - Number(sameCity(a.city, geo.city)) || b.total - a.total);
+    return local.length ? { kind: "rows", rows: local, missingCity: "" } : { kind: "no-country", country };
+  }
   if (list.length === 0) return { kind: "no-country", country };
 
   const match = { cities: searchCities, centers, countryCode };

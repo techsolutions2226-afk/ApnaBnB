@@ -16,17 +16,9 @@
       "action": "Find Rentals"
     }
   },
-  "location": {
-    "near": "Showing homes near {{place}}",
-    "change": "Change"
-  },
-  "local": {
-    "heading": "Properties in {{city}}",
-    "viewAll": "View all"
-  },
   "popular": {
-    "heading": "Popular Homes",
-    "viewAll": "View all",
+    "cityHeading": "Popular homes in {{city}}",
+    "exploreAll": "Explore all properties",
     "empty": "No properties yet — be the first to list one."
   }
 }

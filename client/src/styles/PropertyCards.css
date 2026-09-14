@@ -317,6 +317,13 @@
   .prop-row .prop-card-link {
     flex: 0 0 calc((100% - 1 * 12px) / 2);
   }
+
+  /* Home city rows on phones: swipe instead of arrows, and a tighter gap so
+     the next card peeks in as a scroll hint. */
+  .prop-row { gap: 12px; }
+  .prop-section { padding-top: 24px; }
+  .prop-section-title { font-size: 18px; }
+  .prop-section-nav { display: none; }
 }
 
 @media (max-width: 380px) {

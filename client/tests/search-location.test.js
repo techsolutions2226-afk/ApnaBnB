@@ -20,7 +20,6 @@ globalThis.sessionStorage = makeStorage();
 
 const {
   resolveSearchCity,
-  formatDetectedPlace,
   orderByProximity,
   locationOrigin,
   NEARBY_CITY_KM,
@@ -147,15 +146,6 @@ test('locationOrigin: detected coordinates, city fallback, and nothing outside t
 test('distanceKm: Lahore to Islamabad is about 270 km', () => {
   const km = distanceKm(CITY_CENTERS.Lahore, CITY_CENTERS.Islamabad);
   assert.ok(km > 250 && km < 290, `got ${km}`);
-});
-
-test('formatDetectedPlace: joins city, region and country without blanks or repeats', () => {
-  assert.equal(formatDetectedPlace('Lahore', pk()), 'Lahore, Punjab, Pakistan');
-  assert.equal(
-    formatDetectedPlace('Islamabad', { region: 'Islamabad', country: 'Pakistan' }),
-    'Islamabad, Pakistan',
-  );
-  assert.equal(formatDetectedPlace('', { region: null, country: 'Pakistan' }), 'Pakistan');
 });
 
 test('detected cache: fresh, stale and expired entries', () => {

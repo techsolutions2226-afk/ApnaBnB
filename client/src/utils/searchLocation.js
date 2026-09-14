@@ -201,16 +201,3 @@ export const orderByProximity = (
   rest.sort((a, b) => b.count - a.count || a.index - b.index);
   return [...own, ...near.map((e) => e.item), ...rest.map((e) => e.item)];
 };
-
-/* "Lahore, Punjab, Pakistan" — skips blanks and repeats such as
-   "Islamabad, Islamabad, Pakistan". `city` is the resolved search city. */
-export const formatDetectedPlace = (city, geo) => {
-  const parts = [];
-  for (const part of [city, geo?.region, geo?.country]) {
-    const value = String(part || "").trim();
-    if (value && !parts.some((p) => normName(p) === normName(value))) {
-      parts.push(value);
-    }
-  }
-  return parts.join(", ");
-};

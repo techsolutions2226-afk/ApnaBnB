@@ -32,6 +32,17 @@ const propertyService = {
     }
   },
 
+  /* Home page "Popular homes in <city>" rows: [{ city, total, properties }],
+     cities by listing count. Ordering for the visitor happens client-side. */
+  getPopularByCity: async () => {
+    try {
+      const response = await apiClient.get('/properties/popular-by-city');
+      return response.data.cities || [];
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch popular homes' };
+    }
+  },
+
   // Create new property
   create: async (propertyData) => {
     try {

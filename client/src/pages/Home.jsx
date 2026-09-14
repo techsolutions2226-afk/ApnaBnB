@@ -3,13 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { FiArrowRight } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
-import { useProperties } from "../hooks/useProperties";
-import PropertyCard from "../components/property/PropertyCard";
-import Pagination from "../components/common/Pagination";
-import { SkeletonCard } from "../components/ui/Skeleton";
 import SearchPanel from "../components/cinematic/SearchPanel";
-import DetectedLocationHint from "../components/cinematic/DetectedLocationHint";
-import LocalProperties from "../components/property/LocalProperties";
+import PropertySections from "../components/property/PropertySections";
 import { useAuth } from "../context/AuthContext";
 import useSearchLocation from "../hooks/useSearchLocation";
 import { SEARCH_CITIES, CITY_CENTERS } from "../config/locations";
@@ -62,16 +57,10 @@ export default function Home() {
   const { isAuthenticated } = useAuth();
   /* Active search mode — "buyer" | "tenant" (see MARKETPLACE_MODES). */
   const [mode, setMode] = useState("buyer");
-  /* City defaults to the visitor's IP location until they pick one; `ready`
-     holds the search bar back until that default is known. */
-  const {
-    city,
-    setCity,
-    detected,
-    origin,
-    isManual,
-    ready: searchReady,
-  } = useSearchLocation();
+  /* Where the visitor is (IP-based, silent). City defaults to it until they
+     pick one, `origin` orders cities nearest first, and `ready` holds the
+     search bar and city rows back until that is known. */
+  const { city, setCity, origin, ready: searchReady } = useSearchLocation();
   /* City / Where list: the visitor's own and nearby cities first. */
   const cityOptions = useMemo(
     () =>
@@ -97,11 +86,7 @@ export default function Home() {
      utils/stay. */
   const [stay, setStay] = useState(EMPTY_STAY);
   const [guests, setGuests] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
-  const popularSectionRef = useRef(null);
   const ctaSectionRef = useRef(null);
-  const prevPageRef = useRef(page);
 
   /* Coming back to the home page abandons a Seller/Landlord intent the user
      started before deciding against signing in. */
@@ -117,24 +102,6 @@ export default function Home() {
         whileInView: "show",
         viewport: { once: true, amount: 0.2 },
       };
-
-  const { properties: allProps = [], isLoading: propsLoading, pagination } =
-    useProperties({ page, limit: pageSize });
-  const featuredProps = useMemo(
-    () => (Array.isArray(allProps) ? allProps : []),
-    [allProps],
-  );
-
-  /* Scroll the listing into view when the visitor jumps pages, so the lifted
-     grid doesn't leave them staring at the banner. Only fires on an actual
-     page change — comparing to the previous page means React StrictMode's
-     double-invoked mount effects can never scroll on a fresh load, so the page
-     always opens at the top. */
-  useEffect(() => {
-    if (prevPageRef.current === page) return;
-    prevPageRef.current = page;
-    popularSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [page]);
 
   const submitSearch = (overrides = {}) => {
     const params = new URLSearchParams();
@@ -269,12 +236,6 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.2, ease: EASE }}
           >
             <SearchPanel {...searchProps} variant="card" />
-            <DetectedLocationHint
-              city={city}
-              detected={detected}
-              isManual={isManual}
-              onChange={() => setOpenField("city")}
-            />
           </motion.div>
         </div>
       </section>
@@ -320,80 +281,8 @@ export default function Home() {
         </div>
       </motion.section>
 
-      {/* ══ PROPERTIES IN THE SEARCH CITY (detected or picked) ══ */}
-      <LocalProperties city={city} />
-
-      {/* ══ POPULAR HOMES ══ */}
-      <motion.section
-        id="popular-homes"
-        ref={popularSectionRef}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 scroll-mt-16"
-        variants={revealUp}
-        {...inView}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
-            {t("popular.heading")}
-          </h2>
-          <button
-            onClick={() => navigate("/search")}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
-          >
-            {t("popular.viewAll")}
-          </button>
-        </div>
-
-        {propsLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        ) : featuredProps.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-slate-500">{t("popular.empty")}</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {featuredProps.map((p) => (
-                <PropertyCard
-                  key={p._id || p.id}
-                  _id={p._id}
-                  id={p.id}
-                  title={p.title}
-                  photos={p.photos}
-                  location={p.location}
-                  price={p.price}
-                  rating={p.rating || 4.5}
-                  propertyType={p.propertyType}
-                  size={p.size}
-                  sizeUnit={p.sizeUnit}
-                  listedBy={p.listedBy}
-                  status={p.status}
-                  purpose={p.purpose}
-                />
-              ))}
-            </div>
-
-            {pagination && pagination.pages > 1 && (
-              <Pagination
-                className="mt-8"
-                currentPage={page}
-                totalPages={pagination.pages}
-                onPageChange={setPage}
-                total={pagination.total}
-                pageSize={pageSize}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPage(1);
-                }}
-                pageSizeOptions={[8, 12, 16, 24]}
-              />
-            )}
-          </>
-        )}
-      </motion.section>
+      {/* ══ POPULAR HOMES BY CITY — the visitor's own and nearby cities first ══ */}
+      <PropertySections origin={origin} ready={searchReady} />
     </div>
   );
 }

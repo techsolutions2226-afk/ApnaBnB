@@ -6,14 +6,14 @@ import RangeInputWithUnit from "../search/dropdowns/RangeInputWithUnit";
 import BedCountPanel from "../search/dropdowns/BedCountPanel";
 import TenantSearchBar from "./TenantSearchBar";
 import {
-  CITIES,
   PROPERTY_TABS,
   AREA_UNITS,
   CURRENCIES,
   MARKETPLACE_MODES,
 } from "../../config/searchOptions";
+import { SEARCH_CITIES } from "../../config/locations";
 
-const CITY_OPTIONS = CITIES.map((c) => ({ value: c, label: c }));
+const CITY_OPTIONS = SEARCH_CITIES.map((c) => ({ value: c, label: c }));
 const AREA_UNIT_OPTIONS = AREA_UNITS.map((u) => ({ value: u, label: u }));
 const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({ value: c, label: c }));
 

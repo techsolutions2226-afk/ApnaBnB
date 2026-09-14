@@ -24,39 +24,8 @@ import {
   FiBox,
 } from "react-icons/fi";
 
-/* ── Cities (major first, then the rest) ── */
-export const CITIES = [
-  "Islamabad",
-  "Karachi",
-  "Lahore",
-  "Rawalpindi",
-  "Faisalabad",
-  "Multan",
-  "Peshawar",
-  "Quetta",
-  "Sialkot",
-  "Gujranwala",
-  "Abbottabad",
-  "Abdul Hakim",
-  "Bahawalpur",
-  "Sargodha",
-  "Hyderabad",
-  "Sukkur",
-  "Larkana",
-  "Mardan",
-  "Sahiwal",
-  "Nawabshah",
-  "Dera Ghazi Khan",
-  "Muzaffarabad",
-  "Mirpur",
-  "Gilgit",
-  "Skardu",
-  "Murree",
-  "Jhelum",
-  "Rahim Yar Khan",
-  "Okara",
-  "Sheikhupura",
-];
+/* Search cities live with the rest of the city data: SEARCH_CITIES in
+   config/locations.js. */
 
 /* ── Hero marketplace modes ──
    Intents, not account roles. "search" modes browse listings of `purpose`

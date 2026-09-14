@@ -66,9 +66,10 @@ test('production trusts one proxy hop: the visitor IP is used, not the proxy', a
 
 test('TRUST_PROXY=1 fixes a proxied non-production deploy (the reported bug)', async () => {
   const before = await seenIp();
-  assert.notEqual(before.ip, LAHORE, 'without trust proxy the app sees the proxy address');
-  assert.equal(before.diagnostics.publicIp, false);
+  assert.notEqual(before.ip, LAHORE, 'without trust proxy req.ip is the proxy address');
   assert.equal(before.diagnostics.forwardedHeader, true, 'the real IP was in the header all along');
+  // Location reads the forwarded header itself, so it works even so.
+  assert.equal(before.diagnostics.publicIp, true);
 
   process.env.TRUST_PROXY = '1';
   const after = await seenIp();

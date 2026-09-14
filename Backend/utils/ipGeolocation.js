@@ -184,11 +184,35 @@ const cacheKeyFor = (ip) =>
 
 const inFlight = new Map();
 
+/* The visitor's address for LOCATION purposes. Hosts put several proxies in
+   front of the app (Render: Cloudflare + its load balancer), so the one-hop
+   `req.ip` can be an internal address — that made every live visitor
+   "not detected". Read, in order: the edge's own client headers, then the
+   first public address in X-Forwarded-For, then req.ip.
+
+   Only the home page's location guess uses this. A client could forge these
+   headers, but all that changes is which properties they see first; security
+   uses (sessions, rate limits, audit log) keep sessions.clientIp. */
+const firstPublic = (value) =>
+  String(value || '')
+    .split(',')
+    .map((part) => part.trim())
+    .find((part) => isPublicIp(part)) || null;
+
+const geoClientIp = (req) => {
+  const headers = req?.headers || {};
+  for (const name of ['cf-connecting-ip', 'true-client-ip', 'x-real-ip', 'x-client-ip']) {
+    const ip = firstPublic(headers[name]);
+    if (ip) return ip;
+  }
+  return firstPublic(headers['x-forwarded-for']) || clientIp(req);
+};
+
 /* GEO_DEV_IP lets a developer test with a real public address locally, where
    every request otherwise arrives from loopback. Ignored in production. */
 const resolveIp = (req) => {
   const devIp = process.env.NODE_ENV !== 'production' && process.env.GEO_DEV_IP;
-  return devIp ? devIp.trim() : clientIp(req);
+  return devIp ? devIp.trim() : geoClientIp(req);
 };
 
 /* Local development: the site is opened on this machine, so the request comes
@@ -247,6 +271,7 @@ module.exports = {
   LOOKUP_TIMEOUT_MS,
   resetProviderCooldowns,
   PROVIDERS,
+  geoClientIp,
   isPublicIp,
   shapeGeo,
   lookupIp,

@@ -93,6 +93,18 @@ test('isPublicIp: public IPv4, IPv4-mapped and IPv6 addresses are accepted', () 
   }
 });
 
+test('geoClientIp: finds the visitor behind several proxies (Render: Cloudflare + load balancer)', () => {
+  const { geoClientIp } = require('../utils/ipGeolocation');
+  // What Render produced live: one-hop req.ip is an internal address.
+  const render = { ip: '10.201.4.7', headers: { 'x-forwarded-for': '39.45.0.1, 172.70.1.2, 10.201.4.7' } };
+  assert.equal(geoClientIp(render), '39.45.0.1');
+  assert.equal(geoClientIp({ ip: '10.0.0.1', headers: { 'cf-connecting-ip': '119.160.116.1', 'x-forwarded-for': '8.8.8.8' } }), '119.160.116.1');
+  assert.equal(geoClientIp({ ip: '10.0.0.1', headers: { 'x-real-ip': '182.176.0.1' } }), '182.176.0.1');
+  // Private entries are skipped; with nothing public it falls back to req.ip.
+  assert.equal(geoClientIp({ ip: '10.0.0.1', headers: { 'x-forwarded-for': '192.168.1.5, 10.0.0.9' } }), '10.0.0.1');
+  assert.equal(geoClientIp({ ip: '39.32.0.1', headers: {} }), '39.32.0.1');
+});
+
 test('providers are tried in order: ipapi.co, ipwho.is, freeipapi.com', () => {
   assert.deepEqual(PROVIDERS.map((p) => p.name), ['ipapi.co', 'ipwho.is', 'freeipapi.com']);
   for (const p of PROVIDERS) assert.match(p.url('1.2.3.4'), /^https:\/\//);

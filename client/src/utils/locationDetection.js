@@ -8,6 +8,7 @@
    Never rejects: a failed request resolves null ("not detected"). */
 
 import locationService from "../services/locationService";
+import { locateFromBrowser } from "./browserGeolocation";
 
 // Location from earlier versions, which cached it for 24h. Removed so a stored
 // guess never outlives the reload that is meant to replace it.
@@ -29,10 +30,16 @@ export const startLocationDetection = () => {
   } catch {
     /* storage blocked — nothing stored to clean */
   }
-  promise = locationService.detect().then((data) => {
-    resolved = toGeo(data);
-    return resolved;
-  });
+  // Server first; if it could not locate the visitor, ask from the browser,
+  // which always carries the visitor's real IP.
+  promise = locationService
+    .detect()
+    .then((data) => toGeo(data) || locateFromBrowser())
+    .catch(() => null)
+    .then((geo) => {
+      resolved = geo;
+      return resolved;
+    });
   return promise;
 };
 
